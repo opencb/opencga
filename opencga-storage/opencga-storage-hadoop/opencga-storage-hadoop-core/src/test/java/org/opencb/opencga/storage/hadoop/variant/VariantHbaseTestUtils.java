@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -477,7 +478,7 @@ public class VariantHbaseTestUtils {
                     out.println("MISSING SAMPLE INDEX");
                     continue;
                 }
-                try (RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
+                try (CloseableIterator<SampleIndexVariant> it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
                     while (it.hasNext()) {
                         SampleIndexVariant entry = it.next();
                         out.println("_______________________");

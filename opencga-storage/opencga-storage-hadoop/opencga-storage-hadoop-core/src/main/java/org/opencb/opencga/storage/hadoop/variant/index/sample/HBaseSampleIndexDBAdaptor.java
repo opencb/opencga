@@ -11,30 +11,22 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
-import org.opencb.opencga.storage.core.utils.iterators.IntersectMultiKeyIterator;
-import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.index.sample.*;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -46,7 +38,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.index.core.IndexUtils.EMPTY_MASK;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.DEFAULT_LOADED_GENOTYPES;
 
 /**
  * Created on 14/05/18.
@@ -68,71 +59,8 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public VariantDBIterator iterator(Query query, QueryOptions options) {
-        return iterator(parseSampleIndexQuery(query));
-    }
-
-    @Override
-    public VariantDBIterator iterator(SampleIndexQuery query) {
-        return iterator(query, QueryOptions.empty());
-    }
-
-    @Override
-    public VariantDBIterator iterator(SampleIndexQuery query, QueryOptions options) {
-        Map<String, List<String>> samples = query.getSamplesMap();
-
-        if (samples.isEmpty()) {
-            throw new VariantQueryException("At least one sample expected to query SampleIndex!");
-        }
-        SampleIndexSchema schema = query.getSchema();
-        QueryOperation operation = query.getQueryOperation();
-
-        if (samples.size() == 1) {
-            String sample = samples.entrySet().iterator().next().getKey();
-            List<String> gts = query.getSamplesMap().get(sample);
-
-            if (gts.isEmpty()) {
-                // If empty, should find none. Return empty iterator
-                return VariantDBIterator.emptyIterator();
-            } else {
-                logger.info("Single sample indexes iterator : " + sample);
-                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts), schema);
-                return iterator.localLimitSkip(options);
-            }
-        }
-
-        List<VariantDBIterator> iterators = new ArrayList<>(samples.size());
-        List<VariantDBIterator> negatedIterators = new ArrayList<>(samples.size());
-
-        for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
-            String sample = entry.getKey();
-            List<String> gts = entry.getValue();
-
-            if (query.isNegated(sample)) {
-                if (!gts.isEmpty()) {
-                    negatedIterators.add(internalIterator(query.forSample(sample, gts), schema));
-                }
-                // Skip if GTs to query is empty!
-                // Otherwise, it will return ALL genotypes instead of none
-            } else {
-                if (gts.isEmpty()) {
-                    // If empty, should find none. Add empty iterator for this sample
-                    iterators.add(VariantDBIterator.emptyIterator());
-                } else {
-                    iterators.add(internalIterator(query.forSample(sample, gts), schema));
-                }
-            }
-        }
-        VariantDBIterator iterator;
-        if (operation.equals(QueryOperation.OR)) {
-            logger.info("Union of " + iterators.size() + " sample indexes");
-            iterator = new UnionMultiVariantKeyIterator(iterators);
-        } else {
-            logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
-            iterator = new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
-        }
-
-        return iterator.localLimitSkip(options);
+    public HBaseSampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine, String study) throws StorageEngineException {
+        return new HBaseSampleIndexBuilder(this, study, ((HadoopVariantStorageEngine) engine).getMRExecutor());
     }
 
     /**
@@ -142,7 +70,7 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
      * @param schema Sample index schema
      * @return SingleSampleIndexVariantDBIterator
      */
-    private SingleSampleIndexVariantDBIterator internalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
+    protected VariantDBIterator internalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
         String tableName = getSampleIndexTableName(query);
 
         try {
@@ -154,7 +82,8 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         }
     }
 
-    private RawSingleSampleIndexVariantDBIterator rawInternalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
+    @Override
+    protected RawSingleSampleIndexVariantDBIterator rawInternalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
         String tableName = getSampleIndexTableName(query);
 
         try {
@@ -181,10 +110,6 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     public HBaseVariantTableNameGenerator getTableNameGenerator() {
         return tableNameGenerator;
-    }
-
-    public VariantStorageMetadataManager getMetadataManager() {
-        return metadataManager;
     }
 
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
@@ -231,16 +156,6 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
-        return rawIterator(study, sample, null);
-    }
-
-    @Override
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        return rawIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
-    }
-
-    @Override
     public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
             throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
@@ -261,110 +176,8 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         });
     }
 
-    /**
-     * Partially processed iterator. Internal usage only.
-     *
-     * @param study study
-     * @param sample sample
-     * @return SingleSampleIndexVariantDBIterator
-     */
-    public RawSingleSampleIndexVariantDBIterator rawIterator(String study, String sample) {
-        Query query = new Query(VariantQueryParam.STUDY.key(), study).append(VariantQueryParam.SAMPLE.key(), sample);
-        SingleSampleIndexQuery sampleIndexQuery = parseSampleIndexQuery(query).forSample(sample);
-        return rawInternalIterator(sampleIndexQuery, sampleIndexQuery.getSchema());
-    }
-
     @Override
-    public CloseableIterator<SampleIndexVariant> rawIterator(Query query) throws IOException {
-        return rawIterator(parseSampleIndexQuery(query));
-    }
-
-    @Override
-    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query) throws IOException {
-        return rawIterator(query, new QueryOptions());
-    }
-
-    @Override
-    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
-        Map<String, List<String>> samples = query.getSamplesMap();
-
-        if (samples.isEmpty()) {
-            throw new VariantQueryException("At least one sample expected to query SampleIndex!");
-        }
-        SampleIndexSchema schema = query.getSchema();
-        QueryOperation operation = query.getQueryOperation();
-
-        if (samples.size() == 1) {
-            String sample = samples.entrySet().iterator().next().getKey();
-            List<String> gts = query.getSamplesMap().get(sample);
-
-            if (gts.isEmpty()) {
-                // If empty, should find none. Return empty iterator
-                return CloseableIterator.emptyIterator();
-            } else {
-                logger.info("Single sample indexes iterator");
-                RawSingleSampleIndexVariantDBIterator iterator = rawInternalIterator(query.forSample(sample, gts), schema);
-                return iterator.localLimitSkip(options);
-            }
-        }
-
-        List<RawSingleSampleIndexVariantDBIterator> iterators = new ArrayList<>(samples.size());
-        List<RawSingleSampleIndexVariantDBIterator> negatedIterators = new ArrayList<>(samples.size());
-
-        for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
-            String sample = entry.getKey();
-            List<String> gts = entry.getValue();
-
-            if (query.isNegated(sample)) {
-                if (!gts.isEmpty()) {
-                    negatedIterators.add(rawInternalIterator(query.forSample(sample, gts), schema));
-                }
-                // Skip if GTs to query is empty!
-                // Otherwise, it will return ALL genotypes instead of none
-            } else {
-                if (gts.isEmpty()) {
-                    // If empty, should find none. Add empty iterator for this sample
-                    iterators.add(RawSingleSampleIndexVariantDBIterator.emptyIterator());
-                } else {
-                    iterators.add(rawInternalIterator(query.forSample(sample, gts), schema));
-                }
-            }
-        }
-
-        final CloseableIterator<SampleIndexVariant> iterator;
-        if (operation.equals(QueryOperation.OR)) {
-            logger.info("Union of " + iterators.size() + " sample indexes");
-            iterator = new UnionMultiKeyIterator<>(
-                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR), iterators);
-        } else {
-            logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
-            iterator = new IntersectMultiKeyIterator<>(
-                    Comparator.comparing(SampleIndexVariant::getVariant, VariantDBIterator.VARIANT_COMPARATOR),
-                    iterators, negatedIterators);
-        }
-
-        return iterator.localLimitSkip(options);
-    }
-
-    public boolean isFastCount(SampleIndexQuery query) {
-        return query.getSamplesMap().size() == 1 && query.emptyAnnotationIndex() && query.emptyFileIndex();
-    }
-
-    public long count(List<Region> regions, String study, String sample, List<String> gts) {
-        return count(newParser().parse(regions, study, sample, gts));
-    }
-
-    @Override
-    public long count(SampleIndexQuery query) {
-        if (query.getSamplesMap().size() == 1 && query.getMendelianErrorSet().isEmpty()) {
-            String sample = query.getSamplesMap().keySet().iterator().next();
-            return count(query.forSample(sample));
-        } else {
-            return Iterators.size(iterator(query));
-        }
-    }
-
-    private long count(SingleSampleIndexQuery query) {
+    protected long count(SingleSampleIndexQuery query) {
         Collection<LocusQuery> locusQueries;
         if (CollectionUtils.isEmpty(query.getLocusQueries())) {
             // If no locus are defined, get a list of one null element to initialize the stream.
@@ -437,119 +250,6 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         return new HBaseToSampleIndexConverter(schema);
     }
 
-    public SampleIndexSchemaFactory getSchemaFactory() {
-        return schemaFactory;
-    }
-
-    public SampleIndexSchema getSchemaLatest(Object study) {
-        return schemaFactory.getSchemaLatest(toStudyId(study));
-    }
-
-    protected int toStudyId(Object study) {
-        int studyId;
-        if (study == null || study instanceof String && ((String) study).isEmpty()) {
-            Map<String, Integer> studies = metadataManager.getStudies(null);
-            if (studies.size() == 1) {
-                studyId = studies.values().iterator().next();
-            } else {
-                throw VariantQueryException.missingStudy(studies.keySet());
-            }
-        } else {
-            studyId = metadataManager.getStudyId(study);
-        }
-        return studyId;
-    }
-
-    protected List<String> getAllLoadedGenotypes(int study) {
-        List<String> allGts = metadataManager.getStudyMetadata(study)
-                .getAttributes()
-                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
-        if (allGts == null || allGts.isEmpty()) {
-            allGts = DEFAULT_LOADED_GENOTYPES;
-        }
-        return allGts;
-    }
-
-    /**
-     * Split region into regions that match with batches at SampleIndexTable.
-     *
-     * @param locusQuery Locus query to split
-     * @return List of regions.
-     */
-    protected static List<LocusQuery> splitLocusQuery(LocusQuery locusQuery) {
-        if (locusQuery == null || !locusQuery.getVariants().isEmpty() || locusQuery.getRegions().size() != 1) {
-            // Do not split
-            return Collections.singletonList(locusQuery);
-        }
-        Region region = locusQuery.getRegions().get(0);
-        List<LocusQuery> locusQueries;
-        if (region.getEnd() - region.getStart() < SampleIndexSchema.BATCH_SIZE) {
-            // Less than one batch. Do not split region
-            locusQueries = Collections.singletonList(locusQuery);
-        } else if (region.getStart() / SampleIndexSchema.BATCH_SIZE + 1 == region.getEnd() / SampleIndexSchema.BATCH_SIZE
-                && !startsAtBatch(region)
-                && !endsAtBatch(region)) {
-            // Consecutive partial batches. Do not split region
-            locusQueries = Collections.singletonList(locusQuery);
-        } else {
-            locusQueries = new ArrayList<>(3);
-//             Copy regions before modifying
-            region = new Region(region.getChromosome(), region.getStart(), region.getEnd());
-            Region chunkRegion = new Region(locusQuery.getChunkRegion().getChromosome(),
-                    locusQuery.getChunkRegion().getStart(),
-                    locusQuery.getChunkRegion().getEnd());
-            if (!startsAtBatch(region)) {
-                int splitPoint = SampleIndexSchema.getChunkStartNext(region.getStart());
-                Region startRegion = new Region(region.getChromosome(), region.getStart(), splitPoint - 1);
-                locusQueries.add(new LocusQuery(
-                        // Keep the exceeded start only for the first split.
-                        new Region(chunkRegion.getChromosome(), chunkRegion.getStart(), splitPoint),
-                        Collections.singletonList(startRegion),
-                        Collections.emptyList()));
-                region.setStart(splitPoint);
-                chunkRegion.setStart(splitPoint);
-            }
-            if (!endsAtBatch(region)) {
-                int splitPoint = SampleIndexSchema.getChunkStart(region.getEnd());
-                Region endRegion = new Region(region.getChromosome(), splitPoint, region.getEnd());
-                locusQueries.add(new LocusQuery(
-                        SampleIndexSchema.getChunkRegion(endRegion, 0),
-                        Collections.singletonList(endRegion),
-                        Collections.emptyList()
-                ));
-                region.setEnd(splitPoint - 1);
-                chunkRegion.setEnd(splitPoint);
-            }
-            locusQueries.add(new LocusQuery(
-                    chunkRegion,
-                    Collections.singletonList(region),
-                    Collections.emptyList()));
-            locusQueries.sort(LocusQuery::compareTo);
-        }
-        return locusQueries;
-    }
-
-    protected static boolean matchesWithBatch(Region region) {
-        return region == null || startsAtBatch(region) && endsAtBatch(region);
-    }
-
-    protected static boolean startsAtBatch(Region region) {
-        return region.getStart() % SampleIndexSchema.BATCH_SIZE == 0;
-    }
-
-    protected static boolean endsAtBatch(Region region) {
-        return region.getEnd() == Integer.MAX_VALUE || (region.getEnd() + 1) % SampleIndexSchema.BATCH_SIZE == 0;
-    }
-
-    public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, LocusQuery locusQuery) {
-        if (locusQuery == null
-                || (locusQuery.getVariants().isEmpty() && locusQuery.getRegions().size() == 1
-                && matchesWithBatch(locusQuery.getRegions().get(0)))) {
-            return new SampleIndexEntryFilter(query, null);
-        } else {
-            return new SampleIndexEntryFilter(query, locusQuery);
-        }
-    }
 
     public Scan parse(SingleSampleIndexQuery query, LocusQuery regions) {
         return parse(query, regions, false, false);
@@ -671,10 +371,6 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         logger.info("Caching = " + scan.getCaching());
     }
 
-    private int toSampleId(int studyId, String sample) {
-        return metadataManager.getSampleId(studyId, sample);
-    }
-
     public boolean createTableIfNeeded(int studyId, int version, ObjectMap options) {
         String sampleIndexTable = getSampleIndexTableName(studyId, version);
         try {
@@ -744,99 +440,6 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    public void updateSampleIndexSchemaStatus(int studyId, int version) throws StorageEngineException {
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        if (studyMetadata.getSampleIndexConfiguration(version).getStatus()
-                != StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING) {
-            // Update only if status is STAGING
-            return;
-        }
-        boolean allSamplesWithThisVersion = isAllSamplesWithThisVersion(studyId, version);
-        if (allSamplesWithThisVersion) {
-            metadataManager.updateStudyMetadata(studyId, sm -> {
-                sm.getSampleIndexConfiguration(version)
-                        .setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
-            });
-        } else {
-            logger.info("Not all samples had the sample index version {} on GENOTYPES and ANNOTATION", version);
-        }
-    }
-
-    public void deprecateSampleIndexSchemas(int studyId) throws StorageEngineException {
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        Set<Integer> deprecatables = new LinkedHashSet<>();
-        for (StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration : studyMetadata.getSampleIndexConfigurations()) {
-            if (sampleIndexConfiguration.getStatus() == StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE
-                    || sampleIndexConfiguration.getStatus() == StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING) {
-                deprecatables.add(sampleIndexConfiguration.getVersion());
-            }
-        }
-        StudyMetadata.SampleIndexConfigurationVersioned latest = studyMetadata.getSampleIndexConfigurationLatest(false);
-        if (latest == null) {
-            logger.info("No active sample index available for study '{}'", studyMetadata.getName());
-            return;
-        }
-        int latestVersion = latest.getVersion();
-        deprecatables.remove(latestVersion);
-        if (deprecatables.isEmpty()) {
-            logger.info("No sample indexes to deprecate for study '{}'", studyMetadata.getName());
-            return;
-        }
-
-        int totalSamples = 0;
-        int samplesNotInLatest = 0;
-        for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
-            // Only check indexed samples
-            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
-                totalSamples++;
-                if (!sampleWithThisVersion(sampleMetadata, latestVersion)) {
-                    samplesNotInLatest++;
-                }
-            }
-        }
-        if (samplesNotInLatest > 0) {
-            logger.warn("Unable to deprecate sample indexes. {} samples out of {} not in the latest sample index for study '{}'",
-                    samplesNotInLatest, totalSamples, studyMetadata.getName());
-            return;
-        }
-        logger.info("Deprecate sample indexes {} for study '{}'", deprecatables, studyMetadata.getName());
-        metadataManager.updateStudyMetadata(studyId, sm -> {
-            for (Integer version : deprecatables) {
-                sm.getSampleIndexConfiguration(version).setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.DEPRECATED);
-            }
-        });
-    }
-
-    private boolean isAllSamplesWithThisVersion(int studyId, int version) {
-        boolean allSamplesWithThisVersion = true;
-        for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
-            // Only check indexed samples
-            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
-                allSamplesWithThisVersion = sampleWithThisVersion(sampleMetadata, version);
-                if (!allSamplesWithThisVersion) {
-                    break;
-                }
-            }
-        }
-        return allSamplesWithThisVersion;
-    }
-
-    private boolean sampleWithThisVersion(SampleMetadata sampleMetadata, int version) {
-        // Check SampleIndex + SampleIndexAnnotation + FamilyIndex (if needed)
-        if (sampleMetadata.getSampleIndexStatus(version) != TaskMetadata.Status.READY) {
-            return false;
-        }
-        if (sampleMetadata.getSampleIndexAnnotationStatus(version) != TaskMetadata.Status.READY) {
-            return false;
-        }
-        if (sampleMetadata.isFamilyIndexDefined()) {
-            if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
-                return false;
-            }
-        }
-        return true;
     }
 
 

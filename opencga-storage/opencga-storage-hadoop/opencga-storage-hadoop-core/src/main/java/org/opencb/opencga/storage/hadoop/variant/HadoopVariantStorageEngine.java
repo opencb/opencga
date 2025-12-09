@@ -96,7 +96,7 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
@@ -449,7 +449,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexBuilder(getSampleIndexDBAdaptor(), study, getMRExecutor())
+        getSampleIndexDBAdaptor().newSampleIndexBuilder(this, study)
                 .buildSampleIndex(samples, options);
     }
 
