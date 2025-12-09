@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR;
 
 /**
@@ -24,19 +24,15 @@ public class HBaseSampleIndexBuilder extends SampleIndexBuilder {
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private Logger logger = LoggerFactory.getLogger(HBaseSampleIndexBuilder.class);
 
-    public HBaseSampleIndexBuilder(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, String study, MRExecutor mrExecutor) {
-        super(sampleIndexDBAdaptor, study);
+    public HBaseSampleIndexBuilder(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
+        super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.mrExecutor = mrExecutor;
         this.tableNameGenerator = sampleIndexDBAdaptor.getTableNameGenerator();
     }
 
-    public void buildSampleIndex(List<String> samples, ObjectMap options)
-            throws StorageEngineException {
-        buildSampleIndex(samples, options, options.getBoolean(OVERWRITE, false));
-    }
-
-    protected void buildSampleIndexBatch(int studyId, List<Integer> sampleIds, ObjectMap options)
+    @Override
+    protected void run(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
             throws StorageEngineException {
 
         sampleIndexDBAdaptor.createTableIfNeeded(studyId, schema.getVersion(), options);
@@ -56,14 +52,17 @@ public class HBaseSampleIndexBuilder extends SampleIndexBuilder {
             for (int i = 0; i < batches.size(); i++) {
                 List<Integer> subSet = batches.get(i);
                 logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
-                buildSampleIndexBatchMapreduce(studyId, subSet, options);
+                runBatch(studyId, schema, subSet, options);
+                postRunBatch(studyId, schema, subSet);
             }
         } else {
-            buildSampleIndexBatchMapreduce(studyId, sampleIds, options);
+            runBatch(studyId, schema, sampleIds, options);
+            postRunBatch(studyId, schema, sampleIds);
         }
     }
 
-    private void buildSampleIndexBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
+    @Override
+    protected void runBatch(int studyId, SampleIndexSchema schema, List<Integer> samples, ObjectMap options)
             throws StorageEngineException {
         options = new ObjectMap(options);
         options.put(SampleIndexDriver.SAMPLE_IDS, samples);
@@ -78,7 +77,6 @@ public class HBaseSampleIndexBuilder extends SampleIndexBuilder {
                         null,
                         options),
                 "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
-        postSampleIndexBuild(studyId, samples);
     }
 
 }

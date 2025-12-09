@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.core.variant.index.sample.query.*;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -55,13 +56,11 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
         return new SampleIndexQueryParser(metadataManager, schemaFactory);
     }
 
-    public abstract SampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine, String study) throws StorageEngineException;
+    public abstract SampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine) throws StorageEngineException;
 
-//    public abstract SampleIndexAnnotationLoader newSampleIndexAnnotationLoader(VariantStorageEngine engine, String study)
-//            throws StorageEngineException;
+    public abstract SampleIndexAnnotationLoader newSampleIndexAnnotationLoader(VariantStorageEngine engine) throws StorageEngineException;
 
-//    public abstract SampleIndexAnnotationLoader newSampleIndexFamilyLoader(VariantStorageEngine engine, String study)
-//            throws StorageEngineException;
+    public abstract FamilyIndexLoader newSampleIndexFamilyLoader(VariantStorageEngine engine) throws StorageEngineException;
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
@@ -128,6 +127,7 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
 
         return iterator.localLimitSkip(options);
     }
+
     protected abstract VariantDBIterator internalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema);
 
     protected abstract CloseableIterator<SampleIndexVariant> rawInternalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema);
@@ -146,7 +146,7 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
     /**
      * Partially processed iterator. Internal usage only.
      *
-     * @param study study
+     * @param study  study
      * @param sample sample
      * @return CloseableIterator<SampleIndexVariant>
      */

@@ -20,21 +20,22 @@ import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 public abstract class SampleIndexBuilder {
 
     protected final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    protected final String study;
     protected final VariantStorageMetadataManager metadataManager;
-    protected final SampleIndexSchema schema;
     private Logger logger = LoggerFactory.getLogger(SampleIndexBuilder.class);
 
-    public SampleIndexBuilder(SampleIndexDBAdaptor sampleIndexDBAdaptor, String study) {
+    public SampleIndexBuilder(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
-        this.study = study;
         metadataManager = sampleIndexDBAdaptor.getMetadataManager();
-        schema = sampleIndexDBAdaptor.getSchemaLatest(study);
     }
 
-
-    public void buildSampleIndex(List<String> samples, ObjectMap options, boolean overwrite)
+    public void buildSampleIndex(String study, List<String> samples, ObjectMap options)
             throws StorageEngineException {
+        buildSampleIndex(study, samples, options, options.getBoolean(OVERWRITE, false));
+    }
+
+    public void buildSampleIndex(String study, List<String> samples, ObjectMap options, boolean overwrite)
+            throws StorageEngineException {
+        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(study);
         int studyId = metadataManager.getStudyId(study);
         List<Integer> sampleIds;
         if (samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
@@ -77,12 +78,20 @@ public abstract class SampleIndexBuilder {
             logger.info("Run sample index build on " + finalSamplesList.size() + " samples");
         }
 
-        buildSampleIndexBatch(studyId, finalSamplesList, options);
+        run(studyId, schema, finalSamplesList, options);
     }
 
-    protected abstract void buildSampleIndexBatch(int studyId, List<Integer> sampleIds, ObjectMap options) throws StorageEngineException;
+    protected void run(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+            throws StorageEngineException {
+        // By default, run one single batch
+        runBatch(studyId, schema, sampleIds, options);
+        postRunBatch(studyId, schema, sampleIds);
+    }
 
-    protected void postSampleIndexBuild(int studyId, List<Integer> samples) throws StorageEngineException {
+    protected abstract void runBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+            throws StorageEngineException;
+
+    protected void postRunBatch(int studyId, SampleIndexSchema schema, List<Integer> samples) throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                 sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.READY, schema.getVersion());

@@ -48,7 +48,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
@@ -72,15 +72,18 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
+    private final HBaseSampleIndexAnnotationLoader sampleIndexAnnotationLoader;
     private final MRExecutor mrExecutor;
     private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
-                                                 MRExecutor mrExecutor, ObjectMap options, IOConnectorProvider ioConnectorProvider) {
+                                                 MRExecutor mrExecutor, ObjectMap options, IOConnectorProvider ioConnectorProvider,
+                                                 HBaseSampleIndexAnnotationLoader sampleIndexAnnotationLoader) {
         super(variantAnnotator, dbAdaptor, ioConnectorProvider);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
-        baseOptions = options;
+        this.baseOptions = options;
+        this.sampleIndexAnnotationLoader = sampleIndexAnnotationLoader;
     }
 
     @Override
@@ -221,10 +224,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
-                dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(),
-                metadataManager, mrExecutor);
 
         List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
 
@@ -245,7 +244,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
                 if (!samplesToUpdate.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
+                    sampleIndexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
                 }
             }
         }
@@ -271,7 +270,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         });
 
         ProjectMetadata.VariantAnnotationMetadata annotationMetadata = projectMetadata.getAnnotation().getSaved(name);
-
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
         String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(annotationMetadata.getId());

@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.variant.index.family.HBaseFamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +60,19 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public HBaseSampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine, String study) throws StorageEngineException {
-        return new HBaseSampleIndexBuilder(this, study, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    public HBaseSampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine) throws StorageEngineException {
+        return new HBaseSampleIndexBuilder(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    }
+
+    @Override
+    public HBaseSampleIndexAnnotationLoader newSampleIndexAnnotationLoader(VariantStorageEngine engine)
+            throws StorageEngineException {
+        return new HBaseSampleIndexAnnotationLoader(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    }
+
+    @Override
+    public HBaseFamilyIndexLoader newSampleIndexFamilyLoader(VariantStorageEngine engine) throws StorageEngineException {
+        return new HBaseFamilyIndexLoader(this, tableNameGenerator, ((HadoopVariantStorageEngine) engine).getMRExecutor());
     }
 
     /**

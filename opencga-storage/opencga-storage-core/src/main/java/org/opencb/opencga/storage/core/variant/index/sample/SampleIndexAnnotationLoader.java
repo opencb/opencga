@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample;
+package org.opencb.opencga.storage.core.variant.index.sample;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -6,10 +6,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,32 +15,19 @@ import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Status;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR;
 
 /**
  * Created by jacobo on 04/01/19.
  */
-public class SampleIndexAnnotationLoader {
+public abstract class SampleIndexAnnotationLoader {
 
-    private final HBaseVariantTableNameGenerator tableNameGenerator;
-    private final MRExecutor mrExecutor;
-    private final HBaseSampleIndexDBAdaptor sampleDBAdaptor;
-    private final VariantStorageMetadataManager metadataManager;
+    protected final VariantStorageMetadataManager metadataManager;
+    protected final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
 
-    public SampleIndexAnnotationLoader(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
-                                       VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor) {
-        this.tableNameGenerator = tableNameGenerator;
-        this.mrExecutor = mrExecutor;
-        this.metadataManager = metadataManager;
-        this.sampleDBAdaptor = new HBaseSampleIndexDBAdaptor(hBaseManager, tableNameGenerator, this.metadataManager);
-    }
-
-    public SampleIndexAnnotationLoader(HBaseSampleIndexDBAdaptor sampleDBAdaptor, MRExecutor mrExecutor) {
-        this.mrExecutor = mrExecutor;
-        this.sampleDBAdaptor = sampleDBAdaptor;
-        this.metadataManager = sampleDBAdaptor.getMetadataManager();
-        this.tableNameGenerator = sampleDBAdaptor.getTableNameGenerator();
+    public SampleIndexAnnotationLoader(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
+        this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
+        this.metadataManager = sampleIndexDBAdaptor.getMetadataManager();
     }
 
     public void updateSampleAnnotation(String study, List<String> samples, ObjectMap options)
@@ -74,7 +57,7 @@ public class SampleIndexAnnotationLoader {
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
             throws StorageEngineException {
-        int sampleIndexVersion = sampleDBAdaptor.getSchemaLatest(studyId).getVersion();
+        int sampleIndexVersion = sampleIndexDBAdaptor.getSchemaLatest(studyId).getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();
         List<String> alreadyAnnotated = new LinkedList<>();
@@ -110,50 +93,28 @@ public class SampleIndexAnnotationLoader {
             return;
         }
 
-        sampleDBAdaptor.createTableIfNeeded(studyId, sampleIndexVersion, options);
-
         if (finalSamplesList.size() < 20) {
             logger.info("Run sample index annotation on samples " + finalSamplesList);
         } else {
             logger.info("Run sample index annotation on " + finalSamplesList.size() + " samples");
         }
 
-        int batchSize = options.getInt(
-                SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR.key(),
-                SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR.defaultValue());
-//        if (finalSamplesList.size() < 10) {
-//            updateSampleAnnotationBatchMultiThread(studyId, finalSamplesList);
-//        }
-        if (finalSamplesList.size() > batchSize) {
-            int batches = (int) Math.round(Math.ceil(finalSamplesList.size() / ((float) batchSize)));
-            batchSize = (finalSamplesList.size() / batches) + 1;
-            logger.warn("Unable to run sample index annotation in one single MapReduce operation.");
-            logger.info("Split in {} jobs of {} samples each.", batches, batchSize);
-            for (int i = 0; i < batches; i++) {
-                List<Integer> subSet = finalSamplesList.subList(i * batchSize, Math.min((i + 1) * batchSize, finalSamplesList.size()));
-                logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
-                updateSampleAnnotationBatchMapreduce(studyId, subSet, sampleIndexVersion, options);
-            }
-        } else {
-            updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, sampleIndexVersion, options);
-        }
+        run(studyId, finalSamplesList, sampleIndexVersion, options);
 
         postAnnotationLoad(studyId, sampleIndexVersion);
     }
 
-    private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+    protected void run(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException {
-        options.put(SampleIndexAnnotationLoaderDriver.OUTPUT, sampleDBAdaptor.getSampleIndexTableNameLatest(studyId));
-        options.put(SampleIndexAnnotationLoaderDriver.SAMPLE_INDEX_VERSION, sampleIndexVersion);
-        mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
-                tableNameGenerator.getArchiveTableName(studyId),
-                tableNameGenerator.getVariantTableName(), studyId, samples, options),
-                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
-
-        postAnnotationBatchLoad(studyId, samples, sampleIndexVersion);
+        // By default, run all in a single batch
+        runBatch(studyId, samples, sampleIndexVersion, options);
+        postRunBatch(studyId, samples, sampleIndexVersion);
     }
 
-    public void postAnnotationBatchLoad(int studyId, List<Integer> samples, int version)
+    protected abstract void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+            throws StorageEngineException;
+
+    public void postRunBatch(int studyId, List<Integer> samples, int version)
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
@@ -164,6 +125,7 @@ public class SampleIndexAnnotationLoader {
 
     public void postAnnotationLoad(int studyId, int version)
             throws StorageEngineException {
-        sampleDBAdaptor.updateSampleIndexSchemaStatus(studyId, version);
+        sampleIndexDBAdaptor.updateSampleIndexSchemaStatus(studyId, version);
     }
+
 }

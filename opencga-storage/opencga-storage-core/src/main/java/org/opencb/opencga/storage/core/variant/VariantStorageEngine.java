@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -615,6 +616,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException("Unsupported deleteStats");
     }
 
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported getSampleIndexDBAdaptor");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
@@ -626,7 +631,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleIndexBuilder(this)
+                .buildSampleIndex(study, samples, options);
     }
 
     /**
@@ -640,7 +647,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex annotate");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleIndexAnnotationLoader(this)
+                .updateSampleAnnotation(study, samples, options);
     }
 
     /**
@@ -654,7 +663,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return List of trios used to index. Empty if there was nothing to do.
      */
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported familyIndex");
+        options = getMergedOptions(options);
+        return getSampleIndexDBAdaptor().newSampleIndexFamilyLoader(this)
+                .load(study, trios, options);
     }
 
     /**
