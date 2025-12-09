@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.file.FileLinkToolParams;
 import org.opencb.opencga.core.models.file.FileMoveParams;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.FileUriChangeRestParam;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
@@ -385,6 +386,20 @@ public class FileClient extends ParentClient {
     public RestResponse<File> upload(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("files", null, null, null, "upload", params, POST, File.class);
+    }
+
+    /**
+     * Update URIs of files that have been manually moved in disk.
+     * @param data Parameters to modify.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> updateUri(FileUriChangeRestParam data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("files", null, "uri", null, "update", params, POST, File.class);
     }
 
     /**

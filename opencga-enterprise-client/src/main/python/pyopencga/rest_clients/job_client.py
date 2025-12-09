@@ -283,7 +283,8 @@ class Job(_ParentRestClient):
         Execute an analysis from a custom binary.
         PATH: /{apiVersion}/jobs/tool/run
 
-        :param dict data: Workflow tool run parameters. (REQUIRED)
+        :param dict data: Container image to be executed and its requirements.
+            (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the

@@ -22,13 +22,13 @@ import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.externalTool.DeprecatedWorkflowRunParams;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.workflow.DeprecatedWorkflowUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -150,7 +150,7 @@ public class WorkflowClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> run(DeprecatedWorkflowRunParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> run(WorkflowParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("workflows", null, null, null, "run", params, POST, Job.class);
