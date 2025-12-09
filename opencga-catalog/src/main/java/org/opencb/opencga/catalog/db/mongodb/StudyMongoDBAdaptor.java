@@ -61,6 +61,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
@@ -1809,6 +1810,62 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 action.accept(catalogDBIterator.next());
             }
         }
+    }
+
+    @Override
+    public void updateWorkspaceUri(String oldBaseUri, String newBaseUri) throws CatalogParameterException {
+        String fixedOldBaseUri = fixBaseUri(oldBaseUri);
+        String fixedNewBaseUri = fixBaseUri(newBaseUri);
+
+        if (fixedOldBaseUri.equals(fixedNewBaseUri)) {
+            logger.info("Base URI '{}' is the same as '{}'. Nothing to update.", fixedOldBaseUri, fixedNewBaseUri);
+            return;
+        }
+
+        // Filter: documents where uri starts with fixedOldBaseUri
+        Bson filter = Filters.regex("uri", Pattern.compile("^" + fixedOldBaseUri));
+
+        // Aggregation pipeline for the update
+        Document replaceOneStage = new Document("$replaceOne",
+                new Document("input", "$uri")
+                        .append("find", fixedOldBaseUri)
+                        .append("replacement", fixedNewBaseUri)
+        );
+
+        List<Document> setStage = Collections.singletonList(new Document("$set",
+                new Document("uri", replaceOneStage)
+        ));
+
+        try {
+            runTransaction(clientSession -> {
+                DataResult update = studyCollection.updateWithPipeline(clientSession, filter, setStage,
+                        new QueryOptions(MongoDBCollection.MULTI, true));
+                deletedStudyCollection.updateWithPipeline(clientSession, filter, setStage, new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogFileDBAdaptor().updateWorkspaceUri(clientSession, fixedOldBaseUri, fixedNewBaseUri);
+
+                logger.info("Organization '{}': Updated URI from {} Study documents", dbAdaptorFactory.getOrganizationId(),
+                        update.getNumUpdated());
+                return update;
+            });
+        } catch (CatalogException e) {
+            logger.error("Could not update base URI from '{}' to '{}': {}", oldBaseUri, newBaseUri, e.getMessage(), e);
+        }
+    }
+
+    private String fixBaseUri(String uri) throws CatalogParameterException {
+        if (StringUtils.isEmpty(uri)) {
+            throw new CatalogParameterException("URI cannot be empty");
+        }
+        if (uri.startsWith("file://")) {
+            return uri;
+        }
+        if (!uri.startsWith("/")) {
+            throw new CatalogParameterException("URI '" + uri + "' does not start with '/' or 'file://'");
+        }
+        if (!uri.endsWith("/")) {
+            uri += "/";
+        }
+        return "file://" + uri;
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
