@@ -127,6 +127,56 @@ class Affymetrix(BaseProcessor):
                )
         self.run_command(cmd)
 
+        ## 3.1. Execute apt-genotype-axiom, example:
+        cmd = (["apt-genotype-axiom"]
+               + ["--arg-file", index_dir + "/Axiom_KU8_96orMore_Step1.r2.apt-genotype-axiom.AxiomGT1.apt2.xml"]
+               + ["--analysis-files-path", index_dir]
+               + ["--out-dir", str(self.output / "step1" / "SMN")]
+               + ["--dual-channel-normalization", "true"]
+               # + ["--table-output", "false"]
+               + ["--cel-files", str(self.output / cel_list2_path.name)]
+               # + ["--artifact-reduction-output-trustcheck", "true"]
+               ## Additional parameters:
+               + ["--genotyping-node:snp-priors-input-file", index_dir + "/Axiom_KU8.r2.AxiomGT1.models"]
+               + ["--probeset-ids", index_dir + "/Axiom_KU8.r2.step1.ps"]
+               + ["--chip-type", "Axiom_KU8"]
+               + ["--artifact-reduction-clip", "0.4"]
+               + ["--artifact-reduction-open", "2"]
+               + ["--artifact-reduction-close", "2"]
+               + ["--artifact-reduction-fringe", "4"]
+               + ["--artifact-reduction-cc", "2"]
+               + ["--sketch-target-scale-value", "1000"]
+               + ["--sketch-size", "50000"]
+               + ["--sketch-target-input-file", index_dir + "/Axiom_KU8.r2.AxiomGT1.sketch"]
+               + ["--genotyping-node:brlmmp-CM", "1"]
+               + ["--genotyping-node:brlmmp-bins", "100"]
+               + ["--genotyping-node:brlmmp-mix", "1"]
+               + ["--genotyping-node:brlmmp-bic", "2"]
+               + ["--genotyping-node:brlmmp-lambda", "1.0"]
+               + ["--genotyping-node:brlmmp-HARD", "3"]
+               + ["--genotyping-node:brlmmp-SB", "0.75"]
+               + ["--genotyping-node:brlmmp-transform", "MVA"]
+               + ["--genotyping-node:brlmmp-copyqc", "0.00000"]
+               + ["--genotyping-node:brlmmp-wobble", "0.05"]
+               + ["--genotyping-node:brlmmp-MS", "0.15"]
+               + ["--genotyping-node:brlmmp-copytype", "-1"]
+               + ["--genotyping-node:brlmmp-clustertype", "2"]
+               + ["--genotyping-node:brlmmp-ocean", "0.00001"]
+               + ["--genotyping-node:brlmmp-CSepPen", "0.1"]
+               + ["--genotyping-node:brlmmp-CSepThr", "4"]
+               + ["--cdf-file", "Axiom_KU8.r2.cdf"]
+               + ["--special-snps", index_dir + "/Axiom_KU8.r2.specialSNPs"]
+               + ["--x-probes-file", index_dir + "/Axiom_KU8.r2.chrXprobes"]
+               + ["--y-probes-file", index_dir + "/Axiom_KU8.r2.chrYprobes"]
+               + ["--igender-female-threshold", "0.65"]
+               + ["--igender-male-threshold", "0.95"]
+               + ["--summaries-only", "false"]
+               + ["--summaries", "true"]
+               + ["--summary-a5-output", "true"]
+               + ["--report", "true"]
+               )
+        self.run_command(cmd)
+
         ## 4. Execute apt-genotype-axiom, example:
         cmd = (["apt-genotype-axiom"]
                + ["--arg-file", index_dir + "/Axiom_KU8_96orMore_Step2.r2.apt-genotype-axiom.mm.SnpSpecificPriors.AxiomGT1.apt2.xml"]
@@ -335,6 +385,32 @@ class Affymetrix(BaseProcessor):
                + ["--export-chr-shortname", "true"])
         self.run_command(cmd)
 
+        """
+            apt2-smn-ab --smn-ab-probesets /home/imedina/projects/thermofisher/pre-marital/axiom-ku8/r2/Axiom_KU8.r2.SMN.AB_probesets.txt --summary-a5-file step1/SMN/AxiomGT1.summary.a5  --out-dir /tmp/comeon
+        """
+        ## Implement this command
+        cmd = (["apt2-smn-ab"]
+               + ["--smn-ab-probesets", index_dir + "/Axiom_KU8.r2.SMN.AB_probesets.txt"]
+               + ["--summary-a5-file", str(self.output / "step2" / "summary" / "AxiomGT1.summary.a5")]
+               + ["--out-dir", str(self.output / "step2" / "SMN")])
+        self.run_command(cmd)
+
+        """
+            apt2-smn-status --qc-gt-report step1/SMN/AxiomGT1.report.txt --qc-cn-report step2/cn/AxiomCNVMix.report.txt --smn-cn-regions step2/cn/AxiomCNVMix.cnregioncalls.txt --smn-ab-report /tmp/comeon/SMN_ABreport.txt --recommended-ps step2/SNPolisher/Recommended.ps --blob-folder step2/AxiomAnalysisSuiteData/ --carrier-thresholds /home/imedina/projects/thermofisher/pre-marital/axiom-ku8/r2/Axiom_KU8.r2.SMN.carrier_thresholds.txt --silent-marker-file /home/imedina/projects/thermofisher/pre-marital/axiom-ku8/r2/Axiom_KU8.r2.SMN.snplist.txt --output-dir /tmp/comeon/ --qc-geno-results apt-geno-qc-axiom.txt
+        """
+        ## Implement this command
+        cmd = (["apt2-smn-status"]
+               + ["--qc-gt-report", str(self.output / "step1" / "SMN" / "AxiomGT1.report.txt")]
+               + ["--qc-cn-report", str(self.output / "step2" / "cn" / "AxiomCNVMix.report.txt")]
+               + ["--smn-cn-regions", str(self.output / "step2" / "cn" / "AxiomCNVMix.cnregioncalls.txt")]
+               + ["--smn-ab-report", str(self.output / "step2" / "SMN" / "SMN_ABreport.txt")]
+               + ["--recommended-ps", str(self.output / "step2" / "SNPolisher" / "Recommended.ps")]
+               + ["--blob-folder", str(self.output / "step2" / "AxiomAnalysisSuiteData")]
+               + ["--carrier-thresholds", index_dir + "/Axiom_KU8.r2.SMN.carrier_thresholds.txt"]
+               + ["--silent-marker-file", index_dir + "/Axiom_KU8.r2.SMN.snplist.txt"]
+               + ["--output-dir", str(self.output / "step2" / "SMN")]
+               + ["--qc-geno-results", str(self.output / "apt-geno-qc-axiom.txt")])
+        self.run_command(cmd)
 
         ## 4. Call to post_process
         # self.post_process()

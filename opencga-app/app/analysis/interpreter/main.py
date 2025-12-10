@@ -2,15 +2,11 @@
 import argparse
 import json
 import logging
+import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
 from interpreter import Interpreter
-
-# Define global constants
-# VALID_STEPS = ["quality-control", "alignment", "variant-calling"]
-# SENTINEL = "DONE"
 
 # Define global logger
 outdir = None
@@ -21,39 +17,19 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Pipeline runner", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    ## --- index command ---
-    # prepare_parser = subparsers.add_parser("prepare", help="Index the reference genome")
-    # prepare_parser.add_argument("-r", "--reference-genome", required=True, help="Path or URL to the reference genome in FASTA format")
-    # prepare_parser.add_argument("-i", "--indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2,affy", help="Comma-separated list of indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
-    # prepare_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    # prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set console logging level")
-    # prepare_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, index subfolders will be created")
-
-    ## --- genomics command ---
+    ## interpreter command ---
     run_parser = subparsers.add_parser("interpreter", help="Align reads to reference genome and call variants")
     run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
-    run_parser.add_argument("-s", "--sample", help="Sample ID")
     # run_parser.add_argument("--samples-file", help="File containing samples to be processed, one per line. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-c", "--case", help="Case ID")
+    run_parser.add_argument("--sample", help="Sample ID")
     run_parser.add_argument("-s", "--study", help="Pipeline step to execute")
     run_parser.add_argument("--organization", help="OpenCGA user")
     run_parser.add_argument("-u", "--user", help="OpenCGA user")
     run_parser.add_argument("--password", help="OpenCGA user")
     run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
     run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
-
     return parser.parse_args(argv)
-
-# def prepare_step_dir(base_outdir: Path, step: str):
-#     step_dir = base_outdir / step
-#     step_dir.mkdir(parents=True, exist_ok=True)
-#     return step_dir
-#
-# def mark_completed(step_dir: Path):
-#     (step_dir / SENTINEL).write_text(f"Completed: {datetime.now().isoformat()}Z\n")
-#
-# def is_completed(step_dir: Path):
-#     return (step_dir / SENTINEL).is_file()
 
 def create_output_dir(args):
     global outdir
@@ -103,14 +79,24 @@ def load_pipeline(args):
         return 1
 
     ## Parse CLI parameters and set in pipeline
-    if args.organization:
-        pipeline.get("opencga", {}).update({"organization": args.organization})
-
     if args.user:
         pipeline.get("opencga", {}).update({"user": args.user})
 
-    return pipeline
+    if args.organization:
+        pipeline.get("opencga", {}).update({"organization": args.organization})
 
+    if args.study:
+        logger.debug("")
+        pipeline.get("opencga", {}).update({"study": args.study})
+    else:
+        study_id = os.getenv("OPENCGA_STUDY")
+        if study_id:
+            logger.debug("Study parameter not provided, retrieving OPENCGA_STUDY from environment variable")
+            pipeline.get("opencga", {}).update({"study": args.organization})
+        else:
+            logger.debug("Using study parameter from pipeline: %s", pipeline.get("opencga", {}).get({"study": ""}))
+
+    return pipeline
 
 def interpreter(args):
     ## 1. Load pipeline configuration
@@ -120,8 +106,7 @@ def interpreter(args):
 
     ## 2. Create Interpreter instance
     interpreter = Interpreter(pipeline, outdir, logger)
-    interpreter.execute(args.case, args.study, args)
-
+    interpreter.execute(args.case, args)
 
 
 def main(argv=None):

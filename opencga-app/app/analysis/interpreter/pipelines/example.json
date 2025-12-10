@@ -58,7 +58,7 @@
       "id": "query1",
       "filters": {
         "genes": ["BRCA1", "BRCA2", "TP53"],
-        "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.01"]
+        "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.001"]
       }
     },
     {
