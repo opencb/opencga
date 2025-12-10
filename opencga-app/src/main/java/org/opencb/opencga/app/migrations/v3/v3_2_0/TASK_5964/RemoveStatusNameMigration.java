@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "remove_status_name", description = "Remove status name #TASK-5964", version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240612,
-        deprecatedSince = "4.0.0")
+        deprecatedSince = "5.0.0")
 public class RemoveStatusNameMigration extends MigrationTool {
 
     @Override

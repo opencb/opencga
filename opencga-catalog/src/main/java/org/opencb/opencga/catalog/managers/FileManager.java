@@ -4073,6 +4073,101 @@ public class FileManager extends AnnotationSetManager<File> {
         return result;
     }
 
+    public OpenCGAResult<File> updateFileUri(String studyStr, List<FileUriChangeParam> uriChangeParamList, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+
+        try {
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        } catch (CatalogException e) {
+            ObjectMap auditParams = new ObjectMap()
+                    .append("study", studyStr)
+                    .append("uriChangeParamList", uriChangeParamList)
+                    .append("token", token);
+            auditManager.audit(organizationId, userId, Enums.Action.CHANGE_FILE_URI, Enums.Resource.FILE, "", "",
+                    study.getFqn(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+            throw e;
+        }
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        List<Event> eventList = new LinkedList<>();
+
+        QueryOptions options = new QueryOptions(FileDBAdaptor.SKIP_MOVE_FILE, true);
+        OpenCGAResult<File> result = new OpenCGAResult<>();
+        for (FileUriChangeParam param : uriChangeParamList) {
+            ObjectMap auditParams = new ObjectMap()
+                    .append("study", studyStr)
+                    .append("uriChangeParam", param)
+                    .append("token", token);
+
+            URI oldUri;
+            URI newUri;
+            Path oldPath;
+            Path newPath;
+            try {
+                oldUri = UriUtils.createUri(param.getOriginal());
+                newUri = UriUtils.createUri(param.getUpdated());
+                oldPath = Paths.get(oldUri).toAbsolutePath();
+                newPath = Paths.get(newUri).toAbsolutePath();
+            } catch (URISyntaxException e) {
+                eventList.add(new Event(Event.Type.ERROR, "Could not move file from " + param.getOriginal() + " to "
+                        + param.getUpdated() + ": " + e.getMessage()));
+                auditManager.audit(organizationId, userId, Enums.Action.CHANGE_FILE_URI, Enums.Resource.FILE, "", "",
+                        study.getFqn(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+                continue;
+            }
+            String fileId = oldPath.toString();
+            String fileUuid = "";
+            try {
+//                if (Files.exists(oldPath)) {
+//                    throw new CatalogException("File " + param.getOriginal() + " still exists in the path.");
+//                }
+                if (Files.notExists(newPath)) {
+                    throw new CatalogException("File " + param.getUpdated() + " not found in the path.");
+                }
+
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(FileDBAdaptor.QueryParams.URI.key(), oldUri.toString());
+                OpenCGAResult<File> fileResult = getFileDBAdaptor(organizationId).get(query, INCLUDE_FILE_URI_PATH);
+                if (fileResult.getNumResults() == 0) {
+                    throw new CatalogException("File with URI " + param.getOriginal() + " not found in the study " + study.getFqn());
+                }
+                long fileUid = fileResult.first().getUid();
+                fileId = fileResult.first().getId();
+                fileUuid = fileResult.first().getUuid();
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.URI.key(), newUri.toString());
+                OpenCGAResult<?> oResult = getFileDBAdaptor(organizationId).update(fileUid, params, options);
+                if (oResult.getNumMatches() == 0) {
+                    throw new CatalogException("File with URI " + param.getOriginal() + " not found in the study " + study.getFqn());
+                }
+                if (oResult.getNumUpdated() == 0) {
+                    throw new CatalogException("File with URI " + param.getOriginal() + " not updated in the study " + study.getFqn());
+                }
+                result.append(oResult);
+
+                auditManager.audit(organizationId, userId, Enums.Action.CHANGE_FILE_URI, Enums.Resource.FILE, fileId, fileUuid,
+                        study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                eventList.add(new Event(Event.Type.ERROR, "Could not move file from " + param.getOriginal() + " to "
+                        + param.getUpdated() + ": " + e.getMessage()));
+                auditManager.audit(organizationId, userId, Enums.Action.CHANGE_FILE_URI, Enums.Resource.FILE, fileId, fileUuid,
+                        study.getFqn(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+        result.setEvents(eventList);
+
+        return result;
+    }
+
     private void checkHooks(File file, String fqn, HookConfiguration.Stage stage) throws CatalogException {
 
         Map<String, Map<String, List<HookConfiguration>>> hooks = this.configuration.getHooks();

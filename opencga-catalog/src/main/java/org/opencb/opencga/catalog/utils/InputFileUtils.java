@@ -199,7 +199,7 @@ public class InputFileUtils {
                     replacement = variable.getDefaultValue();
                 } else if (variable.isOutput()) {
                     replacement = outDir;
-                } else if (variable.getType() == ExternalToolVariable.WorkflowVariableType.FLAG) {
+                } else if (variable.getType() == ExternalToolVariable.ExternalToolVariableType.FLAG) {
                     replacement = "";
                 } else {
                     throw new CatalogException("Variable '" + variableName + "' is expected but could not be found in the params object "

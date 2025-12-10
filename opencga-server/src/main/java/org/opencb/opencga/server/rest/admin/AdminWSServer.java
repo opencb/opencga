@@ -287,6 +287,14 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/catalog/workspace/update")
+    @ApiOperation(value = "Update the OpenCGA Catalog workspace")
+    public Response workspaceUpdate(
+            @ApiParam(value = "JSON containing the workspace parameters", required = true) WorkspaceUpdateParams params) {
+        return run(() -> catalogManager.getAdminManager().updateWorkspace(params.getOldWorkspace(), params.getNewWorkspace(), token));
+    }
+
     //    @GET
 //    @Path("/audit/stats")
 //    @ApiOperation(value = "Get some stats from the audit database")

@@ -53,7 +53,8 @@ public class InterpretationUtilsTest {
         }
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
             if (value == ClinicalVariant.Status.NOT_REVIEWED || value == ClinicalVariant.Status.ARTIFACT
-                    || value == ClinicalVariant.Status.DISCARDED || value == ClinicalVariant.Status.REPORTED) {
+                    || value == ClinicalVariant.Status.VALIDATED || value == ClinicalVariant.Status.DISCARDED
+                    || value == ClinicalVariant.Status.REPORTED) {
                 assertEquals(0, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
             } else {
                 assertEquals(1, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));

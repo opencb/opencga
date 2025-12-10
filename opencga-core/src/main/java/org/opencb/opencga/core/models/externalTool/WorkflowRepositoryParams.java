@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.externalTool;
 
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowRepository;
+
 public class WorkflowRepositoryParams {
 
     private String name;

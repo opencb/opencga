@@ -32,10 +32,7 @@ import org.opencb.biodata.models.clinical.interpretation.MiniPubmed;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -892,6 +889,28 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         logger.debug("Clinical Analysis {}({}) deleted", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
+    }
+
+    void filePathHasChanged(ClientSession clientSession, long studyUid, String oldFilePath, String newFilePath)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        // Change path in files.path
+        Bson filesBsonQuery = Filters.and(
+                Filters.eq(STUDY_UID.key(), studyUid),
+                Filters.eq(FILES_PATH.key(), oldFilePath)
+        );
+        // Replace the id for the new one
+        UpdateDocument clinicalUpdate = new UpdateDocument();
+        clinicalUpdate.getSet().append(FILES.key() + ".$." + FileDBAdaptor.QueryParams.PATH.key(), newFilePath);
+        transactionalUpdate(clientSession, studyUid, filesBsonQuery, clinicalUpdate);
+
+        // Change path in reportedFiles.path
+        Bson reportFilesQuery = Filters.and(
+                Filters.eq(STUDY_UID.key(), studyUid),
+                Filters.eq(REPORTED_FILES.key() + "." + FileDBAdaptor.QueryParams.PATH.key(), oldFilePath)
+        );
+        UpdateDocument reportUpdate = new UpdateDocument();
+        reportUpdate.getSet().append(REPORTED_FILES.key() + ".$." + FileDBAdaptor.QueryParams.PATH.key(), newFilePath);
+        transactionalUpdate(clientSession, studyUid, reportFilesQuery, reportUpdate);
     }
 
     void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file)

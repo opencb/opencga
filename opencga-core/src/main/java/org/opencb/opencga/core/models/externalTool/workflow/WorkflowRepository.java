@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.externalTool;
+package org.opencb.opencga.core.models.externalTool.workflow;
 
 public class WorkflowRepository {
 

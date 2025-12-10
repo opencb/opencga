@@ -30,6 +30,7 @@ class RClientGenerator(RestClientGenerator):
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
+            'AI': 'AI',
             'Meta': 'Meta',
             'Analysis - CVDB': 'CVDB',
             'GA4GH': 'GA4GH',

@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "addFailedLoginAttemptsMigration", description = "Add failedAttempts to User #TASK-6013", version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240419, patch = 2,
-        deprecatedSince = "4.0.0")
+        deprecatedSince = "5.0.0")
 public class UserBanMigration extends MigrationTool {
 
     @Override

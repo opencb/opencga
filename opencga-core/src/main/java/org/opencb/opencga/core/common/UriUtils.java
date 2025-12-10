@@ -54,6 +54,10 @@ public class UriUtils {
         if (hasSchema(input)) {
             // Already a URI. Assume it is already escaped.
             // Avoid double code escaping
+            // Replace file:/ with file:/// when necessary
+            if (input.startsWith("file:/") && !input.startsWith("file://")) {
+                input = "file:///" + input.substring("file:/".length());
+            }
             sourceUri = new URI(input);
         } else {
             // Assume direct path name.
@@ -91,6 +95,10 @@ public class UriUtils {
             if (hasSchema(input)) {
                 // Already a URI. Assume it is already escaped.
                 // Avoid double code escaping
+                // Replace file:/ with file:/// when necessary
+                if (input.startsWith("file:/") && !input.startsWith("file://")) {
+                    input = "file:///" + input.substring("file:/".length());
+                }
                 return new URI(input);
             } else {
                 return new URI(null, input, null).normalize();

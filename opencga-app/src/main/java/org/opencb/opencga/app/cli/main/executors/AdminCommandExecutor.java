@@ -19,6 +19,7 @@ import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
+import org.opencb.opencga.core.models.admin.WorkspaceUpdateParams;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
@@ -68,6 +69,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "catalog-install":
                 queryResponse = installCatalog();
+                break;
+            case "catalog-workspace-update":
+                queryResponse = updateCatalogWorkspace();
                 break;
             case "organizations-list":
                 queryResponse = listOrganizations();
@@ -143,6 +147,32 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), InstallationParams.class);
         }
         return openCGAClient.getAdminClient().installCatalog(installationParams);
+    }
+
+    private RestResponse<ObjectMap> updateCatalogWorkspace() throws Exception {
+        logger.debug("Executing updateCatalogWorkspace in Admin command line");
+
+        AdminCommandOptions.UpdateCatalogWorkspaceCommandOptions commandOptions = adminCommandOptions.updateCatalogWorkspaceCommandOptions;
+
+        WorkspaceUpdateParams workspaceUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/workspace/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            workspaceUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkspaceUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "oldWorkspace", commandOptions.oldWorkspace, true);
+            putNestedIfNotEmpty(beanParams, "newWorkspace", commandOptions.newWorkspace, true);
+
+            workspaceUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), WorkspaceUpdateParams.class);
+        }
+        return openCGAClient.getAdminClient().updateCatalogWorkspace(workspaceUpdateParams);
     }
 
     private RestResponse<String> listOrganizations() throws Exception {

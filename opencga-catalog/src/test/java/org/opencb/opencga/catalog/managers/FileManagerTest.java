@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -64,6 +65,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -276,7 +278,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void filterByFormatTest() throws CatalogException {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "plain");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
@@ -290,12 +292,12 @@ public class FileManagerTest extends AbstractManagerTest {
         // Case sensitive in upper case
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^PLA/");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
 
         // Case insensitive search
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^pla/i");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
     }
 
     @Test
@@ -1263,9 +1265,10 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFolder() throws Exception {
         Set<String> paths = fileManager.search(studyFqn, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(10, paths.size());
+        assertEquals(13, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
-                "data/d1/d2/d3/", "data/d1/d2/d3/d4/")));
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "RESOURCES/", "RESOURCES/clinical/", "RESOURCES/clinical/report/",
+                "RESOURCES/clinical/report/templates/")));
 
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = fileManager.createFolder(studyFqn, folderPath.toString(), true, null, QueryOptions.empty(), orgAdminToken1).first();
@@ -1275,9 +1278,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
         paths = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY), new QueryOptions(),
                 orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(12, paths.size());
+        assertEquals(15, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
-                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "data/new/", "data/new/folder/")));
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "RESOURCES/", "RESOURCES/clinical/", "RESOURCES/clinical/report/",
+                "RESOURCES/clinical/report/templates/", "data/new/", "data/new/folder/")));
 
         URI uri = fileManager.getUri(organizationId, folder);
         assertTrue(!catalogManager.getIoManagerFactory().get(uri).exists(uri));
@@ -1295,7 +1299,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
         Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(3, paths.size());
+        assertEquals(6, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
 //        assertTrue(paths.contains("analysis/"));    //analysis
@@ -1648,11 +1652,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("content"), true, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(28, fileTree.getNumResults());
-        assertEquals(28, countElementsInTree(fileTree.first()));
+        assertEquals(32, fileTree.getNumResults());
+        assertEquals(32, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), ownerToken);
-        assertEquals(18, fileTree.getNumResults());
+        assertEquals(19, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, ownerToken);
@@ -1673,10 +1677,10 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), ownerToken);
-        assertEquals(13, fileTree.getNumResults());
+        assertEquals(17, fileTree.getNumResults());
 
         fileTree = fileManager.getTree("phase2", ".", 5, new QueryOptions(), ownerToken);
-        assertEquals(3, fileTree.getNumResults());
+        assertEquals(7, fileTree.getNumResults());
     }
 
     @Test
@@ -1753,13 +1757,13 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.FILE, f.getType()));
         int numFiles = result.getNumResults();
-        assertEquals(4, numFiles);
+        assertEquals(5, numFiles);
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
-        assertEquals(10, numFolders);
+        assertEquals(13, numFolders);
 
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "");
         result = fileManager.search(studyFqn, query, null, ownerToken);
@@ -1769,7 +1773,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(14, result.getNumResults());
+        assertEquals(18, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -1780,7 +1784,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query("type", "FILE");
         query.put("size", "<=500");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(2, result.getNumResults());
+        assertEquals(3, result.getNumResults());
 
         List<String> sampleIds = catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(), "s_1,s_3,s_4"), null, ownerToken).getResults()
                 .stream()
@@ -1792,12 +1796,12 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
         query.put(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(3, result.getNumResults());
+        assertEquals(4, result.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, ownerToken);
         assertEquals(2, result.getNumResults());
-        assertEquals(14, result.getNumMatches());
+        assertEquals(18, result.getNumMatches());
     }
 //
 //    @Test
@@ -2330,7 +2334,7 @@ public class FileManagerTest extends AbstractManagerTest {
         for (ClinicalAnalysis clinicalAnalysis : search.getResults()) {
             assertEquals(0, clinicalAnalysis.getFiles().size());
             assertEquals("OPENCGA", clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getAuthor());
-            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove file references from case"));
+            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove 'files' references from case"));
         }
     }
 
@@ -2985,6 +2989,287 @@ public class FileManagerTest extends AbstractManagerTest {
         FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 10, ownerToken).first();
         assertEquals("updated by id", fileContent.getContent());
     }
+
+    /* ************************* Update URI tests **************************/
+    @Test
+    public void testUpdateFileUriWithFullFileUri() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        assertTrue(result.getEvents().isEmpty());
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals(newUri, updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithFileUriNoTripleSlash() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        String newUri = "file:/tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertTrue(result.getEvents().isEmpty());
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals("file:///tmp/renamed-file.txt", updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithAbsolutePath() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "/tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals("file:///tmp/renamed-file.txt", updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithRelativePath() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertFalse(result.getEvents().isEmpty());
+        assertTrue(result.getEvents().get(0).getMessage().contains("not found"));
+        assertEquals(0, result.getNumUpdated());
+    }
+
+    @Test
+    public void testUpdateFileUriWithOldUriVariations() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        String newUri = "file:///tmp/renamed-file.txt";
+
+        // Test with different old URI formats
+        String[] oldUriFormats = {
+                testFile.getUri().toString(),
+                testFile.getUri().toString().replace("file:///", "file:/"),
+                testFile.getUri().toString().replace("file:///", "/")
+        };
+
+        for (String oldUri : oldUriFormats) {
+            // Move file from origin to target
+            Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+            FileUriChangeParam param = new FileUriChangeParam()
+                    .setOriginal(oldUri)
+                    .setUpdated(newUri);
+
+            OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+            assertEquals(1, result.getNumUpdated());
+            File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+            assertEquals(newUri, updatedFile.getUri().toString());
+
+            // Reset for next iteration
+            Files.move(Paths.get("/tmp/renamed-file.txt"), Paths.get(testFile.getUri()), StandardCopyOption.REPLACE_EXISTING);
+            FileUriChangeParam resetParam = new FileUriChangeParam()
+                    .setOriginal(newUri)
+                    .setUpdated(testFile.getUri().toString());
+            fileManager.updateFileUri(studyFqn, Collections.singletonList(resetParam), ownerToken);
+        }
+    }
+
+    @Test
+    public void testUpdateMultipleFileUris() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create second test file
+        File testFile2 = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file2.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), false, ownerToken).first();
+
+
+        // Move files from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file1.txt"), StandardCopyOption.REPLACE_EXISTING);
+        Files.move(Paths.get(testFile2.getUri()), Paths.get("/tmp/renamed-file2.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        List<FileUriChangeParam> params = Arrays.asList(
+                new FileUriChangeParam()
+                        .setOriginal(testFile.getUri().toString())
+                        .setUpdated("file:///tmp/renamed-file1.txt"),
+                new FileUriChangeParam()
+                        .setOriginal(testFile2.getUri().toString())
+                        .setUpdated("file:///tmp/renamed-file2.txt")
+        );
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, params, ownerToken);
+        assertEquals(2, result.getNumUpdated());
+        result = fileManager.get(studyFqn, Arrays.asList(testFile.getUuid(), testFile2.getUuid()),
+                FileManager.INCLUDE_FILE_URI_PATH, ownerToken);
+
+        File updatedFile1 = result.getResults().stream()
+                .filter(f -> f.getId().equals("data:renamed-file1.txt"))
+                .findFirst().orElse(null);
+        assertNotNull(updatedFile1);
+        assertEquals("file:///tmp/renamed-file1.txt", updatedFile1.getUri().toString());
+        assertEquals("renamed-file1.txt", updatedFile1.getName());
+
+        File updatedFile2 = result.getResults().stream()
+                .filter(f -> f.getId().equals("data:renamed-file2.txt"))
+                .findFirst().orElse(null);
+        assertNotNull(updatedFile2);
+        assertEquals("file:///tmp/renamed-file2.txt", updatedFile2.getUri().toString());
+        assertEquals("renamed-file2.txt", updatedFile2.getName());
+    }
+
+    @Test
+    public void testUpdateFileUriWithSampleReference() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create a sample that references the file
+        Sample sample = catalogManager.getSampleManager().create(studyFqn, new Sample()
+                .setId("test-sample"), INCLUDE_RESULT, ownerToken).first();
+
+        // Associate file with sample
+        catalogManager.getFileManager().update(studyFqn, testFile.getId(),
+                new org.opencb.opencga.core.models.file.FileUpdateParams()
+                        .setSampleIds(Collections.singletonList(sample.getId())),
+                QueryOptions.empty(), ownerToken);
+
+        // Move files from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        // Verify sample still references the file correctly
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), ownerToken);
+
+        assertFalse(sampleResult.getResults().isEmpty());
+        Sample retrievedSample = sampleResult.first();
+
+        // Check if any file references contain the new filename
+        boolean foundUpdatedFile = retrievedSample.getFileIds().stream()
+                .anyMatch(fileId -> fileId.contains("renamed-file.txt"));
+        assertTrue("Sample should reference the renamed file", foundUpdatedFile);
+    }
+
+    @Test
+    public void testUpdateFileUriWithClinicalAnalysisReference() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create necessary entities for clinical analysis
+        Sample sample = catalogManager.getSampleManager().create(studyFqn, new Sample()
+                .setId("test-sample"), INCLUDE_RESULT, ownerToken).first();
+
+        Individual individual = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("test-individual"),
+                Collections.singletonList(sample.getId()), INCLUDE_RESULT, ownerToken).first();
+
+        // Create clinical analysis that references the file
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("test-clinical")
+                .setProband(individual)
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setFiles(Collections.singletonList(testFile));
+
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis,
+                QueryOptions.empty(), ownerToken);
+
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        // Verify clinical analysis references are updated
+        OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager()
+                .search(studyFqn, new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), "test-clinical"),
+                        QueryOptions.empty(), ownerToken);
+
+        assertFalse(clinicalResult.getResults().isEmpty());
+        ClinicalAnalysis retrievedClinical = clinicalResult.first();
+
+        // Check if files contain the updated filename
+        boolean foundUpdatedFile = retrievedClinical.getFiles().stream()
+                .anyMatch(file -> file.getName().equals("renamed-file.txt"));
+        assertTrue("Clinical analysis should reference the renamed file", foundUpdatedFile);
+    }
+
+    @Test
+    public void testUpdateFileUriInvalidFileId() throws CatalogException {
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal("file:///old/path/file.txt")
+                .setUpdated("file:///new/path/file.txt");
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertEquals(1, result.getEvents().size());
+        assertTrue(result.getEvents().get(0).getMessage().contains("not found"));
+    }
+
+    /* ****************************** End Update URI tests *******************************/
 
     //    @Test
 //    public void testIndex() throws Exception {

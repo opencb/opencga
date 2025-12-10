@@ -15,7 +15,8 @@ import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 
 @Migration(id = "addUsersToMembersOrgConfiguration__task_7545",
         description = "Add addToStudyMembers #7545", version = "4.1.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250402)
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250402,
+        deprecatedSince = "5.0.0")
 public class AddUsersToMembersGroupMigration extends MigrationTool {
 
     @Override
