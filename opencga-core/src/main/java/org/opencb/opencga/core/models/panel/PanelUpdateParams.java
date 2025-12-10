@@ -69,6 +69,12 @@ public class PanelUpdateParams {
         this.attributes = attributes;
     }
 
+    public PanelUpdateParams(Panel panel) {
+        this(panel.getId(), panel.getName(), panel.getDescription(), panel.getAuthor(), panel.getSource(),
+                panel.getCategories(), panel.getTags(), panel.getDisorders(), panel.getVariants(), panel.getGenes(),
+                panel.getRegions(), panel.getStrs(), panel.getStats(), panel.getAttributes());
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));

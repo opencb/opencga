@@ -32,15 +32,13 @@ import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -129,38 +127,38 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
     }
 
     private void tiering() throws Exception {
-        ClinicalCommandOptions.TieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-
-        // Prepare analysis parameters and config
-        String token = cliOptions.commonOptions.token;
-
-        String studyId = cliOptions.study;
-        String clinicalAnalysisId = cliOptions.clinicalAnalysis;
-
-        if (CollectionUtils.isEmpty(cliOptions.panels)) {
-            throw new ToolException("Missing disease panel IDs");
-        }
-//        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
-
-        ClinicalProperty.Penetrance penetrance = cliOptions.penetrance;
-
-        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-//        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
-
-        Path outDir = Paths.get(cliOptions.outdir);
-
-        // Execute tiering analysis
-        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-        tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-        tieringAnalysis.setStudyId(studyId)
-                .setClinicalAnalysisId(clinicalAnalysisId)
-                .setDiseasePanelIds(cliOptions.panels)
-                .setPenetrance(penetrance)
-                .setConfig(config);
-        tieringAnalysis.setPrimary(cliOptions.primary);
-        tieringAnalysis.start();
+        throw new Exception("Not yet implemented");
+//        ClinicalCommandOptions.TieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;
+//        ObjectMap params = new ObjectMap();
+//        params.putAll(cliOptions.commonOptions.params);
+//
+//        // Prepare analysis parameters and config
+//        String token = cliOptions.commonOptions.token;
+//
+//        String studyId = cliOptions.study;
+//        String clinicalAnalysisId = cliOptions.clinicalAnalysis;
+//
+//        if (CollectionUtils.isEmpty(cliOptions.panels)) {
+//            throw new ToolException("Missing disease panel IDs");
+//        }
+////        List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
+//
+//        ClinicalProperty.Penetrance penetrance = cliOptions.penetrance;
+//
+////        config.setSkipUntieredVariants(!cliOptions.includeUntieredVariants);
+//
+//        Path outDir = Paths.get(cliOptions.outdir);
+//
+//        // Execute tiering analysis
+//        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
+//        tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
+//        tieringAnalysis.setStudyId(studyId)
+//                .setClinicalAnalysisId(clinicalAnalysisId)
+//                .setDiseasePanelIds(cliOptions.panels)
+//                .setPenetrance(penetrance)
+//                .setConfig(config);
+//        tieringAnalysis.setPrimary(cliOptions.primary);
+//        tieringAnalysis.start();
     }
 
     private void team() throws Exception {

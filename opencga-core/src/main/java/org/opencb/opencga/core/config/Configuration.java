@@ -61,6 +61,7 @@ public class Configuration {
     private Email email;
     private Catalog catalog;
     private Analysis analysis;
+    @Deprecated
     private Panel panel;
 
     private ServerConfiguration server;
@@ -453,12 +454,14 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Panel getPanel() {
         return panel;
     }
 
+    @Deprecated
     public Configuration setPanel(Panel panel) {
-        this.panel = panel;
+        reportUnusedField("configuration.yml#panel", panel);
         return this;
     }
 

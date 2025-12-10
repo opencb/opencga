@@ -17,26 +17,24 @@
 package org.opencb.opencga.analysis.clinical.tiering;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.tiering.TieringClinicalVariantCreator;
+import org.opencb.biodata.tools.clinical.tiering.TieringConfiguration;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysisExecutor;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -56,95 +54,29 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.*;
 
+@Deprecated
 @ToolExecutor(id = "opencga-local",
         tool = TieringInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
-    private String studyId;
-    private String clinicalAnalysisId;
-    private List<DiseasePanel> diseasePanels;
-    private ClinicalProperty.Penetrance penetrance;
-    private TieringInterpretationConfiguration config;
+    public static final String REGION = "REGION";
+    private String study;
+    private ClinicalAnalysis clinicalAnalysis;
+    private TieringConfiguration tieringConfiguration;
 
-    private String sessionId;
+    private String token;
     private ClinicalInterpretationManager clinicalInterpretationManager;
-
-    private final static Query dominantQuery;
-    private final static Query recessiveQuery;
-    private final static Query mitochondrialQuery;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    static {
-        recessiveQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G + ":AFR<0.01;" + ParamConstants.POP_FREQ_1000G + ":AMR<0.01;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.01;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.01;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;"
-                        + "GNOMAD_EXOMES:EAS<0.01;GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;"
-                        + "GNOMAD_EXOMES:OTH<0.01")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
-
-        dominantQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G + ":AFR<0.002;" + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
-
-        mitochondrialQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G + ":AFR<0.002;" + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
-                        + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
-                .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
-    }
-
-//    public void setup(String clinicalAnalysisId, String studyId, List<DiseasePanel> diseasePanels, ClinicalProperty.Penetrance penetrance, Path outDir, ObjectMap executorParams,
-//                      TieringInterpretationConfiguration config) throws AnalysisException {
-//        super.setup(executorParams, outDir);
-//        this.clinicalAnalysisId = clinicalAnalysisId;
-//        this.studyId = studyId;
-//        this.diseasePanels = diseasePanels;
-//        this.penetrance = penetrance;
-//        this.config = config;
-//
-//        // Sanity check
-//        sessionId = executorParams.getString(SESSION_ID, "");
-//        if (StringUtils.isEmpty(sessionId)) {
-//            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
-//        }
-//        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
-//        if (clinicalInterpretationManager == null) {
-//            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
-//        }
-//    }
-
     @Override
     public void run() throws ToolException {
-        sessionId = getToken();
+        token = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
-        // Get assembly
-        String assembly;
-        try {
-            assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
-        } catch (CatalogException e) {
-            throw new ToolException("Error retrieving assembly", e);
-        }
-
-        // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis;
-        try {
-            clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
-        } catch (CatalogException e) {
-            throw new ToolException("Error getting clinical analysis", e);
-        }
+        // Get proband
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
         // Get pedigree
@@ -157,48 +89,19 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         // samples easily)
         Map<String, String> sampleMap = ClinicalUtils.getSampleMap(clinicalAnalysis, proband);
 
-        Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new HashMap<>();
+        Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new EnumMap<>(ClinicalProperty.ModeOfInheritance.class);
         Map<String, List<Variant>> chVariantMap = new HashMap<>();
 
         List<Variant> regionVariants = new ArrayList<>();
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(8);
-
-        List<Future<Boolean>> futureList = new ArrayList<>(8);
-        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_DOMINANT.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, AUTOSOMAL_DOMINANT, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(X_LINKED_DOMINANT.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, X_LINKED_DOMINANT, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(Y_LINKED.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, Y_LINKED, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_RECESSIVE.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, AUTOSOMAL_RECESSIVE, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(X_LINKED_RECESSIVE.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, X_LINKED_RECESSIVE, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
-        futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
-        futureList.add(threadPool.submit(getNamedThread("REGION", () -> region(diseasePanels, sampleMap.values(),
-                assembly, regionVariants))));
-        threadPool.shutdown();
-
-        try {
-            threadPool.awaitTermination(2, TimeUnit.MINUTES);
-            if (!threadPool.isTerminated()) {
-                for (Future<Boolean> future : futureList) {
-                    future.cancel(true);
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new ToolException("Error launching threads when execuging the Tiering interpretation analysis", e);
-        }
+        // Execute queries
+        executeQueries(pedigree, sampleMap, resultMap, chVariantMap, regionVariants);
 
         List<Variant> variantList = new ArrayList<>();
         Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
 
         for (Map.Entry<ClinicalProperty.ModeOfInheritance, List<Variant>> entry : resultMap.entrySet()) {
-            logger.info("MoI: " + entry.getKey().name() + ", num. variants = " + entry.getValue().size());
+            logger.info("MoI: {}, num. variants = {}", entry.getKey().name(), entry.getValue().size());
             for (Variant variant : entry.getValue()) {
                 if (!variantMoIMap.containsKey(variant.getId())) {
                     variantMoIMap.put(variant.getId(), new ArrayList<>());
@@ -219,27 +122,72 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         }
 
         // Tiering clinical variant creator
-        TieringClinicalVariantCreator creator = new TieringClinicalVariantCreator(diseasePanels, clinicalAnalysis.getDisorder(), null,
-                penetrance, assembly);
+        String assembly;
+        try {
+            assembly = clinicalInterpretationManager.getAssembly(study, token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
+        TieringClinicalVariantCreator creator = new TieringClinicalVariantCreator(new ArrayList<>(clinicalAnalysis.getPanels()),
+                clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.valueOf(tieringConfiguration.getPenetrance()),
+                assembly);
 
         // Primary findings
-        List<ClinicalVariant> primaryFindings;
+        List<ClinicalVariant> primaryFindings = new ArrayList<>();
         try {
-            primaryFindings = creator.create(variantList, variantMoIMap);
+            primaryFindings.addAll(creator.create(variantList, variantMoIMap));
         } catch (InterpretationAnalysisException e) {
             throw new ToolException(e.getMessage(), e);
         }
 
-        // Add compound heterozyous variants
+        // Add compound heterozygous variants
         try {
-            primaryFindings.addAll(ClinicalUtils.getCompoundHeterozygousClinicalVariants(chVariantMap, creator));
+            List<ClinicalVariant> chVariants = ClinicalUtils.getCompoundHeterozygousClinicalVariants(chVariantMap, creator);
+            logger.info("MoI: {}, num. variants = {}", COMPOUND_HETEROZYGOUS, chVariants.size());
+            if (CollectionUtils.isNotEmpty(chVariants)) {
+                primaryFindings.addAll(chVariants);
+            }
         } catch (InterpretationAnalysisException e) {
-            throw new ToolException("Error retrieving compound heterozygous variants", e);
+            throw new ToolException("Error retrieving " + COMPOUND_HETEROZYGOUS + " variants", e);
         }
         primaryFindings = creator.mergeClinicalVariants(primaryFindings);
 
         // Write primary findings
         ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
+    }
+
+    private void executeQueries(Pedigree pedigree, Map<String, String> sampleMap,
+                                Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap,
+                                Map<String, List<Variant>> chVariantMap,
+                                List<Variant> regionVariants) throws ToolException {
+        ExecutorService threadPool = Executors.newFixedThreadPool(9);
+
+        List<Future<Boolean>> futureList = new ArrayList<>(9);
+        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_DOMINANT.name(),
+                () -> query(pedigree, sampleMap, AUTOSOMAL_DOMINANT, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(X_LINKED_DOMINANT.name(),
+                () -> query(pedigree, sampleMap, X_LINKED_DOMINANT, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(Y_LINKED.name(),
+                () -> query(pedigree, sampleMap, Y_LINKED, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(AUTOSOMAL_RECESSIVE.name(),
+                () -> query(pedigree, sampleMap, AUTOSOMAL_RECESSIVE, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(X_LINKED_RECESSIVE.name(),
+                () -> query(pedigree, sampleMap, X_LINKED_RECESSIVE, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
+                () -> query(pedigree, sampleMap, MITOCHONDRIAL, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
+        futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(REGION, () -> region(sampleMap.values(), regionVariants))));
+        threadPool.shutdown();
+
+        try {
+            if (!threadPool.awaitTermination(2, TimeUnit.MINUTES)) {
+                futureList.forEach(f -> f.cancel(true));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ToolException("Error launching threads when executing the Tiering interpretation analysis", e);
+        }
     }
 
     private <T> Callable<T> getNamedThread(String name, Callable<T> c) {
@@ -250,11 +198,12 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         };
     }
 
-    private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) {
-        Query query = new Query(recessiveQuery);
+    private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) throws ToolException {
+        Query query = new Query();
+        addQueryFilters(COMPOUND_HETEROZYGOUS.name(), query);
         try {
-            Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
-                    studyId, query, QueryOptions.empty(), sessionId);
+            Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysis.getId(),
+                    study, query, QueryOptions.empty(), token);
             resultMap.putAll(chVariants);
         } catch (Exception e) {
             return false;
@@ -263,11 +212,12 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         return true;
     }
 
-    private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
-        Query query = new Query(dominantQuery);
+    private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) throws ToolException {
+        Query query = new Query();
+        addQueryFilters(DE_NOVO.name(), query);
         try {
-            List<Variant> deNovoVariants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query,
-                    QueryOptions.empty(), sessionId);
+            List<Variant> deNovoVariants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysis.getId(), study, query,
+                    QueryOptions.empty(), token);
             resultMap.put(DE_NOVO, deNovoVariants);
         } catch (Exception e) {
             return false;
@@ -276,94 +226,103 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         return true;
     }
 
-    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, String assembly, List<Variant> result) {
-        List<Region> regions = new ArrayList<>();
-        if (diseasePanelList == null || diseasePanelList.isEmpty()) {
-            return true;
+    private Boolean region(Collection<String> samples, List<Variant> result) throws ToolException {
+        // Get assembly
+        String assembly;
+        try {
+            assembly = clinicalInterpretationManager.getAssembly(study, token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
         }
 
-        for (DiseasePanel diseasePanel : diseasePanelList) {
-            if (diseasePanel.getRegions() != null) {
-                for (DiseasePanel.RegionPanel region : diseasePanel.getRegions()) {
-                    for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                        if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
-                            regions.add(Region.parseRegion(coordinate.getLocation()));
-                        }
-                    }
-                }
-            }
+        // Prepare disease panels from the clinical analysis
+        if (CollectionUtils.isEmpty(clinicalAnalysis.getPanels())) {
+            logger.warn("No disease panels found in the clinical analysis, so skipping region queries.");
+            return true;
         }
+        List<Region> regions = clinicalAnalysis.getPanels().stream()
+                .filter(panel -> panel.getRegions() != null)
+                .flatMap(panel -> panel.getRegions().stream())
+                .flatMap(regionPanel -> regionPanel.getCoordinates().stream())
+                .filter(coordinate -> coordinate.getAssembly().equalsIgnoreCase(assembly))
+                .map(coordinate -> Region.parseRegion(coordinate.getLocation()))
+                .collect(Collectors.toList());
 
         if (regions.isEmpty()) {
+            logger.info("No regions found in the disease panels for assembly {}, so skipping region queries.", assembly);
             return true;
         }
 
-        Query query = new Query()
-                .append(VariantQueryParam.REGION.key(), regions)
+        Query query = new Query();
+        addQueryFilters(REGION, query);
+        query.append(VariantQueryParam.REGION.key(), regions)
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
+                .append(VariantQueryParam.STUDY.key(), study)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
                 .append(VariantQueryParam.SAMPLE.key(), samples);
 
         try {
-            result.addAll(clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId)
+            result.addAll(clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), token)
                     .getResults());
-        } catch (Exception e) {
+        } catch (CatalogException | IOException | StorageEngineException e) {
+            logger.warn("Error querying region variants (returning false): {}", e.getMessage(), e);
             return false;
         }
 
         return true;
     }
 
-    private Boolean query(Pedigree pedigree, Disorder disorder, Map<String, String> sampleMap, ClinicalProperty.ModeOfInheritance moi,
-                          Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
-        Query query;
+    private Boolean query(Pedigree pedigree, Map<String, String> sampleMap, ClinicalProperty.ModeOfInheritance moi,
+                          Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) throws ToolException {
+        Query query = new Query();
         Map<String, List<String>> genotypes;
+        ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.valueOf(tieringConfiguration.getPenetrance());
+
         switch (moi) {
             case AUTOSOMAL_DOMINANT:
-                query = new Query(dominantQuery);
-                genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetrance);
+                addQueryFilters(AUTOSOMAL_DOMINANT.name(), query);
+                genotypes = ModeOfInheritance.dominant(pedigree, clinicalAnalysis.getDisorder(), penetrance);
                 break;
             case Y_LINKED:
-                query = new Query(dominantQuery)
-                        .append(VariantQueryParam.REGION.key(), "Y");
-                genotypes = ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
+                addQueryFilters(Y_LINKED.name(), query);
+                genotypes = ModeOfInheritance.yLinked(pedigree, clinicalAnalysis.getDisorder(), penetrance);
                 break;
             case X_LINKED_DOMINANT:
-                query = new Query(dominantQuery)
-                        .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
+                addQueryFilters(X_LINKED_DOMINANT.name(), query);
+                genotypes = ModeOfInheritance.xLinked(pedigree, clinicalAnalysis.getDisorder(), true, penetrance);
                 break;
             case AUTOSOMAL_RECESSIVE:
-                query = new Query(recessiveQuery);
-                genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetrance);
+                addQueryFilters(AUTOSOMAL_RECESSIVE.name(), query);
+                genotypes = ModeOfInheritance.recessive(pedigree, clinicalAnalysis.getDisorder(), penetrance);
                 break;
             case X_LINKED_RECESSIVE:
-                query = new Query(recessiveQuery)
-                        .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
+                addQueryFilters(X_LINKED_RECESSIVE.name(), query);
+                genotypes = ModeOfInheritance.xLinked(pedigree, clinicalAnalysis.getDisorder(), false, penetrance);
                 break;
             case MITOCHONDRIAL:
-                query = new Query(mitochondrialQuery);
-                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);
+                addQueryFilters(MITOCHONDRIAL.name(), query);
+                genotypes = ModeOfInheritance.mitochondrial(pedigree, clinicalAnalysis.getDisorder(), penetrance);
                 filterOutHealthyGenotypes(genotypes);
                 break;
             default:
                 return false;
         }
-        query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
-                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
+        // Check if there are genotypes to query
         if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
+            logger.warn("No genotypes to query for MoI {}, so this query will be skipped", moi.name());
             return false;
         }
         addGenotypeFilter(genotypes, sampleMap, query);
 
+        // Add common filters
+        query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.STUDY.key(), study);
+
+        // Execute query and save the returned variants in the result map
         try {
-            resultMap.put(moi, clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId)
+            resultMap.put(moi, clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), token)
                     .getResults());
         } catch (CatalogException | StorageEngineException | IOException e) {
             return false;
@@ -373,8 +332,8 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
 
     private void filterOutHealthyGenotypes(Map<String, List<String>> genotypes) {
         List<String> filterOutKeys = new ArrayList<>();
-        for (String key : genotypes.keySet()) {
-            List<String> gts = genotypes.get(key);
+        for (Map.Entry<String, List<String>> entry : genotypes.entrySet()) {
+            List<String> gts = genotypes.get(entry.getKey());
             boolean filterOut = true;
             for (String gt : gts) {
                 if (gt.contains("1")) {
@@ -382,7 +341,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                 }
             }
             if (filterOut) {
-                filterOutKeys.add(key);
+                filterOutKeys.add(entry.getKey());
             }
         }
         for (String filterOutKey : filterOutKeys) {
@@ -393,7 +352,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
     private void addGenotypeFilter(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
         String genotypeString = StringUtils.join(genotypes.entrySet().stream()
                 .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                .filter(entry -> ListUtils.isNotEmpty(entry.getValue()))
+                .filter(entry -> CollectionUtils.isNotEmpty(entry.getValue()))
                 .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
                 .collect(Collectors.toList()), ";");
         if (StringUtils.isNotEmpty(genotypeString)) {
@@ -401,48 +360,42 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         }
     }
 
-    public String getStudyId() {
-        return studyId;
+    private void addQueryFilters(String key, Query query) throws ToolException {
+        Object queryConfig = tieringConfiguration.getQueries().get(key);
+        if (queryConfig instanceof Map) {
+            query.appendAll((Map<String, Object>) queryConfig);
+        } else {
+            throw new ToolException("Unexpected " + key + " query configuration: " + queryConfig);
+        }
+    }
+    //-------------------------------------------------------------------------
+    // Getters and setters
+    //-------------------------------------------------------------------------
+
+    public String getStudy() {
+        return study;
     }
 
-    public TieringInterpretationAnalysisExecutor setStudyId(String studyId) {
-        this.studyId = studyId;
+    public TieringInterpretationAnalysisExecutor setStudy(String study) {
+        this.study = study;
         return this;
     }
 
-    public String getClinicalAnalysisId() {
-        return clinicalAnalysisId;
+    public ClinicalAnalysis getClinicalAnalysis() {
+        return clinicalAnalysis;
     }
 
-    public TieringInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
-        this.clinicalAnalysisId = clinicalAnalysisId;
+    public TieringInterpretationAnalysisExecutor setClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
+        this.clinicalAnalysis = clinicalAnalysis;
         return this;
     }
 
-    public List<DiseasePanel> getDiseasePanels() {
-        return diseasePanels;
+    public TieringConfiguration getTieringConfiguration() {
+        return tieringConfiguration;
     }
 
-    public TieringInterpretationAnalysisExecutor setDiseasePanels(List<DiseasePanel> diseasePanels) {
-        this.diseasePanels = diseasePanels;
-        return this;
-    }
-
-    public ClinicalProperty.Penetrance getPenetrance() {
-        return penetrance;
-    }
-
-    public TieringInterpretationAnalysisExecutor setPenetrance(ClinicalProperty.Penetrance penetrance) {
-        this.penetrance = penetrance;
-        return this;
-    }
-
-    public TieringInterpretationConfiguration getConfig() {
-        return config;
-    }
-
-    public TieringInterpretationAnalysisExecutor setConfig(TieringInterpretationConfiguration config) {
-        this.config = config;
+    public TieringInterpretationAnalysisExecutor setTieringConfiguration(TieringConfiguration tieringConfiguration) {
+        this.tieringConfiguration = tieringConfiguration;
         return this;
     }
 }

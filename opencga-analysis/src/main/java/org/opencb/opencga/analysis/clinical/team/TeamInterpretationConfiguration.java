@@ -18,5 +18,6 @@ package org.opencb.opencga.analysis.clinical.team;
 
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 
+@Deprecated
 public class TeamInterpretationConfiguration extends InterpretationAnalysisConfiguration {
 }
