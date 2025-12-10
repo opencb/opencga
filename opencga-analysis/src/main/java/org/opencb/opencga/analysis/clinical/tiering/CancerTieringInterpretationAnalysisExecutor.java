@@ -55,6 +55,7 @@ import static org.opencb.biodata.formats.variant.clinvar.rcv.v64jaxb.ReviewStatu
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 
+@Deprecated
 @ToolExecutor(id = "opencga-local",
         tool = CancerTieringInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,

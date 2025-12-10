@@ -106,9 +106,6 @@ public class InternalMain {
                         case "jobs":
                             commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
                             break;
-                        case "panels":
-                            commandExecutor = new DiseasePanelInternalCommandExecutor(cliOptionsParser.getPanelInternalCommandOptions());
-                            break;
                         case "studies":
                             commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;

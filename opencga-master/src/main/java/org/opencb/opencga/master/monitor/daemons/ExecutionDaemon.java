@@ -40,7 +40,6 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
-import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
@@ -183,8 +182,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
 
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
-
-            put(PanelImportTask.ID, "panels import");
 
             put("alignment-index-run", "alignment index-run");
             put("coverage-index-run", "alignment coverage-index-run");

@@ -42,6 +42,7 @@ import java.util.Map;
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
+@Deprecated
 @ToolExecutor(id = "opencga-local",
         tool = ZettaInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
