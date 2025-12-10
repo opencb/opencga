@@ -59,8 +59,8 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(StudyWSServer.class);
         classes.add(FileWSServer.class);
         classes.add(JobWSServer.class);
-        classes.add(ExternalToolWSServer.class);
         classes.add(WorkflowWSServer.class);
+        classes.add(ExternalToolWSServer.class);
         classes.add(SampleWSServer.class);
         classes.add(IndividualWSServer.class);
         classes.add(FamilyWSServer.class);
