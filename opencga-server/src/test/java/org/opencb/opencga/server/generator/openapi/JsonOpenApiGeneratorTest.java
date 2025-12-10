@@ -36,14 +36,7 @@ public class JsonOpenApiGeneratorTest {
     @BeforeClass
     public static void initSwagger() throws Exception {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        apiCommons = new ApiCommonsImpl() {
-//            @Override
-//            public List<Class<?>> getApiClasses() {
-//                return Arrays.asList(
-//                        ExternalToolWSServer.class
-//                );
-//            }
-        };
+        apiCommons = new ApiCommonsImpl();
         swagger = generator.generateJsonOpenApi(
                 apiCommons,
                 "ANYVALIDTOKEN",
