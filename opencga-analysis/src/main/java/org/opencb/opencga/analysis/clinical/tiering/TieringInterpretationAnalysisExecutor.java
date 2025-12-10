@@ -26,7 +26,7 @@ import org.opencb.biodata.models.clinical.interpretation.exceptions.Interpretati
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TieringClinicalVariantCreator;
+import org.opencb.biodata.tools.clinical.tiering.TieringClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
