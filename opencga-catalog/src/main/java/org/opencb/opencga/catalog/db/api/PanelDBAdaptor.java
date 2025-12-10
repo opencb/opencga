@@ -83,6 +83,8 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         GENES_NAME("genes.name", TEXT, ""),
         GENES_CONFIDENCE("genes.confidence", TEXT, ""),
 
+        STRS("strs", TEXT_ARRAY, ""),
+
         REGIONS("regions", TEXT_ARRAY, ""),
         REGIONS_ID("regions.id", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.List;
 
+@Deprecated
 @Tool(id = CancerTieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
