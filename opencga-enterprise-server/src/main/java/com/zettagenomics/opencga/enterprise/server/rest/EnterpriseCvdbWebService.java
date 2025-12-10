@@ -101,8 +101,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
             @ApiParam(value = EnterpriseParamConstants.CVDB_INDEX_TASK_PARAMS_DESCRIPTION, required = true) CvdbIndexTaskParams params) {
         try {
             // Execute CVDB index as a job
-            return submitJob(study, JobType.NATIVE_TOOL, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime,
-                    jobPriority, dryRun);
+            return submitJob(study, JobType.NATIVE_TOOL, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
+                    scheduledStartTime, jobPriority, dryRun);
 
         } catch (Exception e) {
             return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());

@@ -34,6 +34,11 @@ setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, par
     standardGeneric("jobClient"))
 
 # ##############################################################################
+## UserToolClient
+setGeneric("usertoolClient", function(OpencgaR, members, toolId, tools, endpointName, params=NULL, ...)
+    standardGeneric("usertoolClient"))
+
+# ##############################################################################
 ## WorkflowClient
 setGeneric("workflowClient", function(OpencgaR, members, workflowId, workflows, endpointName, params=NULL, ...)
     standardGeneric("workflowClient"))
