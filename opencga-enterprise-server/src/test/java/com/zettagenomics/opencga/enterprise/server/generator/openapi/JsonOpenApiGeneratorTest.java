@@ -52,7 +52,7 @@ public class JsonOpenApiGeneratorTest {
     public void testGenerateJsonOpenApi(){
         String basePath="/task-swagger/opencga/webservices/rest";
         String host="test.app.zettagenomics.com";
-        int numCategories= 21;
+        int numCategories= 22;
         assertEquals("Expected basePath to be '" + basePath + "'",basePath, swagger.getBasePath());
         assertEquals("Expected host to be '" + host + "'",host, swagger.getHost());
         assertTrue("Expected number of categories to be " + numCategories+ " not "+ swagger.getTags().size() , numCategories == swagger.getTags().size());
@@ -76,6 +76,7 @@ public class JsonOpenApiGeneratorTest {
                 "Studies",
                 "Files",
                 "Jobs",
+                "User Tools",
                 "Workflows",
                 "Samples",
                 "Individuals",
