@@ -29,7 +29,7 @@ public class ExecutionQueue {
     public enum ProcessorType {
         CPU, // Default execution type
         GPU, // Execution type for GPU-based tasks
-        FPGA // Execution type for FPGA-based tasks
+//        FPGA // Execution type for FPGA-based tasks
     }
 
     public ExecutionQueue() {

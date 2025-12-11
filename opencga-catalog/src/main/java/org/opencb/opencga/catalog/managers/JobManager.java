@@ -346,9 +346,12 @@ public class JobManager extends ResourceManager<Job> {
         requirements.setMemory(ParamUtils.defaultString(requirements.getMemory(), request.getMemory()));
         requirements.setProcessorType(ParamUtils.defaultObject(requirements.getProcessorType(), ExecutionQueue.ProcessorType.CPU));
         if (StringUtils.isEmpty(requirements.getQueue())) {
-            ExecutionQueue executionQueue = JobExecutionUtils.findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(),
-                    requirements).get(0);
-            requirements.setQueue(executionQueue.getId());
+            List<ExecutionQueue> executionQueues = JobExecutionUtils
+                    .findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(), requirements);
+            if (CollectionUtils.isEmpty(executionQueues)) {
+                throw new CatalogException("No available queue found for the job requirements: " + requirements);
+            }
+            requirements.setQueue(executionQueues.get(0).getId());
         }
 
         if (StringUtils.isNotEmpty(job.getParentId())) {

@@ -1,5 +1,6 @@
 package org.opencb.opencga.master.monitor.schedulers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
@@ -29,6 +30,7 @@ public class JobScheduler {
 
     private Map<String, UserRole> userRoles;
     private final Map<ExecutionQueue.ProcessorType, List<ExecutionQueue>> availableQueues;
+    private final Map<String, ExecutionQueue> queueMap;
 
     private static final float PRIORITY_WEIGHT = 0.6F;
     private static final float IDLE_TIME_WEIGHT = 0.4F;
@@ -37,17 +39,21 @@ public class JobScheduler {
 
     private final Logger logger = LoggerFactory.getLogger(JobScheduler.class);
 
+    public static final String NO_AVAILABLE_QUEUE = "NO_AVAILABLE_QUEUE";
+
 
     public JobScheduler(CatalogManager catalogManager, List<ExecutionQueue> queueList, String token) {
         this.catalogManager = catalogManager;
         this.token = token;
 
         this.availableQueues = new HashMap<>();
+        this.queueMap = new HashMap<>();
         for (ExecutionQueue queue : queueList) {
             if (!availableQueues.containsKey(queue.getProcessorType())) {
                 availableQueues.put(queue.getProcessorType(), new ArrayList<>());
             }
             availableQueues.get(queue.getProcessorType()).add(queue);
+            queueMap.put(queue.getId(), queue);
         }
     }
 
@@ -163,6 +169,7 @@ public class JobScheduler {
     public Map<String, List<Job>> schedule(String organizationId, List<Job> pendingJobs, Set<String> exhaustedQueues) {
         Date currentDate = new Date();
 
+        List<Job> noAvailableQueues = new LinkedList<>();
         Map<String, TreeMap<Float, List<Job>>> jobTreeMap = new HashMap<>();
         for (List<ExecutionQueue> queues : this.availableQueues.values()) {
             for (ExecutionQueue queue : queues) {
@@ -194,9 +201,29 @@ public class JobScheduler {
         StopWatch stopWatch = StopWatch.createStarted();
         for (Job job : pendingJobs) {
             String queueId = job.getTool().getMinimumRequirements().getQueue();
+            if (StringUtils.isNotEmpty(queueId)) {
+                // Check if the defined queue is valid and exists
+                ExecutionQueue executionQueue = this.queueMap.get(queueId);
+                if (executionQueue != null) {
+                    // Validate queue is still valid for the job requirements
+                    JobExecutionUtils.isValidQueue(executionQueue, job.getTool().getMinimumRequirements());
+                } else {
+                    logger.warn("Job '{}' has an invalid queue defined ('{}'). Leaving unassigned to look for optimal queue again.",
+                            job.getId(), queueId);
+                    queueId = null;
+                }
+            }
             if (StringUtils.isEmpty(queueId)) {
                 List<ExecutionQueue> executionQueues = this.availableQueues.get(job.getTool().getMinimumRequirements().getProcessorType());
-                queueId = JobExecutionUtils.findOptimalQueues(executionQueues, job.getTool().getMinimumRequirements()).get(0).getId();
+                List<ExecutionQueue> optimalQueues = JobExecutionUtils.findOptimalQueues(executionQueues,
+                        job.getTool().getMinimumRequirements());
+                if (CollectionUtils.isEmpty(optimalQueues)) {
+                    logger.warn("Job '{}' has no queue defined and no optimal queue was found. Skipping scheduling for this job.",
+                            job.getId());
+                    noAvailableQueues.add(job);
+                    continue;
+                }
+                queueId = optimalQueues.get(0).getId();
                 logger.debug("Job '{}' has no queue defined. Optimal queue for scheduling is '{}' .", job.getId(), queueId);
             }
 
@@ -247,6 +274,7 @@ public class JobScheduler {
                 }
             }
         }
+        allJobs.put(NO_AVAILABLE_QUEUE, noAvailableQueues);
         logger.debug("Time spent creating iterator: {}", TimeUtils.durationToString(stopWatch));
 
         // Reschedule jobs that have exceeded the execution limit quota for next month

@@ -13,9 +13,7 @@ public class JobExecutionUtils {
         // Sort the queues based on their number of CPUs and memory
         // Also filter out queues that do not meet the minimum requirements
         return queues.stream()
-                .filter(queue -> queue.getProcessorType().equals(requirements.getProcessorType())
-                        && Integer.parseInt(queue.getCpu()) >= Integer.parseInt(requirements.getCpu())
-                        && IOUtils.fromHumanReadableToByte(queue.getMemory()) >= IOUtils.fromHumanReadableToByte(requirements.getMemory()))
+                .filter(q -> isValidQueue(q, requirements))
                 .sorted((q1, q2) -> {
                     int cpuComparison = Integer.compare(Integer.parseInt(q1.getCpu()), Integer.parseInt(q2.getCpu()));
                     if (cpuComparison != 0) {
@@ -24,6 +22,12 @@ public class JobExecutionUtils {
                     return Long.compare(IOUtils.fromHumanReadableToByte(q1.getMemory()), IOUtils.fromHumanReadableToByte(q2.getMemory()));
                 })
                 .collect(Collectors.toList());
+    }
+
+    public static boolean isValidQueue(ExecutionQueue queue, MinimumRequirements requirements) {
+        return queue.getProcessorType().equals(requirements.getProcessorType())
+                && Integer.parseInt(queue.getCpu()) >= Integer.parseInt(requirements.getCpu())
+                && IOUtils.fromHumanReadableToByte(queue.getMemory()) >= IOUtils.fromHumanReadableToByte(requirements.getMemory());
     }
 
 }

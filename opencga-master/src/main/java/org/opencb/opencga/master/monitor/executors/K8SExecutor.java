@@ -35,6 +35,7 @@ import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.ExecutionFactor;
 import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +63,6 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_GPU_DIND_IMAGE_NAME = "k8s.gpu.dind.imageName";
     public static final String K8S_GPU_RUNTIME_CLASS = "k8s.gpu.runtimeClass";
     public static final String K8S_GPU_NODE_SELECTOR = "k8s.gpu.nodeSelector";
-    public static final String K8S_REQUESTS = "k8s.requests";
-    public static final String K8S_LIMITS = "k8s.limits";
     public static final String K8S_JAVA_HEAP = "k8s.javaHeap";
     public static final String K8S_ENVS = "k8s.envs";
     public static final String K8S_NAMESPACE = "k8s.namespace";
@@ -357,7 +356,7 @@ public class K8SExecutor implements BatchExecutor {
             throws Exception {
         String jobName = buildJobName(job.getId());
         boolean isGpuJob = isGpuJob(job);
-        ResourceRequirements resources = getResources(job);
+        ResourceRequirements resources = getResources(job.getTool().getMinimumRequirements());
 
         PodSpecBuilder podSpecBuilder = new PodSpecBuilder()
                 .withTerminationGracePeriodSeconds(terminationGracePeriodSeconds)
@@ -430,17 +429,17 @@ public class K8SExecutor implements BatchExecutor {
         getKubernetesClient().batch().v1().jobs().inNamespace(namespace).resource(k8sJob).create();
     }
 
-    private ResourceRequirements getResources(org.opencb.opencga.core.models.job.Job job) {
-        if (job.getTool().getMinimumRequirements() != null) {
+    private ResourceRequirements getResources(MinimumRequirements minimumRequirements) {
+        if (minimumRequirements != null) {
             ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder(this.resources);
-            if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getMemory())) {
-                long memoryBytes = IOUtils.fromHumanReadableToByte(job.getTool().getMinimumRequirements().getMemory());
+            if (StringUtils.isNotEmpty(minimumRequirements.getMemory())) {
+                long memoryBytes = IOUtils.fromHumanReadableToByte(minimumRequirements.getMemory());
                 Quantity memory = new Quantity(String.valueOf(memoryBytes * this.requestFactor.getMemory()));
                 resources.addToRequests("memory", memory);
                 resources.addToLimits("memory", memory);
             }
-            if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getCpu())) {
-                double cpuUnits = Double.parseDouble(job.getTool().getMinimumRequirements().getCpu());
+            if (StringUtils.isNotEmpty(minimumRequirements.getCpu())) {
+                double cpuUnits = Double.parseDouble(minimumRequirements.getCpu());
                 Quantity cpu = new Quantity(Double.toString(cpuUnits * this.requestFactor.getCpu()));
                 resources.addToRequests("cpu", cpu);
                 resources.addToLimits("cpu", cpu);
