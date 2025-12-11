@@ -154,6 +154,8 @@
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
         <rocksdbjni.version>10.2.1</rocksdbjni.version>
+
+        <snakeyaml.version>1.33</snakeyaml.version>
     </properties>
 
     <scm>
@@ -1210,6 +1212,11 @@
                 <groupId>org.rocksdb</groupId>
                 <artifactId>rocksdbjni</artifactId>
                 <version>${rocksdbjni.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

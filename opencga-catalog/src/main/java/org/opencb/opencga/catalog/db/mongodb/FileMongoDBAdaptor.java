@@ -65,6 +65,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -811,25 +812,43 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
     }
 
+    void updateWorkspaceUri(ClientSession clientSession, String oldBaseUri, String newBaseUri) {
+        // Filter: documents where uri starts with oldBaseUri
+        Bson filter = Filters.regex("uri", Pattern.compile("^" + oldBaseUri));
+
+        // Aggregation pipeline for the update
+        Document replaceOneStage = new Document("$replaceOne",
+                new Document("input", "$uri")
+                        .append("find", oldBaseUri)
+                        .append("replacement", newBaseUri)
+        );
+
+        List<Document> setStage = Collections.singletonList(new Document("$set",
+                new Document("uri", replaceOneStage)
+        ));
+
+        deletedFileCollection.updateWithPipeline(clientSession, filter, setStage, new QueryOptions(MongoDBCollection.MULTI, true));
+        DataResult<?> update = fileCollection.updateWithPipeline(clientSession, filter, setStage,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        logger.info("Organization '{}': Updated URI from {} File documents", dbAdaptorFactory.getOrganizationId(),
+                update.getNumUpdated());
+    }
+
     private void updateWhenFileIdChanged(ClientSession clientSession, File file, UpdateDocument updateDocument, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String newFileId = updateDocument.getSet().getString(QueryParams.ID.key());
-        if (StringUtils.isEmpty(newFileId)) {
+        String newFilePath = updateDocument.getSet().getString(QueryParams.PATH.key());
+        if (StringUtils.isEmpty(newFileId) && StringUtils.isEmpty(newFilePath)) {
             return;
         }
+        // Ensure both newFileId and newFilePath are set
+        if (StringUtils.isEmpty(newFileId) || StringUtils.isEmpty(newFilePath)) {
+            throw new CatalogDBException("Internal error: Expected both new file id and new file path to be set");
+        }
 
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), file.getStudyUid())
-                .append(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-        Bson sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().fileIdHasChanged(clientSession, file.getStudyUid(), file.getId(), newFileId);
+        dbAdaptorFactory.getClinicalAnalysisDBAdaptor().filePathHasChanged(clientSession, file.getStudyUid(), file.getPath(), newFilePath);
 
-        // Replace the id for the new one
-        UpdateDocument sampleUpdate = new UpdateDocument();
-        sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
-
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().transactionalUpdate(clientSession, file.getStudyUid(), sampleBsonQuery, sampleUpdate);
-
-        String skipMoveFileString = "_SKIP_MOVE_FILE";
         if (file.getType().equals(File.Type.DIRECTORY)) {
             // We get the files and folders directly under this directory
             Query tmpQuery = new Query()
@@ -844,7 +863,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         targetPath = targetPath + "/";
                     }
                     ObjectMap updateMap = new ObjectMap(QueryParams.PATH.key(), targetPath);
-                    QueryOptions queryOptions = new QueryOptions(skipMoveFileString, true);
+                    QueryOptions queryOptions = new QueryOptions(SKIP_MOVE_FILE, true);
                     OpenCGAResult<File> result = transactionalUpdate(clientSession, tmpFile, updateMap, null, queryOptions);
                     if (result.getNumUpdated() == 0) {
                         throw new CatalogDBException("Could not update path from '" + tmpFile.getPath() + "' to '" + targetPath + "'");
@@ -855,7 +874,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         String newUri = updateDocument.getSet().getString(QueryParams.URI.key());
         if (file.getUri() != null && StringUtils.isNotEmpty(newUri) && !newUri.equals(file.getUri().toString())
-                && !options.getBoolean(skipMoveFileString)) {
+                && !options.getBoolean(SKIP_MOVE_FILE)) {
             // Move just the main folder/file
             logger.info("Move file from uri '{}' to '{}'", file.getUri(), newUri);
             try {
@@ -934,7 +953,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
         };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
@@ -951,80 +970,87 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        if (parameters.containsKey(QueryParams.PATH.key())) {
+        if (parameters.containsKey(QueryParams.URI.key()) || parameters.containsKey(QueryParams.PATH.key())) {
             OpenCGAResult<File> results = get(clientSession, query, FileManager.INCLUDE_FILE_URI_PATH);
             if (results.getNumResults() > 1) {
-                throw new CatalogDBException("Cannot set same path to multiple files.");
+                throw new CatalogDBException("Cannot set same path/uri to multiple files.");
+            }
+
+            if (parameters.containsKey(QueryParams.URI.key()) && parameters.containsKey(QueryParams.PATH.key())) {
+                throw new CatalogDBException("Cannot set both path and uri at the same time.");
             }
             File currentFile = results.first();
+            if (parameters.containsKey(QueryParams.URI.key())) {
+                validateUriUpdate(clientSession, currentFile, parameters.getString(QueryParams.URI.key()), document);
+            } else if (parameters.containsKey(QueryParams.PATH.key())) {
+                // Check desired path is not in use by other file
+                String desiredPath = parameters.getString(QueryParams.PATH.key());
+                desiredPath = FileUtils.fixPath(desiredPath, currentFile.getType());
+                document.getSet().put(QueryParams.PATH.key(), desiredPath);
 
-            // Check desired path is not in use by other file
-            String desiredPath = parameters.getString(QueryParams.PATH.key());
-            desiredPath = FileUtils.fixPath(desiredPath, currentFile.getType());
-            document.getSet().put(QueryParams.PATH.key(), desiredPath);
-
-            if (desiredPath.equals(currentFile.getPath())) {
-                throw new CatalogDBException("Nothing to do. The path of the file was already '" + desiredPath + "'.");
-            }
-            if (StringUtils.isEmpty(desiredPath)) {
-                throw new CatalogDBException("Cannot rename root folder.");
-            }
-            Query tmpQuery = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyUid)
-                    .append(QueryParams.PATH.key(), desiredPath);
-            OpenCGAResult<Long> countResult = count(clientSession, tmpQuery);
-            if (countResult.getNumMatches() > 0) {
-                throw new CatalogDBException("There already exists another file under path '" + desiredPath + "'.");
-            }
-
-            // Look for parent folder to check a few things more
-            List<String> pathList = FileUtils.calculateAllPossiblePaths(desiredPath);
-            tmpQuery = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyUid)
-                    .append(QueryParams.PATH.key(), pathList);
-            OpenCGAResult<File> parentFiles = get(clientSession, tmpQuery, FileManager.INCLUDE_FILE_URI_PATH);
-            if (parentFiles.getNumResults() + 1 < pathList.size()) {
-                Set<String> presentFolders = parentFiles.getResults().stream().map(File::getPath).collect(Collectors.toSet());
-                String missingFolders = pathList.stream().filter(p -> !presentFolders.contains(p)).collect(Collectors.joining(", "));
-                throw new CatalogDBException("Can't move file to path '" + desiredPath + "'. Please, create missing parent folders: "
-                        + missingFolders);
-            }
-
-            File desiredParentFolder = parentFiles.first();
-            for (File tmpParentFile : parentFiles.getResults()) {
-                // Look for the closest parentFolder
-                if (tmpParentFile.getPath().length() > desiredParentFolder.getPath().length()) {
-                    desiredParentFolder = tmpParentFile;
+                if (desiredPath.equals(currentFile.getPath())) {
+                    throw new CatalogDBException("Nothing to do. The path of the file was already '" + desiredPath + "'.");
                 }
-            }
-
-            boolean changeUri = true;
-            if (desiredParentFolder.isExternal() && !currentFile.isExternal()) {
-                throw new CatalogDBException("Cannot move file to path '" + desiredPath + "'. The folder '" + desiredParentFolder.getPath()
-                        + "' is linked to the external physical uri '" + desiredParentFolder.getUri() + "' so OpenCGA can't move"
-                        + " anything there.");
-            } else if (desiredParentFolder.isExternal() && currentFile.isExternal()) {
-                changeUri = false;
-            }
-
-            if (changeUri) {
-                URI fileUri = null;
-                try {
-                    fileUri = FileUtils.getFileUri(desiredPath, desiredParentFolder, currentFile.getType());
-                } catch (URISyntaxException e) {
-                    throw new CatalogDBException("Could not update file.", e);
+                if (StringUtils.isEmpty(desiredPath)) {
+                    throw new CatalogDBException("Cannot rename root folder.");
                 }
-                document.getSet().put(QueryParams.URI.key(), fileUri.toString());
+                Query tmpQuery = new Query()
+                        .append(QueryParams.STUDY_UID.key(), studyUid)
+                        .append(QueryParams.PATH.key(), desiredPath);
+                OpenCGAResult<Long> countResult = count(clientSession, tmpQuery);
+                if (countResult.getNumMatches() > 0) {
+                    throw new CatalogDBException("There already exists another file under path '" + desiredPath + "'.");
+                }
+
+                // Look for parent folder to check a few things more
+                List<String> pathList = FileUtils.calculateAllPossiblePaths(desiredPath);
+                tmpQuery = new Query()
+                        .append(QueryParams.STUDY_UID.key(), studyUid)
+                        .append(QueryParams.PATH.key(), pathList);
+                OpenCGAResult<File> parentFiles = get(clientSession, tmpQuery, FileManager.INCLUDE_FILE_URI_PATH);
+                if (parentFiles.getNumResults() + 1 < pathList.size()) {
+                    Set<String> presentFolders = parentFiles.getResults().stream().map(File::getPath).collect(Collectors.toSet());
+                    String missingFolders = pathList.stream().filter(p -> !presentFolders.contains(p)).collect(Collectors.joining(", "));
+                    throw new CatalogDBException("Can't move file to path '" + desiredPath + "'. Please, create missing parent folders: "
+                            + missingFolders);
+                }
+
+                File desiredParentFolder = parentFiles.first();
+                for (File tmpParentFile : parentFiles.getResults()) {
+                    // Look for the closest parentFolder
+                    if (tmpParentFile.getPath().length() > desiredParentFolder.getPath().length()) {
+                        desiredParentFolder = tmpParentFile;
+                    }
+                }
+
+                boolean changeUri = true;
+                if (desiredParentFolder.isExternal() && !currentFile.isExternal()) {
+                    throw new CatalogDBException("Cannot move file to path '" + desiredPath + "'. The folder '"
+                            + desiredParentFolder.getPath() + "' is linked to the external physical uri '" + desiredParentFolder.getUri()
+                            + "' so OpenCGA can't move anything there.");
+                } else if (desiredParentFolder.isExternal() && currentFile.isExternal()) {
+                    changeUri = false;
+                }
+
+                if (changeUri) {
+                    URI fileUri = null;
+                    try {
+                        fileUri = FileUtils.getFileUri(desiredPath, desiredParentFolder, currentFile.getType());
+                    } catch (URISyntaxException e) {
+                        throw new CatalogDBException("Could not update file.", e);
+                    }
+                    document.getSet().put(QueryParams.URI.key(), fileUri.toString());
+                }
+
+                String name = FileUtils.getFileName(desiredPath);
+                String newFileId = FileUtils.getFileId(desiredPath);
+                document.getSet().put(QueryParams.ID.key(), newFileId);
+                document.getSet().put(QueryParams.NAME.key(), name);
+                document.getSet().put(REVERSE_NAME, StringUtils.reverse(name));
+
+                document.getAttributes().put(UpdateAttributeParams.PREVIOUS_FILE_ID.name(), currentFile.getId());
+                document.getAttributes().put(UpdateAttributeParams.NEW_FILE_ID.name(), newFileId);
             }
-
-            String name = FileUtils.getFileName(desiredPath);
-            String newFileId = FileUtils.getFileId(desiredPath);
-            document.getSet().put(QueryParams.ID.key(), newFileId);
-            document.getSet().put(QueryParams.NAME.key(), name);
-            document.getSet().put(REVERSE_NAME, StringUtils.reverse(name));
-
-            document.getAttributes().put(UpdateAttributeParams.PREVIOUS_FILE_ID.name(), currentFile.getId());
-            document.getAttributes().put(UpdateAttributeParams.NEW_FILE_ID.name(), newFileId);
         }
 
         // Check if the tags exist.
@@ -1173,6 +1199,46 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return document;
+    }
+
+    private void validateUriUpdate(ClientSession clientSession, File file, String newUri, UpdateDocument document)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (newUri.equals(file.getUri().toString())) {
+            logger.warn("Nothing to do. The uri of the file was already '{}'.", newUri);
+            return;
+        }
+
+        // Check if the new URI is in use by some other file from the study
+        Query tmpQuery = new Query()
+                .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
+                .append(QueryParams.URI.key(), newUri);
+        OpenCGAResult<Long> countResult = count(clientSession, tmpQuery);
+        if (countResult.getNumMatches() > 0) {
+            throw new CatalogDBException("There already exists another file with uri '" + newUri + "'.");
+        }
+
+        if (file.getType() != File.Type.FILE) {
+            throw new CatalogDBException("It is only supported changing the URI of a file. '" + file.getPath() + "' is not a file.");
+        }
+
+        // Check if the filename from the new URI is the same as the current file name
+        String filename = FileUtils.getFileName(newUri);
+        if (!filename.equals(file.getName())) {
+            document.getSet().put(QueryParams.NAME.key(), filename);
+            document.getSet().put(REVERSE_NAME, StringUtils.reverse(filename));
+            // Replace file name from path (/A/B/file/file.txt -> /A/B/file/file2.txt; /A/B/C/D/D -> /A/B/C/D/E)
+            String newPath = file.getPath().substring(0, file.getPath().length() - file.getName().length());
+            newPath += filename;
+            document.getSet().put(QueryParams.PATH.key(), newPath);
+            String newFileId = FileUtils.getFileId(newPath);
+            document.getSet().put(QueryParams.ID.key(), newFileId);
+
+            // Write this information to perform further updates on other collections referencing this file
+            document.getAttributes().put(UpdateAttributeParams.PREVIOUS_FILE_ID.name(), file.getId());
+            document.getAttributes().put(UpdateAttributeParams.NEW_FILE_ID.name(), newFileId);
+        }
+
+        document.getSet().put(QueryParams.URI.key(), newUri);
     }
 
     private List<Document> fixRelatedFilesForRemoval(List<Document> relatedFiles) {
@@ -1808,9 +1874,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_ID:
-                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
-                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
-                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
@@ -1818,6 +1881,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), myQuery,
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_VARIANT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),

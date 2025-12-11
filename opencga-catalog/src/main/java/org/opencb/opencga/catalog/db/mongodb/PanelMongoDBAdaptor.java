@@ -399,7 +399,7 @@ public class PanelMongoDBAdaptor extends CatalogMongoDBAdaptor implements PanelD
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
         final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.DISORDERS.key(), QueryParams.REGIONS.key(),
-                QueryParams.GENES.key(), QueryParams.CATEGORIES.key(), QueryParams.INTERNAL_STATUS.key()};
+                QueryParams.GENES.key(), QueryParams.CATEGORIES.key(), QueryParams.STRS.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {

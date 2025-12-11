@@ -18,5 +18,6 @@ package org.opencb.opencga.analysis.clinical.tiering;
 
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 
+@Deprecated
 public class CancerTieringInterpretationConfiguration extends InterpretationAnalysisConfiguration {
 }

@@ -100,6 +100,32 @@ public abstract class VariantStorageMetadataManagerTest {
 
     }
 
+    @Test
+    public void testRegisterFilesSameName() throws StorageEngineException {
+        String fileName = "my.vcf";
+        String path1 = "path/to/" + fileName;
+        String path2 = "path/to/another/" + fileName;
+        String path3 = "path/to/another/other/" + fileName;
+        String path4 = "path/to/another/other/other/" + fileName;
+
+        StudyMetadata study = metadataManager.createStudy("study");
+        int fileId1 = metadataManager.registerFile(study.getId(), path1, Collections.emptyList());
+        metadataManager.addIndexedFiles(study.getId(), Collections.singletonList(fileId1));
+        System.out.println("fileId1 = " + fileId1);
+
+        int fileId2 = metadataManager.registerFile(study.getId(), path2, Collections.emptyList());
+        metadataManager.addIndexedFiles(study.getId(), Collections.singletonList(fileId2));
+        System.out.println("fileId2 = " + fileId2);
+
+        int fileId3 = metadataManager.registerFile(study.getId(), path3, Collections.emptyList());
+        metadataManager.addIndexedFiles(study.getId(), Collections.singletonList(fileId3));
+        System.out.println("fileId3 = " + fileId3);
+
+        int fileId4 = metadataManager.registerFile(study.getId(), path4, Collections.emptyList());
+        metadataManager.addIndexedFiles(study.getId(), Collections.singletonList(fileId4));
+        System.out.println("fileId4 = " + fileId4);
+    }
+
     public List<String> getTasks(StudyMetadata study, List<TaskMetadata.Status> status) {
         return Arrays.stream(Iterators.toArray(metadataManager.taskIterator(study.getId(), status), TaskMetadata.class))
                 .map(TaskMetadata::getName)
