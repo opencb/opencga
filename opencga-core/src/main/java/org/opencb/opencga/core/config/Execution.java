@@ -123,8 +123,8 @@ public class Execution {
         return defaultRequirements;
     }
 
-    public Execution setDefaultRequirements(ExecutionRequirements defaultRequest) {
-        this.defaultRequirements = defaultRequest;
+    public Execution setDefaultRequirements(ExecutionRequirements defaultRequirements) {
+        this.defaultRequirements = defaultRequirements;
         return this;
     }
 
@@ -132,8 +132,8 @@ public class Execution {
         return requirementsFactor;
     }
 
-    public Execution setRequirementsFactor(ExecutionRequirementsFactor requestFactor) {
-        this.requirementsFactor = requestFactor;
+    public Execution setRequirementsFactor(ExecutionRequirementsFactor requirementsFactor) {
+        this.requirementsFactor = requirementsFactor;
         return this;
     }
 

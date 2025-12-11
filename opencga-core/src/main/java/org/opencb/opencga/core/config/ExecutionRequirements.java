@@ -18,7 +18,7 @@ public class ExecutionRequirements {
         this.memory = memory;
     }
 
-    public static ExecutionRequirements defaultRequest() {
+    public static ExecutionRequirements defaultRequirements() {
         return new ExecutionRequirements(2, "8G");
     }
 
