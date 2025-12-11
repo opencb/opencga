@@ -47,7 +47,6 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
     private Path scriptPath;
     private AffyPipelineConfig pipelineConfig;
-    private List<String> pipelineSteps;
 
     @Override
     protected void run() throws Exception {
@@ -80,7 +79,7 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
                                   Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
             throws IOException, ToolException {
         // Get the pipeline configuration file path
-        Path pipelineConfigPath = getOutDir().resolve(buildPipelineFilename(pipelineSteps));
+        Path pipelineConfigPath = getOutDir().resolve(buildPipelineFilename(Collections.singletonList("affy")));
 
         // Set input bindings
         setInputBindings(pipeline.getInput(), pipelineConfigPath, scriptPath, inputBindings, readOnlyInputBindings);
@@ -94,8 +93,7 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
         // And return the Python command line
         return "python3 " + SCRIPT_VIRTUAL_PATH + "/" + NGS_PIPELINE_SCRIPT + " " + AFFY_PIPELINE_SCRIPT_COMMAND
                 + " -o " + OUTPUT_VIRTUAL_PATH
-                + " -p " + getVirtualPath(pipelineConfigPath, inputBindings)
-                + " --steps " + buildStepsParam(pipelineSteps);
+                + " -p " + getVirtualPath(pipelineConfigPath, inputBindings);
     }
 
     public static void setInputBindings(AffyPipelineInput pipelineInput, Path pipelineConfigPath, Path scriptPath,
@@ -146,15 +144,6 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
     public AffyClinicalPipelineWrapperAnalysisExecutor setPipelineConfig(AffyPipelineConfig pipelineConfig) {
         this.pipelineConfig = pipelineConfig;
-        return this;
-    }
-
-    public List<String> getPipelineSteps() {
-        return pipelineSteps;
-    }
-
-    public AffyClinicalPipelineWrapperAnalysisExecutor setPipelineSteps(List<String> pipelineSteps) {
-        this.pipelineSteps = pipelineSteps;
         return this;
     }
 }

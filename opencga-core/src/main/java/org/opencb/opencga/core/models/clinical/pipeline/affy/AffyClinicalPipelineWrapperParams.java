@@ -22,7 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class AffyClinicalPipelineWrapperParams extends ToolParams {
 
-    @DataField(id = "pipelineParams", description = "Parameters to execute the affy pipeline")
+    @DataField(id = "pipelineParams", description = "Parameters to execute the Affymetrix pipeline")
     private AffyClinicalPipelineParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)

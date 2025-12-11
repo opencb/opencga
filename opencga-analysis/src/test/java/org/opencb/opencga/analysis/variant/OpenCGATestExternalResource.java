@@ -299,39 +299,26 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // NGS pipeline analysis
+        Path srcPath = Paths.get("../opencga-app/app/analysis/ngs-pipeline/").toAbsolutePath();
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline")).toAbsolutePath();
-        List<String> ngsFiles = Arrays.asList("main.py");
-        for (String ngsFile : ngsFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/" + ngsFile)) {
-                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py", "alignment.py", "base_processor.py", "prepare_reference_indexes.py", "quality_control.py",
-                "variant_calling.py", "affymetrix_microarray.py");
-        for (String ngsFile : ngsFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/" + ngsFile)) {
-                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing/aligners")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py", "aligner.py", "bwa_aligner.py", "bwamem2_aligner.py", "minimap2_aligner.py", "bowtie2_aligner.py");
-        for (String ngsFile : ngsFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/aligners/"
-                    + ngsFile)) {
-                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing/variant_callers")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py", "gatk_variant_caller.py", "freebayes_variant_caller.py", "mutect2_variant_caller.py", "variant_caller.py");
-        for (String ngsFile : ngsFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/variant_callers/"
-                    + ngsFile)) {
-                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
+        installAppFiles(srcPath, analysisPath);
 
         return opencgaHome;
+    }
+
+    private void installAppFiles(Path srcPath, Path destPath) throws IOException {
+        if (!Files.exists(destPath)) {
+            Files.createDirectory(destPath);
+        }
+
+        for (java.io.File file: srcPath.toFile().listFiles()) {
+            Path dest = destPath.resolve(file.getName());
+            if (Files.isDirectory(file.toPath())) {
+                installAppFiles(file.toPath(), dest);
+            } else {
+                Files.copy(file.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
     }
 
     public File createFile(String studyId, String resourceName, String sessionId) throws IOException, CatalogException {

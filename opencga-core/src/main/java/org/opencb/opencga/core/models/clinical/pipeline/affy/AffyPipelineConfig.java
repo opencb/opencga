@@ -24,25 +24,19 @@ public class AffyPipelineConfig extends PipelineConfig {
     @DataField(id = "input", description = "Affy pipeline input configuration")
     private AffyPipelineInput input;
 
-    @DataField(id = "steps", description = "Affy pipeline steps (quality control and genotype)")
-    private AffyPipelineSteps steps;
-
     public AffyPipelineConfig() {
         super();
     }
 
-    public AffyPipelineConfig(String name, String version, String type, String description, AffyPipelineInput input,
-                              AffyPipelineSteps steps) {
+    public AffyPipelineConfig(String name, String version, String type, String description, AffyPipelineInput input) {
         super(name, version, type, description);
         this.input = input;
-        this.steps = steps;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AffyPipelineConfig{");
         sb.append("input=").append(input);
-        sb.append(", steps=").append(steps);
         sb.append(", name='").append(name).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -57,15 +51,6 @@ public class AffyPipelineConfig extends PipelineConfig {
 
     public AffyPipelineConfig setInput(AffyPipelineInput input) {
         this.input = input;
-        return this;
-    }
-
-    public AffyPipelineSteps getSteps() {
-        return steps;
-    }
-
-    public AffyPipelineConfig setSteps(AffyPipelineSteps steps) {
-        this.steps = steps;
         return this;
     }
 }

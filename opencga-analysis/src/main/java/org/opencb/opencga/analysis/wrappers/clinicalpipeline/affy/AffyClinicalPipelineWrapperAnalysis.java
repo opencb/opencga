@@ -1,7 +1,6 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.PIPELINE_ANALYSIS_DIRNAME;
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.getPhysicalDirPath;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = AffyClinicalPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT,
@@ -37,17 +37,12 @@ import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
     public static final String ID = "affy-pipeline";
-    public static final String DESCRIPTION = "Execute the affy genomics pipeline that performs QC (apt-geno-qc-axiom),"
+    public static final String DESCRIPTION = "Execute the Affymetrix pipeline that performs QC (apt-geno-qc-axiom),"
             + " genotype (apt-genotype-axiom) and variant indexing in OpenCGA storage.";
 
     private static final String AFFY_PIPELINE_STEP = "affy-pipeline";
     private static final String VARIANT_INDEX_STEP = "variant-index";
 
-    // Affy pipeline
-    private static final String GENOTYPE_PIPELINE_STEP = "genotype";
-    private static final List<String> VALID_AFFY_PIPELINE_STEPS = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
-
-    private List<String> pipelineSteps;
     private AffyPipelineConfig updatedPipelineConfig;
 
     @ToolParams
@@ -65,9 +60,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
         // Update from params: samples, data dir and index dir
         updatePipelineConfigFromParams();
-
-        // Check pipeline steps
-        checkPipelineSteps();
     }
 
     @Override
@@ -97,7 +89,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         executor.setStudy(study)
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIRNAME))
                 .setPipelineConfig(updatedPipelineConfig)
-                .setPipelineSteps(pipelineSteps)
                 .execute();
     }
 
@@ -105,7 +96,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
     private void runVariantIndex() throws CatalogException, StorageEngineException, ToolException, IOException {
         // Find the .sorted.<variant calling tool ID>.vcf.gz file within the genotype/variant-calling folder
         Path vcfPath;
-        String genotypeToolId = updatedPipelineConfig.getSteps().getGenotype().getTool().getId();
         try (Stream<Path> stream = Files.list(getOutDir())) {
             vcfPath = stream
                     .filter(Files::isRegularFile)
@@ -115,7 +105,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         }
 
         if (vcfPath == null || !Files.exists(vcfPath)) {
-            throw new ToolException("Could not find the generated VCF: " + vcfPath + " from genotype tool " + genotypeToolId);
+            throw new ToolException("Could not find the generated VCF: " + vcfPath + " from Affymetrix pipeline execution.");
         }
         File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
                 "", "", "", null, null, null, null, null), false, token).first();
@@ -133,22 +123,22 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         // to add it to the params
         AffyClinicalPipelineParams params = analysisParams.getPipelineParams();
         if (StringUtils.isEmpty(params.getPipelineFile()) && params.getPipeline() == null) {
-            throw new ToolException("Missing affy pipeline configuration. You can either provide a pipeline configuration file or"
+            throw new ToolException("Missing Affymetrix pipeline configuration. You can either provide a pipeline configuration file or"
                     + " directly the pipeline configuration.");
         }
 
         // Get pipeline config
         if (!StringUtils.isEmpty(params.getPipelineFile())) {
             String pipelineFile = params.getPipelineFile();
-            logger.info("Checking affy pipeline configuration file {}", pipelineFile);
+            logger.info("Checking Affymetrix pipeline configuration file {}", pipelineFile);
             File opencgaFile = catalogManager.getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
             if (opencgaFile.getType() != File.Type.FILE) {
-                throw new ToolException("Affy pipeline configuration file '" + pipelineFile + "' is not a file.");
+                throw new ToolException("Affymetrix pipeline configuration file '" + pipelineFile + "' is not a file.");
             }
             Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
             return JacksonUtils.getDefaultObjectMapper().readerFor(AffyPipelineConfig.class).readValue(pipelinePath.toFile());
         } else {
-            logger.info("Getting affy pipeline configuration provided directly in the parameters");
+            logger.info("Getting Affymetrix pipeline configuration provided directly in the parameters");
             ObjectMapper mapper = new ObjectMapper();
             return mapper.readValue(mapper.writeValueAsString(params.getPipeline()), AffyPipelineConfig.class);
         }
@@ -158,6 +148,11 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         // Init input if not present
         if (updatedPipelineConfig.getInput() == null) {
             updatedPipelineConfig.setInput(new AffyPipelineInput());
+        }
+
+        // If chip is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(analysisParams.getPipelineParams().getChip())) {
+            updatedPipelineConfig.getInput().setChip(analysisParams.getPipelineParams().getChip());
         }
 
         // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
@@ -170,53 +165,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         if (StringUtils.isNotEmpty(analysisParams.getPipelineParams().getIndexDir())) {
             Path path = getPhysicalDirPath(analysisParams.getPipelineParams().getIndexDir(), study, catalogManager, token);
             updatedPipelineConfig.getInput().setIndexDir(path.toString());
-        }
-    }
-
-    private void checkPipelineSteps() throws ToolException, CatalogException {
-        // Ensure pipeline config has steps
-        if (updatedPipelineConfig.getSteps() == null || (updatedPipelineConfig.getSteps().getQualityControl() == null
-                && updatedPipelineConfig.getSteps().getGenotype() == null)) {
-            throw new ToolException("All clinical pipeline configuration steps are missing.");
-        }
-
-        pipelineSteps = analysisParams.getPipelineParams().getSteps();
-        // If no steps are provided, set all the steps by default
-        if (CollectionUtils.isEmpty(pipelineSteps)) {
-            pipelineSteps = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
-        }
-
-        // Validate each step exists in config and has required tools
-        for (String step : pipelineSteps) {
-            if (!VALID_AFFY_PIPELINE_STEPS.contains(step)) {
-                throw new ToolException("Affy clinical pipeline step '" + step + "' is not valid. Supported steps are: "
-                        + String.join(", ", VALID_AFFY_PIPELINE_STEPS));
-            }
-
-            switch (step) {
-                case QUALITY_CONTROL_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getSteps().getQualityControl() == null) {
-                        throw new ToolException("Affy clinical pipeline step '" + QUALITY_CONTROL_PIPELINE_STEP + "' is not present in the"
-                                + " pipeline configuration.");
-                    }
-                    validateTool(QUALITY_CONTROL_PIPELINE_STEP, updatedPipelineConfig.getSteps().getQualityControl().getTool());
-                    break;
-                }
-
-                case GENOTYPE_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getSteps().getGenotype() == null) {
-                        throw new ToolException("Affy clinical pipeline step '" + GENOTYPE_PIPELINE_STEP + "' is not present in the"
-                                + " pipeline configuration.");
-                    }
-                    validateTool(GENOTYPE_PIPELINE_STEP, updatedPipelineConfig.getSteps().getGenotype().getTool());
-                    break;
-                }
-
-                default: {
-                    throw new ToolException("Clinical pipeline step '" + step + "' is not valid. Supported steps are: "
-                            + String.join(", ", VALID_AFFY_PIPELINE_STEPS));
-                }
-            }
         }
     }
 }

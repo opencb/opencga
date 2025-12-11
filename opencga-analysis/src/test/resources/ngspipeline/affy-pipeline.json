@@ -4,36 +4,8 @@
   "description": "A sample bioinformatics pipeline configuration.",
   "type": "affy",
   "input": {
-    "dataDir": "",
-    "indexDir": ""
-  },
-  "steps": {
-    "qualityControl": {
-      "active": true,
-      "options": {
-      },
-      "tool": {
-        "id": "apt-geno-qc-axiom",
-        "parameters": {
-          "threads": 4
-        }
-      }
-    },
-    "genotype": {
-      "active": true,
-      "options": {
-        "clean": true,
-        "qc": true
-      },
-      "tool": {
-        "id": "apt-genotype-axiom",
-        "options": {
-          "joint": true,
-          "mendelianError": false
-        },
-        "parameters": {
-        }
-      }
-    }
+    "chip": "" ,
+    "indexDir": "",
+    "dataDir": ""
   }
 }

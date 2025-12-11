@@ -23,35 +23,41 @@ import java.util.List;
 
 public class AffyPipelineInput {
 
-    @DataField(id = "dataDir", description = "Directory containing data pipeline (e.g., CEL files in affy pipelines,...)")
+    @DataField(id = "chip", description = "Chip type used in the Affymetrix experiment")
+    protected String chip;
+
+    @DataField(id = "indexDir", description = "Directory containing Affymetrix pipeline indexes")
+    private String indexDir;
+
+    @DataField(id = "dataDir", description = "Directory containing Affymetrix pipeline data (e.g., CEL files,...)")
     private String dataDir;
 
-    @DataField(id = "indexDir", description = "Directory containing pipeline indexes")
-    private String indexDir;
 
     public AffyPipelineInput() {
     }
 
-    public AffyPipelineInput(String dataDir, String indexDir) {
-        this.dataDir = dataDir;
+    public AffyPipelineInput(String chip, String indexDir, String dataDir) {
+        this.chip = chip;
         this.indexDir = indexDir;
+        this.dataDir = dataDir;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineInput{");
-        sb.append("dataDir='").append(dataDir).append('\'');
+        final StringBuilder sb = new StringBuilder("AffyPipelineInput{");
+        sb.append("chip='").append(chip).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
+        sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getDataDir() {
-        return dataDir;
+    public String getChip() {
+        return chip;
     }
 
-    public AffyPipelineInput setDataDir(String dataDir) {
-        this.dataDir = dataDir;
+    public AffyPipelineInput setChip(String chip) {
+        this.chip = chip;
         return this;
     }
 
@@ -61,6 +67,15 @@ public class AffyPipelineInput {
 
     public AffyPipelineInput setIndexDir(String indexDir) {
         this.indexDir = indexDir;
+        return this;
+    }
+
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public AffyPipelineInput setDataDir(String dataDir) {
+        this.dataDir = dataDir;
         return this;
     }
 }

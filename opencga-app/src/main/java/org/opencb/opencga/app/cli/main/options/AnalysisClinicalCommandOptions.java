@@ -1231,17 +1231,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-chip"}, description = "Chip type used in the Affymetrix experiment", required = false, arity = 1)
+        public String pipelineParamsChip;
+    
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory containing Affymetrix pipeline indexes", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
-        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling, genotype,...", required = false, arity = 1)
-        public String pipelineParamsSteps;
-    
-        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
-        public String pipelineParamsPipelineFile;
-    
-        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory containing Affymetrix pipeline data (e.g., CEL files,...)", required = false, arity = 1)
         public String pipelineParamsDataDir;
+    
+        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Affymetrix pipeline configuration file", required = false, arity = 1)
+        public String pipelineParamsPipelineFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
