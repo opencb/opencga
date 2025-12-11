@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, Affymetrix
+from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, AffymetrixAxiom
 
 # Define global constants
 VALID_STEPS = ["quality-control", "alignment", "variant-calling"]
@@ -56,11 +56,9 @@ def parse_args(argv=None):
     ## --- affy command ---
     run_parser = subparsers.add_parser("affy", help="Process Affymetrix microarray data")
     run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
-    # run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted format: CEL")
     run_parser.add_argument("-i", "--index-dir", help="Directory containing reference index and APT configuration files")
-    # run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
-    run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
+    run_parser.add_argument("--chip-type", default="Axiom_KU8", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
     run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
@@ -276,21 +274,28 @@ def affy(args):
     if not pipeline or not isinstance(pipeline, dict):
         return 1
 
-    ## 2. Set reference in pipeline configuration if provided
+    ## 2. Set chipType in pipeline configuration if provided
+    if args.chip_type:
+        pipeline.get("input", {}).update({"chipType": args.chip_type})
+        logger.debug(f"Set chipType in pipeline configuration: {args.chip_type}")
+
+    ## 3. Set indexDir in pipeline configuration if provided
     if args.index_dir:
         pipeline.get("input", {}).update({"indexDir": args.index_dir})
         if not Path(args.index_dir).is_dir():
             logger.error(f"ERROR: 'index-dir' not found: {args.index_dir}")
             return 1
 
-    ## 3. Set input in pipeline configuration if provided
+    ## 4. Set input in pipeline configuration if provided
     if args.data_dir:
         pipeline.get("input", {}).update({"dataDir": args.data_dir})
         if not Path(args.data_dir).is_dir():
             logger.error(f"ERROR: 'data-dir' not found: {args.data_dir}")
             return 1
 
-    affy_impl = Affymetrix(pipeline=pipeline, output=outdir, logger=logger)
+
+    ## 5. Execute Affymetrix Axiom processing
+    affy_impl = AffymetrixAxiom(pipeline=pipeline, output=outdir, logger=logger)
     affy_impl.execute()
     return 0
 

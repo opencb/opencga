@@ -5,7 +5,7 @@ from typing import Set
 from .base_processor import BaseProcessor
 
 
-class Affymetrix(BaseProcessor):
+class AffymetrixAxiom(BaseProcessor):
 
     def __init__(self, pipeline: dict, output: Path, logger=None):
         """
