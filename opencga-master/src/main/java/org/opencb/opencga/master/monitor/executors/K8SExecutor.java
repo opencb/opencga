@@ -21,19 +21,16 @@ import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpecBuilder;
+import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
-import io.fabric8.kubernetes.client.*;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.config.ExecutionFactor;
-import org.opencb.opencga.core.config.ExecutionQueue;
+import org.opencb.opencga.core.config.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.slf4j.Logger;
@@ -72,7 +69,6 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
     public static final String K8S_SECURITY_CONTEXT = "k8s.securityContext";
     public static final String K8S_POD_SECURITY_CONTEXT = "k8s.podSecurityContext";
-    public static final String AGENT_POOL_OPTION = "agentpool";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
     public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
@@ -106,7 +102,6 @@ public class K8SExecutor implements BatchExecutor {
     private final List<Toleration> tolerations;
     private final SecurityContext securityContext;
     private final PodSecurityContext podSecurityContext;
-    private final ResourceRequirements resources;
     private final List<EnvVar> envVars;
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
@@ -123,40 +118,45 @@ public class K8SExecutor implements BatchExecutor {
     private final List<LocalObjectReference> imagePullSecrets;
     private final int ttlSecondsAfterFinished;
     private final boolean logToStdout;
+    private final ExecutionRequirements defaultRequirements;
+    private final ObjectMap options;
     private long terminationGracePeriodSeconds;
-    private final ExecutionFactor requestFactor;
+    private final ExecutionRequirementsFactor executionFactor;
 
     public K8SExecutor(Configuration configuration, ExecutionQueue executionQueue) {
         Execution execution = configuration.getAnalysis().getExecution();
-        String k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
-        this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
-        this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
-        this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
-        this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
-        this.tolerations = buildTolelrations(execution.getOptions().getList(K8S_TOLERATIONS));
+        options = execution.getOptions();
+        options.putAll(executionQueue.getOptions());
+
+        String k8sClusterMaster = options.getString(K8S_MASTER_NODE);
+        this.namespace = options.getString(K8S_NAMESPACE);
+        this.imageName = options.getString(K8S_IMAGE_NAME);
+        this.volumeMounts = buildVolumeMounts(options.getList(K8S_VOLUME_MOUNTS));
+        this.volumes = buildVolumes(options.getList(K8S_VOLUMES));
+        this.tolerations = buildTolelrations(options.getList(K8S_TOLERATIONS));
         this.k8sConfig = new ConfigBuilder()
                 .withMasterUrl(k8sClusterMaster)
                 // Connection timeout in ms (0 for no timeout)
-                .withConnectionTimeout(execution.getOptions().getInt(K8S_CLIENT_TIMEOUT, DEFAULT_TIMEOUT))
+                .withConnectionTimeout(options.getInt(K8S_CLIENT_TIMEOUT, DEFAULT_TIMEOUT))
                 // Read timeout in ms
-                .withRequestTimeout(execution.getOptions().getInt(K8S_CLIENT_TIMEOUT, 30000))
+                .withRequestTimeout(options.getInt(K8S_CLIENT_TIMEOUT, 30000))
                 .build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
-        this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
-        this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
-        this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
-        this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
-        this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
-        this.requestFactor = execution.getRequestFactor();
+        this.imagePullPolicy = options.getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
+        this.imagePullSecrets = buildLocalObjectReference(options.get(K8S_IMAGE_PULL_SECRETS));
+        this.ttlSecondsAfterFinished = options.getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
+        this.terminationGracePeriodSeconds = options.getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
+        this.logToStdout = options.getBoolean(K8S_LOG_TO_STDOUT, true);
+        this.executionFactor = execution.getRequirementsFactor();
+        this.defaultRequirements = execution.getDefaultRequirements();
 
         this.nodeSelector = new HashMap<>();
-        this.nodeSelector.put(AGENT_POOL_OPTION, executionQueue.getId());
         // Override node selector if defined in execution options
-        this.nodeSelector.putAll(getMap(executionQueue.getOptions(), K8S_NODE_SELECTOR));
+        this.nodeSelector.putAll(getMap(options, K8S_NODE_SELECTOR));
 
 
-        if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
-            securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
+        if (options.containsKey(K8S_SECURITY_CONTEXT)) {
+            securityContext = buildObject(options.get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {
             securityContext = new SecurityContextBuilder()
                     .withRunAsUser(1001L)
@@ -164,47 +164,17 @@ public class K8SExecutor implements BatchExecutor {
                     .withReadOnlyRootFilesystem(false)
                     .build();
         }
-        if (execution.getOptions().containsKey(K8S_POD_SECURITY_CONTEXT)) {
-            podSecurityContext = buildObject(execution.getOptions().get(K8S_POD_SECURITY_CONTEXT), PodSecurityContext.class);
+        if (options.containsKey(K8S_POD_SECURITY_CONTEXT)) {
+            podSecurityContext = buildObject(options.get(K8S_POD_SECURITY_CONTEXT), PodSecurityContext.class);
         } else {
             podSecurityContext = new PodSecurityContextBuilder()
                     .withRunAsNonRoot(true)
                     .build();
         }
 
-        HashMap<String, Quantity> requests = new HashMap<>();
-        requests.put("cpu", new Quantity(String.valueOf(execution.getDefaultRequest().getCpu() * this.requestFactor.getCpu())));
-        long memoryBytes = IOUtils.fromHumanReadableToByte(execution.getDefaultRequest().getMemory());
-        Quantity memory = new Quantity(String.valueOf(memoryBytes * this.requestFactor.getMemory()));
-        requests.put("memory", memory);
-//        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_REQUESTS).entrySet()) {
-//            requests.put(entry.getKey(), new Quantity(entry.getValue()));
-//        }
-        HashMap<String, Quantity> limits = new HashMap<>();
-        limits.put("cpu", new Quantity(String.valueOf(executionQueue.getCpu())));
-        limits.put("memory", new Quantity(String.valueOf(executionQueue.getMemory())));
-//        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_LIMITS).entrySet()) {
-//            limits.put(entry.getKey(), new Quantity(entry.getValue()));
-//        }
-        resources = new ResourceRequirementsBuilder()
-                .withLimits(limits)
-                .withRequests(requests)
-                .build();
         envVars = new ArrayList<>();
         envVars.add(DOCKER_HOST);
-
-        String javaHeap = execution.getOptions().getString(K8S_JAVA_HEAP);
-        if (StringUtils.isEmpty(javaHeap) && requests.containsKey("memory")) {
-            memory = requests.get("memory");
-            String amount = memory.getAmount();
-            long bytes = IOUtils.fromHumanReadableToByte(amount);
-            bytes -= IOUtils.fromHumanReadableToByte("300Mi");
-            javaHeap = Long.toString(bytes);
-        }
-        if (javaHeap != null) {
-            envVars.add(new EnvVar("JAVA_HEAP", javaHeap, null));
-        }
-        Map<String, String> map = getMap(execution.getOptions(), K8S_ENVS);
+        Map<String, String> map = getMap(options, K8S_ENVS);
         for (Map.Entry<String, String> entry : map.entrySet()) {
             envVars.add(new EnvVar(entry.getKey(), entry.getValue(), null));
         }
@@ -224,10 +194,10 @@ public class K8SExecutor implements BatchExecutor {
             volumeMounts.add(scratchVolumemount);
         }
 
-        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
+        String dindImageName = options.getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
         boolean rootless;
-        if (execution.getOptions().containsKey(K8S_DIND_ROOTLESS)) {
-            rootless = execution.getOptions().getBoolean(K8S_DIND_ROOTLESS);
+        if (options.containsKey(K8S_DIND_ROOTLESS)) {
+            rootless = options.getBoolean(K8S_DIND_ROOTLESS);
         } else {
             rootless = dindImageName.contains("dind-rootless");
         }
@@ -259,13 +229,13 @@ public class K8SExecutor implements BatchExecutor {
                 .build();
 
         // Initialize GPU configurations
-        this.gpuRuntimeClass = execution.getOptions().getString(K8S_GPU_RUNTIME_CLASS, null);
+        this.gpuRuntimeClass = options.getString(K8S_GPU_RUNTIME_CLASS, null);
         this.gpuNodeSelector = new HashMap<>(this.nodeSelector);
-        Map<String, String> additionalGpuNodeSelector = getMap(execution.getOptions(), K8S_GPU_NODE_SELECTOR);
+        Map<String, String> additionalGpuNodeSelector = getMap(options, K8S_GPU_NODE_SELECTOR);
         this.gpuNodeSelector.putAll(additionalGpuNodeSelector);
 
         // Create GPU-enabled Docker daemon sidecar
-        String gpuDindImageName = execution.getOptions().getString(K8S_GPU_DIND_IMAGE_NAME, "ghcr.io/ehfd/nvidia-dind:latest");
+        String gpuDindImageName = options.getString(K8S_GPU_DIND_IMAGE_NAME, "ghcr.io/ehfd/nvidia-dind:latest");
 
         // GPU DinD requires privileged access and specific configuration for NVIDIA runtime
         SecurityContext gpuDindSecurityContext = new SecurityContextBuilder()
@@ -357,6 +327,7 @@ public class K8SExecutor implements BatchExecutor {
         String jobName = buildJobName(job.getId());
         boolean isGpuJob = isGpuJob(job);
         ResourceRequirements resources = getResources(job.getTool().getMinimumRequirements());
+        List<EnvVar> javaHeapEnvVars = configureJavaHeap(job, resources);
 
         PodSpecBuilder podSpecBuilder = new PodSpecBuilder()
                 .withTerminationGracePeriodSeconds(terminationGracePeriodSeconds)
@@ -367,6 +338,7 @@ public class K8SExecutor implements BatchExecutor {
                         .withImagePullPolicy(imagePullPolicy)
                         .withResources(resources)
                         .addAllToEnv(envVars)
+                        .addAllToEnv(javaHeapEnvVars)
                         .withCommand("/bin/bash", "-c")
                         .withArgs(getCommandLine(commandLine, stdout, stderr))
                         .withVolumeMounts(volumeMounts)
@@ -430,23 +402,57 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private ResourceRequirements getResources(MinimumRequirements minimumRequirements) {
-        if (minimumRequirements != null) {
-            ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder(this.resources);
-            if (StringUtils.isNotEmpty(minimumRequirements.getMemory())) {
-                long memoryBytes = IOUtils.fromHumanReadableToByte(minimumRequirements.getMemory());
-                Quantity memory = new Quantity(String.valueOf(memoryBytes * this.requestFactor.getMemory()));
-                resources.addToRequests("memory", memory);
-                resources.addToLimits("memory", memory);
+        if (minimumRequirements == null) {
+            minimumRequirements = new MinimumRequirements(
+                    String.valueOf(defaultRequirements.getCpu()),
+                    defaultRequirements.getMemory(),
+                    null,
+                    ExecutionQueue.ProcessorType.CPU,
+                    null);
+        }
+        ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder();
+        if (StringUtils.isNotEmpty(minimumRequirements.getMemory())) {
+            long memoryBytes = IOUtils.fromHumanReadableToByte(minimumRequirements.getMemory());
+            Quantity memory = new Quantity(String.valueOf(memoryBytes * this.executionFactor.getMemory()));
+            resources.addToRequests("memory", memory);
+            resources.addToLimits("memory", memory);
+        }
+        if (StringUtils.isNotEmpty(minimumRequirements.getCpu())) {
+            double cpuUnits = Double.parseDouble(minimumRequirements.getCpu());
+            Quantity cpu = new Quantity(Double.toString(cpuUnits * this.executionFactor.getCpu()));
+            resources.addToRequests("cpu", cpu);
+            resources.addToLimits("cpu", cpu);
+        }
+        return resources.build();
+    }
+
+    private List<EnvVar> configureJavaHeap(org.opencb.opencga.core.models.job.Job job, ResourceRequirements requirements) {
+        String javaHeap = options.getString(K8S_JAVA_HEAP);
+        Quantity memory = requirements.getRequests().get("memory");
+
+        if (StringUtils.isEmpty(javaHeap) && memory != null) {
+            // TODO: Some of this magic should go to the JobManager
+            long bytes;
+            switch (job.getType()) {
+                case WORKFLOW:
+                case CUSTOM_TOOL:
+                case VARIANT_WALKER:
+                    // Because these type of jobs launch a separate docker instance, we should be more restrictive with the Java heap
+                    bytes = IOUtils.fromHumanReadableToByte("2000Mi");
+                    break;
+                case NATIVE_TOOL:
+                default:
+                    String amount = memory.getAmount();
+                    bytes = IOUtils.fromHumanReadableToByte(amount);
+                    bytes -= IOUtils.fromHumanReadableToByte("300Mi");
+                    break;
             }
-            if (StringUtils.isNotEmpty(minimumRequirements.getCpu())) {
-                double cpuUnits = Double.parseDouble(minimumRequirements.getCpu());
-                Quantity cpu = new Quantity(Double.toString(cpuUnits * this.requestFactor.getCpu()));
-                resources.addToRequests("cpu", cpu);
-                resources.addToLimits("cpu", cpu);
-            }
-            return resources.build();
+            javaHeap = Long.toString(bytes);
+        }
+        if (javaHeap != null) {
+            return Collections.singletonList(new EnvVar("JAVA_HEAP", javaHeap, null));
         } else {
-            return this.resources;
+            return Collections.emptyList();
         }
     }
 

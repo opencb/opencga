@@ -204,10 +204,12 @@ public class JobScheduler {
             if (StringUtils.isNotEmpty(queueId)) {
                 // Check if the defined queue is valid and exists
                 ExecutionQueue executionQueue = this.queueMap.get(queueId);
+                boolean isValid = false;
                 if (executionQueue != null) {
                     // Validate queue is still valid for the job requirements
-                    JobExecutionUtils.isValidQueue(executionQueue, job.getTool().getMinimumRequirements());
-                } else {
+                    isValid = JobExecutionUtils.isValidQueue(executionQueue, job.getTool().getMinimumRequirements());
+                }
+                if (!isValid) {
                     logger.warn("Job '{}' has an invalid queue defined ('{}'). Leaving unassigned to look for optimal queue again.",
                             job.getId(), queueId);
                     queueId = null;

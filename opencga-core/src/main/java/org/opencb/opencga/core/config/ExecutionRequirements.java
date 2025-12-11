@@ -2,7 +2,7 @@ package org.opencb.opencga.core.config;
 
 import org.opencb.commons.annotations.DataField;
 
-public class ExecutionRequest {
+public class ExecutionRequirements {
 
     @DataField(id = "cpu", description = "Default cpu for new execution requests..")
     public int cpu;
@@ -10,21 +10,21 @@ public class ExecutionRequest {
     @DataField(id = "memory", description = "Default memory for new execution requests.")
     public String memory;
 
-    public ExecutionRequest() {
+    public ExecutionRequirements() {
     }
 
-    public ExecutionRequest(int cpu, String memory) {
+    public ExecutionRequirements(int cpu, String memory) {
         this.cpu = cpu;
         this.memory = memory;
     }
 
-    public static ExecutionRequest defaultRequest() {
-        return new ExecutionRequest(2, "8G");
+    public static ExecutionRequirements defaultRequest() {
+        return new ExecutionRequirements(2, "8G");
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ExecutionRequest{");
+        final StringBuilder sb = new StringBuilder("ExecutionRequirements{");
         sb.append("cpu=").append(cpu);
         sb.append(", memory='").append(memory).append('\'');
         sb.append('}');
@@ -35,7 +35,7 @@ public class ExecutionRequest {
         return cpu;
     }
 
-    public ExecutionRequest setCpu(int cpu) {
+    public ExecutionRequirements setCpu(int cpu) {
         this.cpu = cpu;
         return this;
     }
@@ -44,7 +44,7 @@ public class ExecutionRequest {
         return memory;
     }
 
-    public ExecutionRequest setMemory(String memory) {
+    public ExecutionRequirements setMemory(String memory) {
         this.memory = memory;
         return this;
     }

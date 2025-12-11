@@ -54,13 +54,13 @@ public class Execution {
     @DataField(id = "queues", description = "List of execution queues")
     private List<ExecutionQueue> queues;
 
-    @DataField(id = "defaultRequest", description = "Default request values for new executions.")
-    private ExecutionRequest defaultRequest;
+    @DataField(description = "Default requirement values for new executions.")
+    private ExecutionRequirements defaultRequirements;
 
-    @DataField(id = "requestFactor", description = "Execution request factor to be applied. This is to take into account that systems "
+    @DataField(description = "Execution requirements factor to be applied. This is to take into account that systems "
             + "always reserve some resources for the system itself, so the request factor is used to scale down the number of resources "
             + "requested by the user so that multiple jobs can run in parallel without overloading the system.")
-    private ExecutionFactor requestFactor;
+    private ExecutionRequirementsFactor requirementsFactor;
 
     @Deprecated
     private Map<String, List<String>> toolsPerQueue;
@@ -119,21 +119,21 @@ public class Execution {
         return this;
     }
 
-    public ExecutionRequest getDefaultRequest() {
-        return defaultRequest;
+    public ExecutionRequirements getDefaultRequirements() {
+        return defaultRequirements;
     }
 
-    public Execution setDefaultRequest(ExecutionRequest defaultRequest) {
-        this.defaultRequest = defaultRequest;
+    public Execution setDefaultRequirements(ExecutionRequirements defaultRequest) {
+        this.defaultRequirements = defaultRequest;
         return this;
     }
 
-    public ExecutionFactor getRequestFactor() {
-        return requestFactor;
+    public ExecutionRequirementsFactor getRequirementsFactor() {
+        return requirementsFactor;
     }
 
-    public Execution setRequestFactor(ExecutionFactor requestFactor) {
-        this.requestFactor = requestFactor;
+    public Execution setRequirementsFactor(ExecutionRequirementsFactor requestFactor) {
+        this.requirementsFactor = requestFactor;
         return this;
     }
 
@@ -173,7 +173,9 @@ public class Execution {
         sb.append("id='").append(id).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
-        sb.append(", queues='").append(queues).append('\'');
+        sb.append(", queues=").append(queues);
+        sb.append(", defaultRequirements=").append(defaultRequirements);
+        sb.append(", requirementsFactor=").append(requirementsFactor);
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append(", maxConcurrentJobs=").append(maxConcurrentJobs);
         sb.append(", options=").append(options);
