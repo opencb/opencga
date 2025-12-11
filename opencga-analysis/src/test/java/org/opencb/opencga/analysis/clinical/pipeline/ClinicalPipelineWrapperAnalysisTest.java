@@ -398,6 +398,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Preparing index dir
         String indexDirname = "affy-index";
         filenames = Arrays.asList("Axiom_KU8.r2.spf", "Axiom_KU8.r2.generic_prior.txt", "Axiom_KU8.na36.r1.a2.annot.csv",
+                "Axiom_KU8.r2.apt-geno-qc.AxiomQC1.xml", "Axiom_KU8.r2.qca", "Axiom_KU8.r2.chrYprobes", "Axiom_KU8.r2.chrXprobes",
+                "Axiom_KU8.r2.qcc", "Axiom_KU8.r2.AxiomGT1.sketch",
                 "Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
         for (String filename : filenames) {
             localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
