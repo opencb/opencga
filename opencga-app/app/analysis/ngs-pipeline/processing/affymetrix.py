@@ -41,7 +41,6 @@ class Affymetrix(BaseProcessor):
 
         ## 2. Execute apt-geno-qc-axiom, example:
         cmd = (["apt-geno-qc-axiom"]
-               + ["--out-dir", str(self.output)]
                + ["--out-file", str(self.output / "apt-geno-qc-axiom.txt")]
                + ["--analysis-files-path", index_dir]
                + ["--arg-file", index_dir + "/Axiom_KU8.r2.apt-geno-qc.AxiomQC1.xml"]

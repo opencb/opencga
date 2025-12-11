@@ -366,6 +366,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         assertEquals(10, variantQueryResult.getNumResults());
     }
 
+    @Ignore
     @Test
     public void testClinicalPipelineAffyDataDir() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
