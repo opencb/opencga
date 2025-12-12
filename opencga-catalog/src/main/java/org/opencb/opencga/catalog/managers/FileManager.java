@@ -1064,9 +1064,8 @@ public class FileManager extends AnnotationSetManager<File> {
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-        if (StringUtils.isNotEmpty(expectedChecksum)) {
-            calculateChecksum = true;
-        }
+        // Always calculate checksum for uploaded files
+        calculateChecksum = true;
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
