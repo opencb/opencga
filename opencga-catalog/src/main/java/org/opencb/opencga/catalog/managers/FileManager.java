@@ -1064,7 +1064,8 @@ public class FileManager extends AnnotationSetManager<File> {
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-        // Always calculate checksum for uploaded files
+        // Always calculate checksum for uploaded files (ignoring the deprecated calculateChecksum parameter)
+        // This ensures SHA-256 is computed for all uploads regardless of caller's parameter value
         calculateChecksum = true;
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
