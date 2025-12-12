@@ -1034,14 +1034,13 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum (Deprecated - ignored) SHA-256 checksum is always calculated for uploaded files.
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String token) throws CatalogException {
-        return upload(studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
+                                      String token) throws CatalogException {
+        return upload(studyStr, fileInputStream, file, overwrite, parents, null, null, token);
     }
 
     /**
@@ -1052,7 +1051,6 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum (Deprecated - ignored) SHA-256 checksum is always calculated for uploaded files.
      * @param expectedChecksum  Expected SHA-256 checksum to be checked
      * @param expectedSize      Expected file size
      * @param token             session id of the user performing the upload.
@@ -1060,13 +1058,10 @@ public class FileManager extends AnnotationSetManager<File> {
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+                                      String expectedChecksum, Long expectedSize, String token)
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-        // Always calculate checksum for uploaded files (ignoring the deprecated calculateChecksum parameter)
-        // This ensures SHA-256 is computed for all uploads regardless of caller's parameter value
-        calculateChecksum = true;
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1078,7 +1073,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("file", file)
                 .append("overwrite", overwrite)
                 .append("parents", parents)
-                .append("calculateChecksum", calculateChecksum)
                 .append("expectedChecksum", expectedChecksum)
                 .append("expectedSize", expectedSize)
                 .append("token", token);
@@ -1158,15 +1152,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     }
                 }
 
-                if (calculateChecksum) {
-                    checksum = ioManager.calculateChecksum(tempFileUri);
-                    if (StringUtils.isNotEmpty(expectedChecksum)) {
-                        // Validate checksum
-                        if (!checksum.equals(expectedChecksum)) {
-                            throw new CatalogIOException("SHA-256 Checksum mismatch!"
-                                    + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
-                                    + " Error uploading file " + file.getPath());
-                        }
+                // Always calculate SHA-256 checksum for uploaded files
+                checksum = ioManager.calculateChecksum(tempFileUri);
+                if (StringUtils.isNotEmpty(expectedChecksum)) {
+                    // Validate checksum
+                    if (!checksum.equals(expectedChecksum)) {
+                        throw new CatalogIOException("SHA-256 Checksum mismatch!"
+                                + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
+                                + " Error uploading file " + file.getPath());
                     }
                 }
             } catch (Exception e) {
@@ -1193,7 +1186,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 } else {
                     ioManager.move(tempFileUri, file.getUri());
                 }
-                if (calculateChecksum && !checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
+                // Verify the checksum after moving the file
+                if (!checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
                     throw new CatalogIOException("Error moving file from " + tempFileUri + " to " + file.getUri());
                 }
 

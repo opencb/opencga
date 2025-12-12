@@ -221,7 +221,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setResource(isResource)
                     .setFormat(format)
                     .setBioformat(bioformat);
-            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, expectedChecksum, expectedSize, token));
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, expectedChecksum, expectedSize, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
