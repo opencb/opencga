@@ -1034,7 +1034,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the SHA-256 checksum of the uploaded file.
+     * @param calculateChecksum (Deprecated - ignored) SHA-256 checksum is always calculated for uploaded files.
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
@@ -1052,7 +1052,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the SHA-256 checksum of the uploaded file.
+     * @param calculateChecksum (Deprecated - ignored) SHA-256 checksum is always calculated for uploaded files.
      * @param expectedChecksum  Expected SHA-256 checksum to be checked
      * @param expectedSize      Expected file size
      * @param token             session id of the user performing the upload.
