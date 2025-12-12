@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -2082,6 +2083,41 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "user4", new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(s_7Id), normalUserId3, new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
     }
+
+    @Test
+    public void changeBaseUriTest() throws CatalogException {
+        String uri = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions()
+                        .append(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key())
+                        .append(QueryOptions.LIMIT, 1), ownerToken)
+                .first().getUri().getPath();
+
+        // In uriList, we have the absolute paths of the files in the study.
+        // We extract from the first of the files, the base uri up to the third slash and save it in a new variable.
+        String baseUri = uri.substring(0, uri.indexOf('/', uri.indexOf('/', uri.indexOf('/') + 1) + 1) + 1);
+        // We change the base uri to a new one "/tmp/other"
+        System.out.println("Replacing base uri " + baseUri + " with /tmp/other");
+
+        CatalogException catalogException = assertThrows(CatalogException.class, () -> catalogManager.getAdminManager().updateWorkspace(baseUri, "/tmp/other", opencgaToken));
+        assertTrue(catalogException.getMessage().contains("configuration file"));
+
+        catalogManager.getConfiguration().setWorkspace("/tmp/other");
+        catalogManager.getAdminManager().updateWorkspace(baseUri, "/tmp/other", opencgaToken);
+
+        catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key()), ownerToken)
+                .getResults().forEach(file -> {
+                    assertTrue(file.getUri().getPath().startsWith("/tmp/other/"));
+                    assertFalse(file.getUri().getPath().contains(baseUri));
+                });
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertFalse(organization.getProjects().isEmpty());
+        for (Project project : organization.getProjects()) {
+            for (Study study : project.getStudies()) {
+                assertTrue(study.getUri().getPath().startsWith("/tmp/other/"));
+                assertFalse(study.getUri().getPath().contains(baseUri));
+            }
+        }
+    }
+
 
     @Test
     public void testCreateCohortWithTags() throws CatalogException {

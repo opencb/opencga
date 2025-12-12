@@ -368,11 +368,11 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("!test@p1:s1,test@p1:s2", parseValue(STUDY, "!s1,s2"));
         assertEquals("test@p1:s2;!test@p1:s1;test@p1:s3", parseValue(STUDY, "test@p1:s2;!s1;p1:s3"));
 
-        assertEquals(file1.getName(), parseValue("s1", FILE, file1.getName()));
-        assertEquals(file1.getName(), parseValue("s1", FILE, file1.getId()));
-        assertEquals(file1.getName(), parseValue("s1", FILE, file1.getPath()));
-        assertEquals(file1.getName() + "," + file2.getName(), parseValue("s1", FILE, file1.getPath() + "," + file2.getPath()));
-        assertEquals(file1.getName() + ";" + file2.getName(), parseValue("s1", FILE, file1.getPath() + ";" + file2.getPath()));
+        assertEquals(file1.getUri().getPath(), parseValue("s1", FILE, file1.getName()));
+        assertEquals(file1.getUri().getPath(), parseValue("s1", FILE, file1.getId()));
+        assertEquals(file1.getUri().getPath(), parseValue("s1", FILE, file1.getPath()));
+        assertEquals(file1.getUri().getPath() + "," + file2.getUri().getPath(), parseValue("s1", FILE, file1.getPath() + "," + file2.getPath()));
+        assertEquals(file1.getUri().getPath() + ";" + file2.getUri().getPath(), parseValue("s1", FILE, file1.getPath() + ";" + file2.getPath()));
 //        assertEquals("file1.vcf", parseValue("s1", FILE, String.valueOf(file1.getUid())));
 
         assertEquals("sample1:HOM_ALT;sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT;sample2:HET_REF"));
@@ -588,11 +588,11 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByFile() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getId()), null, cellBaseUtils, sessionId);
-        assertEquals(set(file1.getName()), set(query, FILE));
+        assertEquals(set(file1.getUri().getPath()), set(query, FILE));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getUuid()), null, cellBaseUtils, sessionId);
-        assertEquals(set(file1.getName()), set(query, FILE));
+        assertEquals(set(file1.getUri().getPath()), set(query, FILE));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getPath()), null, cellBaseUtils, sessionId);
-        assertEquals(set(file1.getName()), set(query, FILE));
+        assertEquals(set(file1.getUri().getPath()), set(query, FILE));
     }
 
     @Test

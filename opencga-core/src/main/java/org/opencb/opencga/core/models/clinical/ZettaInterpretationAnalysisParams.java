@@ -4,6 +4,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+@Deprecated
 public class ZettaInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Zetta interpretation analysis params";
 

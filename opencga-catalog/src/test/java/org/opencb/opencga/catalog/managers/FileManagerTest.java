@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -64,6 +65,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -2838,6 +2840,287 @@ public class FileManagerTest extends AbstractManagerTest {
             }
         }
     }
+
+    /************************** Update URI tests **************************/
+    @Test
+    public void testUpdateFileUriWithFullFileUri() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        assertTrue(result.getEvents().isEmpty());
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals(newUri, updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithFileUriNoTripleSlash() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        String newUri = "file:/tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertTrue(result.getEvents().isEmpty());
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals("file:///tmp/renamed-file.txt", updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithAbsolutePath() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "/tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        assertEquals(1, result.getNumUpdated());
+        File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+
+        assertEquals("file:///tmp/renamed-file.txt", updatedFile.getUri().toString());
+        assertEquals("renamed-file.txt", updatedFile.getName());
+        assertEquals("data:renamed-file.txt", updatedFile.getId());
+        assertEquals("data/renamed-file.txt", updatedFile.getPath());
+    }
+
+    @Test
+    public void testUpdateFileUriWithRelativePath() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Move file from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertFalse(result.getEvents().isEmpty());
+        assertTrue(result.getEvents().get(0).getMessage().contains("not found"));
+        assertEquals(0, result.getNumUpdated());
+    }
+
+    @Test
+    public void testUpdateFileUriWithOldUriVariations() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        String newUri = "file:///tmp/renamed-file.txt";
+
+        // Test with different old URI formats
+        String[] oldUriFormats = {
+                testFile.getUri().toString(),
+                testFile.getUri().toString().replace("file:///", "file:/"),
+                testFile.getUri().toString().replace("file:///", "/")
+        };
+
+        for (String oldUri : oldUriFormats) {
+            // Move file from origin to target
+            Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+            FileUriChangeParam param = new FileUriChangeParam()
+                    .setOriginal(oldUri)
+                    .setUpdated(newUri);
+
+            OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+            assertEquals(1, result.getNumUpdated());
+            File updatedFile = fileManager.get(studyFqn, testFile.getUuid(), FileManager.INCLUDE_FILE_URI_PATH, ownerToken).first();
+            assertEquals(newUri, updatedFile.getUri().toString());
+
+            // Reset for next iteration
+            Files.move(Paths.get("/tmp/renamed-file.txt"), Paths.get(testFile.getUri()), StandardCopyOption.REPLACE_EXISTING);
+            FileUriChangeParam resetParam = new FileUriChangeParam()
+                    .setOriginal(newUri)
+                    .setUpdated(testFile.getUri().toString());
+            fileManager.updateFileUri(studyFqn, Collections.singletonList(resetParam), ownerToken);
+        }
+    }
+
+    @Test
+    public void testUpdateMultipleFileUris() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create second test file
+        File testFile2 = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file2.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), false, ownerToken).first();
+
+
+        // Move files from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file1.txt"), StandardCopyOption.REPLACE_EXISTING);
+        Files.move(Paths.get(testFile2.getUri()), Paths.get("/tmp/renamed-file2.txt"), StandardCopyOption.REPLACE_EXISTING);
+
+        List<FileUriChangeParam> params = Arrays.asList(
+                new FileUriChangeParam()
+                        .setOriginal(testFile.getUri().toString())
+                        .setUpdated("file:///tmp/renamed-file1.txt"),
+                new FileUriChangeParam()
+                        .setOriginal(testFile2.getUri().toString())
+                        .setUpdated("file:///tmp/renamed-file2.txt")
+        );
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, params, ownerToken);
+        assertEquals(2, result.getNumUpdated());
+        result = fileManager.get(studyFqn, Arrays.asList(testFile.getUuid(), testFile2.getUuid()),
+                FileManager.INCLUDE_FILE_URI_PATH, ownerToken);
+
+        File updatedFile1 = result.getResults().stream()
+                .filter(f -> f.getId().equals("data:renamed-file1.txt"))
+                .findFirst().orElse(null);
+        assertNotNull(updatedFile1);
+        assertEquals("file:///tmp/renamed-file1.txt", updatedFile1.getUri().toString());
+        assertEquals("renamed-file1.txt", updatedFile1.getName());
+
+        File updatedFile2 = result.getResults().stream()
+                .filter(f -> f.getId().equals("data:renamed-file2.txt"))
+                .findFirst().orElse(null);
+        assertNotNull(updatedFile2);
+        assertEquals("file:///tmp/renamed-file2.txt", updatedFile2.getUri().toString());
+        assertEquals("renamed-file2.txt", updatedFile2.getName());
+    }
+
+    @Test
+    public void testUpdateFileUriWithSampleReference() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create a sample that references the file
+        Sample sample = catalogManager.getSampleManager().create(studyFqn, new Sample()
+                .setId("test-sample"), INCLUDE_RESULT, ownerToken).first();
+
+        // Associate file with sample
+        catalogManager.getFileManager().update(studyFqn, testFile.getId(),
+                new org.opencb.opencga.core.models.file.FileUpdateParams()
+                        .setSampleIds(Collections.singletonList(sample.getId())),
+                QueryOptions.empty(), ownerToken);
+
+        // Move files from origin to target
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        // Verify sample still references the file correctly
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), ownerToken);
+
+        assertFalse(sampleResult.getResults().isEmpty());
+        Sample retrievedSample = sampleResult.first();
+
+        // Check if any file references contain the new filename
+        boolean foundUpdatedFile = retrievedSample.getFileIds().stream()
+                .anyMatch(fileId -> fileId.contains("renamed-file.txt"));
+        assertTrue("Sample should reference the renamed file", foundUpdatedFile);
+    }
+
+    @Test
+    public void testUpdateFileUriWithClinicalAnalysisReference() throws CatalogException, IOException {
+        File testFile = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("data/test-file.txt")
+                .setContent("Test content")
+                .setType(File.Type.FILE), true, ownerToken).first();
+
+        // Create necessary entities for clinical analysis
+        Sample sample = catalogManager.getSampleManager().create(studyFqn, new Sample()
+                .setId("test-sample"), INCLUDE_RESULT, ownerToken).first();
+
+        Individual individual = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("test-individual"),
+                Collections.singletonList(sample.getId()), INCLUDE_RESULT, ownerToken).first();
+
+        // Create clinical analysis that references the file
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("test-clinical")
+                .setProband(individual)
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setFiles(Collections.singletonList(testFile));
+
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis,
+                QueryOptions.empty(), ownerToken);
+
+        Files.move(Paths.get(testFile.getUri()), Paths.get("/tmp/renamed-file.txt"), StandardCopyOption.REPLACE_EXISTING);
+        String newUri = "file:///tmp/renamed-file.txt";
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal(testFile.getUri().toString())
+                .setUpdated(newUri);
+
+        fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+
+        // Verify clinical analysis references are updated
+        OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager()
+                .search(studyFqn, new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), "test-clinical"),
+                        QueryOptions.empty(), ownerToken);
+
+        assertFalse(clinicalResult.getResults().isEmpty());
+        ClinicalAnalysis retrievedClinical = clinicalResult.first();
+
+        // Check if files contain the updated filename
+        boolean foundUpdatedFile = retrievedClinical.getFiles().stream()
+                .anyMatch(file -> file.getName().equals("renamed-file.txt"));
+        assertTrue("Clinical analysis should reference the renamed file", foundUpdatedFile);
+    }
+
+    @Test
+    public void testUpdateFileUriInvalidFileId() throws CatalogException {
+        FileUriChangeParam param = new FileUriChangeParam()
+                .setOriginal("file:///old/path/file.txt")
+                .setUpdated("file:///new/path/file.txt");
+
+        OpenCGAResult<File> result = fileManager.updateFileUri(studyFqn, Collections.singletonList(param), ownerToken);
+        assertEquals(1, result.getEvents().size());
+        assertTrue(result.getEvents().get(0).getMessage().contains("not found"));
+    }
+
+    /******************************* End Update URI tests *******************************/
 
     //    @Test
 //    public void testIndex() throws Exception {

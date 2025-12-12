@@ -39,6 +39,7 @@ import java.util.List;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
+@Deprecated
 @Tool(id = ZettaInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
 

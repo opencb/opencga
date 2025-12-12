@@ -17,14 +17,16 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -46,13 +48,12 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
 
-public abstract class InterpretationAnalysis extends OpenCgaTool {
+public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
 
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";
 
-    public final static String STUDY_PARAM_NAME = "study";
     public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis";
     public static final String PANELS_PARAM_NAME = "panels";
     public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
@@ -86,11 +87,12 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
 
     @Override
     protected void check() throws Exception {
+        super.check();
         this.clinicalInterpretationManager = getClinicalInterpretationManager(getOpencgaHome().toString());
     }
 
     protected void checkPrimaryInterpretation(ClinicalAnalysis clinicalAnalysis) throws ToolException {
-        if (primary && clinicalAnalysis.getPriority() != null) {
+        if (primary && clinicalAnalysis.getInterpretation() != null) {
             throw new ToolException("Primary interpretation already exists");
         }
     }
@@ -111,6 +113,12 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query) throws ToolException {
+        saveInterpretation("", "", ParamUtils.SaveInterpretationAs.SECONDARY, clinicalAnalysis, query, new ObjectMap(), studyId);
+    }
+
+    protected void saveInterpretation(String name, String description, ParamUtils.SaveInterpretationAs saveAs,
+                                      ClinicalAnalysis clinicalAnalysis, Query query, ObjectMap additionalAttributes, String studyId)
+            throws ToolException {
 
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), null, null,
@@ -133,6 +141,8 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         }
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
+                .setName(name)
+                .setDescription(description)
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
                 .setAnalyst(analyst)
@@ -140,10 +150,17 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 .setCreationDate(TimeUtils.getTime())
                 .setMethod(method);
 
+        if (MapUtils.isNotEmpty(additionalAttributes)) {
+            if (interpretation.getAttributes() == null) {
+                interpretation.setAttributes(new ObjectMap());
+            }
+            interpretation.getAttributes().putAll(additionalAttributes);
+        }
+
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), token);
+                    saveAs, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }
