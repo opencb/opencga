@@ -1034,7 +1034,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
+     * @param calculateChecksum boolean indicating whether to calculate the SHA-256 checksum of the uploaded file.
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
@@ -1052,8 +1052,8 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param expectedChecksum  Expected checksum to be checked
+     * @param calculateChecksum boolean indicating whether to calculate the SHA-256 checksum of the uploaded file.
+     * @param expectedChecksum  Expected SHA-256 checksum to be checked
      * @param expectedSize      Expected file size
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
@@ -1163,7 +1163,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     if (StringUtils.isNotEmpty(expectedChecksum)) {
                         // Validate checksum
                         if (!checksum.equals(expectedChecksum)) {
-                            throw new CatalogIOException("MD5 Checksum mismatch!"
+                            throw new CatalogIOException("SHA-256 Checksum mismatch!"
                                     + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
                                     + " Error uploading file " + file.getPath());
                         }
