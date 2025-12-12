@@ -72,7 +72,7 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), configureParams.getExtension());
         List<VariantAnnotatorExtensionTask> extensions = new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options);
         if (CollectionUtils.isEmpty(extensions)) {
-            throw new ToolException("No annotator extensions found for " + configureParams.getExtension());
+            throw new ToolException("No annotator extension found for " + configureParams.getExtension());
         }
         if (extensions.size() > 1) {
             throw new ToolException("More than one annotation extension found for " + configureParams.getExtension());
@@ -99,7 +99,8 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
                 }
             }
             if (studyResources.isEmpty()) {
-                throw new ToolException("No resource found for " + resource + ". Please, check that the file exists and that you have access to it.");
+                throw new ToolException("No resource found for " + resource + ". Please, check that the file exists and that you have"
+                        + " access to it.");
             } else if (studyResources.size() > 1) {
                 throw new ToolException("More than one resource found for " + resource + ". Please, use a more specific identifier.");
             }

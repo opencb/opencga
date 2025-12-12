@@ -83,10 +83,18 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
     ANNOTATOR_EXTENSION_PREFIX("annotator.extension."),
     ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
+
+    // Cosmic extension parameters
     ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
     ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
     ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY("annotator.extension.cosmic.assembly"),
     ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE("annotator.extension.cosmic.indexCreationDate"),
+
+    // Cosmic extension parameters
+    ANNOTATOR_EXTENSION_HGMD_FILE("annotator.extension.hgmd.file"),
+    ANNOTATOR_EXTENSION_HGMD_VERSION("annotator.extension.hgmd.version"),
+    ANNOTATOR_EXTENSION_HGMD_ASSEMBLY("annotator.extension.hgmd.assembly"),
+    ANNOTATOR_EXTENSION_HGMD_INDEX_CREATION_DATE("annotator.extension.hgmd.indexCreationDate"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 

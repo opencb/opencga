@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.hgmd.HgmdVariantAnnotatorExtensionTask;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
@@ -23,12 +24,15 @@ public class VariantAnnotatorExtensionsFactory {
                 case CosmicVariantAnnotatorExtensionTask.ID:
                     task = new CosmicVariantAnnotatorExtensionTask(options);
                     break;
+                case HgmdVariantAnnotatorExtensionTask.ID:
+                    task = new HgmdVariantAnnotatorExtensionTask(options);
+                    break;
                 default:
                     String extensionClass = options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_PREFIX.key() + extensionId);
                     if (extensionClass != null) {
                         task = getVariantAnnotatorExtension(extensionClass, options);
                     } else {
-                        throw new IllegalArgumentException("Unknown annotator extension '" + extensionId + "'");
+                        throw new IllegalArgumentException("Unknown annotator extension ID '" + extensionId + "'");
                     }
             }
 
