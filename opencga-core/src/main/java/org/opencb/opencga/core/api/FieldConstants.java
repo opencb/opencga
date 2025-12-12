@@ -313,7 +313,7 @@ public class FieldConstants {
             + "IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, "
             + "OTHER_PLINK, OTHER_VCF, OTHER_PED, @Deprecated VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, "
             + "REFERENCE_GENOME, NONE and UNKNOWN.";
-    public static final String FILE_CHECKSUM = "The checksum of the file.";
+    public static final String FILE_CHECKSUM = "The SHA-256 checksum of the file.";
     public static final String FILE_PATH = "The path of the file.";
     public static final String FILE_URI = "The uri of the file.";
     public static final String FILE_EXTERNAL = "Indicates whether the file comes from an external path or not.";

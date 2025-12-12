@@ -4019,7 +4019,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         String fileStr = "clinical_analyses.json.gz";
         File file;
         try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
-            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, false, ownerToken).first();
+            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, ownerToken).first();
         }
 
         Path filePath = Paths.get(file.getUri());

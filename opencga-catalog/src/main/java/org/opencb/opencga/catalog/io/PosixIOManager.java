@@ -598,7 +598,7 @@ public class PosixIOManager extends IOManager {
     public String calculateChecksum(URI file) throws CatalogIOException {
         String checksum;
         try {
-            String[] command = {"md5sum", file.getPath()};
+            String[] command = {"sha256sum", file.getPath()};
             logger.debug("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -608,7 +608,7 @@ public class PosixIOManager extends IOManager {
                 //TODO: Handle error in checksum
                 logger.info("checksum = " + checksum);
                 br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
+                throw new CatalogIOException("sha256sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }
         } catch (IOException | InterruptedException e) {
             //TODO: Handle error in checksum
