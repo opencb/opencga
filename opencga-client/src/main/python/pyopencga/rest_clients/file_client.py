@@ -422,7 +422,7 @@ class File(_ParentRestClient):
             OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF
             OTHER_PED VCF4 CVDB VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
-        :param str checksum: Expected MD5 file checksum.
+        :param str checksum: Expected SHA-256 file checksum.
         :param bool resource: Boolean field indicating whether the file is a
             resource or not.
         :param str study: Study [[organization@]project:]study where study and

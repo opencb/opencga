@@ -1029,12 +1029,12 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr          study where the file will be uploaded.
-     * @param fileInputStream   Input stream of the file to be uploaded.
-     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
-     * @param overwrite         Overwrite the current file if any.
-     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param token             session id of the user performing the upload.
+     * @param studyStr        study where the file will be uploaded.
+     * @param fileInputStream Input stream of the file to be uploaded.
+     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite       Overwrite the current file if any.
+     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param token           session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */

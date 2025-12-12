@@ -375,7 +375,7 @@ public class FileClient extends ParentClient {
      *       format: File format.
      *       fileFormat: [DEPRECATED] File format.
      *       bioformat: File bioformat.
-     *       checksum: Expected MD5 file checksum.
+     *       checksum: Expected SHA-256 file checksum.
      *       resource: Boolean field indicating whether the file is a resource or not.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       relativeFilePath: Path within catalog (directory) where the file will be located (default: root folder).
