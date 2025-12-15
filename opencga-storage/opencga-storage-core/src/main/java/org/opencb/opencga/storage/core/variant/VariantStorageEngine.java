@@ -55,6 +55,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -540,7 +542,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider);
+        SampleIndexAnnotationConstructor constructor;
+        if (getSampleIndexDBAdaptor() == null) {
+            constructor = null;
+        } else {
+            constructor = getSampleIndexDBAdaptor().newSampleIndexAnnotationConstructor(this);
+        }
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider, constructor);
     }
 
     /**
@@ -1526,6 +1534,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
+            executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);

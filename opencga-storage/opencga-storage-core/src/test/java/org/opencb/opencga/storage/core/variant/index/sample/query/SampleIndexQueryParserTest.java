@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
 import org.opencb.opencga.storage.core.variant.index.core.RangeIndexField;
@@ -83,7 +84,7 @@ public class SampleIndexQueryParserTest {
         qualThresholds = fileIndex.getCustomField(FieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
         dpThresholds = fileIndex.getCustomField(FieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();
 
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sampleIndexQueryParser = new SampleIndexQueryParser(mm);
         studyId = mm.createStudy("study").getId();

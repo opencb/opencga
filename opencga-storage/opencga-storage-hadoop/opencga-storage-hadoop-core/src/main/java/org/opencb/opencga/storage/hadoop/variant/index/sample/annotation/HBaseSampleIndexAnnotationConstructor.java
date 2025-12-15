@@ -24,7 +24,7 @@ public class HBaseSampleIndexAnnotationConstructor extends SampleIndexAnnotation
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final Logger logger = LoggerFactory.getLogger(HBaseSampleIndexAnnotationConstructor.class);
 
-    protected HBaseSampleIndexAnnotationConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
+    public HBaseSampleIndexAnnotationConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
         super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.mrExecutor = mrExecutor;

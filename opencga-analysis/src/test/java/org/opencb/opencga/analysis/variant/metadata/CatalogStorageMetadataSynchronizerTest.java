@@ -44,6 +44,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +143,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
+        DummyVariantStorageEngine.writeAndClear(catalogManagerExternalResource.getOpencgaHome());
     }
 
     public static File create(String resourceName) throws IOException, CatalogException {

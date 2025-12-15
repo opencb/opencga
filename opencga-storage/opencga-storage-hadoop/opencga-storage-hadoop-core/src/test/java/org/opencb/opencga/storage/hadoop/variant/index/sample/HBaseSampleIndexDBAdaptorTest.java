@@ -7,6 +7,7 @@ import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -28,7 +29,7 @@ public class HBaseSampleIndexDBAdaptorTest {
 
     @Before
     public void setUp() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         studyId = metadataManager.createStudy("ST").getId();
     }

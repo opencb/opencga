@@ -902,12 +902,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
-        StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
-        return updateStats(variantStatsWrappers, sm, timestamp, options);
-    }
-
-    @Override
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
 //        MongoCollection<Document> coll = db.getDb().getCollection(collectionName);

@@ -178,9 +178,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     }
 
     @Deprecated
-    DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
-
-    @Deprecated
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);
 

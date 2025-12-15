@@ -37,7 +37,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -345,7 +344,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 throw new RuntimeException(e);
             }
         } else if (DummyVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
-            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+            DummyVariantStorageEngine.clear();
         }
     }
 
@@ -357,7 +356,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 throw new RuntimeException(e);
             }
         } else if (DummyVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
-            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+            DummyVariantStorageEngine.clear();
         } else {
             throw new UnsupportedOperationException();
         }

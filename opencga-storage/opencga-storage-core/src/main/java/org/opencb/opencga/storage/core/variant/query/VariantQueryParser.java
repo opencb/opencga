@@ -192,6 +192,7 @@ public class VariantQueryParser {
 
         ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
+        studyQuery.setIncludeSampleId(query.includeSampleId());
         StudyMetadata defaultStudy = getDefaultStudy(query);
         studyQuery.setDefaultStudy(defaultStudy);
         if (isValidParam(query, STUDY)) {
@@ -203,6 +204,7 @@ public class VariantQueryParser {
                             negated = true;
                         }
                         int studyId = metadataManager.getStudyId(studyName);
+                        studyName = metadataManager.getStudyName(studyId);
                         return new NegatableValue<>(new ResourceId(ResourceId.Type.STUDY, studyId, studyName), negated);
                     });
 

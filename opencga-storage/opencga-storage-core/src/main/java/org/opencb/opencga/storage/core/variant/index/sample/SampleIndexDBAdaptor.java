@@ -4,6 +4,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -27,6 +28,8 @@ import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilt
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
 import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
@@ -64,10 +67,17 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
 
     public abstract SampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException;
 
+    public abstract SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
+                                                           SampleIndexSchema schema, ObjectMap options,
+                                                           VariantStorageEngine.SplitData splitData) throws StorageEngineException;
+
     public abstract SampleIndexAnnotationConstructor newSampleIndexAnnotationConstructor(VariantStorageEngine engine)
             throws StorageEngineException;
 
     public abstract FamilyIndexConstructor newSampleIndexFamilyConstructor(VariantStorageEngine engine) throws StorageEngineException;
+
+    public abstract SampleIndexEntryBuilder queryByGtBuilder(int study, int sample, String chromosome, int position,
+                                                             SampleIndexSchema schema) throws IOException;
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {

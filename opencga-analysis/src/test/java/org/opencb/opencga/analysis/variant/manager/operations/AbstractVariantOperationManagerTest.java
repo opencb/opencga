@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,7 +180,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(opencga.getOpencgaHome());
+        DummyVariantStorageEngine.writeAndClear(opencga.getOpencgaHome());
     }
 
     protected String getStorageEngine() {

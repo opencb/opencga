@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
@@ -60,7 +61,7 @@ public class DocumentToVariantConverterTest {
     @Before
     public void setUp() throws StorageEngineException {
 
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
 
         // Java native class

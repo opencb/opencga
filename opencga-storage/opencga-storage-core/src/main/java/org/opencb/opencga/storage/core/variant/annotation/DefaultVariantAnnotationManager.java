@@ -40,6 +40,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -52,6 +53,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -103,13 +105,22 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private final VariantReaderUtils variantReaderUtils;
     private boolean annotateAll;
     private long annotationStartTimestamp;
+    protected Query query;
+    private final SampleIndexAnnotationConstructor sampleIndexAnnotation;
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
                                            IOConnectorProvider ioConnectorProvider) {
+        this(variantAnnotator, dbAdaptor, ioConnectorProvider, null);
+    }
+
+    public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
+                                           IOConnectorProvider ioConnectorProvider,
+                                           SampleIndexAnnotationConstructor sampleIndexAnnotation) {
         Objects.requireNonNull(variantAnnotator);
         Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
+        this.sampleIndexAnnotation = sampleIndexAnnotation;
         this.ioConnectorProvider = ioConnectorProvider;
         variantReaderUtils = new VariantReaderUtils(this.ioConnectorProvider);
     }
@@ -129,6 +140,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         } else {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
+        this.query = query;
         int checkpointSize = params.getInt(
                 VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(),
                 VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.defaultValue());
@@ -552,6 +564,38 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
                         fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
                     });
+                }
+            }
+        }
+
+        if (sampleIndexAnnotation != null) {
+            updateSampleIndexAnnotation(params);
+        }
+    }
+
+    protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+
+        List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
+
+        boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
+
+        if (!sampleIndex) {
+            logger.info("Skip Sample Index Annotation");
+            // Nothing to do!
+            return;
+        } else {
+            // Run on all pending samples
+            for (Integer studyId : studies) {
+                Set<Integer> samplesToUpdate = new HashSet<>();
+                for (Integer file : filesToBeAnnotated.getOrDefault(studyId, Collections.emptyList())) {
+                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
+                }
+                for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
+                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
+                }
+                if (!samplesToUpdate.isEmpty()) {
+                    sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
                 }
             }
         }

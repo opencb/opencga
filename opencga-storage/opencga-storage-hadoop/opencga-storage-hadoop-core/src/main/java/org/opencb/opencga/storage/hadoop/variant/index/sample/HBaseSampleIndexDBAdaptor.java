@@ -18,9 +18,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
-import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
@@ -31,8 +32,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.family.HBaseFamilyIndexConstructor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseSampleIndexConstructor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseSampleIndexDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseToSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.SampleIndexEntryPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,14 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     @Override
     public HBaseSampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException {
         return new HBaseSampleIndexConstructor(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    }
+
+    @Override
+    public HBaseSampleIndexDBWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
+                                                  SampleIndexSchema schema, ObjectMap options, VariantStorageEngine.SplitData splitData)
+            throws StorageEngineException {
+        return new HBaseSampleIndexDBWriter(this, hBaseManager, metadataManager, studyId, fileId, sampleIds,
+                splitData, options, schema);
     }
 
     @Override
@@ -135,10 +144,11 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         return newConverter(schema).convertToMap(result);
     }
 
-    protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position, SampleIndexSchema schema)
+    @Override
+    public SampleIndexEntryBuilder queryByGtBuilder(int study, int sample, String chromosome, int position, SampleIndexSchema schema)
             throws IOException {
         Result result = queryByGtInternal(study, sample, chromosome, position, schema.getVersion());
-        return new SampleIndexEntryPutBuilder(sample, chromosome, position, schema,
+        return new SampleIndexEntryBuilder(sample, chromosome, position, schema,
                 newConverter(schema).convertToMapSampleVariantIndex(result));
     }
 

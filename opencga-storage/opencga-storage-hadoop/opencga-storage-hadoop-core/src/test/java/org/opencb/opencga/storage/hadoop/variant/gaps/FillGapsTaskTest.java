@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -50,7 +51,7 @@ public class FillGapsTaskTest {
 
     @Before
     public void setUp() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
         studyMetadata = metadataManager.createStudy("S");

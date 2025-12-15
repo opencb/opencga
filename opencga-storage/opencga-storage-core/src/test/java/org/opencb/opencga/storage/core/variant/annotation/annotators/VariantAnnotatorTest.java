@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -10,14 +12,23 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -171,6 +182,139 @@ public class VariantAnnotatorTest {
         }
     }
 
+    public static class TestCachedCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {
+        public static Map<String, VariantAnnotation> ANNOTATION_CACHE = new ConcurrentHashMap<>();
+        protected static Logger logger = LoggerFactory.getLogger(TestCachedCellBaseRestVariantAnnotator.class);
+
+        private final Path cacheDir;
+        private final ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        private final Path metadataFile;
+        private volatile ProjectMetadata.VariantAnnotationMetadata cachedMetadata;
+        private int cacheHits = 0;
+        private int cacheMisses = 0;
+
+        public TestCachedCellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
+                throws VariantAnnotatorException {
+            super(storageConfiguration, projectMetadata, options);
+            this.cacheDir = Paths.get("target", "test-data", "variant-annotation-cache");
+            this.metadataFile = cacheDir.resolve("variant-annotation-metadata.json");
+        }
+
+        @Override
+        public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
+            if (cachedMetadata != null) {
+                return cachedMetadata;
+            }
+            if (Files.exists(metadataFile)) {
+                try (BufferedReader br = FileUtils.newBufferedReader(metadataFile)) {
+                    cachedMetadata = mapper.readValue(br, ProjectMetadata.VariantAnnotationMetadata.class);
+                    return cachedMetadata;
+                } catch (IOException e) {
+                    logger.warn("Failed reading cached variant annotation metadata from {}. Recomputing.", metadataFile, e);
+                }
+            }
+            cachedMetadata = super.getVariantAnnotationMetadata();
+            saveVariantAnnotationMetadata(cachedMetadata);
+            return cachedMetadata;
+        }
+
+        @Override
+        public void pre() throws Exception {
+            super.pre();
+            // Load cache
+            if (cacheDir.toFile().exists()) {
+                ANNOTATION_CACHE.putAll(loadAnnotationCache(cacheDir, mapper));
+            }
+        }
+
+        @Override
+        protected List<CellBaseDataResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+            List<CellBaseDataResult<VariantAnnotation>> results = Arrays.asList(new CellBaseDataResult[variants.size()]);
+            List<Variant> variantsToAnnotate = new ArrayList<>();
+            Map<String, Integer> variantIndexMap = new HashMap<>();
+            for (int i = 0; i < variants.size(); i++) {
+                Variant variant = variants.get(i);
+                String variantId = variant.toString();
+                if (ANNOTATION_CACHE.containsKey(variantId)) {
+                    cacheHits++;
+                    CellBaseDataResult<VariantAnnotation> result = new CellBaseDataResult<>();
+                    result.setId(variantId);
+                    result.setResults(Collections.singletonList(ANNOTATION_CACHE.get(variantId)));
+                    result.setNumResults(1);
+                    results.set(i, result);
+                } else {
+                    cacheMisses++;
+                    variantIndexMap.put(variantId, i);
+                    variantsToAnnotate.add(variant);
+                }
+            }
+            if (!variantsToAnnotate.isEmpty()) {
+                List<CellBaseDataResult<VariantAnnotation>> queryResults = super.annotateFiltered(variantsToAnnotate);
+                for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
+                    if (!queryResult.getResults().isEmpty()) {
+                        ANNOTATION_CACHE.put(queryResult.getId(), queryResult.getResults().get(0));
+                    }
+                    results.set(variantIndexMap.get(queryResult.getId()), queryResult);
+                }
+            }
+            return results;
+        }
+
+        @Override
+        public void post() throws Exception {
+            super.post();
+            // Save cache
+            saveAnnotationCache(cacheDir, mapper);
+            if (cachedMetadata != null) {
+                saveVariantAnnotationMetadata(cachedMetadata);
+            }
+            logger.info("Annotation cache stats: {} hits, {} misses", cacheHits, cacheMisses);
+        }
+
+        private static synchronized Map<String, VariantAnnotation> loadAnnotationCache(Path dir, ObjectMapper mapper) {
+            Path cacheFile = dir.resolve("cache.json.gz");
+            if (!Files.exists(cacheFile)) {
+                return new HashMap<>();
+            }
+            try (BufferedReader br = FileUtils.newBufferedReader(cacheFile)) {
+                return mapper.readValue(br, new TypeReference<Map<String, VariantAnnotation>>() {});
+            } catch (IOException e) {
+                logger.warn("Error loading annotation cache from " + cacheFile + ". Starting with empty cache.", e);
+                // Delete corrupted cache file
+                try {
+                    Files.delete(cacheFile);
+                } catch (IOException ex) {
+                    logger.warn("Failed deleting corrupted cache file " + cacheFile, ex);
+                }
+                return new HashMap<>();
+            }
+        }
+
+        private static synchronized void saveAnnotationCache(Path dir, ObjectMapper mapper) {
+            try {
+                Path cacheFile = dir.resolve("cache.json.gz");
+                Files.createDirectories(dir);
+                try (BufferedWriter bw = FileUtils.newBufferedWriter(cacheFile)) {
+                    mapper.writerWithDefaultPrettyPrinter().writeValue(bw, ANNOTATION_CACHE);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException("Error saving annotation cache into " + dir, e);
+            }
+        }
+
+        private synchronized void saveVariantAnnotationMetadata(ProjectMetadata.VariantAnnotationMetadata metadata)
+                throws VariantAnnotatorException {
+            try {
+                Files.createDirectories(cacheDir);
+                try (BufferedWriter bw = FileUtils.newBufferedWriter(metadataFile)) {
+                    mapper.writerWithDefaultPrettyPrinter().writeValue(bw, metadata);
+                }
+            } catch (IOException e) {
+                throw new VariantAnnotatorException("Error saving variant annotation metadata into " + metadataFile, e);
+            }
+        }
+    }
+
     public static class TestCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {
 
         private final Set<String> skipvariants;
@@ -212,3 +356,4 @@ public class VariantAnnotatorTest {
 
 
 }
+

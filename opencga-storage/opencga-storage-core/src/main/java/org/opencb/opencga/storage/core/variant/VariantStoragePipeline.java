@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
@@ -98,6 +99,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap loadStats = new ObjectMap();
     protected Integer privateFileId;
     protected Integer privateStudyId;
+    protected int sampleIndexVersion;
+    protected HashSet<String> loadedGenotypes;
+    protected int largestVariantLength;
 //    protected StudyMetadata privateStudyMetadata;
 
     /**
@@ -752,23 +756,72 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         // Register or update default cohort
         Set<Integer> samples = new HashSet<>();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
         for (Integer fileId : finalFileIds) {
-            samples.addAll(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
+            samples.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
         }
-        CohortMetadata cohortMetadata = getMetadataManager().addSamplesToCohort(studyId, defaultCohortName, samples);
+        CohortMetadata cohortMetadata = metadataManager.addSamplesToCohort(studyId, defaultCohortName, samples);
         if (cohortMetadata.getStatsStatus().equals(TaskMetadata.Status.READY)) {
-            getMetadataManager().updateCohortMetadata(studyId, cohortMetadata.getId(), CohortMetadata::setInvalidStats);
+            metadataManager.updateCohortMetadata(studyId, cohortMetadata.getId(), CohortMetadata::setInvalidStats);
         }
         logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
 
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        int updatedSamples = 0;
+        for (Integer sampleId : samples) {
+            // Worth to check first to avoid too many updates in scenarios like 1000G
+            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
+            boolean updateIndexStatus = !sampleMetadata.isIndexed();
+
+            boolean updateSampleIndexStatus = loadSampleIndex && sampleMetadata.getSampleIndexStatus(sampleIndexVersion)
+                    != TaskMetadata.Status.READY;
+            int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
+            boolean isLargestVariantLengthDefined = sampleMetadata.getAttributes()
+                    .containsKey(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
+            boolean unknownLargestVariantLength = sampleMetadata.getAttributes()
+                    .getBoolean(SampleIndexSchema.UNKNOWN_LARGEST_VARIANT_LENGTH);
+
+            boolean updateLargestVariantLength;
+            if (isLargestVariantLengthDefined) {
+                // Update only if the new value is bigger than the current one
+                updateLargestVariantLength = largestVariantLength > actualLargestVariantLength;
+            } else if (unknownLargestVariantLength) {
+                // Already loaded files with unknown largest variant length. Do not update value.
+                updateLargestVariantLength = false;
+            } else {
+                // First file loaded. Update value
+                updateLargestVariantLength = true;
+            }
+
+            if (updateIndexStatus || updateSampleIndexStatus || updateLargestVariantLength) {
+                updatedSamples++;
+                metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
+                    if (updateIndexStatus) {
+                        s.setIndexStatus(TaskMetadata.Status.READY);
+                    }
+                    if (updateSampleIndexStatus) {
+                        s.setSampleIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                    }
+                    if (updateLargestVariantLength) {
+                        int current = s.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);
+                        s.getAttributes().put(SampleIndexSchema.LARGEST_VARIANT_LENGTH, Math.max(current, largestVariantLength));
+                    }
+                });
+            }
+        }
+        getLoadStats().put("updatedSampleMetadata", updatedSamples);
+        logger.info("Updated status of {} samples", updatedSamples);
+
         // Update indexed files
-        getMetadataManager().addIndexedFiles(studyId, finalFileIds);
+        metadataManager.addIndexedFiles(studyId, finalFileIds);
 
         //Update StudyMetadata
-        getMetadataManager().updateStudyMetadata(studyId, sm -> {
+        metadataManager.updateStudyMetadata(studyId, sm -> {
             securePostLoad(finalFileIds, sm);
             return sm;
         });
+
+
         return input;
     }
 
@@ -886,6 +939,43 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     public VariantStorageMetadataManager getMetadataManager() {
         return getDBAdaptor().getMetadataManager();
+    }
+
+    public static class GetLargestVariantTask implements Task<Variant, Variant> {
+
+        private final AtomicInteger maxLength = new AtomicInteger();
+
+        @Override
+        public void pre() {
+        }
+
+        @Override
+        public List<Variant> apply(List<Variant> variants) {
+            int localMax = maxLength.get();
+            boolean newValue = false;
+            for (Variant variant : variants) {
+                if (variant.getLengthReference() > localMax) {
+                    localMax = variant.getLengthReference();
+                    newValue = true;
+                }
+            }
+            if (newValue) {
+                updateMaxLength(localMax);
+            }
+            return variants;
+        }
+
+        @Override
+        public void post() {
+        }
+
+        private void updateMaxLength(int local) {
+            maxLength.updateAndGet(v -> Math.max(v, local));
+        }
+
+        public int getMaxLength() {
+            return maxLength.get();
+        }
     }
 
 }

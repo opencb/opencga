@@ -263,6 +263,8 @@ public class ParsedVariantQuery {
 //        private Values<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleFilters;
         private StudyMetadata defaultStudy;
 
+        private boolean includeSampleId = false;
+
         public VariantStudyQuery() {
         }
 
@@ -359,6 +361,14 @@ public class ParsedVariantQuery {
             }
         }
 
+        public boolean isIncludeSampleId() {
+            return includeSampleId;
+        }
+
+        public VariantStudyQuery setIncludeSampleId(boolean includeSampleId) {
+            this.includeSampleId = includeSampleId;
+            return this;
+        }
     }
 
     public static class VariantAnnotationQuery {

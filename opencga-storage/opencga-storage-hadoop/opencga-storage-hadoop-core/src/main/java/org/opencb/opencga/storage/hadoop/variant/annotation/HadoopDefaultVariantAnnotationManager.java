@@ -26,18 +26,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -48,11 +46,12 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created on 23/11/16.
@@ -72,18 +71,15 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
-    private final HBaseSampleIndexAnnotationConstructor sampleIndexAnnotation;
     private final MRExecutor mrExecutor;
-    private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
                                                  MRExecutor mrExecutor, ObjectMap options, IOConnectorProvider ioConnectorProvider,
-                                                 HBaseSampleIndexAnnotationConstructor sampleIndexAnnotation) {
-        super(variantAnnotator, dbAdaptor, ioConnectorProvider);
+                                                 SampleIndexAnnotationConstructor sampleIndexAnnotation) {
+        super(variantAnnotator, dbAdaptor, ioConnectorProvider, sampleIndexAnnotation);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.baseOptions = options;
-        this.sampleIndexAnnotation = sampleIndexAnnotation;
     }
 
     @Override
@@ -211,42 +207,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             return new ParallelTaskRunner<>(reader,
                     () -> dbAdaptor.newAnnotationLoader(new QueryOptions(params))
                             .setProgressLogger(progressLogger), null, config);
-        }
-    }
-
-    @Override
-    protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
-            throws VariantAnnotatorException, StorageEngineException, IOException {
-        super.postAnnotate(query, doCreate, doLoad, params);
-        updateSampleIndexAnnotation(params);
-
-    }
-
-    protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
-        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-
-        List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
-
-        boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
-
-        if (!sampleIndex) {
-            logger.info("Skip Sample Index Annotation");
-            // Nothing to do!
-            return;
-        } else {
-            // Run on all pending samples
-            for (Integer studyId : studies) {
-                Set<Integer> samplesToUpdate = new HashSet<>();
-                for (Integer file : filesToBeAnnotated.getOrDefault(studyId, Collections.emptyList())) {
-                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
-                }
-                for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
-                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
-                }
-                if (!samplesToUpdate.isEmpty()) {
-                    sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
-                }
-            }
         }
     }
 

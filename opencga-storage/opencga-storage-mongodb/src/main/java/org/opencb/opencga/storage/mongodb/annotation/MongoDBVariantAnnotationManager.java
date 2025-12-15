@@ -30,7 +30,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
 
     public MongoDBVariantAnnotationManager(VariantAnnotator annotator, VariantMongoDBAdaptor mongoDbAdaptor,
                                            IOConnectorProvider ioConnectorProvider) {
-        super(annotator, mongoDbAdaptor, ioConnectorProvider);
+        super(annotator, mongoDbAdaptor, ioConnectorProvider, null);
         this.mongoDbAdaptor = mongoDbAdaptor;
     }
 

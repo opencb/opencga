@@ -23,7 +23,7 @@ public class HBaseFamilyIndexConstructor extends FamilyIndexConstructor {
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
 
-    protected HBaseFamilyIndexConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, HBaseVariantTableNameGenerator tableNameGenerator,
+    public HBaseFamilyIndexConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, HBaseVariantTableNameGenerator tableNameGenerator,
                                        MRExecutor mrExecutor) {
         super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;

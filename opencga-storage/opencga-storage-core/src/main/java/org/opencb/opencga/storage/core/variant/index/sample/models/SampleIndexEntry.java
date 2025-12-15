@@ -30,6 +30,9 @@ public class SampleIndexEntry {
     private int mendelianVariantsOffset;
     private int discrepancies;
 
+    protected SampleIndexEntry() {
+    }
+
     public SampleIndexEntry(int sampleId, String chromosome, int batchStart) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;
@@ -205,6 +208,9 @@ public class SampleIndexEntry {
         private int parentsIndexOffset;
         private int parentsIndexLength;
 
+        protected SampleIndexGtEntry() {
+        }
+
         public SampleIndexGtEntry(String gt) {
             this.gt = gt;
         }
@@ -326,7 +332,11 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setAnnotationIndex(byte[] annotationIndex) {
-            return setAnnotationIndex(annotationIndex, 0, annotationIndex.length);
+            if (annotationIndex == null) {
+                return setAnnotationIndex(null, 0, 0);
+            } else {
+                return setAnnotationIndex(annotationIndex, 0, annotationIndex.length);
+            }
         }
 
         public SampleIndexGtEntry setAnnotationIndex(byte[] annotationIndex, int offset, int length) {
@@ -412,7 +422,11 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setTranscriptFlagIndex(byte[] value) {
-            return setTranscriptFlagIndex(value, 0, value.length);
+            if (value == null) {
+                return setTranscriptFlagIndex(null, 0, 0);
+            } else {
+                return setTranscriptFlagIndex(value, 0, value.length);
+            }
         }
 
         public SampleIndexGtEntry setTranscriptFlagIndex(byte[] value, int offset, int length) {
@@ -472,7 +486,11 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setPopulationFrequencyIndex(byte[] populationFrequencyIndex) {
-            return setPopulationFrequencyIndex(populationFrequencyIndex, 0, populationFrequencyIndex.length);
+            if (populationFrequencyIndex == null) {
+                return setPopulationFrequencyIndex(null, 0, 0);
+            } else {
+                return setPopulationFrequencyIndex(populationFrequencyIndex, 0, populationFrequencyIndex.length);
+            }
         }
 
         public SampleIndexGtEntry setPopulationFrequencyIndex(byte[] populationFrequencyIndex, int offset, int length) {
@@ -498,7 +516,11 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setClinicalIndex(byte[] clinicalIndex) {
-            return setClinicalIndex(clinicalIndex, 0, clinicalIndex.length);
+            if (clinicalIndex == null) {
+                return setClinicalIndex(null, 0, 0);
+            } else {
+                return setClinicalIndex(clinicalIndex, 0, clinicalIndex.length);
+            }
         }
 
         public SampleIndexGtEntry setClinicalIndex(byte[] clinicalIndex, int offset, int length) {
@@ -525,7 +547,11 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setParentsIndex(byte[] parentsIndex) {
-            return setParentsIndex(parentsIndex, 0, parentsIndex.length);
+            if (parentsIndex == null) {
+                return setParentsIndex(null, 0, 0);
+            } else {
+                return setParentsIndex(parentsIndex, 0, parentsIndex.length);
+            }
         }
 
         public SampleIndexGtEntry setParentsIndex(byte[] parentsIndex, int offset, int length) {

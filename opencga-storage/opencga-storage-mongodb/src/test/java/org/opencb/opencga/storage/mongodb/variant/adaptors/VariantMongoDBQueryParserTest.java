@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 
@@ -58,7 +59,7 @@ public class VariantMongoDBQueryParserTest {
 
     @Before
     public void setUp() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         parser = new VariantMongoDBQueryParser(metadataManager);
 
@@ -68,7 +69,7 @@ public class VariantMongoDBQueryParserTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
     }
 
     protected StudyMetadata newStudy(String studyName, int files, boolean sameSamples) throws StorageEngineException {

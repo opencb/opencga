@@ -5,6 +5,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -24,6 +25,7 @@ public class VariantFilterBuilder {
         List<Predicate<Variant>> filters = new LinkedList<>();
 
         addRegionFilters(variantQuery, filters);
+        addStudyFilters(variantQuery, filters);
         addAnnotationFilters(variantQuery, filters);
 
         if (filters.isEmpty()) {
@@ -37,10 +39,18 @@ public class VariantFilterBuilder {
         List<Predicate<Variant>> regionFilters = new LinkedList<>();
 
         List<Region> regions = variantQuery.getRegions();
-        if (!regions.isEmpty()) {
-            regions = VariantQueryUtils.mergeRegions(regions);
-            for (Region region : regions) {
-                regionFilters.add(variant -> region.contains(variant.getChromosome(), variant.getStart()));
+        if (regions != null && !regions.isEmpty()) {
+            List<Region> regionsMerged = VariantQueryUtils.mergeRegions(regions);
+            regionFilters.add(v -> {
+                for (Region region : regionsMerged) {
+                    if (region.overlaps(v.getChromosome(), v.getStart(), v.getEnd())) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            for (Region region : regionsMerged) {
+                regionFilters.add(variant -> region.overlaps(variant.getChromosome(), variant.getStart(), variant.getEnd()));
             }
         }
         ParsedVariantQuery.VariantQueryXref variantQueryXref = variantQuery.getXrefs();
@@ -143,6 +153,55 @@ public class VariantFilterBuilder {
         }
     }
 
+    private void addStudyFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
+
+        if (variantQuery.getStudyQuery().getStudies() != null) {
+            List<Predicate<Variant>> studyFilters = new LinkedList<>();
+            variantQuery.getStudyQuery().getStudies().getValues().forEach(study -> {
+                if (study.isNegated()) {
+                    studyFilters.add(variant -> variant.getStudies().stream()
+                            .noneMatch(variantStudy -> variantStudy.getStudyId().equals(study.getValue().getName())));
+                } else {
+                    studyFilters.add(variant -> variant.getStudies().stream()
+                            .anyMatch(variantStudy -> variantStudy.getStudyId().equals(study.getValue().getName())));
+                }
+            });
+            filters.add(mergeFilters(studyFilters, variantQuery.getStudyQuery().getStudies().getOperation()));
+        }
+
+        if (variantQuery.getStudyQuery().getFiles() != null) {
+            List<Predicate<Variant>> fileFilters = new LinkedList<>();
+            variantQuery.getStudyQuery().getFiles().getValues().forEach(file -> {
+                if (file.isNegated()) {
+                    fileFilters.add(variant -> variant.getStudies().stream()
+                            .flatMap(variantStudy -> variantStudy.getFiles().stream())
+                            .noneMatch(variantFile -> variantFile.getFileId().equals(file.getValue().getName())));
+                } else {
+                    fileFilters.add(variant -> variant.getStudies().stream()
+                            .flatMap(variantStudy -> variantStudy.getFiles().stream())
+                            .anyMatch(variantFile -> variantFile.getFileId().equals(file.getValue().getName())));
+                }
+            });
+            filters.add(mergeFilters(fileFilters, variantQuery.getStudyQuery().getFiles().getOperation()));
+        }
+
+        if (variantQuery.getStudyQuery().getGenotypes() != null) {
+            List<Predicate<Variant>> genotypeFilters = new LinkedList<>();
+            variantQuery.getStudyQuery().getGenotypes().getValues().forEach(genotype -> {
+                SampleMetadata sample = genotype.getKey();
+                Set<String> values = new HashSet<>(genotype.getValue());
+                String studyName = variantQuery.getStudyQuery().getDefaultStudyOrFail().getName();
+
+                genotypeFilters.add(variant -> {
+                    String gt = variant.getStudy(studyName).getSampleData(sample.getName(), "GT");
+                    return values.contains(gt);
+                });
+            });
+            filters.add(mergeFilters(genotypeFilters, variantQuery.getStudyQuery().getGenotypes().getOperation()));
+        }
+
+    }
+
     private void addAnnotationFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
 //        ParsedVariantQuery.VariantQueryXref variantQueryXref = variantQuery.getXrefs();
         addClinicalFilters(variantQuery, filters);
@@ -177,6 +236,9 @@ public class VariantFilterBuilder {
     }
 
     private void addClinicalFilters(ParsedVariantQuery variantQuery, List<Predicate<Variant>> filters) {
+        if (variantQuery.getClinicalCombinations() == null) {
+            return;
+        }
         List<Set<String>> clinicalCombinations = variantQuery.getClinicalCombinations()
                 .stream().map(HashSet::new).collect(Collectors.toList());
         if (clinicalCombinations.isEmpty()) {

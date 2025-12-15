@@ -615,16 +615,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
-                                  QueryOptions queryOptions) {
-        throw new UnsupportedOperationException("Unimplemented method");
-    }
-
-    /**
-     * @deprecated This method should not be used for batch load.
-     */
-    @Override
-    @Deprecated
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                   long timestamp, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented method");

@@ -80,6 +80,26 @@ public class SampleIndexVariantAnnotationBuilder {
         return entry;
     }
 
+    public void buildAndReset(SampleIndexEntry.SampleIndexGtEntry gtEntry) {
+        // Update the gtEntry with new annotation indices
+        byte[] annotationIndex = annotation.toByteArray();
+        gtEntry.setAnnotationIndex(annotationIndex);
+        gtEntry.setAnnotationCounts(IndexUtils.countPerBit(annotationIndex));
+
+        if (!ct.isEmpty()) {
+            gtEntry.setConsequenceTypeIndex(ct.toByteArray());
+            gtEntry.setBiotypeIndex(biotype.toByteArray());
+            gtEntry.setTranscriptFlagIndex(transcriptFlag.toByteArray());
+            gtEntry.setCtBtTfIndex(ctBtTf.toByteArray());
+        }
+        gtEntry.setPopulationFrequencyIndex(popFreq.toByteArray());
+
+        if (clinical.getBitLength() > 0) {
+            gtEntry.setClinicalIndex(clinical.toByteArray());
+        }
+        reset();
+    }
+
     public void reset() {
         annotation.reset();
         biotype.reset();

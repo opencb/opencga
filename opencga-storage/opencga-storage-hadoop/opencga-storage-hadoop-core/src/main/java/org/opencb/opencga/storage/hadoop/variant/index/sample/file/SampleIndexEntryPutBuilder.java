@@ -3,9 +3,9 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
@@ -34,9 +34,12 @@ public class SampleIndexEntryPutBuilder extends SampleIndexEntryBuilder {
     }
 
     public Put build() {
-        byte[] rk = toRowKey(sampleId, chromosome, position);
+        return build(this.buildEntry());
+    }
+
+    public static Put build(SampleIndexEntry entry) {
+        byte[] rk = toRowKey(entry.getSampleId(), entry.getChromosome(), entry.getBatchStart());
         Put put = new Put(rk);
-        SampleIndexEntry entry = buildEntry();
         if (entry.getGts().isEmpty()) {
             return put;
         }

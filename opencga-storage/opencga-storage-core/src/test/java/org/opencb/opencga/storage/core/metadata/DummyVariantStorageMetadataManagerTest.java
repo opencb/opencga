@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 
@@ -10,7 +11,7 @@ public class DummyVariantStorageMetadataManagerTest extends VariantStorageMetada
 
     @Override
     public void setUp() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         super.setUp();
     }
 
