@@ -319,6 +319,16 @@ export default class File extends OpenCGAParentClass {
         return this._post("files", null, null, null, "upload", null, params);
     }
 
+    /** Update URIs of files that have been manually moved in disk
+    * @param {Object} data - Parameters to modify.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateUri(data, params) {
+        return this._post("files", null, "uri", null, "update", data, params);
+    }
+
     /** Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.
     * @param {String} files - Comma separated list of file IDs or names up to a maximum of 100.
     * @param {Object} [params] - The Object containing the following optional parameters:

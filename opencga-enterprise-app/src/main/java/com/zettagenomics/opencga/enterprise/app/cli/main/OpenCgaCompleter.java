@@ -54,7 +54,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","organizations-list","resource-fetch","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-workspace-update","organizations-list","resource-fetch","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -104,7 +104,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
+    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","uri-update","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
             .stream()
             .map(Candidate::new)
             .collect(toList());
