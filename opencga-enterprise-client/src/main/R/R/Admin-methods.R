@@ -21,6 +21,7 @@
 #' | -- | :-- | --: |
 #' | groupByAudit | /{apiVersion}/admin/audit/groupBy | count, limit, fields[*], entity[*], action, before, after, date |
 #' | installCatalog | /{apiVersion}/admin/catalog/install | body[*] |
+#' | updateCatalogWorkspace | /{apiVersion}/admin/catalog/workspace/update | body[*] |
 #' | listOrganizations | /{apiVersion}/admin/organizations/list |  |
 #' | fetchResource | /{apiVersion}/admin/resource/fetch | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createUsers | /{apiVersion}/admin/users/create | body[*] |
@@ -44,7 +45,7 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
         #' @param count Count the number of elements matching the group.
         #' @param limit Maximum number of documents (groups) to be returned.
         #' @param fields Comma separated list of fields by which to group by.
-        #' @param entity Entity to be grouped by. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE']
+        #' @param entity Entity to be grouped by. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL EXTERNAL_TOOL RESOURCE']
         #' @param action Action performed.
         #' @param before Object before update.
         #' @param after Object after update.
@@ -58,6 +59,13 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
         #' @param data JSON containing the mandatory parameters.
         installCatalog=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="catalog",
                 subcategoryId=NULL, action="install", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/admin/catalog/workspace/update:
+        #' Update the OpenCGA Catalog workspace.
+        #' @param data JSON containing the workspace parameters.
+        updateCatalogWorkspace=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL,
+                subcategory="catalog/workspace", subcategoryId=NULL, action="update", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/admin/organizations/list:
         #' List current Organizations.

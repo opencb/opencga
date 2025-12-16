@@ -53,6 +53,7 @@ Collate:
     'User-methods.R'
     'Variant-methods.R'
     'Workflow-methods.R'
+    'UserTool-methods.R'
     'zzz.R'
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr
