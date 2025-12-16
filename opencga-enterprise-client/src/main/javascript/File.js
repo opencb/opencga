@@ -307,7 +307,7 @@ export default class File extends OpenCGAParentClass {
     *     MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 CVDB
     *     VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
-    * @param {String} [params.checksum] - Expected MD5 file checksum.
+    * @param {String} [params.checksum] - Expected SHA-256 file checksum.
     * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.relativeFilePath] - Path within catalog (directory) where the file will be located (default: root folder).
@@ -317,6 +317,16 @@ export default class File extends OpenCGAParentClass {
     */
     upload(params) {
         return this._post("files", null, null, null, "upload", null, params);
+    }
+
+    /** Update URIs of files that have been manually moved in disk
+    * @param {Object} data - Parameters to modify.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateUri(data, params) {
+        return this._post("files", null, "uri", null, "update", data, params);
     }
 
     /** Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.

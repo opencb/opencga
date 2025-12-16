@@ -422,7 +422,7 @@ class File(_ParentRestClient):
             OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF
             OTHER_PED VCF4 CVDB VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
-        :param str checksum: Expected MD5 file checksum.
+        :param str checksum: Expected SHA-256 file checksum.
         :param bool resource: Boolean field indicating whether the file is a
             resource or not.
         :param str study: Study [[organization@]project:]study where study and
@@ -435,6 +435,18 @@ class File(_ParentRestClient):
         """
 
         return self._post(category='files', resource='upload', **options)
+
+    def update_uri(self, data=None, **options):
+        """
+        Update URIs of files that have been manually moved in disk.
+        PATH: /{apiVersion}/files/uri/update
+
+        :param dict data: Parameters to modify. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='files', resource='update', subcategory='uri', data=data, **options)
 
     def acl(self, files, **options):
         """

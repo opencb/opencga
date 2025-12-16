@@ -46,6 +46,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         public RunPostlinkCommandOptions runPostlinkCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public UploadCommandOptions uploadCommandOptions;
+        public UpdateUriCommandOptions updateUriCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
         public InfoCommandOptions infoCommandOptions;
@@ -80,6 +81,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         this.runPostlinkCommandOptions = new RunPostlinkCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
+        this.updateUriCommandOptions = new UpdateUriCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
@@ -747,6 +749,23 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
+    
+    }
+
+    @Parameters(commandNames = {"uri-update"}, commandDescription ="Update URIs of files that have been manually moved in disk")
+    public class UpdateUriCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
     
     }
 
