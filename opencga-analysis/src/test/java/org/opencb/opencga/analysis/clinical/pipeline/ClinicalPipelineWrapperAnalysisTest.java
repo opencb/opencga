@@ -366,7 +366,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
         assertEquals(10, variantQueryResult.getNumResults());
     }
 
-    @Ignore
     @Test
     public void testClinicalPipelineAffyDataDir() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
@@ -398,10 +397,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Preparing index dir
         String indexDirname = "affy-index";
-        filenames = Arrays.asList("Axiom_KU8.r2.spf", "Axiom_KU8.r2.generic_prior.txt", "Axiom_KU8.na36.r1.a2.annot.csv",
-                "Axiom_KU8.r2.apt-geno-qc.AxiomQC1.xml", "Axiom_KU8.r2.qca", "Axiom_KU8.r2.chrYprobes", "Axiom_KU8.r2.chrXprobes",
-                "Axiom_KU8.r2.qcc", "Axiom_KU8.r2.AxiomGT1.sketch",
-                "Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
+        filenames = Arrays.asList("Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
         for (String filename : filenames) {
             localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
             inputStream = Files.newInputStream(localPath);
@@ -411,6 +407,13 @@ public class ClinicalPipelineWrapperAnalysisTest {
         }
         File indexDirFile = opencga.getCatalogManager().getFileManager().get(studyId, indexDirname, QueryOptions.empty(), token).first();
         System.out.println("indexDirFile.getUri() = " + indexDirFile.getUri());
+
+        localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve("index");
+        Path destIndexDirPath = Paths.get(indexDirFile.getUri());
+        for (java.io.File file : localPath.toFile().listFiles()) {
+            System.out.println("Copying file " + file.getAbsolutePath() + " to " + destIndexDirPath.resolve(file.getName()));
+            Files.copy(file.toPath(), destIndexDirPath.resolve(file.getName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
 
         //---------------------------------
         // Run affy clinical pipeline
@@ -426,7 +429,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         execute(AffyClinicalPipelineWrapperAnalysis.ID, "affy-pipeline-job", affyWrapperParams.toParams(), outDir);
 
-        Path path = outDir.resolve("Axiom_KU8.sorted.nodup.filtered.fixed.vcf.gz");
+        Path path = outDir.resolve("Axiom_KU8.vcf");
         Assert.assertTrue(Files.exists(path));
         Assert.assertTrue(Files.size(path) > 0);
     }
