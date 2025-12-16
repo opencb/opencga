@@ -1998,8 +1998,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 }
                 break;
             case CvdbIndexStatus.READY:
-                if (!Arrays.asList(CvdbIndexStatus.ERROR, CvdbIndexStatus.PENDING_REMOVE, CvdbIndexStatus.PENDING_OVERWRITE)
-                        .contains(newStatus)) {
+                if (!Arrays.asList(CvdbIndexStatus.ERROR, CvdbIndexStatus.PENDING_REMOVE, CvdbIndexStatus.PENDING_OVERWRITE,
+                                CvdbIndexStatus.PENDING_INDEX).contains(newStatus)) {
                     throw new CatalogException("CVDB Index status cannot be changed from READY to " + newStatus);
                 }
                 break;
