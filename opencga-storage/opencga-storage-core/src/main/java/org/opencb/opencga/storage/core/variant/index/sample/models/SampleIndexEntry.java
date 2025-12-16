@@ -346,6 +346,14 @@ public class SampleIndexEntry {
             return this;
         }
 
+        public int getAnnotationIndexOffset() {
+            return annotationIndexOffset;
+        }
+
+        public int getAnnotationIndexLength() {
+            return annotationIndexLength;
+        }
+
         public int[] getAnnotationCounts() {
             return annotationCounts;
         }
@@ -357,6 +365,14 @@ public class SampleIndexEntry {
 
         public byte[] getConsequenceTypeIndex() {
             return consequenceTypeIndex;
+        }
+
+        public int getConsequenceTypeIndexOffset() {
+            return consequenceTypeIndexOffset;
+        }
+
+        public int getConsequenceTypeIndexLength() {
+            return consequenceTypeIndexLength;
         }
 
         public BitInputStream getConsequenceTypeIndexStream() {
@@ -382,6 +398,14 @@ public class SampleIndexEntry {
 
         public byte[] getBiotypeIndex() {
             return biotypeIndex;
+        }
+
+        public int getBiotypeIndexOffset() {
+            return biotypeIndexOffset;
+        }
+
+        public int getBiotypeIndexLength() {
+            return biotypeIndexLength;
         }
 
         public BitInputStream getBiotypeIndexStream() {
@@ -502,6 +526,14 @@ public class SampleIndexEntry {
 
         public byte[] getClinicalIndex() {
             return clinicalIndex;
+        }
+
+        public int getClinicalIndexOffset() {
+            return clinicalIndexOffset;
+        }
+
+        public int getClinicalIndexLength() {
+            return clinicalIndexLength;
         }
 
         public BitInputStream getClinicalIndexStream() {

@@ -5,7 +5,7 @@ import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
-import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
@@ -16,15 +16,15 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class HBaseFamilyIndexConstructor extends FamilyIndexConstructor {
+public class HBaseSampleFamilyIndexer extends SampleFamilyIndexer {
 
     private final MRExecutor mrExecutor;
-    private final Logger logger = LoggerFactory.getLogger(HBaseFamilyIndexConstructor.class);
+    private final Logger logger = LoggerFactory.getLogger(HBaseSampleFamilyIndexer.class);
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
 
-    public HBaseFamilyIndexConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, HBaseVariantTableNameGenerator tableNameGenerator,
-                                       MRExecutor mrExecutor) {
+    public HBaseSampleFamilyIndexer(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, HBaseVariantTableNameGenerator tableNameGenerator,
+                                    MRExecutor mrExecutor) {
         super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.tableNameGenerator = tableNameGenerator;

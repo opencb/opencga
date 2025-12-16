@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;

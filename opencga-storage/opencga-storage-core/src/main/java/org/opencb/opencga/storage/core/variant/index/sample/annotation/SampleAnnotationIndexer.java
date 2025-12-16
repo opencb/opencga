@@ -20,13 +20,13 @@ import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Statu
 /**
  * Created by jacobo on 04/01/19.
  */
-public abstract class SampleIndexAnnotationConstructor {
+public abstract class SampleAnnotationIndexer {
 
     protected final VariantStorageMetadataManager metadataManager;
     protected final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationConstructor.class);
+    private final Logger logger = LoggerFactory.getLogger(SampleAnnotationIndexer.class);
 
-    public SampleIndexAnnotationConstructor(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
+    public SampleAnnotationIndexer(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.metadataManager = sampleIndexDBAdaptor.getMetadataManager();
     }

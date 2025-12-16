@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.junit.Before;
 import org.junit.Test;

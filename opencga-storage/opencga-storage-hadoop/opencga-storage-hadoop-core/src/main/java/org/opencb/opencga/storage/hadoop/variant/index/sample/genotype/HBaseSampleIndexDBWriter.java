@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
+package org.opencb.opencga.storage.hadoop.variant.index.sample.genotype;
 
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -6,8 +6,8 @@ import org.apache.hadoop.hbase.client.Put;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexWriter;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;

@@ -18,13 +18,13 @@ import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 
-public abstract class FamilyIndexConstructor {
+public abstract class SampleFamilyIndexer {
 
     protected final VariantStorageMetadataManager metadataManager;
     protected final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final Logger logger = LoggerFactory.getLogger(FamilyIndexConstructor.class);
+    private final Logger logger = LoggerFactory.getLogger(SampleFamilyIndexer.class);
 
-    public FamilyIndexConstructor(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
+    public SampleFamilyIndexer(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.metadataManager = sampleIndexDBAdaptor.getMetadataManager();
     }

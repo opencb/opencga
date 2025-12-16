@@ -5,19 +5,19 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class LocalFamilyIndexConstructor extends FamilyIndexConstructor {
+public class LocalSampleFamilyIndexer extends SampleFamilyIndexer {
 
     private final VariantStorageEngine engine;
-    private final Logger logger = LoggerFactory.getLogger(LocalFamilyIndexConstructor.class);
+    private final Logger logger = LoggerFactory.getLogger(LocalSampleFamilyIndexer.class);
 
-    public LocalFamilyIndexConstructor(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
-            VariantStorageEngine engine) {
+    public LocalSampleFamilyIndexer(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
+                                       VariantStorageEngine engine) {
         super(sampleIndexDBAdaptor);
         this.engine = engine;
     }

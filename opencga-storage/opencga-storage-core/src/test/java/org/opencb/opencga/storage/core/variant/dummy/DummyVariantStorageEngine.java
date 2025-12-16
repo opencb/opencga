@@ -85,6 +85,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     public DummyVariantStorageEngine(StorageConfiguration configuration) {
         super(configuration);
     }
+
     private Logger logger = LoggerFactory.getLogger(DummyVariantStorageEngine.class);
 
     public static final String STORAGE_ENGINE_ID = "dummy";
@@ -177,8 +178,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider(), getSampleIndexDBAdaptor()
-                .newSampleIndexAnnotationConstructor(this)){
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider(),
+                getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this)) {
 
             @Override
             protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
@@ -210,7 +211,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                                     .getSampleIndexConfigurationLatest(true).getVersion();
                             for (Integer sampleId : samplesToUpdate) {
                                 metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY,
+                                            sampleIndexVersion);
                                 });
                             }
                         }

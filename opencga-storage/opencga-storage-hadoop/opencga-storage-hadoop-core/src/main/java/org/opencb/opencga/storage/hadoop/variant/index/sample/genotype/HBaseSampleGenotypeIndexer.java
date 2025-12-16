@@ -1,9 +1,9 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
+package org.opencb.opencga.storage.hadoop.variant.index.sample.genotype;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
@@ -18,14 +18,14 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 /**
  * Created by jacobo on 04/01/19.
  */
-public class HBaseSampleIndexConstructor extends SampleIndexConstructor {
+public class HBaseSampleGenotypeIndexer extends SampleGenotypeIndexer {
 
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private Logger logger = LoggerFactory.getLogger(HBaseSampleIndexConstructor.class);
+    private Logger logger = LoggerFactory.getLogger(HBaseSampleGenotypeIndexer.class);
 
-    public HBaseSampleIndexConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
+    public HBaseSampleGenotypeIndexer(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
         super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.mrExecutor = mrExecutor;

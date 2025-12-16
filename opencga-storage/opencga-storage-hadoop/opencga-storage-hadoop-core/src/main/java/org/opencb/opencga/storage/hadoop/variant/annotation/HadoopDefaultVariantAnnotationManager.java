@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -75,7 +75,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
                                                  MRExecutor mrExecutor, ObjectMap options, IOConnectorProvider ioConnectorProvider,
-                                                 SampleIndexAnnotationConstructor sampleIndexAnnotation) {
+                                                 SampleAnnotationIndexer sampleIndexAnnotation) {
         super(variantAnnotator, dbAdaptor, ioConnectorProvider, sampleIndexAnnotation);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;

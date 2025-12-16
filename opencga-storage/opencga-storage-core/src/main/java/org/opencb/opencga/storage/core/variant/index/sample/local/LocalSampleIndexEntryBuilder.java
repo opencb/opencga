@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.index.sample.local;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;

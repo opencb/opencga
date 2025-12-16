@@ -6,13 +6,12 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-
 
 /**
  * Iterate through the mendelian error variants.

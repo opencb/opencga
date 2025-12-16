@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -547,11 +547,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        SampleIndexAnnotationConstructor constructor;
+        SampleAnnotationIndexer constructor;
         if (getSampleIndexDBAdaptor() == null) {
             constructor = null;
         } else {
-            constructor = getSampleIndexDBAdaptor().newSampleIndexAnnotationConstructor(this);
+            constructor = getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this);
         }
         return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider, constructor);
     }
@@ -650,7 +650,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        getSampleIndexDBAdaptor().newSampleIndexConstructor(this)
+        getSampleIndexDBAdaptor().newSampleGenotypeIndexer(this)
                 .buildSampleIndex(study, samples, options);
     }
 
@@ -666,7 +666,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        getSampleIndexDBAdaptor().newSampleIndexAnnotationConstructor(this)
+        getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this)
                 .updateSampleAnnotation(study, samples, options);
     }
 
@@ -682,7 +682,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        return getSampleIndexDBAdaptor().newSampleIndexFamilyConstructor(this)
+        return getSampleIndexDBAdaptor().newSampleFamilyIndexer(this)
                 .load(study, trios, options);
     }
 

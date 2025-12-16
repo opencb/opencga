@@ -12,7 +12,7 @@ import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilt
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.family.MendelianErrorSampleIndexEntryIterator;

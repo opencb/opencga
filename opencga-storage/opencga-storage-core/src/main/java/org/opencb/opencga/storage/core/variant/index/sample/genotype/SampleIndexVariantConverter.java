@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +48,7 @@ public class SampleIndexVariantConverter {
     public SampleIndexVariant createSampleIndexVariant(
             int filePosition, Variant variant, OriginalCall call, List<AlternateCoordinate> alts,
             Function<String, String> fileAttributes, Function<String, String> sampleData) {
-        BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, fileAttributes, sampleData);
+        BitBuffer fileIndexValue = createFileIndexValue(variant.getType(), filePosition, fileAttributes, sampleData);
         ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, call,
                 alts);
 
@@ -83,7 +83,7 @@ public class SampleIndexVariantConverter {
      * @return BitBuffer of file index.
      */
     protected BitBuffer createFileIndexValue(VariantType type, int filePosition, Map<String, String> fileAttributes,
-                                           Map<String, Integer> sampleDataKeyPositions, List<String> sampleData) {
+            Map<String, Integer> sampleDataKeyPositions, List<String> sampleData) {
         return createFileIndexValue(type, filePosition, fileAttributes::get, (key) -> {
             Integer position = sampleDataKeyPositions.get(key);
             return position == null ? null : sampleData.get(position);

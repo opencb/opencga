@@ -37,7 +37,7 @@ import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;

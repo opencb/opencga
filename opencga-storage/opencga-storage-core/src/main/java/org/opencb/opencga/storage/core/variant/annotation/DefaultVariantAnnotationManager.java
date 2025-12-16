@@ -53,7 +53,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -106,7 +106,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private boolean annotateAll;
     private long annotationStartTimestamp;
     protected Query query;
-    private final SampleIndexAnnotationConstructor sampleIndexAnnotation;
+    private final SampleAnnotationIndexer sampleIndexAnnotation;
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
                                            IOConnectorProvider ioConnectorProvider) {
@@ -115,7 +115,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
                                            IOConnectorProvider ioConnectorProvider,
-                                           SampleIndexAnnotationConstructor sampleIndexAnnotation) {
+                                           SampleAnnotationIndexer sampleIndexAnnotation) {
         Objects.requireNonNull(variantAnnotator);
         Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
@@ -273,8 +273,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     }
                 }, 200);
             }
-            Task<Variant, VariantAnnotation> annotationTask = Task.join(variantAnnotator,
-                    variants -> {
+            Task<Variant, VariantAnnotation> annotationTask = Task
+                    .join(variantAnnotator, variants -> {
                         progressLogger.increment(variants.size(),
                                 () -> {
                                     Variant variant = variants.get(variants.size() - 1);
@@ -282,10 +282,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                                 });
                         numProcessedVariants.addAndGet(variants.size());
                         return null;
-                    }).then((List<VariantAnnotation> variants) -> {
-                numAnnotationsToLoad.addAndGet(variants.size());
-                return variants;
-            });
+                    })
+                    .then((List<VariantAnnotation> variants) -> {
+                        numAnnotationsToLoad.addAndGet(variants.size());
+                        return variants;
+                    });
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {
@@ -334,7 +335,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         iteratorQueryOptions.add(QueryOptions.INCLUDE, include);
         return iteratorQueryOptions;
     }
-
 
     public void loadAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         if (isCustomAnnotation(uri)) {

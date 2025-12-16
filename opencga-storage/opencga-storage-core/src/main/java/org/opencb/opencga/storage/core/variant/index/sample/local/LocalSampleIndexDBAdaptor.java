@@ -13,12 +13,12 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
@@ -55,8 +55,8 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public SampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException {
-        return new LocalSampleIndexConstructor(this, engine);
+    public SampleGenotypeIndexer newSampleGenotypeIndexer(VariantStorageEngine engine) throws StorageEngineException {
+        return new LocalSampleGenotypeIndexer(this, engine);
     }
 
     @Override
@@ -67,20 +67,18 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public SampleIndexAnnotationConstructor newSampleIndexAnnotationConstructor(VariantStorageEngine engine)
-            throws StorageEngineException {
-        return new LocalSampleIndexAnnotationConstructor(this, engine);
+    public SampleAnnotationIndexer newSampleAnnotationIndexer(VariantStorageEngine engine) throws StorageEngineException {
+        return new LocalSampleAnnotationIndexer(this, engine);
     }
 
     @Override
-    public FamilyIndexConstructor newSampleIndexFamilyConstructor(VariantStorageEngine engine)
-            throws StorageEngineException {
-        return new LocalFamilyIndexConstructor(this, engine);
+    public SampleFamilyIndexer newSampleFamilyIndexer(VariantStorageEngine engine) throws StorageEngineException {
+        return new LocalSampleFamilyIndexer(this, engine);
     }
 
     @Override
     public SampleIndexEntryBuilder queryByGtBuilder(int study, int sample, String chromosome, int position,
-                                                    SampleIndexSchema schema) throws IOException {
+            SampleIndexSchema schema) throws IOException {
         int batchStart = SampleIndexSchema.getChunkStart(position);
         SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(study, sample);
         boolean multiFileSample = sampleMetadata != null && sampleMetadata.isMultiFileSample();

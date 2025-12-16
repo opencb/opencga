@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.core.variant.index.core.filters.RangeIndexFiel
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;

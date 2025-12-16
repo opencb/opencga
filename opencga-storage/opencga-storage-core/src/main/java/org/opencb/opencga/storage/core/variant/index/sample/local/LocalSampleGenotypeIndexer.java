@@ -10,9 +10,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
@@ -22,13 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LocalSampleIndexConstructor extends SampleIndexConstructor {
+public class LocalSampleGenotypeIndexer extends SampleGenotypeIndexer {
     private static final int INCLUDE_SAMPLES_THRESHOLD = 50;
 
     private final VariantStorageEngine engine;
     private final LocalSampleIndexDBAdaptor localAdaptor;
 
-    public LocalSampleIndexConstructor(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
+    public LocalSampleGenotypeIndexer(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
             VariantStorageEngine engine) {
         super(sampleIndexDBAdaptor);
         this.engine = engine;

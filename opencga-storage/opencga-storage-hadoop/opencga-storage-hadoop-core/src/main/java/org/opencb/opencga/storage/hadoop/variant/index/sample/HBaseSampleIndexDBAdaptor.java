@@ -18,7 +18,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
@@ -29,11 +32,11 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleIndexAnnotationConstructor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.family.HBaseFamilyIndexConstructor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseSampleIndexConstructor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseSampleIndexDBWriter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseToSampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleAnnotationIndexer;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.family.HBaseSampleFamilyIndexer;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseSampleGenotypeIndexer;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseSampleIndexDBWriter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,27 +68,28 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public HBaseSampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException {
-        return new HBaseSampleIndexConstructor(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    public SampleGenotypeIndexer newSampleGenotypeIndexer(VariantStorageEngine engine) throws StorageEngineException {
+        return new HBaseSampleGenotypeIndexer(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
     }
 
     @Override
     public HBaseSampleIndexDBWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-                                                  SampleIndexSchema schema, ObjectMap options, VariantStorageEngine.SplitData splitData)
-            throws StorageEngineException {
+            SampleIndexSchema schema, ObjectMap options,
+            VariantStorageEngine.SplitData splitData) throws StorageEngineException {
         return new HBaseSampleIndexDBWriter(this, hBaseManager, metadataManager, studyId, fileId, sampleIds,
                 splitData, options, schema);
     }
 
     @Override
-    public HBaseSampleIndexAnnotationConstructor newSampleIndexAnnotationConstructor(VariantStorageEngine engine)
+    public SampleAnnotationIndexer newSampleAnnotationIndexer(VariantStorageEngine engine)
             throws StorageEngineException {
-        return new HBaseSampleIndexAnnotationConstructor(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+        return new HBaseSampleAnnotationIndexer(this, ((HadoopVariantStorageEngine) engine).getMRExecutor());
     }
 
     @Override
-    public HBaseFamilyIndexConstructor newSampleIndexFamilyConstructor(VariantStorageEngine engine) throws StorageEngineException {
-        return new HBaseFamilyIndexConstructor(this, tableNameGenerator, ((HadoopVariantStorageEngine) engine).getMRExecutor());
+    public SampleFamilyIndexer newSampleFamilyIndexer(VariantStorageEngine engine) throws StorageEngineException {
+        return new HBaseSampleFamilyIndexer(this, tableNameGenerator,
+                ((HadoopVariantStorageEngine) engine).getMRExecutor());
     }
 
     /**

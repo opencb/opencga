@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
+package org.opencb.opencga.storage.hadoop.variant.index.sample.genotype;
 
 import com.google.common.collect.BiMap;
 import htsjdk.variant.vcf.VCFConstants;
@@ -28,7 +28,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;

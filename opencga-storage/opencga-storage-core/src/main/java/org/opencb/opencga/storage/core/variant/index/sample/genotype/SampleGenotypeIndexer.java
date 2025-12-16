@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -18,13 +18,13 @@ import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 
-public abstract class SampleIndexConstructor {
+public abstract class SampleGenotypeIndexer {
 
     protected final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     protected final VariantStorageMetadataManager metadataManager;
-    private Logger logger = LoggerFactory.getLogger(SampleIndexConstructor.class);
+    private Logger logger = LoggerFactory.getLogger(SampleGenotypeIndexer.class);
 
-    public SampleIndexConstructor(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
+    public SampleGenotypeIndexer(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         metadataManager = sampleIndexDBAdaptor.getMetadataManager();
     }

@@ -25,11 +25,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilter;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
@@ -65,16 +65,17 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
         return new SampleIndexQueryParser(metadataManager, schemaFactory);
     }
 
-    public abstract SampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException;
-
-    public abstract SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-                                                           SampleIndexSchema schema, ObjectMap options,
-                                                           VariantStorageEngine.SplitData splitData) throws StorageEngineException;
-
-    public abstract SampleIndexAnnotationConstructor newSampleIndexAnnotationConstructor(VariantStorageEngine engine)
+    public abstract SampleGenotypeIndexer newSampleGenotypeIndexer(VariantStorageEngine engine)
             throws StorageEngineException;
 
-    public abstract FamilyIndexConstructor newSampleIndexFamilyConstructor(VariantStorageEngine engine) throws StorageEngineException;
+    public abstract SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
+            SampleIndexSchema schema, ObjectMap options,
+            VariantStorageEngine.SplitData splitData) throws StorageEngineException;
+
+    public abstract SampleAnnotationIndexer newSampleAnnotationIndexer(VariantStorageEngine engine)
+            throws StorageEngineException;
+
+    public abstract SampleFamilyIndexer newSampleFamilyIndexer(VariantStorageEngine engine) throws StorageEngineException;
 
     public abstract SampleIndexEntryBuilder queryByGtBuilder(int study, int sample, String chromosome, int position,
                                                              SampleIndexSchema schema) throws IOException;

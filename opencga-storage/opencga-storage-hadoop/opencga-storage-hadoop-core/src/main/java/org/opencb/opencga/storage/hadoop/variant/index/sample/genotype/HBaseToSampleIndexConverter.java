@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
+package org.opencb.opencga.storage.hadoop.variant.index.sample.genotype;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -8,15 +8,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
+import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.FileDataSchema;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.FileIndexSchema;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
-import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry.SampleIndexGtEntry;
 
 import java.nio.ByteBuffer;
 import java.util.*;

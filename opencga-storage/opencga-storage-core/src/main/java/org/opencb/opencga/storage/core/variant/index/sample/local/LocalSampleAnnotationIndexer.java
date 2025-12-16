@@ -11,10 +11,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationConverter;
-import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
@@ -23,13 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LocalSampleIndexAnnotationConstructor extends SampleIndexAnnotationConstructor {
+public class LocalSampleAnnotationIndexer extends SampleAnnotationIndexer {
 
     private final VariantStorageEngine engine;
     private final LocalSampleIndexDBAdaptor localAdaptor;
 
-    public LocalSampleIndexAnnotationConstructor(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
-            VariantStorageEngine engine) {
+    public LocalSampleAnnotationIndexer(LocalSampleIndexDBAdaptor sampleIndexDBAdaptor,
+                                                 VariantStorageEngine engine) {
         super(sampleIndexDBAdaptor);
         this.engine = engine;
         this.localAdaptor = sampleIndexDBAdaptor;
@@ -40,7 +39,7 @@ public class LocalSampleIndexAnnotationConstructor extends SampleIndexAnnotation
             throws StorageEngineException {
         SampleIndexSchema schema = new SampleIndexSchema(localAdaptor.getMetadataManager().getStudyMetadata(studyId)
                 .getSampleIndexConfiguration(sampleIndexVersion).getConfiguration(), sampleIndexVersion);
-        SampleIndexVariantBiConverter variantConverter = new SampleIndexVariantBiConverter(schema);
+
         SampleIndexVariantAnnotationConverter annotationConverter = new SampleIndexVariantAnnotationConverter(schema);
 
         // Get list of actual existing regions from filenames

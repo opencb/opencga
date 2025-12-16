@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
@@ -31,7 +31,7 @@ public class SampleIndexEntryBuilder {
     private final boolean multiFileSample;
 
     public SampleIndexEntryBuilder(int sampleId, Variant variant, SampleIndexSchema schema,
-                                      boolean orderedInput, boolean multiFileSample) {
+            boolean orderedInput, boolean multiFileSample) {
         this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()), schema,
                 orderedInput, multiFileSample);
     }
@@ -63,7 +63,7 @@ public class SampleIndexEntryBuilder {
     }
 
     public SampleIndexEntryBuilder(int sampleId, String chromosome, int position, SampleIndexSchema schema,
-                                      Map<String, TreeSet<SampleIndexVariant>> map) {
+            Map<String, TreeSet<SampleIndexVariant>> map) {
         // As there is already present data, this won't be an ordered input.
         this(sampleId, chromosome, position, schema, false, true);
         for (Map.Entry<String, TreeSet<SampleIndexVariant>> entry : map.entrySet()) {
@@ -464,6 +464,5 @@ public class SampleIndexEntryBuilder {
             return entry;
         }
     }
-
 
 }

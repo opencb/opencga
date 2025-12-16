@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.index.sample.file;
+package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +22,8 @@ public class SampleIndexEntryBuilderTest {
 
     @Test
     public void testContains() {
-        SampleIndexEntryBuilder builder = new SampleIndexEntryBuilder(1, "1", 10, SampleIndexSchema.defaultSampleIndexSchema(), false, true);
+        SampleIndexEntryBuilder builder = new SampleIndexEntryBuilder(1, "1", 10,
+                SampleIndexSchema.defaultSampleIndexSchema(), false, true);
 
         builder.add("0/1", newVariantIndexEntry("1:100:A:C", (short) 20));
         builder.add("0/1", newVariantIndexEntry("1:200:A:C", (short) 20));

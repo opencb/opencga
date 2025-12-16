@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample.annotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -17,14 +17,14 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 /**
  * Created by jacobo on 04/01/19.
  */
-public class HBaseSampleIndexAnnotationConstructor extends SampleIndexAnnotationConstructor {
+public class HBaseSampleAnnotationIndexer extends SampleAnnotationIndexer {
 
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
     private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final Logger logger = LoggerFactory.getLogger(HBaseSampleIndexAnnotationConstructor.class);
+    private final Logger logger = LoggerFactory.getLogger(HBaseSampleAnnotationIndexer.class);
 
-    public HBaseSampleIndexAnnotationConstructor(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
+    public HBaseSampleAnnotationIndexer(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
         super(sampleIndexDBAdaptor);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.mrExecutor = mrExecutor;
