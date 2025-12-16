@@ -67,7 +67,7 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
 
     @Test
     public void updateJobInformation() throws CatalogException {
-        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.HIGH,
+        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE_TOOL, "variant-index", Enums.Priority.HIGH,
                 new HashMap<>(), ownerToken);
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setCommandLine("myCommandLine");

@@ -1,5 +1,7 @@
 package org.opencb.opencga.server.generator.config;
 
+import org.opencb.commons.annotations.DataField;
+
 import java.util.List;
 
 public class ApiConfig {
@@ -10,6 +12,10 @@ public class ApiConfig {
     private String optionsParserParentClass;
     private String executorsOpencgaClientPrefix;
 
+    @DataField(id = "restMethodParseList", description = "List of REST endpoints that cannot be handled automatically or that require "
+            + "a special method name.")
+    private List<RestMethodParse> restMethodParseList;
+
     public ApiConfig() {
     }
 
@@ -18,12 +24,13 @@ public class ApiConfig {
     }
 
     public ApiConfig(List<CategoryConfig> categoryConfigList, List<Shortcut> shortcuts, String executorsParentClass,
-                     String optionsParserParentClass, String executorsOpencgaClientPrefix) {
+                     String optionsParserParentClass, String executorsOpencgaClientPrefix, List<RestMethodParse> restMethodParseList) {
         this.categoryConfigList = categoryConfigList;
         this.shortcuts = shortcuts;
         this.executorsParentClass = executorsParentClass;
         this.optionsParserParentClass = optionsParserParentClass;
         this.executorsOpencgaClientPrefix = executorsOpencgaClientPrefix;
+        this.restMethodParseList = restMethodParseList;
     }
 
     @Override
@@ -34,6 +41,7 @@ public class ApiConfig {
         sb.append(", executorsParentClass='").append(executorsParentClass).append('\'');
         sb.append(", optionsParserParentClass='").append(optionsParserParentClass).append('\'');
         sb.append(", executorsOpencgaClientPrefix='").append(executorsOpencgaClientPrefix).append('\'');
+        sb.append(", restMethodParseList=").append(restMethodParseList);
         sb.append('}');
         return sb.toString();
     }
@@ -80,6 +88,15 @@ public class ApiConfig {
 
     public ApiConfig setExecutorsOpencgaClientPrefix(String executorsOpencgaClientPrefix) {
         this.executorsOpencgaClientPrefix = executorsOpencgaClientPrefix;
+        return this;
+    }
+
+    public List<RestMethodParse> getRestMethodParseList() {
+        return restMethodParseList;
+    }
+
+    public ApiConfig setRestMethodParseList(List<RestMethodParse> restMethodParseList) {
+        this.restMethodParseList = restMethodParseList;
         return this;
     }
 }

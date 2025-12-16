@@ -4,7 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 
@@ -26,7 +26,7 @@ public class WorkflowCommandOptions {
         this.nextflowCommandOptions = new NextflowCommandOptions();
     }
 
-    @Parameters(commandNames = {NextFlowExecutor.ID}, commandDescription = NextFlowExecutor.DESCRIPTION)
+    @Parameters(commandNames = {NextFlowToolExecutor.ID}, commandDescription = NextFlowToolExecutor.DESCRIPTION)
     public class NextflowCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = workflowCommonOptions;

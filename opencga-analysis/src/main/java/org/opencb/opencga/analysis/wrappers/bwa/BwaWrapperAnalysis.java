@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.bwa;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
@@ -40,7 +40,7 @@ import static org.opencb.opencga.core.api.ParamConstants.BWA_COMMANDS_SUPPORTED;
 
 @Tool(id = org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT,
         description = org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis.DESCRIPTION)
-public class BwaWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class BwaWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "bwa";
     public final static String DESCRIPTION = "BWA is a software package for mapping low-divergent sequences against a large reference"

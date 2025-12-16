@@ -21,7 +21,7 @@ import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.GenomePlotConfig;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -40,7 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tool(id = GenomePlotAnalysis.ID, resource = Enums.Resource.VARIANT)
-public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
+public class GenomePlotAnalysis extends OpenCgaTool {
 
     public static final String ID = "genome-plot";
     public static final String DESCRIPTION = "Generate a genome plot for a given sample.";

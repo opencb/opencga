@@ -22,7 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -42,7 +42,7 @@ import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPO
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMAND_DESCRIPTION;
 
 @Tool(id = SamtoolsWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
-public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class SamtoolsWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "samtools";
     public final static String DESCRIPTION = "Samtools is a program for interacting with high-throughput sequencing data in SAM, BAM"

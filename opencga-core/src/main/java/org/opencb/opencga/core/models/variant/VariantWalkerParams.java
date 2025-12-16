@@ -10,14 +10,33 @@ public class VariantWalkerParams extends VariantQueryParams {
     private String outputFileName;
     @DataField(description = "Format that will be used as input for the variant walker")
     private String inputFormat;
-    @DataField(description = "Docker image to use")
-    private String dockerImage;
-    @DataField(description = "Command line to execute from the walker")
-    private String commandLine;
     @DataField(description = ParamConstants.INCLUDE_DESCRIPTION)
     private String include;
     @DataField(description = ParamConstants.EXCLUDE_DESCRIPTION)
     private String exclude;
+    @DataField(description = "Command line to execute from the walker")
+    private String commandLine;
+
+    public VariantWalkerParams() {
+    }
+
+    public VariantWalkerParams(String outputFileName, String inputFormat, String include, String exclude) {
+        this.outputFileName = outputFileName;
+        this.inputFormat = inputFormat;
+        this.include = include;
+        this.exclude = exclude;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantWalkerParams2{");
+        sb.append("outputFileName='").append(outputFileName).append('\'');
+        sb.append(", inputFormat='").append(inputFormat).append('\'');
+        sb.append(", include='").append(include).append('\'');
+        sb.append(", exclude='").append(exclude).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 
     public String getOutputFileName() {
         return outputFileName;
@@ -37,24 +56,6 @@ public class VariantWalkerParams extends VariantQueryParams {
         return this;
     }
 
-    public String getDockerImage() {
-        return dockerImage;
-    }
-
-    public VariantWalkerParams setDockerImage(String dockerImage) {
-        this.dockerImage = dockerImage;
-        return this;
-    }
-
-    public String getCommandLine() {
-        return commandLine;
-    }
-
-    public VariantWalkerParams setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
-        return this;
-    }
-
     public String getInclude() {
         return include;
     }
@@ -70,6 +71,15 @@ public class VariantWalkerParams extends VariantQueryParams {
 
     public VariantWalkerParams setExclude(String exclude) {
         this.exclude = exclude;
+        return this;
+    }
+
+    public String getCommandLine() {
+        return commandLine;
+    }
+
+    public VariantWalkerParams setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
         return this;
     }
 }

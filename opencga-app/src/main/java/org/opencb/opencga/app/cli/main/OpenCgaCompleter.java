@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","workflows","individuals","families","users","samples","alignments","meta","organizations","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","workflows","individuals","families","tools","users","samples","alignments","meta","organizations","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -70,6 +70,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .collect(toList());
 
     private List<Candidate> familiesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> toolsList = asList( "acl-update","aggregationstats","custom-builder-run","custom-create","custom-docker-run","custom-update","distinct","search","walker-create","walker-run","walker-update","workflow-create","workflow-import","workflow-run","workflow-update","acl","delete","info")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -136,6 +141,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "workflows", workflowsList);
         mapCandidates.put( "individuals", individualsList);
         mapCandidates.put( "families", familiesList);
+        mapCandidates.put( "tools", toolsList);
         mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
         mapCandidates.put( "alignments", alignmentsList);

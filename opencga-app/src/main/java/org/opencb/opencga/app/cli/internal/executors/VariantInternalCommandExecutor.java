@@ -665,7 +665,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
-        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
@@ -751,7 +751,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
         cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
+                cliOptions.study, variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
@@ -845,7 +845,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         mendelianErrorAnalysis.setStudy(cliOptions.study)
                 .setFamilyId(cliOptions.family)
@@ -860,7 +860,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
@@ -874,7 +874,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         relatednessAnalysis.setStudyId(cliOptions.study)
                 .setIndividualIds(cliOptions.individuals)
@@ -890,7 +890,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
-        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         familyQcAnalysis.setStudyId(cliOptions.study)
                 .setFamilyId(cliOptions.family)
@@ -905,7 +905,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
-        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         individualQcAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)

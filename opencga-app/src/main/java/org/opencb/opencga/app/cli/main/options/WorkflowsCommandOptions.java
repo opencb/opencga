@@ -83,8 +83,8 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
         public String action = "ADD"; 
     
-        @Parameter(names = {"--workflow-ids"}, description = "The body web service workflowIds parameter", required = false, arity = 1)
-        public String workflowIds;
+        @Parameter(names = {"--external-tool-ids"}, description = "The body web service externalToolIds parameter", required = false, arity = 1)
+        public String externalToolIds;
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = false, arity = 1)
         public String permissions;
@@ -115,41 +115,20 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--id"}, description = "Workflow ID.", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "External tool ID.", required = true, arity = 1)
         public String id;
     
-        @Parameter(names = {"--name", "-n"}, description = "Workflow name.", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
         public String name;
     
         @Parameter(names = {"--description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
         public String description;
     
-        @Parameter(names = {"--manager-id"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String managerId;
-    
-        @Parameter(names = {"--manager-version"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String managerVersion;
-    
-        @Parameter(names = {"--type"}, description = "Workflow type. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
-    
-        @Parameter(names = {"--draft"}, description = "Flag indicating whether the workflow is still a draft or not.", required = false, help = true, arity = 0)
-        public boolean draft = false;
-    
-        @Parameter(names = {"--repository-id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String repositoryId;
-    
-        @Parameter(names = {"--repository-version"}, description = "The body web service version parameter", required = false, arity = 1)
-        public String repositoryVersion;
-    
-        @Parameter(names = {"--repository-author"}, description = "The body web service author parameter", required = false, arity = 1)
-        public String repositoryAuthor;
-    
-        @Parameter(names = {"--repository-description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String repositoryDescription;
     
         @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsCpu;
@@ -159,6 +138,18 @@ public class WorkflowsCommandOptions {
     
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
+        public boolean draft = false;
+    
+        @Parameter(names = {"--internal-registration-date"}, description = "Registration date of the internal object.", required = false, arity = 1)
+        public String internalRegistrationDate;
+    
+        @Parameter(names = {"--internal-last-modified"}, description = "Date of the last modification of the internal object.", required = false, arity = 1)
+        public String internalLastModified;
+    
+        @Parameter(names = {"--internal-registration-user-id"}, description = "The body web service registrationUserId parameter", required = false, arity = 1)
+        public String internalRegistrationUserId;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.", required = false, arity = 1)
         public String creationDate;
@@ -242,11 +233,17 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String id;
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
     
-        @Parameter(names = {"--version"}, description = "The body web service version parameter", required = false, arity = 1)
-        public String version;
+        @Parameter(names = {"--tag"}, description = "The body web service tag parameter", required = false, arity = 1)
+        public String tag;
+    
+        @Parameter(names = {"--user", "-u"}, description = "The body web service user parameter", required = false, arity = 1)
+        public String user;
+    
+        @Parameter(names = {"--password"}, description = "The body web service password parameter", required = false, arity = 1)
+        public String password;
     
     }
 
@@ -286,13 +283,13 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "User tool identifier.", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--version"}, description = "The body web service version parameter", required = false, arity = 1)
+        @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
         public Integer version;
     
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
@@ -392,7 +389,7 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Workflow name.", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "External tool name.", required = false, arity = 1)
         public String name;
     
         @Parameter(names = {"--description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
@@ -401,29 +398,35 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--manager-id"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
         public String managerId;
     
-        @Parameter(names = {"--manager-version"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
+        @Parameter(names = {"--manager-version"}, description = "Workflow system version to use.", required = false, arity = 1)
         public String managerVersion;
     
-        @Parameter(names = {"--type"}, description = "Workflow type. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
     
-        @Parameter(names = {"--draft"}, description = "Flag indicating whether the workflow is still a draft or not.", required = false, help = true, arity = 0)
+        @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
     
-        @Parameter(names = {"--repository-id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String repositoryId;
+        @Parameter(names = {"--repository-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String repositoryName;
     
-        @Parameter(names = {"--repository-version"}, description = "The body web service version parameter", required = false, arity = 1)
-        public String repositoryVersion;
+        @Parameter(names = {"--repository-tag"}, description = "The body web service tag parameter", required = false, arity = 1)
+        public String repositoryTag;
     
         @Parameter(names = {"--repository-author"}, description = "The body web service author parameter", required = false, arity = 1)
         public String repositoryAuthor;
     
         @Parameter(names = {"--repository-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String repositoryDescription;
+    
+        @Parameter(names = {"--repository-user"}, description = "The body web service user parameter", required = false, arity = 1)
+        public String repositoryUser;
+    
+        @Parameter(names = {"--repository-password"}, description = "The body web service password parameter", required = false, arity = 1)
+        public String repositoryPassword;
     
         @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsCpu;

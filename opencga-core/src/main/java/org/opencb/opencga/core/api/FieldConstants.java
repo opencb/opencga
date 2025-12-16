@@ -337,19 +337,32 @@ public class FieldConstants {
     public static final String TOOL_INFO_EXTERNAL_EXECUTOR_DESCRIPTION = "Object containing the id and version of the external tool that"
             + " is being executed.";
 
-    // Workflow
-    public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
-    public static final String WORKFLOW_NAME_DESCRIPTION = "Workflow name.";
-    public static final String WORKFLOW_TYPE_DESCRIPTION = "Workflow type. Valid values: NEXTFLOW.";
-    public static final String WORKFLOW_MANAGER_DESCRIPTION = "Workflow system corresponding to the workflow.";
-    public static final String WORKFLOW_DRAFT_DESCRIPTION = "Flag indicating whether the workflow is still a draft or not.";
-    public static final String WORKFLOW_REPOSITORY_DESCRIPTION = "Workflow repository image to execute. If any, providing a list of"
-            + " scripts will not be mandatory.";
-    public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
-    public static final String WORKFLOW_TAGS_DESCRIPTION = "List of tags.";
-    public static final String WORKFLOW_VARIABLES_DESCRIPTION = "List of variables accepted by the Workflow.";
+    // Docker
+    public static final String CONTAINER_NAME_DESCRIPTION = "Container name. It should contain the repository and the image name."
+            + " Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: "
+            + "'repository/image', 'registry/repository/image' ";
+    public static final String CONTAINER_TAG_DESCRIPTION = "Container tag. It refers to a specific version of an image.";
+    public static final String CONTAINER_DIGEST_DESCRIPTION = "Digest of the Container image. It is a sha256 hash that uniquely identifies a"
+            + " specific Container image. Example: 'sha256:3a5c8...'";
+    public static final String CONTAINER_COMMANDLINE_DESCRIPTION = "Command line template to run the tool inside the container."
+            + " You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.";
+    public static final String CONTAINER_USER_DESCRIPTION = "User that can access the private Container repository.";
+    public static final String CONTAINER_PASSWORD_DESCRIPTION = "Password corresponding to the user that can access the Container repository.";
+
+    // External tool
+    public static final String EXTERNAL_TOOL_ID_DESCRIPTION = "External tool ID.";
+    public static final String EXTERNAL_TOOL_NAME_DESCRIPTION = "External tool name.";
+    public static final String EXTERNAL_TOOL_TYPE_DESCRIPTION = "External tool type. Valid values: CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW.";
+    public static final String EXTERNAL_TOOL_SCOPE_DESCRIPTION = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS,"
+            + " CLINICAL_INTERPRETATION_ANALYSIS or OTHER.";
+    public static final String EXTERNAL_TOOL_DRAFT_DESCRIPTION = "Flag indicating whether the external tool is a draft or not.";
+    public static final String EXTERNAL_TOOL_TAGS_DESCRIPTION = "List of tags.";
+    public static final String EXTERNAL_TOOL_VARIABLES_DESCRIPTION = "List of variables accepted by the External Tool.";
     public static final String MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the process.";
-    public static final String WORKFLOW_INTERNAL_DESCRIPTION = "Workflow internal information.";
+    public static final String EXTERNAL_TOOL_INTERNAL_DESCRIPTION = "External tool internal information.";
+    public static final String EXTERNAL_TOOL_WORKFLOW_DESCRIPTION = "Workflow information if the external tool type is a workflow.";
+    public static final String EXTERNAL_TOOL_CONTAINER_DESCRIPTION = "Container information if the external tool type is of type"
+            + " CUSTOM_TOOL or VARIANT_WALKER.";
 
     public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
     public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";
@@ -357,6 +370,12 @@ public class FieldConstants {
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
+
+    // Workflow
+    public static final String WORKFLOW_MANAGER_DESCRIPTION = "Workflow system corresponding to the workflow.";
+    public static final String WORKFLOW_REPOSITORY_DESCRIPTION = "Workflow repository image to execute. If any, providing a list of"
+            + " scripts will not be mandatory.";
+    public static final String WORKFLOW_SCRIPTS_DESCRIPTION = "List of scripts used by the Workflow.";
 
     //FileInternal
     public static final String FILE_INTERNAL_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, "

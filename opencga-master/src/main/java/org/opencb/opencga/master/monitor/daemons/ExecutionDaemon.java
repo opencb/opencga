@@ -415,6 +415,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 return 0;
 
         }
+
+
     }
 
     private int processKillJob(Job job) {
@@ -958,6 +960,20 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                         cliBuilder.append("=");
                         escapeCliArg(cliBuilder, dynamicEntry.getValue().toString());
                     }
+                }
+            } else if (entry.getValue() instanceof Collection) {
+                Collection<?> collection = (Collection<?>) entry.getValue();
+                List<String> values = new ArrayList<>(collection.size());
+                for (Object item : collection) {
+                    if (item != null) {
+                        values.add(item.toString());
+                    }
+                }
+                if (!values.isEmpty()) {
+                    cliBuilder
+                            .append(" --").append(param)
+                            .append(" ");
+                    escapeCliArg(cliBuilder, String.join(",", values));
                 }
             } else {
                 if (entry.getValue() != null) {

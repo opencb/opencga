@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -47,7 +47,7 @@ import java.util.List;
 
 @Tool(id = FetchAndRegisterTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.ANALYSIS,
         description = "Download an external file and register it in OpenCGA.", priority = Enums.Priority.HIGH)
-public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
+public class FetchAndRegisterTask extends OpenCgaTool {
 
     public final static String ID = "files-fetch";
 

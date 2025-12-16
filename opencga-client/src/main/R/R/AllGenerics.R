@@ -34,6 +34,11 @@ setGeneric("workflowClient", function(OpencgaR, members, workflowId, workflows, 
     standardGeneric("workflowClient"))
 
 # ##############################################################################
+## UserToolClient
+setGeneric("usertoolClient", function(OpencgaR, members, toolId, tools, endpointName, params=NULL, ...)
+    standardGeneric("usertoolClient"))
+
+# ##############################################################################
 ## SampleClient
 setGeneric("sampleClient", function(OpencgaR, annotationSet, members, sample, samples, endpointName, params=NULL, ...)
     standardGeneric("sampleClient"))

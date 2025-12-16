@@ -1,6 +1,5 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
@@ -52,7 +51,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private void executeTool() throws ToolException {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
-        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir),
+        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir), "",
                 toolCommandOptions.internalJobOptions.jobId, toolCommandOptions.internalJobOptions.dryRun, token);
     }
 

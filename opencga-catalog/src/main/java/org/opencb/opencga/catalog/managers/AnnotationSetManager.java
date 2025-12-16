@@ -182,7 +182,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         jobParams.put("file", path);
         jobParams.put("variableSetId", variableSetId);
         jobParams.put("annotationSetId", annotationSetId);
-        return catalogManager.getJobManager().submit(study.getFqn(), JobType.NATIVE, toolId, Enums.Priority.MEDIUM, jobParams, token);
+        return catalogManager.getJobManager().submit(study.getFqn(), JobType.NATIVE_TOOL, toolId, Enums.Priority.MEDIUM, jobParams, token);
     }
 
     protected <T extends Annotable> void checkUpdateAnnotations(String organizationId, Study study, T entry, ObjectMap parameters,

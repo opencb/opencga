@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy {
+public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
 
     // Build list of inputfiles in case we need to specifically mount them in read only mode
     protected List<AbstractMap.SimpleEntry<String, String>> dockerInputBindings;
@@ -39,14 +39,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         super.close();
     }
 
-    /**
-     * Process the input parameters of the command line.
-     * @param value
-     * @param inputFileUtils
-     * @param cliParamsBuilder
-     * @throws CatalogException
-     */
-    protected void processInputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+    protected String processInputValue(String value, InputFileUtils inputFileUtils) throws CatalogException {
         if (inputFileUtils.isValidOpenCGAFile(value)) {
             File file = inputFileUtils.findOpenCGAFileFromPattern(study, value, token);
             if (inputFileUtils.fileMayContainReferencesToOtherFiles(file)) {
@@ -56,26 +49,28 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
                 // Write outputFile as inputBinding
                 dockerInputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
                 logger.info("Params: OpenCGA input file: '{}'", outputFile);
-                cliParamsBuilder.append(outputFile).append(" ");
 
                 // Add files to inputBindings to ensure they are also mounted (if any)
                 for (File tmpFile : files) {
                     dockerInputBindings.add(new AbstractMap.SimpleEntry<>(tmpFile.getUri().getPath(), tmpFile.getUri().getPath()));
                     logger.info("Inner files from '{}': OpenCGA input file: '{}'", outputFile, tmpFile.getUri().getPath());
                 }
+
+                return outputFile.toString();
             } else {
                 String path = file.getUri().getPath();
                 dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
                 logger.info("Params: OpenCGA input file: '{}'", path);
-                cliParamsBuilder.append(path).append(" ");
+
+                return path;
             }
         } else {
-            cliParamsBuilder.append(value).append(" ");
+            return value;
         }
 
     }
 
-    protected void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+    protected String processOutputValue(String value, InputFileUtils inputFileUtils) throws CatalogException {
         String dynamicOutputFolder;
         if (inputFileUtils.isDynamicOutputFolder(value)) {
             // If it starts with $OUTPUT/...
@@ -85,7 +80,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
             dynamicOutputFolder = inputFileUtils.appendSubpath(getOutDir().toAbsolutePath().toString(), value);
         }
         logger.info("Params: Dynamic output folder: '{}'", dynamicOutputFolder);
-        cliParamsBuilder.append(dynamicOutputFolder).append(" ");
+        return dynamicOutputFolder;
     }
 
     /**
@@ -119,57 +114,40 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
         catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, options, token);
     }
 
-    protected void processInputParams(String commandLineParams, StringBuilder builder) throws CatalogException {
-        String[] params = commandLineParams.split(" ");
-        for (String param : params) {
-            if (inputFileUtils.isDynamicOutputFolder(param)) {
-                processOutputCli(param, inputFileUtils, builder);
-            } else {
-                processInputCli(param, inputFileUtils, builder);
-            }
-        }
-    }
-
-    protected String runDocker(String image, String cli) throws IOException {
-        return runDocker(image, Collections.emptyList(), cli, null);
-    }
-
-    protected String runDocker(String image, AbstractMap.SimpleEntry<String, String> userOutputBinding, String cmdParams,
-                               Map<String, String> userDockerParams) throws IOException {
-        AbstractMap.SimpleEntry<String, String> outputBinding = userOutputBinding != null
-                ? userOutputBinding
-                : new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString());
-
-        Map<String, String> dockerParams = new HashMap<>();
-        // Establish working directory
-        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
-        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-        dockerParams.put("--network", "host");
-        if (userDockerParams != null) {
-            dockerParams.putAll(userDockerParams);
-        }
-
-        return DockerUtils.run(image, dockerInputBindings, outputBinding, cmdParams, dockerParams);
+    protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
+                               Map<String, List<String>> userDockerParams) throws IOException, CatalogException {
+        return runDocker(image, userOutputBindings, cmdParams, userDockerParams, null, null, null);
     }
 
     protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
-                               Map<String, String> userDockerParams) throws IOException {
+                               Map<String, List<String>> userDockerParams, String registry, String username, String password)
+            throws IOException, CatalogException {
         List<AbstractMap.SimpleEntry<String, String>> outputBindings = CollectionUtils.isNotEmpty(userOutputBindings)
                 ? userOutputBindings
                 : Collections.singletonList(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString()));
 
-        Map<String, String> dockerParams = new HashMap<>();
+        Map<String, List<String>> dockerParams = new HashMap<>();
         // Establish working directory
-        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
-        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-        dockerParams.put("--network", "host");
+        addDockerParam(dockerParams, "-w", getOutDir().toAbsolutePath().toString());
+        addDockerParam(dockerParams, "--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        addDockerParam(dockerParams, "--env", "DOCKER_HOST='tcp://localhost:2375'");
+        addDockerParam(dockerParams, "--env", "OPENCGA_TOKEN=" + getExpiringToken());
+        addDockerParam(dockerParams, "--env", "OPENCGA_STUDY=" + getStudyFqn());
+        addDockerParam(dockerParams, "--env", "OPENCGA_JOB=" + getJobId());
+        addDockerParam(dockerParams, "--network", "host");
         if (userDockerParams != null) {
-            dockerParams.putAll(userDockerParams);
+            userDockerParams.forEach((key, values) -> {
+                for (String value : values) {
+                    addDockerParam(dockerParams, key, value);
+                }
+            });
         }
 
-        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams);
+        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams, registry, username, password);
+    }
+
+    protected void addDockerParam(Map<String, List<String>> dockerParams, String key, String value) {
+        dockerParams.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
     }
 
 }
