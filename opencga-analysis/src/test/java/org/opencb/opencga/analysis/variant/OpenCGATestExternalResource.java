@@ -297,6 +297,20 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // Tiering analysis
+        String filename = "tiering-configuration.yml";
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/tiering")).toAbsolutePath();
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/tiering/" + filename)) {
+            Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // Clinical interpretation analysis
+        filename = "rd-interpretation-configuration.yml";
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/rd")).toAbsolutePath();
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/rd/" + filename)) {
+            Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+        }
+
         return opencgaHome;
     }
 

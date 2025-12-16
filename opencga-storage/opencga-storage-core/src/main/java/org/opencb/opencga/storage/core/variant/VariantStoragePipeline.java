@@ -773,8 +773,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
             boolean updateIndexStatus = !sampleMetadata.isIndexed();
 
-            boolean updateSampleIndexStatus = loadSampleIndex && sampleMetadata.getSampleIndexStatus(sampleIndexVersion)
-                    != TaskMetadata.Status.READY;
+            boolean updateSampleIndexStatus;
+            if (loadSampleIndex) {
+                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.READY;
+            } else {
+                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.NONE;
+            }
             int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
             boolean isLargestVariantLengthDefined = sampleMetadata.getAttributes()
                     .containsKey(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
@@ -800,7 +804,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                         s.setIndexStatus(TaskMetadata.Status.READY);
                     }
                     if (updateSampleIndexStatus) {
-                        s.setSampleIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                        if (loadSampleIndex) {
+                            s.setSampleIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                        } else {
+                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, sampleIndexVersion);
+                        }
                     }
                     if (updateLargestVariantLength) {
                         int current = s.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);

@@ -59,14 +59,20 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "install", data);
     }
 
-    /** Change JWT secret key
-    * @param {Object} data - JSON containing the parameters.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.organization] - Organization id.
+    /** Update the OpenCGA Catalog workspace
+    * @param {Object} data - JSON containing the workspace parameters.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    jwtCatalog(data, params) {
-        return this._post("admin", null, "catalog", null, "jwt", data, params);
+    updateCatalogWorkspace(data) {
+        return this._post("admin", null, "catalog/workspace", null, "update", data);
+    }
+
+    /** List current Organizations
+    * 
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    listOrganizations() {
+        return this._get("admin", null, "organizations", null, "list");
     }
 
     /** Fetch resources from the public server and save them into the OpenCGA local installation

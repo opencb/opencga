@@ -1,0 +1,220 @@
+---
+_COMMONS:
+  # Commons: dominant_query
+  dominant_query: &dominant_query
+    filter: PASS
+    unknownGenotype: "./."
+    biotype:
+      - protein_coding
+      - IG_C_gene
+      - IG_D_gene
+      - IG_J_gene
+      - IG_V_gene
+      - nonsense_mediated_decay
+      - non_stop_decay
+      - TR_C_gene
+      - TR_D_gene
+      - TR_J_gene
+      - TR_V_gene
+    populationFrequencyAlt:
+      - 1000G:ALL<0.005
+#      - 1000G:AFR<0.002
+#      - 1000G:AMR<0.002
+#      - 1000G:EAS<0.002
+#      - 1000G:EUR<0.002
+#      - 1000G:SAS<0.002
+      - GNOMAD_GENOMES:ALL<0.001
+#      - GNOMAD_GENOMES:AFR<0.001
+#      - GNOMAD_GENOMES:AMR<0.001
+#      - GNOMAD_GENOMES:EAS<0.001
+#      - GNOMAD_GENOMES:FIN<0.001
+#      - GNOMAD_GENOMES:NFE<0.001
+#      - GNOMAD_GENOMES:ASJ<0.001
+#      - GNOMAD_GENOMES:OTH<0.002
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+  # Commons: recessive_query
+  recessive_query: &recessive_query
+    filter: PASS
+    unknownGenotype: "./."
+    biotype:
+      - protein_coding
+      - IG_C_gene
+      - IG_D_gene
+      - IG_J_gene
+      - IG_V_gene
+      - nonsense_mediated_decay
+      - non_stop_decay
+      - TR_C_gene
+      - TR_D_gene
+      - TR_J_gene
+      - TR_V_gene
+    populationFrequencyAlt:
+      - 1000G:ALL<0.001
+#      - 1000G:AFR<0.01
+#      - 1000G:AMR<0.01
+#      - 1000G:EAS<0.01
+#      - 1000G:EUR<0.01
+#      - 1000G:SAS<0.01
+      - GNOMAD_GENOMES:ALL<0.001
+#      - GNOMAD_GENOMES:AFR<0.01
+#      - GNOMAD_GENOMES:AMR<0.01
+#      - GNOMAD_GENOMES:EAS<0.01
+#      - GNOMAD_GENOMES:FIN<0.01
+#      - GNOMAD_GENOMES:NFE<0.01
+#      - GNOMAD_GENOMES:ASJ<0.01
+#      - GNOMAD_GENOMES:OTH<0.01
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+  # Commons: high_impact
+  high_impact: &high_impact
+    - "transcript_ablation"
+    - "splice_acceptor_variant"
+    - "splice_donor_variant"
+    - "stop_gained"
+    - "frameshift_variant"
+    - "stop_lost"
+    - "start_lost"
+    - "transcript_amplification"
+
+  # Commons: moderate_impact
+  moderate_impact: &moderate_impact
+    - "missense_variant"
+    - "protein_altering_variant"
+    - "inframe_deletion"
+    - "inframe_insertion"
+    - "incomplete_terminal_codon_variant"
+
+queries:
+  AUTOSOMAL_DOMINANT:
+    <<: *dominant_query
+    familySegregation: autosomalDominant
+
+  Y_LINKED:
+    <<: *dominant_query
+    familySegregation: YLinked
+    region:
+      - Y
+
+  X_LINKED_DOMINANT:
+    <<: *dominant_query
+    familySegregation: XLinkedDominant
+    region:
+      - X
+
+  AUTOSOMAL_RECESSIVE:
+    <<: *recessive_query
+    familySegregation: autosomalRecessive
+
+  X_LINKED_RECESSIVE:
+    <<: *recessive_query
+    familySegregation: XLinkedRecessive
+    region:
+      - X
+
+  MITOCHONDRIAL:
+    <<: *dominant_query
+    familySegregation: mitochondrial
+
+  DE_NOVO:
+    <<: *dominant_query
+    familySegregation: deNovo
+
+  COMPOUND_HETEROZYGOUS:
+    <<: *recessive_query
+    familySegregation: compoundHeterozygous
+
+  PANEL_REGION:
+    filter: PASS
+    unknownGenotype: "./."
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+# Tier configuration with rules to be evaluated in order
+tierConfiguration:
+  tiers:
+    tier_1:
+      label: TIER1
+      description: "Highest priority variants"
+      scenarios:
+        - conditions:
+            in_panel: gene
+            moi_match: true
+            consequence_impact: *high_impact
+
+        - conditions:
+            in_panel: region
+            region_required_overlap: true
+            moi_match: true
+
+    tier_2:
+      label: TIER2
+      description: "Medium priority variants"
+      scenarios:
+        - conditions:
+            in_panel: gene
+            moi_match: true
+            consequence_impact: *moderate_impact
+
+        - conditions:
+            in_panel: region
+            region_required_overlap: false
+            moi_match: true
+
+    tier_3:
+      label: TIER3
+      description: "Lower priority variants"
+      scenarios:
+        - conditions:
+            in_panel: gene
+            moi_match: true
+
+        - conditions:
+            consequence_impact: *high_impact
+
+        - conditions:
+            consequence_impact: *moderate_impact
+
+        - conditions:
+            in_panel: region

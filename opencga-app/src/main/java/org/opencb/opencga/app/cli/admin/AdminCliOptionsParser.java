@@ -47,7 +47,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final ToolsCommandOptions toolsCommandOptions;
     private final ServerCommandOptions serverCommandOptions;
     private final PanelCommandOptions panelCommandOptions;
-    private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
     private final StorageCommandOptions storageCommandOptions;
     private final BenchmarkCommandOptions benchmarkCommandOptions;
@@ -111,11 +110,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander panelSubCommands = jCommander.getCommands().get("panel");
         panelSubCommands.addCommand("panelapp", panelCommandOptions.panelAppCommandOptions);
         panelSubCommands.addCommand("cancer-gene-census", panelCommandOptions.cancerGeneCensusCommandOptions);
-
-        this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
-        this.jCommander.addCommand("meta", this.metaCommandOptions);
-        JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
-        metaSubCommands.addCommand("update", this.metaCommandOptions.metaKeyCommandOptions);
 
         this.migrationCommandOptions = new MigrationCommandOptions(jCommander, commonCommandOptions);
         this.jCommander.addCommand("migration", this.migrationCommandOptions);
@@ -328,17 +322,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
             this.grpcServerCommandOptions = new GrpcServerCommandOptions();
-        }
-    }
-
-    @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
-    public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
-
-        public MetaKeyCommandOptions metaKeyCommandOptions;
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        public MetaCommandOptions() {
-            this.metaKeyCommandOptions = new MetaKeyCommandOptions();
         }
     }
 
@@ -871,10 +854,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     public ServerCommandOptions getServerCommandOptions() {
         return serverCommandOptions;
-    }
-
-    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
-        return this.metaCommandOptions;
     }
 
     public PanelCommandOptions getPanelCommandOptions() {

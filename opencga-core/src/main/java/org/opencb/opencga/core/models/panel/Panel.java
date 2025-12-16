@@ -98,6 +98,13 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         }
     }
 
+    public Panel(DiseasePanel diseasePanel) {
+        this(diseasePanel.getId(), diseasePanel.getName(), diseasePanel.getCategories(), diseasePanel.getDisorders(),
+                diseasePanel.getTags(), diseasePanel.getVariants(), diseasePanel.getGenes(), diseasePanel.getRegions(),
+                diseasePanel.getStrs(), diseasePanel.getStats(), 0, 0, "", diseasePanel.getSource(), null, null,
+                diseasePanel.getDescription(), diseasePanel.getAttributes());
+    }
+
     /**
      * Static method to load and parse a JSON string from an InputStream.
      *

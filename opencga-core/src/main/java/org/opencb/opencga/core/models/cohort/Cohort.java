@@ -48,6 +48,7 @@ public class Cohort extends Annotable {
      * Cohort name parameter.
      *
      */
+    @DataField(id = "name", description = FieldConstants.COHORT_NAME)
     private String name;
 
     /**
@@ -59,9 +60,12 @@ public class Cohort extends Annotable {
             description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
-    @DataField(id = "type", indexed = true,
-            description = FieldConstants.COHORT_TYPE)
+    @Deprecated
+    @DataField(id = "type", indexed = true, deprecated = true, description = FieldConstants.COHORT_TYPE)
     private Enums.CohortType type;
+
+    @DataField(id = "tags", description = FieldConstants.COHORT_TAGS)
+    private List<String> tags;
 
     /**
      * String representing when the Cohort was created, this is automatically set by OpenCGA.
@@ -138,22 +142,23 @@ public class Cohort extends Annotable {
 
     public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
                   List<Sample> samples, int release, Map<String, Object> attributes) {
-        this(id, name, type, creationDate, modificationDate, description, samples, 0, Collections.emptyList(), release, new Status(),
-                null, attributes);
+        this(id, name, type, Collections.emptyList(), creationDate, modificationDate, description, samples, 0, Collections.emptyList(),
+                release, new Status(), null, attributes);
     }
 
     public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
                   List<Sample> samples, List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, name, type, creationDate, modificationDate, description, samples, 0, annotationSetList, release, new Status(),
-                null, attributes);
+        this(id, name, type, Collections.emptyList(), creationDate, modificationDate, description, samples, 0, annotationSetList, release,
+                new Status(), null, attributes);
     }
 
-    public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
-                  List<Sample> samples, int numSamples, List<AnnotationSet> annotationSets, int release, Status status,
+    public Cohort(String id, String name, Enums.CohortType type, List<String> tags, String creationDate, String modificationDate,
+                  String description, List<Sample> samples, int numSamples, List<AnnotationSet> annotationSets, int release, Status status,
                   CohortInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
+        this.tags = tags;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
@@ -173,6 +178,7 @@ public class Cohort extends Annotable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
+        sb.append(", tags=").append(tags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -200,6 +206,7 @@ public class Cohort extends Annotable {
                 && Objects.equals(uuid, cohort.uuid)
                 && Objects.equals(id, cohort.id)
                 && type == cohort.type
+                && Objects.equals(tags, cohort.tags)
                 && Objects.equals(creationDate, cohort.creationDate)
                 && Objects.equals(internal, cohort.internal)
                 && Objects.equals(description, cohort.description)
@@ -211,7 +218,7 @@ public class Cohort extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, numSamples, status, release, attributes);
+        return Objects.hash(uuid, id, type, tags, creationDate, internal, description, samples, numSamples, status, release, attributes);
     }
 
     @Override
@@ -262,6 +269,15 @@ public class Cohort extends Annotable {
 
     public Cohort setType(Enums.CohortType type) {
         this.type = type;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public Cohort setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

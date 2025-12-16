@@ -21,7 +21,8 @@
 #' | -- | :-- | --: |
 #' | groupByAudit | /{apiVersion}/admin/audit/groupBy | count, limit, fields[*], entity[*], action, before, after, date |
 #' | installCatalog | /{apiVersion}/admin/catalog/install | body[*] |
-#' | jwtCatalog | /{apiVersion}/admin/catalog/jwt | organization, body[*] |
+#' | updateCatalogWorkspace | /{apiVersion}/admin/catalog/workspace/update | body[*] |
+#' | listOrganizations | /{apiVersion}/admin/organizations/list |  |
 #' | fetchResource | /{apiVersion}/admin/resource/fetch | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createUsers | /{apiVersion}/admin/users/create | body[*] |
 #' | importUsers | /{apiVersion}/admin/users/import | organization, body[*] |
@@ -59,12 +60,18 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
         installCatalog=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="catalog",
                 subcategoryId=NULL, action="install", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
-        #' @section Endpoint /{apiVersion}/admin/catalog/jwt:
-        #' Change JWT secret key.
-        #' @param organization Organization id.
-        #' @param data JSON containing the parameters.
-        jwtCatalog=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="catalog",
-                subcategoryId=NULL, action="jwt", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        #' @section Endpoint /{apiVersion}/admin/catalog/workspace/update:
+        #' Update the OpenCGA Catalog workspace.
+        #' @param data JSON containing the workspace parameters.
+        updateCatalogWorkspace=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL,
+                subcategory="catalog/workspace", subcategoryId=NULL, action="update", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/admin/organizations/list:
+        #' List current Organizations.
+
+        listOrganizations=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="organizations",
+                subcategoryId=NULL, action="list", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/admin/resource/fetch:
         #' Fetch resources from the public server and save them into the OpenCGA local installation.

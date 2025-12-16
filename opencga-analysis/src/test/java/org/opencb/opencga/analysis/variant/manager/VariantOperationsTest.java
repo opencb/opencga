@@ -755,6 +755,7 @@ public class VariantOperationsTest {
             for (String sampleId : samples2) {
                 Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
                 assertEquals(0, sample.getInternal().getVariant().getAggregateFamily().size());
+                assertEquals(IndexStatus.NONE, sample.getInternal().getVariant().getIndex().getStatus().getId());
             }
         }
     }

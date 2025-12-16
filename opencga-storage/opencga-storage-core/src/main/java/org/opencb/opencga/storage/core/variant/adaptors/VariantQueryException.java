@@ -221,6 +221,12 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("File " + quote(file) + " not found in study '" + study + "'");
     }
 
+    public static VariantQueryException fileNotFoundDuplicatedName(String fileName, Object study) {
+        return new VariantQueryException("File " + quote(fileName) + " found in study '" + study + "'. "
+                + "There are multiple files with the same name. "
+                + "Please use the filePath instead of the file name.");
+    }
+
     public static VariantQueryException variantFileMetadataNotFound(Object file, Object study) {
         return new VariantQueryException("VariantFileMetadata for file " + quote(file) + " not found in study '" + study + "'");
     }

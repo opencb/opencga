@@ -399,6 +399,7 @@ public class ParamConstants {
     public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
     public static final String COHORT_TYPE_PARAM = "type";
+    public static final String COHORT_TAGS_PARAM = "tags";
     public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
     public static final String COHORT_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
     public static final String COHORT_DELETED_PARAM = DELETED_PARAM;
@@ -423,6 +424,7 @@ public class ParamConstants {
     public static final String COHORT_ACL_DESCRIPTION = ACL_PARAM;
     public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
     public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
+    public static final String COHORT_TAGS_DESCRIPTION = "Tags" + REGEX_SUPPORT;
     public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
     public static final String CLINICAL_ID_PARAM = "id";
     public static final String CLINICAL_UUID_PARAM = "uuid";
@@ -547,8 +549,12 @@ public class ParamConstants {
             + "panel versions. Not supported if multiple panel ids are provided";
     public static final String PANEL_SOURCE_PARAM = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of source ids or names.";
-    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'cancer-gene-census'";
+    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Source id from where the panels will be imported. It can be either "
+            + "PANEL_APP or CANCER_GENE_CENSUS.";
+    public static final String PANEL_IMPORT_IDS_PARAM = "panelIds";
+    public static final String PANEL_IMPORT_IDS_DESCRIPTION = "Panel id list to be imported from the source";
+    public static final String PANEL_IMPORT_CONTENT_PARAM = "content";
+    public static final String PANEL_IMPORT_CONTENT_DESCRIPTION = "Panel content. Only expected for CANCER_GENE_CENSUS source currently.";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "

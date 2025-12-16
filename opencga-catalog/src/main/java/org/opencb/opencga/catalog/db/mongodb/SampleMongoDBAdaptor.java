@@ -1237,6 +1237,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return facet(sampleCollection, bson, facet);
     }
 
+    void fileIdHasChanged(ClientSession clientSession, long studyUid, String oldFileId, String newFileId)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.FILE_IDS.key(), oldFileId);
+        Bson sampleBsonQuery = parseQuery(query);
+
+        // Replace the id for the new one
+        UpdateDocument sampleUpdate = new UpdateDocument();
+        sampleUpdate.getSet().append(QueryParams.FILE_IDS.key() + ".$", newFileId);
+
+        transactionalUpdate(clientSession, studyUid, sampleBsonQuery, sampleUpdate);
+    }
+
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
@@ -1456,6 +1470,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case ID:
                     case UUID:
                     case INTERNAL_VARIANT_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:

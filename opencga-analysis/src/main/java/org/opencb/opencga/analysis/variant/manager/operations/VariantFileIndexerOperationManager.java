@@ -196,7 +196,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         List<File> inputFiles = getInputFiles(catalogManager, studyFqn, files, token);
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
-        getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
+        getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
         LOGGER.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -235,7 +235,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String virtualFile = null;
         for (File fileToIndex : filesToIndex) {
             if (!fileNamesToIndexSet.add(fileToIndex.getName())) {
-                throw new CatalogException("Unable to " + step + " multiple files with the same name");
+                throw new CatalogException("Unable to " + step + " multiple files with the same name in the same job. "
+                        + "Please split into multiple jobs.");
             }
             if (FileUtils.isPartial(fileToIndex)) {
                 String thisVirtualFile = FileUtils.getVirtualFileFromPartial(fileToIndex).getName();
@@ -345,7 +346,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
                             new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
                             new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
-                    getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, true, token);
+                    getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, true, token);
                 }
             }
             variantStorageEngine.close();
@@ -368,15 +369,15 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                                 Integer release, boolean saveIntermediateFiles, ObjectMap options, String sessionId)
             throws CatalogException, IOException {
 
-        Map<String, StoragePipelineResult> map;
+        Map<URI, StoragePipelineResult> map;
         try {
             map = storagePipelineResults
                     .stream()
                     .collect(Collectors.toMap(s -> {
                         String input = s.getInput().getPath();
-                        String inputFileName = Paths.get(input).getFileName().toString();
+                        String inputFileName = Paths.get(input).toString();
                         // Input file may be the transformed one. Convert into original file.
-                        return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
+                        return UriUtils.createUriSafe(inputFileName);
                     }, i -> i));
         } catch (IllegalStateException e) {
             throw e;
@@ -386,7 +387,16 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             // Fetch from catalog. {@link #copyResult} may modify the content
             indexedFile = catalogManager.getFileManager().get(study, indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
-            StoragePipelineResult storagePipelineResult = map.get(indexedFile.getName());
+            StoragePipelineResult storagePipelineResult = map.get(indexedFile.getUri());
+            if (storagePipelineResult == null) {
+                // Get transformed file from indexedFile if any
+                FileInternalVariantIndex.Transform transformFile = indexedFile.getInternal().getVariant().getIndex().getTransform();
+                System.out.println(transformFile);
+                if (transformFile != null) {
+                    URI uri = catalogManager.getFileManager().get(study, transformFile.getFileId(), null, sessionId).first().getUri();
+                    storagePipelineResult = map.get(uri);
+                }
+            }
 
             boolean jobFailed = storagePipelineResult == null || storagePipelineResult.getLoadError() != null
                     || storagePipelineResult.getTransformError() != null;
@@ -556,9 +566,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
         return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
-                        "", Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
-                null, null,
-                QueryOptions.empty(), sessionId).first();
+                        "", Enums.CohortType.COLLECTION, Collections.emptyList(), DEFAULT_COHORT_DESCRIPTION, null, null,
+                        Collections.emptyList(), null, null, null), null, null, QueryOptions.empty(), sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {

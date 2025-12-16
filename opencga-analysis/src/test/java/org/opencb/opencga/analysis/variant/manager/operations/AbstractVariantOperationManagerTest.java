@@ -326,6 +326,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected List<StoragePipelineResult> indexFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, String outputId) throws Exception {
+        queryOptions = new QueryOptions(queryOptions);
         queryOptions.append(VariantFileIndexerOperationManager.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerOperationManager.LOAD, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());

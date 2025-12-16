@@ -24,6 +24,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.List;
 
+@Deprecated
 @Tool(id = XQueryInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 

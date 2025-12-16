@@ -272,7 +272,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void removeSample(String study, List<String> samples, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantSampleDeleteOperationTool.ID, study, params, token, engine -> {
-            new VariantDeleteOperationManager(this, engine).removeSample(study, samples, outdir, token);
+            String studyFqn = getStudyFqn(study, token);
+            new VariantDeleteOperationManager(this, engine).removeSample(studyFqn, samples, outdir, token);
             return null;
         });
     }
@@ -1198,7 +1199,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             List<File> filesFromCatalog = catalogManager.getFileManager()
                     .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
-            return getSynchronizer(engine).synchronizeCatalogFromStorage(studySqn, filesFromCatalog, false, token);
+            return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, false, token);
         });
     }
 
