@@ -1,0 +1,159 @@
+---
+# Commons: dominant_query
+_COMMONS:
+  dominant_query: &dominant_query
+    filter: PASS
+    unknownGenotype: "./."
+    biotype:
+      - protein_coding
+      - IG_C_gene
+      - IG_D_gene
+      - IG_J_gene
+      - IG_V_gene
+      - nonsense_mediated_decay
+      - non_stop_decay
+      - TR_C_gene
+      - TR_D_gene
+      - TR_J_gene
+      - TR_V_gene
+    populationFrequencyAlt:
+      - 1000G:AFR<0.002
+      - 1000G:AMR<0.002
+      - 1000G:EAS<0.002
+      - 1000G:EUR<0.002
+      - 1000G:SAS<0.002
+      - GNOMAD_EXOMES:AFR<0.001
+      - GNOMAD_EXOMES:AMR<0.001
+      - GNOMAD_EXOMES:EAS<0.001
+      - GNOMAD_EXOMES:FIN<0.001
+      - GNOMAD_EXOMES:NFE<0.001
+      - GNOMAD_EXOMES:ASJ<0.001
+      - GNOMAD_EXOMES:OTH<0.002
+    cohortStatsMaf: ALL<0.001
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+  # Commons: recessive_query
+  recessive_query: &recessive_query
+    filter: PASS
+    unknownGenotype: "./."
+    biotype:
+      - protein_coding
+      - IG_C_gene
+      - IG_D_gene
+      - IG_J_gene
+      - IG_V_gene
+      - nonsense_mediated_decay
+      - non_stop_decay
+      - TR_C_gene
+      - TR_D_gene
+      - TR_J_gene
+      - TR_V_gene
+    populationFrequencyAlt:
+      - 1000G:AFR<0.01
+      - 1000G:AMR<0.01
+      - 1000G:EAS<0.01
+      - 1000G:EUR<0.01
+      - 1000G:SAS<0.01
+      - GNOMAD_EXOMES:AFR<0.01
+      - GNOMAD_EXOMES:AMR<0.01
+      - GNOMAD_EXOMES:EAS<0.01
+      - GNOMAD_EXOMES:FIN<0.01
+      - GNOMAD_EXOMES:NFE<0.01
+      - GNOMAD_EXOMES:ASJ<0.01
+      - GNOMAD_EXOMES:OTH<0.01
+    cohortStatsMaf: ALL<0.01
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+queries:
+  AUTOSOMAL_DOMINANT: *dominant_query
+
+  Y_LINKED:
+    <<: *dominant_query
+    region:
+      - Y
+
+  X_LINKED_DOMINANT:
+    <<: *dominant_query
+    region:
+      - X
+
+  AUTOSOMAL_RECESSIVE: *recessive_query
+
+  X_LINKED_RECESSIVE:
+    <<: *recessive_query
+    region:
+      - X
+
+  MITOCHONDRIAL:
+    <<: *dominant_query
+    region:
+      - M
+      - Mt
+      - mt
+      - m
+      - MT
+
+  DE_NOVO: *dominant_query
+
+  COMPOUND_HETEROZYGOUS: *recessive_query
+
+  PANEL_REGION:
+    filter: PASS
+    unknownGenotype: "./."
+
+tiers:
+  TIER1:
+    panel: true
+    moi: true
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - initiator_codon_variant
+
+  TIER2:
+    panel: true
+    moi: true
+    ct:
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
+
+  TIER3:
+    panel: true
+    moi: true

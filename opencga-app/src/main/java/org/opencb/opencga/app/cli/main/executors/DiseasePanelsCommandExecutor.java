@@ -15,7 +15,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntryList;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
@@ -241,20 +240,16 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getDiseasePanelClient().distinct(commandOptions.field, queryParams);
     }
 
-    private RestResponse<Job> importPanels() throws Exception {
+    private RestResponse<Panel> importPanels() throws Exception {
         logger.debug("Executing importPanels in Disease Panels command line");
 
         DiseasePanelsCommandOptions.ImportCommandOptions commandOptions = diseasePanelsCommandOptions.importCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
@@ -262,7 +257,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
         PanelImportParams panelImportParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
+            RestResponse<Panel> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/panels/import"));
             return res;
@@ -271,8 +266,10 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), PanelImportParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "source", commandOptions.source, true);
+            putNestedIfNotNull(beanParams, "source", commandOptions.source, true);
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "panelIds", commandOptions.panelIds, true);
+            putNestedIfNotEmpty(beanParams, "content", commandOptions.content, true);
 
             panelImportParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

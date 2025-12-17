@@ -458,11 +458,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, familyId,
                             "Only one member of the family is indexed in storage");
                 }
-                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
-                PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
                 String proband = query.getString(FAMILY_PROBAND.key());
                 SegregationMode segregationMode = SegregationMode.parse(query.getString(FAMILY_SEGREGATION.key()));
+
+                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, proband);
+                PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
+
 
                 List<Member> children;
                 if (StringUtils.isNotEmpty(proband)) {
@@ -1119,12 +1121,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             case Y_LINKED:
-
                 segregationChromosome = new Region("Y");
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;
             case MITOCHONDRIAL:
-
                 segregationChromosome = new Region("MT");
                 genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                 break;

@@ -551,8 +551,12 @@ public class ParamConstants {
             + "panel versions. Not supported if multiple panel ids are provided";
     public static final String PANEL_SOURCE_PARAM = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of source ids or names.";
-    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'cancer-gene-census'";
+    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Source id from where the panels will be imported. It can be either "
+            + "PANEL_APP or CANCER_GENE_CENSUS.";
+    public static final String PANEL_IMPORT_IDS_PARAM = "panelIds";
+    public static final String PANEL_IMPORT_IDS_DESCRIPTION = "Panel id list to be imported from the source";
+    public static final String PANEL_IMPORT_CONTENT_PARAM = "content";
+    public static final String PANEL_IMPORT_CONTENT_DESCRIPTION = "Panel content. Only expected for CANCER_GENE_CENSUS source currently.";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "

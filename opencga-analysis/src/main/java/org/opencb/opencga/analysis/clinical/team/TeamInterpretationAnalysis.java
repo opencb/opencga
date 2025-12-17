@@ -32,6 +32,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.List;
 
+@Deprecated
 @Tool(id = TeamInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 

@@ -144,10 +144,10 @@ analysis:
         processorType: "CPU"
         cpu: 1
         memory: "2G"
-    defaultRequest:
+    defaultRequirements:
       cpu: 1
       memory: "1G"
-    requestFactor:
+    requirementsFactor:
       cpu: 0.95
       memory: 0.9
     maxConcurrentJobs:

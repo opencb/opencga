@@ -24,6 +24,8 @@ import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -47,9 +49,11 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
@@ -57,6 +61,7 @@ import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
+import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -64,6 +69,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1380,7 +1387,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/tiering/run")
-    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1421,7 +1428,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/team/run")
-    @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTeamRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1437,7 +1444,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/zetta/run")
-    @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationZettaRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1453,7 +1460,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/cancerTiering/run")
-    @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationCancerTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1468,6 +1475,67 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     //-------------------------------------------------------------------------
+
+    @POST
+    @Path("/interpreter/rd/run")
+    @ApiOperation(value = RdInterpretationAnalysisTool.DESCRIPTION, response = Job.class)
+    public Response interpretationRdRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = "Parameters to execute the rare disease interpretation analysis", required = true) RdInterpretationAnalysisToolParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, RdInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @GET
+    @Path("/interpreter/rd")
+    @ApiOperation(value = "Rare disease interpretation analysis", response = Interpretation.class)
+    public Response rdInterpretationAnalysis(
+            @ApiParam(value = "Clinical analysis ID") @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Proband ID") @QueryParam(value = "probandId") String probandId,
+            @ApiParam(value = "Family ID") @QueryParam(value = "familyId") String familyId,
+            @ApiParam(value = "List of panel IDs (separated by commas)") @QueryParam(value = "panelIds") String panels,
+            @ApiParam(value = "Disorder ID") @QueryParam(value = "disorderId") String disorderId,
+            @ApiParam(value = "RD interpretation configuration file (otherwise the default one will be used)")
+            @QueryParam(value = "configFile") String configFile,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+        try {
+            // Check configuration file
+            java.nio.file.Path configPath;
+            if (StringUtils.isEmpty(configFile)) {
+                configPath = opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME)
+                        .resolve(RdInterpretationAnalysisTool.RD_DIR)
+                        .resolve(RdInterpretationAnalysisTool.RD_INTERPRETATION_CONFIGURATION_FILE);
+            } else {
+                configPath = Paths.get(catalogManager.getFileManager().get(study, configFile, QueryOptions.empty(), token)
+                        .first().getUri().getPath()).toAbsolutePath();
+            }
+            // Check panels
+            List<String> panelsIds = StringUtils.isNotEmpty(panels) ? getIdList(panels) : null;
+
+            // Execute the RD interpretation analysis
+            int startTime = (int) System.currentTimeMillis();
+            RdInterpretationAnalysis rdInterpretationAnalysis = new RdInterpretationAnalysis(study, catalogManager,
+                    getVariantStorageManager(), token);
+            org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = rdInterpretationAnalysis
+                    .run(clinicalAnalysisId, probandId, familyId, panelsIds, disorderId, configPath);
+            int dbTime = (int) System.currentTimeMillis() - startTime;
+
+            // Build the response
+            DataResult<Interpretation> analysisResult = new DataResult<>(dbTime, null, 1,
+                    Collections.singletonList(new Interpretation(interpretation)), 1);
+            return createOkResponse(analysisResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    //-------------------------------------------------------------------------
     // P I P E L I N E : prepare, genomics and affy
     //-------------------------------------------------------------------------
 
@@ -1476,7 +1544,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = PrepareClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelinePrepareRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
@@ -1494,7 +1562,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelineGenomicsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
@@ -1511,7 +1579,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelineAffyRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
