@@ -114,7 +114,6 @@
         <reactive-streams.version>1.0.0</reactive-streams.version>
         <snappy-java.version>1.1.10.4</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
-        <jorphan.version>5.0</jorphan.version>
         <flapdoodle.version>4.21.0</flapdoodle.version>
         <flapdoodle.reverse.version>1.9.1</flapdoodle.reverse.version>
         <flapdoodle.process.version>4.17.0</flapdoodle.process.version>
