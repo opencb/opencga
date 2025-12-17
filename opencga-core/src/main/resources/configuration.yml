@@ -264,6 +264,11 @@ analysis:
         cpu: 6
         memory: "112G"
         options:
+          k8s.runtimeClass: null
+          # Image supporting NVIDIA GPU in Docker-in-Docker. Override default dind image.
+          k8s.dind.imageName: "ghcr.io/ehfd/nvidia-dind:latest"
+          # Do not use rootless dind for GPU workloads.
+          k8s.dind.rootless: false
           k8s.nodeSelector:
             agentpool: sgpu
             kubernetes.io/os: linux
