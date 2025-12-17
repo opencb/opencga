@@ -102,8 +102,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
         try {
             // Execute CVDB index as a job
             return submitJob(study, JobType.NATIVE_TOOL, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
-                    scheduledStartTime,
-                    jobPriority, dryRun);
+                    scheduledStartTime, jobPriority, dryRun);
 
         } catch (Exception e) {
             return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
