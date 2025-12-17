@@ -297,6 +297,12 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
     
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
+    
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
     
@@ -417,6 +423,12 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
     
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
@@ -651,6 +663,12 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
     
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
@@ -1022,6 +1040,12 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
     
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
+    
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
     
@@ -1101,6 +1125,12 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
     
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;
@@ -1248,6 +1278,12 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
     
         @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
         public boolean draft = false;

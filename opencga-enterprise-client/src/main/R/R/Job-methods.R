@@ -20,11 +20,11 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/jobs/acl/{members}/update | members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field |
+#' | aggregationStats | /{apiVersion}/jobs/aggregationStats | study, otherStudies, id, uuid, toolId, toolType, tool.minimumRequirements.queue, tool.minimumRequirements.processorType, execution.queue.id, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field |
 #' | create | /{apiVersion}/jobs/create | study, body[*] |
-#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, type, toolId, toolType, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
+#' | distinct | /{apiVersion}/jobs/distinct | study, otherStudies, id, uuid, type, toolId, toolType, tool.minimumRequirements.queue, tool.minimumRequirements.processorType, execution.queue.id, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted, field[*] |
 #' | retry | /{apiVersion}/jobs/retry | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, study, body[*] |
-#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, type, toolId, toolType, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
+#' | search | /{apiVersion}/jobs/search | include, exclude, limit, skip, count, study, otherStudies, id, uuid, type, toolId, toolType, tool.minimumRequirements.queue, tool.minimumRequirements.processorType, execution.queue.id, tool.externalExecutor.id, parentId, dryRun, internal.killJobRequested, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted |
 #' | buildTool | /{apiVersion}/jobs/tool/build | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runTool | /{apiVersion}/jobs/tool/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | top | /{apiVersion}/jobs/top | limit, study, internalStatus, priority, userId, toolId |
@@ -62,6 +62,9 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param uuid Comma separated list of job UUIDs up to a maximum of 100.
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param tool.minimumRequirements.queue Queue where the job is expected to be executed.
+        #' @param tool.minimumRequirements.processorType Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+        #' @param execution.queue.id Queue id where the job has been submitted to be executed.
         #' @param userId User that created the job.
         #' @param priority Priority of the job.
         #' @param status Filter by status.
@@ -96,6 +99,9 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param type Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param tool.minimumRequirements.queue Queue where the job is expected to be executed.
+        #' @param tool.minimumRequirements.processorType Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+        #' @param execution.queue.id Queue id where the job has been submitted to be executed.
         #' @param tool.externalExecutor.id Id of the external executor. This field is only applicable for jobs executed by an external executor.
         #' @param parentId Job id that generated this job (if any).
         #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
@@ -143,6 +149,9 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param type Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         #' @param toolId Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param toolType Tool type executed by the job [OPERATION, ANALYSIS].
+        #' @param tool.minimumRequirements.queue Queue where the job is expected to be executed.
+        #' @param tool.minimumRequirements.processorType Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+        #' @param execution.queue.id Queue id where the job has been submitted to be executed.
         #' @param tool.externalExecutor.id Id of the external executor. This field is only applicable for jobs executed by an external executor.
         #' @param parentId Job id that generated this job (if any).
         #' @param dryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
