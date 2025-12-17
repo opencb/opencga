@@ -212,9 +212,9 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         }
         VariantFileIndexJobLauncherParams params = new VariantFileIndexJobLauncherParams().setDirectory("data/vcfs");
         List<String> tags = Arrays.asList("tag1", "tag2");
-        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE_TOOL, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
                 params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, false, sessionId).first();
-        ExecutionResult result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
+        ExecutionResult result = toolRunner.execute(studyFqn, job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 
         List<String> tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);
         assertTrue(tagsFromResult.containsAll(tags));
@@ -231,9 +231,9 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
 
         //// Execute again, no new jobs should be submitted
         tags = Arrays.asList("tag10", "tag20");
-        job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
+        job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE_TOOL, VariantFileIndexJobLauncherTool.ID, Enums.Priority.HIGH,
                 params.toParams(STUDY_PARAM, studyFqn), null, null, null, tags, null, null, false, sessionId).first();
-        result = toolRunner.execute(job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
+        result = toolRunner.execute(studyFqn, job, Paths.get(opencga.createTmpOutdir(studyId, "_LOAD_", sessionId)), sessionId);
 
         tagsFromResult = result.getAttributes().getAsStringList(VariantFileIndexJobLauncherTool.JOB_TAGS_ATTRIBUTE);
         assertTrue(tagsFromResult.containsAll(tags));

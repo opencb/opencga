@@ -18,16 +18,16 @@ package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(ShortTests.class)
 public class ToolFactoryTest {

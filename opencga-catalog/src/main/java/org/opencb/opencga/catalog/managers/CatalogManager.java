@@ -88,7 +88,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
-    private WorkflowManager workflowManager;
+    private ExternalToolManager externalToolManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -163,8 +163,8 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogIOManager, configuration);
+        externalToolManager = new ExternalToolManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                configuration);
     }
 
     public boolean getDatabaseStatus() throws CatalogDBException {
@@ -427,7 +427,7 @@ public class CatalogManager implements AutoCloseable {
         return migrationManager;
     }
 
-    public WorkflowManager getWorkflowManager() {
-        return workflowManager;
+    public ExternalToolManager getExternalToolManager() {
+        return externalToolManager;
     }
 }

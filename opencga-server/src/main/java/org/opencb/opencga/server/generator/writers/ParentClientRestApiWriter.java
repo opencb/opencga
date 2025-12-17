@@ -16,15 +16,19 @@
 
 package org.opencb.opencga.server.generator.writers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.Command;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.config.RestMethodParse;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,6 +44,8 @@ public abstract class ParentClientRestApiWriter {
     protected Map<String, RestCategory> availableCategories = new HashMap<>();
     protected Map<String, CategoryConfig> availableCategoryConfigs = new HashMap<>();
     protected Map<String, String> invalidNames = new HashMap<>();
+
+    private static Logger logger = LoggerFactory.getLogger(ParentClientRestApiWriter.class);
 
     public ParentClientRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         this.restApi = restApi;
@@ -186,16 +192,34 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    public String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
 
-    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
-        return getMethodName(subpath);
+    protected String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+        String endpoint = restEndpoint.getPath().replace("/{apiVersion}/", "");
+        String methodName = getSpecialMethodName(endpoint);
+        if (methodName != null) {
+            logger.debug("Special method name '{}' found for endpoint '{}}'", methodName, endpoint);
+            return methodName;
+        } else {
+            String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+            return getMethodName(subpath);
+        }
     }
 
-    protected static String getMethodName(String subpath) {
+    private String getSpecialMethodName(String endpoint) {
+        if (CollectionUtils.isNotEmpty(config.getApiConfig().getRestMethodParseList())) {
+            for (RestMethodParse restMethodParse : config.getApiConfig().getRestMethodParseList()) {
+                if (restMethodParse.getRest().equalsIgnoreCase(endpoint)) {
+                    return restMethodParse.getMethodName();
+                }
+            }
+        }
+        return null;
+    }
+
+    protected String getMethodName(String subpath) {
         String methodName = "";
         // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");

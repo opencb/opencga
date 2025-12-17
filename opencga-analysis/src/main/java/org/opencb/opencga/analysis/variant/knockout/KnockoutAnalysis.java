@@ -30,7 +30,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.rga.RgaManager;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -56,7 +56,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Tool(id = KnockoutAnalysis.ID, description = KnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
-public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
+public class KnockoutAnalysis extends OpenCgaTool {
     public static final String ID = "knockout";
     public static final String DESCRIPTION = "Obtains the list of knocked out genes for each sample.";
     protected static final String KNOCKOUT_INDIVIDUALS_JSON = "knockout.individuals.json.gz";

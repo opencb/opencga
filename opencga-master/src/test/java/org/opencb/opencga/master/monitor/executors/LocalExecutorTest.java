@@ -78,7 +78,7 @@ public class LocalExecutorTest {
         }
 
         // Allow some time for the jobs to start
-        Thread.sleep(50);
+        Thread.sleep(500);
 
         for (int i = 0; i < 10; i++) {
             String jobId = "jobId-" + i;

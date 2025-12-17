@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -48,7 +48,7 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
 
-public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
+public abstract class InterpretationAnalysis extends OpenCgaTool {
 
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";

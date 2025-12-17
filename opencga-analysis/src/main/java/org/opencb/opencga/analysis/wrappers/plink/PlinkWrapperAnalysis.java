@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.plink;
 
 import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -31,7 +31,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import java.util.*;
 
 @Tool(id = PlinkWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = PlinkWrapperAnalysis.DESCRIPTION)
-public class PlinkWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class PlinkWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "plink";
     public static final String DESCRIPTION = "Plink is a whole genome association analysis toolset, designed to perform"

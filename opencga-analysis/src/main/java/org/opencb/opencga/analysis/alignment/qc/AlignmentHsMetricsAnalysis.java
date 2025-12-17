@@ -22,7 +22,7 @@ import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -43,7 +43,7 @@ import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_HS_METRICS_DE
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentHsMetricsAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentHsMetricsAnalysis extends OpenCgaTool {
 
     public static final String ID = "alignment-hsmetrics";
     public static final String DESCRIPTION = ALIGNMENT_HS_METRICS_DESCRIPTION;

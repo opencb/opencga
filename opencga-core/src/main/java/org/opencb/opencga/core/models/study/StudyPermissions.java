@@ -9,7 +9,7 @@ import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
-import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
+import org.opencb.opencga.core.models.externalTool.ExternalToolPermissions;
 
 import java.util.*;
 
@@ -22,7 +22,7 @@ public class StudyPermissions {
     public static final int DISEASE_PANEL = 7;
     public static final int FAMILY = 8;
     public static final int CLINICAL_ANALYSIS = 9;
-    public static final int WORKFLOW = 10;
+    public static final int USER_TOOLS = 10;
 
     // Study Permissions
     public enum Permissions {
@@ -116,10 +116,10 @@ public class StudyPermissions {
                 VIEW_CLINICAL_ANNOTATIONS, WRITE_CLINICAL_ANNOTATIONS, DELETE_CLINICAL_ANNOTATIONS),
                 ClinicalAnalysisPermissions.ADMIN.name(), CLINICAL_ANALYSIS),
 
-        // WORKFLOWS
-        VIEW_WORKFLOWS(Collections.emptyList(), WorkflowPermissions.VIEW.name(), WORKFLOW),
-        WRITE_WORKFLOWS(Collections.singletonList(VIEW_WORKFLOWS), WorkflowPermissions.WRITE.name(), WORKFLOW),
-        DELETE_WORKFLOWS(Arrays.asList(VIEW_WORKFLOWS, WRITE_WORKFLOWS), WorkflowPermissions.DELETE.name(), WORKFLOW);
+        // USER TOOLS
+        VIEW_USER_TOOLS(Collections.emptyList(), ExternalToolPermissions.VIEW.name(), USER_TOOLS),
+        WRITE_USER_TOOLS(Collections.singletonList(VIEW_USER_TOOLS), ExternalToolPermissions.WRITE.name(), USER_TOOLS),
+        DELETE_USER_TOOLS(Arrays.asList(VIEW_USER_TOOLS, WRITE_USER_TOOLS), ExternalToolPermissions.DELETE.name(), USER_TOOLS);
 
         private final static Map<String, Permissions> map;
 

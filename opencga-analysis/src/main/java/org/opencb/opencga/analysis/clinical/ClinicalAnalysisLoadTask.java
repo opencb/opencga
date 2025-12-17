@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -16,7 +16,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 @Tool(id = ClinicalAnalysisLoadTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = ClinicalAnalysisLoadTask.DESCRIPTION)
-public class ClinicalAnalysisLoadTask extends OpenCgaToolScopeStudy {
+public class ClinicalAnalysisLoadTask extends OpenCgaTool {
     public final static String ID = "load";
     public static final String DESCRIPTION = "Load clinical analyses from a file";
 

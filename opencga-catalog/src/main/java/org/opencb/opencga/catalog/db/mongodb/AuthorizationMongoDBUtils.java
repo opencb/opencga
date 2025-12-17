@@ -191,8 +191,8 @@ public class AuthorizationMongoDBUtils {
                 return StudyPermissions.FAMILY;
             case CLINICAL_ANALYSIS:
                 return StudyPermissions.CLINICAL_ANALYSIS;
-            case WORKFLOW:
-                return StudyPermissions.WORKFLOW;
+            case EXTERNAL_TOOL:
+                return StudyPermissions.USER_TOOLS;
             default:
                 throw new CatalogParameterException("Unexpected resource '" + resource + "'.");
         }

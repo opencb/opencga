@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ProjectManager;
@@ -75,6 +75,7 @@ public abstract class OpenCgaTool {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
+    protected String study;
     private String jobId;
     private String opencgaHome;
     private boolean dryRun;
@@ -103,18 +104,19 @@ public abstract class OpenCgaTool {
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
+                                   ObjectMap params, Path outDir, String study, String jobId, boolean dryRun, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, dryRun, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, study, jobId, dryRun, token);
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
+                                   ObjectMap params, Path outDir, String study, String jobId, boolean dryRun, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.study = study;
         this.jobId = jobId;
         this.dryRun = dryRun;
         this.token = token;
@@ -312,7 +314,8 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
-        if (NextFlowExecutor.ID.equals(getId())) {
+        // FIXME: In the future, allow removing the scratch directory for Nextflow tools too
+        if (NextFlowToolExecutor.ID.equals(getId())) {
             privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
             return;
         }
@@ -354,6 +357,9 @@ public abstract class OpenCgaTool {
      * @throws Exception if the parameters are not correct
      */
     protected void check() throws Exception {
+        if (getTool().scope() == Tool.Scope.STUDY) {
+            study = getStudyFqn();
+        }
     }
 
     /**
@@ -379,6 +385,10 @@ public abstract class OpenCgaTool {
      */
     public final String getId() {
         return this.getClass().getAnnotation(Tool.class).id();
+    }
+
+    protected final Tool getTool() {
+        return this.getClass().getAnnotation(Tool.class);
     }
 
     /**
@@ -467,6 +477,24 @@ public abstract class OpenCgaTool {
 
     public final Path getOpencgaHome() {
         return Paths.get(opencgaHome);
+    }
+
+    public String getStudy() {
+        return study;
+    }
+
+    public OpenCgaTool setStudy(String study) {
+        this.study = study;
+        getParams().put(ParamConstants.STUDY_PARAM, study);
+        return this;
+    }
+
+    protected String getStudyFqn() throws CatalogException {
+        String study = StringUtils.isNotEmpty(this.study) ? this.study : getParams().getString(ParamConstants.STUDY_PARAM);
+        if (StringUtils.isEmpty(study)) {
+            return "";
+        }
+        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, getToken()).first().getFqn();
     }
 
     public final String getJobId() {

@@ -23,6 +23,8 @@
 {"collections": ["job"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tool.minimumRequirements.processorType": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tool.minimumRequirements.queue": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"parentId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {}}
@@ -35,6 +37,7 @@
 {"collections": ["job"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"internal.status.id": 1, "_priority": 1, "_creationDate": 1}, "options": {}}
 {"collections": ["job"], "fields": {"internal.killJobRequested": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"execution.queue.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
@@ -277,15 +280,16 @@
 {"collections": ["note", "note_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["note", "note_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
 
-{"collections": ["workflow", "workflow_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"unique": true}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"manager.id": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"draft": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"scripts.fileName": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"internal.registrationUserId": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
-{"collections": ["workflow", "workflow_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"workflow.repository.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"container.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"draft": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"internal.registrationUserId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}

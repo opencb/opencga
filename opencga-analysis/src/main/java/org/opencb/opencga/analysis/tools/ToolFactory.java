@@ -19,7 +19,8 @@ package org.opencb.opencga.analysis.tools;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.variant.VariantWalkerToolExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.job.JobType;
@@ -180,15 +181,14 @@ public class ToolFactory {
 
     public static String getToolId(JobType type, ToolInfo toolInfo) {
         switch (type) {
-            case NATIVE:
+            case NATIVE_TOOL:
                 return toolInfo.getId();
             case WORKFLOW:
-                return NextFlowExecutor.ID;
-            case CUSTOM:
+                return NextFlowToolExecutor.ID;
+            case CUSTOM_TOOL:
                 return CustomToolExecutor.ID;
-            case WALKER:
-                // TODO: Call to WalkerExecutor
-                return toolInfo.getId();
+            case VARIANT_WALKER:
+                return VariantWalkerToolExecutor.ID;
             default:
                 throw new IllegalStateException("Unexpected job type value: " + type);
         }
