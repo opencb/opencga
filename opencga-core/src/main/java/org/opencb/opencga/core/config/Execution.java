@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
 
 /**
  * Created by imedina on 18/04/16.
@@ -38,9 +38,31 @@ public class Execution {
             "variant-secondary-annotation-index",
             "variant-secondary-sample-index"
     );
+
+    @Deprecated
+    @DataField(id = "id", deprecated = true, description = "Use queues.id instead")
     private String id;
+
+    @Deprecated
+    @DataField(id = "defaultQueue", deprecated = true, description = "Use queues instead")
     private String defaultQueue;
+
+    @Deprecated
+    @DataField(id = "availableQueues", deprecated = true, description = "Use queues instead")
     private String availableQueues;
+
+    @DataField(id = "queues", description = "List of execution queues")
+    private List<ExecutionQueue> queues;
+
+    @DataField(description = "Default requirement values for new executions.")
+    private ExecutionRequirements defaultRequirements;
+
+    @DataField(description = "Execution requirements factor to be applied. This is to take into account that systems "
+            + "always reserve some resources for the system itself, so the request factor is used to scale down the number of resources "
+            + "requested by the user so that multiple jobs can run in parallel without overloading the system.")
+    private ExecutionRequirementsFactor requirementsFactor;
+
+    @Deprecated
     private Map<String, List<String>> toolsPerQueue;
     private Map<String, Integer> maxConcurrentJobs;
     private ObjectMap options;
@@ -49,41 +71,81 @@ public class Execution {
         toolsPerQueue = new HashMap<>();
         options = new ObjectMap();
         maxConcurrentJobs = new HashMap<>();
+        queues = new ArrayList<>();
     }
 
+    @Deprecated
     public String getId() {
         return id;
     }
 
+    @Deprecated
     public Execution setId(String id) {
-        this.id = id;
+        reportUnusedField("configuration.yml#analysis.execution.id", availableQueues, "The option was deprecated and a list of "
+                + "configuration.yml#analysis.execution.queues must now be used instead.");
         return this;
     }
 
+    @Deprecated
     public String getDefaultQueue() {
         return defaultQueue;
     }
 
+    @Deprecated
     public Execution setDefaultQueue(String defaultQueue) {
-        this.defaultQueue = defaultQueue;
+        reportUnusedField("configuration.yml#analysis.execution.defaultQueue", availableQueues, "The option was deprecated and a list of "
+                + "configuration.yml#analysis.execution.queues must now be used instead.");
         return this;
     }
 
+    @Deprecated
     public String getAvailableQueues() {
         return availableQueues;
     }
 
+    @Deprecated
     public Execution setAvailableQueues(String availableQueues) {
-        this.availableQueues = availableQueues;
+        reportUnusedField("configuration.yml#analysis.execution.availableQueues", availableQueues, "The option was deprecated and a list of"
+                + " configuration.yml#analysis.execution.queues must now be used instead.");
         return this;
     }
 
+    public List<ExecutionQueue> getQueues() {
+        return queues;
+    }
+
+    public Execution setQueues(List<ExecutionQueue> queues) {
+        this.queues = queues;
+        return this;
+    }
+
+    public ExecutionRequirements getDefaultRequirements() {
+        return defaultRequirements;
+    }
+
+    public Execution setDefaultRequirements(ExecutionRequirements defaultRequirements) {
+        this.defaultRequirements = defaultRequirements;
+        return this;
+    }
+
+    public ExecutionRequirementsFactor getRequirementsFactor() {
+        return requirementsFactor;
+    }
+
+    public Execution setRequirementsFactor(ExecutionRequirementsFactor requirementsFactor) {
+        this.requirementsFactor = requirementsFactor;
+        return this;
+    }
+
+    @Deprecated
     public Map<String, List<String>> getToolsPerQueue() {
         return toolsPerQueue;
     }
 
+    @Deprecated
     public Execution setToolsPerQueue(Map<String, List<String>> toolsPerQueue) {
-        this.toolsPerQueue = toolsPerQueue;
+        reportUnusedField("configuration.yml#analysis.execution.toolsPerQueue", toolsPerQueue, "The option was deprecated and a list of "
+                + "configuration.yml#analysis.execution.queues must now be used instead.");
         return this;
     }
 
@@ -111,6 +173,9 @@ public class Execution {
         sb.append("id='").append(id).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
+        sb.append(", queues=").append(queues);
+        sb.append(", defaultRequirements=").append(defaultRequirements);
+        sb.append(", requirementsFactor=").append(requirementsFactor);
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append(", maxConcurrentJobs=").append(maxConcurrentJobs);
         sb.append(", options=").append(options);

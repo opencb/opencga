@@ -39,6 +39,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.config.ExecutionQueue;
+import org.opencb.opencga.core.config.ExecutionRequirements;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -50,6 +52,7 @@ import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -334,6 +337,23 @@ public class JobManager extends ResourceManager<Job> {
         job.setInternal(JobInternal.init());
         job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
+        if (job.getTool().getMinimumRequirements() == null) {
+            job.getTool().setMinimumRequirements(new MinimumRequirements());
+        }
+        ExecutionRequirements request = configuration.getAnalysis().getExecution().getDefaultRequirements();
+        MinimumRequirements requirements = job.getTool().getMinimumRequirements();
+        requirements.setCpu(ParamUtils.defaultString(requirements.getCpu(), String.valueOf(request.getCpu())));
+        requirements.setMemory(ParamUtils.defaultString(requirements.getMemory(), request.getMemory()));
+        requirements.setProcessorType(ParamUtils.defaultObject(requirements.getProcessorType(), ExecutionQueue.ProcessorType.CPU));
+        if (StringUtils.isEmpty(requirements.getQueue())) {
+            List<ExecutionQueue> executionQueues = JobExecutionUtils
+                    .findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(), requirements);
+            if (CollectionUtils.isEmpty(executionQueues)) {
+                throw new CatalogException("No available queue found for the job requirements: " + requirements);
+            }
+            requirements.setQueue(executionQueues.get(0).getId());
+        }
+
         if (StringUtils.isNotEmpty(job.getParentId())) {
             // Check parent job exists
             try {
@@ -387,6 +407,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setInput(inputFiles);
         }
 
+        job.setExecution(new ExecutionResult());
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
