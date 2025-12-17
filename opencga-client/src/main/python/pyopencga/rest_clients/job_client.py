@@ -56,6 +56,12 @@ class Job(_ParentRestClient):
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.minimum_requirements.queue: Queue where the job is
+            expected to be executed.
+        :param str tool.minimum_requirements.processor_type: Processor type
+            required to run the job. Allowed values: [CPU, GPU, FPGA].
+        :param str execution.queue.id: Queue id where the job has been
+            submitted to be executed.
         :param str user_id: User that created the job.
         :param str priority: Priority of the job.
         :param str status: Filter by status.
@@ -118,6 +124,12 @@ class Job(_ParentRestClient):
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.minimum_requirements.queue: Queue where the job is
+            expected to be executed.
+        :param str tool.minimum_requirements.processor_type: Processor type
+            required to run the job. Allowed values: [CPU, GPU, FPGA].
+        :param str execution.queue.id: Queue id where the job has been
+            submitted to be executed.
         :param str tool.external_executor.id: Id of the external executor.
             This field is only applicable for jobs executed by an external
             executor.
@@ -202,6 +214,12 @@ class Job(_ParentRestClient):
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.minimum_requirements.queue: Queue where the job is
+            expected to be executed.
+        :param str tool.minimum_requirements.processor_type: Processor type
+            required to run the job. Allowed values: [CPU, GPU, FPGA].
+        :param str execution.queue.id: Queue id where the job has been
+            submitted to be executed.
         :param str tool.external_executor.id: Id of the external executor.
             This field is only applicable for jobs executed by an external
             executor.

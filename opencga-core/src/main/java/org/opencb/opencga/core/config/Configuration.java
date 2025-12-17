@@ -248,6 +248,16 @@ public class Configuration {
         }
     }
 
+    public static void reportUnusedField(String field, Object value, String description) {
+        // Report only if the value is not null and not an empty string
+        if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+            if (reportedFields.add(field)) {
+                // Only log the first time a field is found
+                logger.warn("Ignored configuration option '{}' with value '{}'. {}.", field, value, description);
+            }
+        }
+    }
+
     public static void reportMovedField(String previousField, String newField, Object value) {
         // Report only if the value is not null and not an empty string
         if (value != null && !(value instanceof String && ((String) value).isEmpty())) {

@@ -119,6 +119,8 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         TOOL_EXTERNAL_EXECUTOR_ID("tool.externalExecutor.id", TEXT, ""),
         TOOL_TYPE("tool.type", TEXT, ""),
         TOOL_EXTERNAL_EXECUTOR("tool.externalExecutor", OBJECT, ""),
+        TOOL_REQUIREMENTS_PROCESSOR_TYPE(ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM, STRING, ""),
+        TOOL_REQUIREMENTS_QUEUE(ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_PARAM, STRING, ""),
         PARENT_ID("parentId", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
@@ -144,8 +146,19 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         SCHEDULED_START_TIME("scheduledStartTime", TEXT, ""),
 
         EXECUTION("execution", OBJECT, ""),
+        @Deprecated
+        EXECUTION_ID("execution.id", STRING, ""),
+        EXECUTION_EXECUTOR("execution.executor", OBJECT, ""),
+        EXECUTION_QUEUE("execution.queue", OBJECT, ""),
         EXECUTION_START("execution.start", DATE, ""),
         EXECUTION_END("execution.end", DATE, ""),
+        EXECUTION_STATUS("execution.status", OBJECT, ""),
+        EXECUTION_DEPENDENCIES("execution.dependencies", OBJECT, ""),
+        EXECUTION_EXTERNAL_FILES("execution.externalFiles", TEXT_ARRAY, ""),
+        EXECUTION_STEPS("execution.steps", OBJECT, ""),
+        EXECUTION_EVENTS("execution.events", OBJECT, ""),
+        EXECUTION_ATTRIBUTES("execution.attributes", OBJECT, ""),
+        EXECUTION_QUEUE_ID(ParamConstants.JOB_EXECUTION_QUEUE_ID_PARAM, STRING, ""),
 
         STDOUT("stdout", OBJECT, ""),
         STDERR("stderr", OBJECT, ""),
