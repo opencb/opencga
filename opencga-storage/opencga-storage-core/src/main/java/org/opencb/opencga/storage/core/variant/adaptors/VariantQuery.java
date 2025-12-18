@@ -373,12 +373,20 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.SCORE.key());
     }
 
-    public VariantQuery annotationExists(boolean value) {
-        put(VariantQueryParam.ANNOTATION_EXISTS.key(), value);
+    public VariantQuery annotationExists(Boolean value) {
+        if (value == null) {
+            remove(VariantQueryParam.ANNOTATION_EXISTS.key());
+        } else {
+            put(VariantQueryParam.ANNOTATION_EXISTS.key(), value);
+        }
         return this;
     }
-    public boolean annotationExists() {
-        return getBoolean(VariantQueryParam.ANNOTATION_EXISTS.key());
+    public Boolean annotationExists() {
+        if (!containsKey(VariantQueryParam.ANNOTATION_EXISTS.key())) {
+            return null;
+        } else {
+            return getBoolean(VariantQueryParam.ANNOTATION_EXISTS.key());
+        }
     }
 
     public VariantQuery xref(String value) {

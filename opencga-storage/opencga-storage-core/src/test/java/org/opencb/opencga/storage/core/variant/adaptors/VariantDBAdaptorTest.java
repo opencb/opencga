@@ -99,7 +99,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het;
     private String het1;
     private String het2;
-    protected int fileId = 1;
+    protected static int fileId;
     protected List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
     protected Set<String> cohorts = new HashSet<>(Arrays.asList("ALL", "cohort1", "cohort2"));
 
@@ -137,7 +137,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(fileMetadata);
             fileIndexed = true;
-            Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
+            fileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
             //Calculate stats
             if (getOtherParams().getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), true)) {
@@ -145,7 +145,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
-                Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
+                Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples().iterator();
 
                 /** Create cohorts **/
                 HashSet<String> cohort1 = new HashSet<>();

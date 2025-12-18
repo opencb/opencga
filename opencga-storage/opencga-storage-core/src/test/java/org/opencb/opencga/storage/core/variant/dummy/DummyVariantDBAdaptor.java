@@ -17,18 +17,15 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import com.google.common.collect.Iterators;
-import htsjdk.variant.vcf.VCFConstants;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -41,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.filters.VariantFilterBuilder;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.query.filters.VariantProjectionBuilder;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +46,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
@@ -140,53 +139,35 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             iterator = Iterators.filter(iterator, Objects::nonNull);
         }
         iterator = Iterators.filter(iterator, filter::test);
+        Function<Variant, Variant> cloner = new VariantProjectionBuilder().cloner();
+        Consumer<Variant> projector = new VariantProjectionBuilder().buildProjector(variantQuery);
         iterator = Iterators.transform(iterator, variantOrig -> {
-            Variant variant = JacksonUtils.copySafe(variantOrig, Variant.class);
-            if (variantQuery.getProjection() == null) {
-                variant.setStudies(Collections.emptyList());
-            } else {
-                List<StudyEntry> studies = new ArrayList<>(variantQuery.getProjection().getStudies().size());
-                for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : variantQuery.getProjection().getStudies().values()) {
-                    String studyName = studyProjection.getStudyMetadata().getName();
-                    StudyEntry studyEntry = variant.getStudy(studyName);
-                    if (studyEntry == null) {
-                        continue;
-                    }
-                    studies.add(studyEntry);
-                    if (studyProjection.getSamples().isEmpty()) {
-                        studyEntry.setSamples(Collections.emptyList());
-                        studyEntry.setSamplesPosition(Collections.emptyMap());
-                    } else {
-                        StudyEntry studyOrig = variantOrig.getStudy(studyName);
-                        LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>(studyProjection.getSampleNames().size());
-                        List<SampleEntry> samples = new ArrayList<>(studyProjection.getSampleNames().size());
-                        for (String sampleName : studyProjection.getSampleNames()) {
-                            SampleEntry sample = studyOrig.getSample(sampleName);
-                            if (sample == null) {
-                                List<String> data = new ArrayList<>(studyEntry.getSampleDataKeys().size());
-                                for (int i = 0; i < studyEntry.getSampleDataKeys().size(); i++) {
-                                    if (studyEntry.getSampleDataKeys().get(i).equals(VCFConstants.GENOTYPE_KEY)) {
-                                        data.add(unknownGenotype);
-                                    } else {
-                                        data.add(VCFConstants.MISSING_VALUE_v4);
-                                    }
-                                }
-                                sample = new SampleEntry(null, null, data);
-                            }
-                            if (variantQuery.getStudyQuery().isIncludeSampleId()) {
-                                sample.setSampleId(sampleName);
-                            }
-                            samplesPosition.put(sampleName, samples.size());
-                            samples.add(sample);
-                        }
-                        studyEntry.setSamples(samples);
-                        studyEntry.setSortedSamplesPosition(samplesPosition);
-                    }
-                }
-                variant.setStudies(studies);
-            }
+            Variant variant = cloner.apply(variantOrig);
+            projector.accept(variant);
             return variant;
         });
+
+        // sort iterator
+        if (variantQuery.isSort()) {
+            List<Variant> variantList = new ArrayList<>();
+            iterator.forEachRemaining(variantList::add);
+            variantList.sort(Comparator.comparing(Variant::getChromosome)
+                    .thenComparing(Variant::getStart)
+                    .thenComparing(Variant::getEnd)
+                    .thenComparing(Variant::getReference)
+                    .thenComparing(Variant::getAlternate)
+                    .thenComparing(Variant::toString));
+            if (variantQuery.isSortDescending()) {
+                Collections.reverse(variantList);
+            }
+            iterator = variantList.iterator();
+        }
+        if (variantQuery.getSkip() > 0) {
+            Iterators.advance(iterator, variantQuery.getSkip());
+        }
+        if (variantQuery.getLimit() != null && variantQuery.getLimit() >= 0) {
+            iterator = Iterators.limit(iterator, variantQuery.getLimit());
+        }
 
         return VariantDBIterator.wrapper(iterator);
     }

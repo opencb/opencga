@@ -169,6 +169,8 @@ public class VariantQueryParser {
         variantQuery.setLimit(limit == -1 ? null : limit);
         variantQuery.setSkip(options.getInt(QueryOptions.SKIP, 0));
         variantQuery.setCount(options.getBoolean(QueryOptions.COUNT, false));
+        variantQuery.setSort(options.getBoolean(QueryOptions.SORT, false),
+                QueryOptions.ASCENDING.equalsIgnoreCase(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING)));
         variantQuery.setApproximateCountSamplingSize(options.getInt(
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
@@ -187,6 +189,20 @@ public class VariantQueryParser {
         variantQuery.setGeneRegions(geneRegions == null ? Collections.emptyList() : geneRegions);
         List<Region> regions = Region.parseRegions(query.region(), true);
         variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
+
+        if (isValidParam(query, TYPE)) {
+            // Assume preProcess has expanded types to subtypes
+            List<VariantType> types = new ArrayList<>();
+            for (Object o : query.getAsList(TYPE.key())) {
+                if (o instanceof VariantType) {
+                    types.add((VariantType) o);
+                } else {
+                    types.add(parseVariantType(o.toString()));
+                }
+            }
+            variantQuery.setType(types);
+        }
+
         variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
         variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
 

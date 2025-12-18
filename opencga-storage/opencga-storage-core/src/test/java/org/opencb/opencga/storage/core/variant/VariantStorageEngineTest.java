@@ -72,7 +72,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     private static Logger logger = LoggerFactory.getLogger(VariantStorageEngineTest.class);
 
     @Test
-    public void basicIndex() throws Exception {
+    public void basicIndexJson() throws Exception {
 
         clearDB(DB_NAME);
         StudyMetadata studyMetadata = newStudyMetadata();
@@ -135,7 +135,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void avroBasicIndex() throws Exception {
+    public void basicIndexAvro() throws Exception {
         clearDB(DB_NAME);
         StudyMetadata studyMetadata = newStudyMetadata();
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
@@ -571,14 +571,14 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         params.put(VariantStorageOptions.LOAD_THREADS.key(), 1);
 //        params.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), true);
 //        params.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), true);
-        StoragePipelineResult etlResult = runETL(variantStorageEngine, inputUri, params, true, true, true);
+        StoragePipelineResult etlResult = runETL(variantStorageEngine, smallInputUri, params, true, true, true);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
 
-        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), inputUri);
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), smallInputUri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileId));
         VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, getExpectedNumLoadedVariants(fileMetadata));
@@ -601,11 +601,12 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         params.put(VariantStorageOptions.TRANSFORM_THREADS.key(), 8);
         params.put(VariantStorageOptions.LOAD_THREADS.key(), 8);
         params.put(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.NO);
-        params.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO);
+        params.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.YES);
         params.put(VariantStorageOptions.LOAD_HOM_REF.key(), YesNoAuto.YES);
+        params.put(VariantStorageOptions.ANNOTATE.key(), "false");
 //        params.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), false);
 //        params.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), false);
-        StoragePipelineResult etlResult = runETL(variantStorageEngine, inputUri, params, true, true, true);
+        StoragePipelineResult etlResult = runETL(variantStorageEngine, smallInputUri, params, true, true, true);
 
         System.out.println("etlResult = " + etlResult);
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -614,7 +615,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.snappy'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.snappy"));
 
-        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), inputUri);
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), smallInputUri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadata.getId()).contains(fileId));
         VariantFileMetadata fileMetadata = checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, false, false, false, getExpectedNumLoadedVariants

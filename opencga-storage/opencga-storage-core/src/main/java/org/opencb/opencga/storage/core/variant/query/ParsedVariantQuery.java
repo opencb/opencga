@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -35,9 +36,12 @@ public class ParsedVariantQuery {
     private Integer limit;
     private int skip;
     private boolean count;
+    private boolean sort;
+    private boolean sortAscending;
     private int approximateCountSamplingSize;
     private List<Region> geneRegions;
     private List<Region> regions;
+    private List<VariantType> type;
     private VariantQuerySource source;
 
 
@@ -158,6 +162,15 @@ public class ParsedVariantQuery {
         return this;
     }
 
+    public List<VariantType> getType() {
+        return type;
+    }
+
+    public ParsedVariantQuery setType(List<VariantType> type) {
+        this.type = type;
+        return this;
+    }
+
     public List<String> getConsequenceTypes() {
         return VariantQueryUtils.parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()));
     }
@@ -200,6 +213,25 @@ public class ParsedVariantQuery {
         this.count = count;
         return this;
     }
+
+    public boolean isSort() {
+        return sort;
+    }
+
+    public boolean isSortAscending() {
+        return sort && sortAscending;
+    }
+
+    public boolean isSortDescending() {
+        return sort && !sortAscending;
+    }
+
+    public ParsedVariantQuery setSort(boolean sort, boolean sortAscending) {
+        this.sort = sort;
+        this.sortAscending = sortAscending;
+        return this;
+    }
+
 
     public int getApproximateCountSamplingSize() {
         return approximateCountSamplingSize;
