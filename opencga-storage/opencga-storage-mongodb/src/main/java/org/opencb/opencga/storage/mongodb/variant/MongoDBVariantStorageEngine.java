@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -54,6 +55,7 @@ import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationMan
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
@@ -109,7 +111,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions());
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions(),
+                getSampleIndexDBAdaptor());
     }
 
     @Override
@@ -120,7 +123,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
-        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider);
+        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider, getSampleIndexDBAdaptor()
+                .newSampleAnnotationIndexer(this));
     }
 
     @Override
@@ -447,6 +451,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
         }
         return dbAdaptor.get();
+    }
+
+    @Override
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        MongoDataStoreManager mongoManager = getMongoDataStoreManager();
+        MongoCredentials credentials = getMongoCredentials();
+        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        return new MongoDBSampleIndexDBAdaptor(db, getMetadataManager());
     }
 
     @Override

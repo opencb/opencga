@@ -60,6 +60,7 @@ public abstract class SampleAnnotationIndexer {
             throws StorageEngineException {
         int sampleIndexVersion = sampleIndexDBAdaptor.getSchemaLatest(studyId).getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
+        List<String> finalSamplesNameList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();
         List<String> alreadyAnnotated = new LinkedList<>();
         for (Integer sampleId : samples) {
@@ -71,6 +72,7 @@ public abstract class SampleAnnotationIndexer {
                     alreadyAnnotated.add(sampleMetadata.getName());
                 } else {
                     finalSamplesList.add(sampleId);
+                    finalSamplesNameList.add(sampleMetadata.getName());
                 }
             } else {
                 // Discard non-annotated samples
@@ -95,7 +97,7 @@ public abstract class SampleAnnotationIndexer {
         }
 
         if (finalSamplesList.size() < 20) {
-            logger.info("Run sample index annotation on samples " + finalSamplesList);
+            logger.info("Run sample index annotation on samples " + finalSamplesNameList);
         } else {
             logger.info("Run sample index annotation on " + finalSamplesList.size() + " samples");
         }

@@ -459,10 +459,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
 
-        if (loadedGenotypes != null) {
-            loadedGenotypes.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
-            studyMetadata.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), loadedGenotypes);
-        }
     }
 
     private VariantHBaseArchiveDataWriter newArchiveDBWriter(String table, ArchiveTableHelper helper) {

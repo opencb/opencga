@@ -23,12 +23,16 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -184,6 +188,8 @@ public class VariantAnnotatorTest {
 
     public static class TestCachedCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {
         public static Map<String, VariantAnnotation> ANNOTATION_CACHE = new ConcurrentHashMap<>();
+        public static final AtomicLong LAST_CACHE_UPDATE = new AtomicLong();
+        public static final AtomicLong LAST_CACHE_SAVE = new AtomicLong();
         protected static Logger logger = LoggerFactory.getLogger(TestCachedCellBaseRestVariantAnnotator.class);
 
         private final Path cacheDir;
@@ -214,7 +220,6 @@ public class VariantAnnotatorTest {
                 }
             }
             cachedMetadata = super.getVariantAnnotationMetadata();
-            saveVariantAnnotationMetadata(cachedMetadata);
             return cachedMetadata;
         }
 
@@ -252,6 +257,7 @@ public class VariantAnnotatorTest {
                 List<CellBaseDataResult<VariantAnnotation>> queryResults = super.annotateFiltered(variantsToAnnotate);
                 for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
                     if (!queryResult.getResults().isEmpty()) {
+                        LAST_CACHE_UPDATE.set(System.currentTimeMillis());
                         ANNOTATION_CACHE.put(queryResult.getId(), queryResult.getResults().get(0));
                     }
                     results.set(variantIndexMap.get(queryResult.getId()), queryResult);
@@ -264,11 +270,9 @@ public class VariantAnnotatorTest {
         public void post() throws Exception {
             super.post();
             // Save cache
-            saveAnnotationCache(cacheDir, mapper);
-            if (cachedMetadata != null) {
-                saveVariantAnnotationMetadata(cachedMetadata);
+            if (saveAnnotationCache(cacheDir, mapper, metadataFile, cachedMetadata)) {
+                logger.info("Annotation cache stats: {} hits, {} misses", cacheHits, cacheMisses);
             }
-            logger.info("Annotation cache stats: {} hits, {} misses", cacheHits, cacheMisses);
         }
 
         private static synchronized Map<String, VariantAnnotation> loadAnnotationCache(Path dir, ObjectMapper mapper) {
@@ -290,29 +294,30 @@ public class VariantAnnotatorTest {
             }
         }
 
-        private static synchronized void saveAnnotationCache(Path dir, ObjectMapper mapper) {
+        private static synchronized boolean saveAnnotationCache(Path dir, ObjectMapper mapper, Path metadataFile,
+                                                             ProjectMetadata.VariantAnnotationMetadata metadata) {
+            if (LAST_CACHE_UPDATE.get() <= LAST_CACHE_SAVE.get()) {
+                // Annotation cache not modified since last save. Skip saving.
+                return false;
+            } else {
+                logger.info("Saving annotation cache. {} entries to save.", ANNOTATION_CACHE.size());
+            }
             try {
                 Path cacheFile = dir.resolve("cache.json.gz");
                 Files.createDirectories(dir);
                 try (BufferedWriter bw = FileUtils.newBufferedWriter(cacheFile)) {
                     mapper.writerWithDefaultPrettyPrinter().writeValue(bw, ANNOTATION_CACHE);
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Error saving annotation cache into " + dir, e);
-            }
-        }
-
-        private synchronized void saveVariantAnnotationMetadata(ProjectMetadata.VariantAnnotationMetadata metadata)
-                throws VariantAnnotatorException {
-            try {
-                Files.createDirectories(cacheDir);
                 try (BufferedWriter bw = FileUtils.newBufferedWriter(metadataFile)) {
                     mapper.writerWithDefaultPrettyPrinter().writeValue(bw, metadata);
                 }
             } catch (IOException e) {
-                throw new VariantAnnotatorException("Error saving variant annotation metadata into " + metadataFile, e);
+                throw new UncheckedIOException("Error saving annotation cache into " + dir, e);
             }
+            LAST_CACHE_SAVE.set(System.currentTimeMillis());
+            return true;
         }
+
     }
 
     public static class TestCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {

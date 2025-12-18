@@ -62,6 +62,11 @@ public class SampleIndexEntry {
         return gts;
     }
 
+    public SampleIndexGtEntry addGtEntry(SampleIndexGtEntry gtEntry) {
+        this.gts.put(gtEntry.getGt(), gtEntry);
+        return gtEntry;
+    }
+
     public SampleIndexGtEntry getGtEntry(String gt) {
         return gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
     }

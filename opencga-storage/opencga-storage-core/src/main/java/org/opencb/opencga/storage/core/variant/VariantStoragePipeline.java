@@ -99,7 +99,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap loadStats = new ObjectMap();
     protected Integer privateFileId;
     protected Integer privateStudyId;
-    protected int sampleIndexVersion;
+    protected Integer sampleIndexVersion;
     protected HashSet<String> loadedGenotypes;
     protected int largestVariantLength;
 //    protected StudyMetadata privateStudyMetadata;
@@ -774,10 +774,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             boolean updateIndexStatus = !sampleMetadata.isIndexed();
 
             boolean updateSampleIndexStatus;
-            if (loadSampleIndex) {
-                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.READY;
+            if (sampleIndexVersion != null) {
+                if (loadSampleIndex) {
+                    updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.READY;
+                } else {
+                    updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.NONE;
+                }
             } else {
-                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != TaskMetadata.Status.NONE;
+                updateSampleIndexStatus = false;
             }
             int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
             boolean isLargestVariantLengthDefined = sampleMetadata.getAttributes()
@@ -826,6 +830,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         //Update StudyMetadata
         metadataManager.updateStudyMetadata(studyId, sm -> {
             securePostLoad(finalFileIds, sm);
+
+            if (loadedGenotypes != null) {
+                loadedGenotypes.addAll(sm.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
+                sm.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), loadedGenotypes);
+            }
+
             return sm;
         });
 

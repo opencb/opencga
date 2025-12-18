@@ -122,7 +122,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(
                 STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-//        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
+        map.put(VariantField.ANNOTATION, Arrays.asList(JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
 //        map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
 //        map.put(VariantField.ANNOTATION_ID, emptyList());
 //        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());

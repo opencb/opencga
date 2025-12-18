@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -49,6 +50,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -95,6 +98,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     ));
 
     private final VariantMongoDBAdaptor dbAdaptor;
+    private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
     private MongoDBVariantWriteResult writeResult;
@@ -103,9 +107,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider, ObjectMap options) {
+                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider, ObjectMap options,
+                                         SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider, options);
         this.dbAdaptor = dbAdaptor;
+        this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
     }
 
     public URI preLoad(URI input, URI output) throws StorageEngineException {
@@ -289,6 +295,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         boolean resume = isResume(options);
         StudyMetadata studyMetadata = getStudyMetadata();
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+        // Load sample index?
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
 
         try {
             //Dedup task
@@ -297,12 +305,29 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
-            org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
-            // File reader
+            // Largest variant length task
+            GetLargestVariantTask largestVariantTask = new GetLargestVariantTask();
+
+            // File reader with all tasks
             DataReader<Variant> variantReader = variantReaderUtils.getVariantReader(inputUri, metadata, stdin)
                     .then(duplicatedVariantsDetector)
-                    .then(remapIdsTask);
+                    .then(remapIdsTask)
+                    .then(largestVariantTask);
+
+            SampleIndexWriter indexWriter;
+            if (loadSampleIndex) {
+                logger.info("Sample Index will be populated during direct load");
+                List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
+                indexWriter = sampleIndexDBAdaptor.newSampleIndexWriter(getStudyId(), getFileId(), sampleIds,
+                        sampleIndexDBAdaptor.getSchemaLatest(getStudyId()), getOptions(),
+                        VariantStorageEngine.SplitData.from(getOptions()));
+                variantReader = variantReader.then(indexWriter.asTask());
+            } else {
+                logger.info("Sample Index will NOT be populated during direct load");
+                indexWriter = null;
+            }
 
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
             MergeMode mergeMode = MergeMode.from(studyMetadata.getAttributes());
@@ -325,7 +350,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     resume, ignoreOverlapping, release);
 
             // Writer -- MongoDBVariantDirectLoader
-            MongoDBVariantDirectLoader loader = new MongoDBVariantDirectLoader(dbAdaptor, studyMetadata, fileId, resume,
+            MongoDBVariantDirectLoader directLoader = new MongoDBVariantDirectLoader(dbAdaptor, studyMetadata, fileId, resume,
                     progressLogger);
 
             // Runner
@@ -337,10 +362,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setAbortOnFail(true).build();
             if (isDirectLoadParallelWrite(options)) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(loader), null, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(directLoader), null, config);
             } else {
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, loader, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, directLoader, config);
             }
 
             // Run
@@ -353,7 +378,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
-            writeResult = loader.getResult();
+            if (indexWriter != null) {
+                // Update list of loaded genotypes
+                this.loadedGenotypes = indexWriter.getLoadedGenotypes();
+                this.sampleIndexVersion = indexWriter.getSampleIndexVersion();
+            }
+            this.largestVariantLength = largestVariantTask.getMaxLength();
+
+            writeResult = directLoader.getResult();
             writeResult.setSkippedVariants(stageReader.getSkippedVariants());
             writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
             loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
@@ -408,7 +440,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
             //Remapping ids task
-            org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+            Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
@@ -814,6 +846,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             logger.info("Final number of loaded variants: " + count
                     + (overlappedCount > 0 ? " + " + overlappedCount + " overlapped variants" : ""));
         }
+
+        getLoadStats().put("largestVariantLength", largestVariantLength);
+        logger.info("Largest variant found in VCF had a length of : {}", largestVariantLength);
         logger.info("============================================================");
         if (exception != null) {
             throw exception;

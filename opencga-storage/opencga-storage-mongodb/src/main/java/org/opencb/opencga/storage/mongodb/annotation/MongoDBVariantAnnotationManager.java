@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
@@ -29,8 +30,8 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     private final VariantMongoDBAdaptor mongoDbAdaptor;
 
     public MongoDBVariantAnnotationManager(VariantAnnotator annotator, VariantMongoDBAdaptor mongoDbAdaptor,
-                                           IOConnectorProvider ioConnectorProvider) {
-        super(annotator, mongoDbAdaptor, ioConnectorProvider, null);
+                                           IOConnectorProvider ioConnectorProvider, SampleAnnotationIndexer sampleIndexAnnotation) {
+        super(annotator, mongoDbAdaptor, ioConnectorProvider, sampleIndexAnnotation);
         this.mongoDbAdaptor = mongoDbAdaptor;
     }
 
