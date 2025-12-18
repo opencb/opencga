@@ -415,7 +415,7 @@ public class K8SExecutor implements BatchExecutor {
                     break;
                 case NATIVE_TOOL:
                 default:
-                    String amount = memory.getAmount();
+                    String amount = Long.toString(memory.getNumericalAmount().longValue());
                     bytes = IOUtils.fromHumanReadableToByte(amount);
                     bytes -= IOUtils.fromHumanReadableToByte("300Mi");
                     break;
