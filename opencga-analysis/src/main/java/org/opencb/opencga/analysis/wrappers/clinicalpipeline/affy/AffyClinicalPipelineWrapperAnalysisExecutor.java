@@ -63,8 +63,7 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli,
-                    getDefaultDockerParams());
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
 

@@ -368,6 +368,10 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         Path dockerSocket = Paths.get("/var/run/docker.sock");
         if (Files.exists(dockerSocket)) {
             PosixFileAttributes attrs = Files.readAttributes(dockerSocket, PosixFileAttributes.class);
+            // Sanity check
+            if (attrs == null || attrs.group() == null) {
+                return null;
+            }
             return String.valueOf(attrs.group().hashCode());
         } else {
             // Extract GID from group name
@@ -375,6 +379,10 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
                     FileSystems.getDefault().getUserPrincipalLookupService();
             GroupPrincipal dockerGroup = lookupService.lookupPrincipalByGroupName("docker");
 
+            // Sanity check
+            if (dockerGroup == null || StringUtils.isEmpty(dockerGroup.getName()) || !dockerGroup.getName().contains(":")) {
+                return null;
+            }
             return dockerGroup.getName().split(":")[1];
         }
     }
