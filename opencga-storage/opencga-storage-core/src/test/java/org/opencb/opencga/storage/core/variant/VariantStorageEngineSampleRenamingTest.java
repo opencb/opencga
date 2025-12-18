@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineSampleRenamingTest extends VariantStorageBaseTest {
 
     @Test

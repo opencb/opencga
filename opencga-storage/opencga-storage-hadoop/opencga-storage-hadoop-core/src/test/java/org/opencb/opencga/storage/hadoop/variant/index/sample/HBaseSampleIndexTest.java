@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.SampleIndexDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.SampleIndexDriver;
 
 import java.nio.file.Paths;
 import java.util.Collections;

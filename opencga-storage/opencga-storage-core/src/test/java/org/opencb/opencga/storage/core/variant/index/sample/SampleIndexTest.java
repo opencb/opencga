@@ -21,6 +21,7 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -64,6 +65,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class SampleIndexTest extends VariantStorageBaseTest {
 
     protected VariantDBAdaptor dbAdaptor;

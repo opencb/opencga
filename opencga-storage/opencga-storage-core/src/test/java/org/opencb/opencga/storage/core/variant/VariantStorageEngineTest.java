@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.TestIOConnector;
@@ -67,6 +68,7 @@ import static org.opencb.opencga.core.common.UriUtils.fileName;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
     private static Logger logger = LoggerFactory.getLogger(VariantStorageEngineTest.class);

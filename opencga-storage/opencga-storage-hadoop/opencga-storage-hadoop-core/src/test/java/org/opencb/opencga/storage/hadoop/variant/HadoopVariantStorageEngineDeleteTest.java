@@ -5,7 +5,7 @@ import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
-import org.opencb.opencga.storage.core.VariantStorageEngineDeleteTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineDeleteTest;
 
 @Category(LongTests.class)
 public class HadoopVariantStorageEngineDeleteTest extends VariantStorageEngineDeleteTest implements HadoopVariantStorageTest {

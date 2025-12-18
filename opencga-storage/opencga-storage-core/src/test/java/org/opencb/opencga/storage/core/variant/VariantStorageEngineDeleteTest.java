@@ -1,13 +1,12 @@
-package org.opencb.opencga.storage.core;
+package org.opencb.opencga.storage.core.variant;
 
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +17,7 @@ import java.util.LinkedHashSet;
 import static org.junit.Assert.assertEquals;
 
 @Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineDeleteTest  extends VariantStorageBaseTest {
 
     private static Logger logger = LoggerFactory.getLogger(VariantStorageEngineDeleteTest.class);

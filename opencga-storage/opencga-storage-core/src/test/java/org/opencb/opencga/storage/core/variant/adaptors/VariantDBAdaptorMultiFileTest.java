@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -44,6 +45,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTest {
 
     protected static final String file12877 = "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz";

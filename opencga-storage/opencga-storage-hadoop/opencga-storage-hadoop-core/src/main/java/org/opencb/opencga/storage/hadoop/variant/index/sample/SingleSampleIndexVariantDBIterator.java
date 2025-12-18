@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEnt
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseToSampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseToSampleIndexConverter;
 
 import java.io.IOException;
 import java.util.Collection;
