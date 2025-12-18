@@ -20,7 +20,7 @@ package org.opencb.opencga.analysis.wrappers.fastqc;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -30,7 +30,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import java.util.*;
 
 @Tool(id = FastqcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = FastqcWrapperAnalysis.DESCRIPTION)
-public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class FastqcWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "fastqc";
     public final static String DESCRIPTION = "A high throughput sequence QC analysis tool";

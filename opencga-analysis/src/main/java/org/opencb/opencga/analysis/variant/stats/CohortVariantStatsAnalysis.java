@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Set;
 
 @Tool(id = CohortVariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT)
-public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
+public class CohortVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "cohort-variant-stats";
     public static final String DESCRIPTION = "Compute cohort variant stats for the selected list of samples.";
@@ -248,4 +248,3 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 }
-

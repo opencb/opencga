@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.VariantWalkerTool;
+import org.opencb.opencga.analysis.variant.VariantWalkerToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
@@ -213,7 +213,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                               Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
             throws CatalogException, StorageEngineException {
         String anyStudy = catalogUtils.getAnyStudy(query, token);
-        return secureAnalysis(VariantWalkerTool.ID, anyStudy, queryOptions, token, engine -> {
+        return secureAnalysis(VariantWalkerToolExecutor.ID, anyStudy, queryOptions, token, engine -> {
             Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
             checkSamplesPermissions(finalQuery, queryOptions, token);
             URI outputUri;
@@ -614,7 +614,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // If changes, launch sample-index-run
                 ToolParams params =
                         new VariantSecondarySampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, VariantSecondarySampleIndexOperationTool.ID, null,
+                return catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE_TOOL, VariantSecondarySampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });
@@ -664,7 +664,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
                     VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
                     OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
-                            .submitProject(project, JobType.NATIVE, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Save variant annotation before changing cellbase configuration", null, null, token);
                     result.getResults().add(saveResult.first());
                     if (saveResult.getEvents() != null) {
@@ -675,7 +675,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 if (annotate) {
                     VariantAnnotationIndexParams params = new VariantAnnotationIndexParams().setOverwriteAnnotations(true);
                     OpenCGAResult<Job> annotResult = catalogManager.getJobManager()
-                            .submitProject(project, JobType.NATIVE, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
                                     null, "Forced re-annotation after changing cellbase configuration", jobDependsOn, null, token);
                     result.getResults().add(annotResult.first());
                     if (annotResult.getEvents() != null) {

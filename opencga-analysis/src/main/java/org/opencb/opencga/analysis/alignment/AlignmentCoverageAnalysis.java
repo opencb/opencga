@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
@@ -39,7 +39,7 @@ import static org.opencb.opencga.core.api.ParamConstants.COVERAGE_WINDOW_SIZE_DE
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentCoverageAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = "Alignment coverage analysis.")
-public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentCoverageAnalysis extends OpenCgaTool {
 
     public static final String ID = "coverage-index-run";
     public static final String DESCRIPTION = "Compute the coverage from a given BAM alignment file, e.g., create a "

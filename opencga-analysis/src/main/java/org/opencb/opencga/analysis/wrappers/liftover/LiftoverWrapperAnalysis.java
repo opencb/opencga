@@ -22,7 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -49,7 +49,7 @@ import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
 @Tool(id = LiftoverWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = LiftoverWrapperAnalysis.DESCRIPTION)
-public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class LiftoverWrapperAnalysis extends OpenCgaTool {
 
     public static final String ID = "liftover";
     public static final String DESCRIPTION = "BCFtools liftover plugin maps coordinates from assembly 37 to 38.";

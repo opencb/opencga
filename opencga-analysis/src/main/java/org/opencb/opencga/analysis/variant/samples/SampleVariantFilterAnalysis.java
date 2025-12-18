@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Tool(id = SampleVariantFilterAnalysis.ID, description = SampleVariantFilterAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
-public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
+public class SampleVariantFilterAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-variant-filter";
     public static final String DESCRIPTION = "Get samples given a set of variants";

@@ -21,7 +21,7 @@ import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -41,7 +41,7 @@ import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_FASTQC_METRIC
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentFastQcMetricsAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentFastQcMetricsAnalysis extends OpenCgaTool {
 
     public static final String ID = "alignment-fastqcmetrics";
     public static final String DESCRIPTION = ALIGNMENT_FASTQC_METRICS_DESCRIPTION;

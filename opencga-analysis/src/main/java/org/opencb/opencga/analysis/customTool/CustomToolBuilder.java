@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.customTool;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Tool(id = CustomToolBuilder.ID, resource = Enums.Resource.JOB, description = CustomToolBuilder.DESCRIPTION)
-public class CustomToolBuilder extends OpenCgaToolScopeStudy {
+public class CustomToolBuilder extends OpenCgaTool {
 
     public static final String ID = "custom-tool-builder";
     public static final String DESCRIPTION = "Build an external bioinformatic tool from a GitHub repository URL.";

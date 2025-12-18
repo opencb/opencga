@@ -26,18 +26,19 @@ public class ApiCommonsImpl implements ApiCommons {
      *   5. Files
      *   6. Jobs
      *   7. Workflows
-     *   8. Samples
-     *   9. Individuals
-     *   10. Families
-     *   11. Cohorts
-     *   12. Disease Panels
-     *   13. Analysis - Alignment
-     *   14. Analysis - Variant
-     *   15. Analysis - Clinical
-     *   16. Operations - Variant Storage
-     *   17. Meta
-     *   18. Admin
-     *   19. Ga4gh
+     *   8. User tools
+     *   9. Samples
+     *   10. Individuals
+     *   11. Families
+     *   12. Cohorts
+     *   13. Disease Panels
+     *   14. Analysis - Alignment
+     *   15. Analysis - Variant
+     *   16. Analysis - Clinical
+     *   17. Operations - Variant Storage
+     *   18. Meta
+     *   19. Admin
+     *   20. Ga4gh
      */
 
 
@@ -52,6 +53,7 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(FileWSServer.class);
         classes.add(JobWSServer.class);
         classes.add(WorkflowWSServer.class);
+        classes.add(ExternalToolWSServer.class);
         classes.add(SampleWSServer.class);
         classes.add(IndividualWSServer.class);
         classes.add(FamilyWSServer.class);

@@ -31,11 +31,12 @@ public class JsonOpenApiGeneratorTest {
 
 
     private static Swagger swagger;
+    private static ApiCommons apiCommons;
 
     @BeforeClass
     public static void initSwagger() throws Exception {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        ApiCommons apiCommons = new ApiCommonsImpl();
+        apiCommons = new ApiCommonsImpl();
         swagger = generator.generateJsonOpenApi(
                 apiCommons,
                 "ANYVALIDTOKEN",
@@ -51,7 +52,7 @@ public class JsonOpenApiGeneratorTest {
     public void testGenerateJsonOpenApi(){
         String basePath="/task-swagger/opencga/webservices/rest";
         String host="test.app.zettagenomics.com";
-        int numCategories= 19;
+        int numCategories = apiCommons.getApiClasses().size();
 
         assertEquals("Expected basePath to be '" + basePath + "'",basePath, swagger.getBasePath());
         assertEquals("Expected host to be '" + host + "'",host, swagger.getHost());
@@ -76,6 +77,7 @@ public class JsonOpenApiGeneratorTest {
                 "Files",
                 "Jobs",
                 "Workflows",
+                "User tools",
                 "Samples",
                 "Individuals",
                 "Families",

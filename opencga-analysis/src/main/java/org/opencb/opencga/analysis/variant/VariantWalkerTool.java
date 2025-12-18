@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantWalkerParams;
+import org.opencb.opencga.core.models.variant.DeprecatedVariantWalkerParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -33,11 +33,11 @@ import java.util.List;
 @Tool(id = VariantWalkerTool.ID, description = VariantWalkerTool.DESCRIPTION,
         scope = Tool.Scope.PROJECT, resource = Enums.Resource.VARIANT)
 public class VariantWalkerTool extends OpenCgaTool {
-    public static final String ID = "variant-walk";
+    public static final String ID = "inline-variant-walk";
     public static final String DESCRIPTION = "Filter and walk variants from the variant storage to produce a file";
 
     @ToolParams
-    protected VariantWalkerParams toolParams = new VariantWalkerParams();
+    protected DeprecatedVariantWalkerParams toolParams = new DeprecatedVariantWalkerParams();
 
     private VariantWriterFactory.VariantOutputFormat format;
 

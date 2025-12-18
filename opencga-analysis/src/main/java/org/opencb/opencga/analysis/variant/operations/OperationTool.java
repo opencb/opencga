@@ -82,7 +82,7 @@ public abstract class OperationTool extends OpenCgaTool {
     }
 
     protected final String getStudyFqn() throws CatalogException {
-        String study = getParams().getString(ParamConstants.STUDY_PARAM);
+        String study = StringUtils.isNotEmpty(this.study) ? this.study : getParams().getString(ParamConstants.STUDY_PARAM);
         try {
             return getStudyFqn(study);
         } catch (CatalogException e) {

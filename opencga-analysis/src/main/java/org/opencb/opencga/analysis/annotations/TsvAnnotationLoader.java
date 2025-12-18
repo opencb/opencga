@@ -50,7 +50,6 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
     protected String path;
     protected String variableSetId;
     protected String annotationSetId;
-    protected String study;
 
     // Calculated variables during check
     protected Path filePath;
@@ -65,10 +64,6 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
 
     public void setAnnotationSetId(String annotationSetId) {
         this.annotationSetId = annotationSetId;
-    }
-
-    public void setStudy(String study) {
-        this.study = study;
     }
 
     @Override

@@ -1,8 +1,8 @@
 package org.opencb.opencga.core.models.job;
 
 public enum JobType {
-    NATIVE,
+    NATIVE_TOOL,
     WORKFLOW,
-    CUSTOM,
-    WALKER
+    CUSTOM_TOOL,
+    VARIANT_WALKER
 }

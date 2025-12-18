@@ -137,6 +137,19 @@ analysis:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "local"
+    queues:
+      - id: "default"
+        executor: "local"
+        description: "Default queue for local execution"
+        processorType: "CPU"
+        cpu: 1
+        memory: "2G"
+    defaultRequirements:
+      cpu: 1
+      memory: "1G"
+    requirementsFactor:
+      cpu: 0.95
+      memory: 0.9
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5

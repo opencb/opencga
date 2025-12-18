@@ -114,6 +114,9 @@
         <reactive-streams.version>1.0.0</reactive-streams.version>
         <snappy-java.version>1.1.10.4</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
+        <flapdoodle.version>4.21.0</flapdoodle.version>
+        <flapdoodle.reverse.version>1.9.1</flapdoodle.reverse.version>
+        <flapdoodle.process.version>4.17.0</flapdoodle.process.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
@@ -1217,6 +1220,24 @@
                 <groupId>com.esotericsoftware.kryo</groupId>
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.embed</groupId>
+                <artifactId>de.flapdoodle.embed.mongo</artifactId>
+                <version>${flapdoodle.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.embed</groupId>
+                <artifactId>de.flapdoodle.embed.process</artifactId>
+                <version>${flapdoodle.process.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.reverse</groupId>
+                <artifactId>de.flapdoodle.reverse</artifactId>
+                <version>${flapdoodle.reverse.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.rocksdb</groupId>

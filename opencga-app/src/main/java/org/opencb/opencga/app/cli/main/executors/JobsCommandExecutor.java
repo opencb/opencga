@@ -16,17 +16,17 @@ import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.externalTool.Container;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntryList;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.JobRetryParams;
-import org.opencb.opencga.core.models.job.JobRunDockerParams;
-import org.opencb.opencga.core.models.job.JobRunGitParams;
-import org.opencb.opencga.core.models.job.JobRunParams;
 import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.JobTop;
@@ -176,6 +176,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
         queryParams.putIfNotEmpty("priority", commandOptions.priority);
         queryParams.putIfNotEmpty("status", commandOptions.status);
@@ -261,6 +264,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
         queryParams.putIfNotEmpty("parentId", commandOptions.parentId);
         queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
@@ -342,6 +348,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
         queryParams.putIfNotEmpty("parentId", commandOptions.parentId);
         queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
@@ -431,29 +440,34 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobRunParams jobRunParams = null;
+        CustomToolInlineParams customToolInlineParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/jobs/tool/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            jobRunParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), JobRunParams.class);
+            customToolInlineParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolInlineParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.id", commandOptions.dockerId, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.token", commandOptions.dockerToken, true);
-            putNestedIfNotEmpty(beanParams, "git.repository", commandOptions.gitRepository, true);
-            putNestedIfNotEmpty(beanParams, "git.reference", commandOptions.gitReference, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
 
-            jobRunParams = JacksonUtils.getDefaultObjectMapper().copy()
+            customToolInlineParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), JobRunParams.class);
+                    .readValue(beanParams.toJson(), CustomToolInlineParams.class);
         }
-        return openCGAClient.getJobClient().runTool(jobRunParams, queryParams);
+        return openCGAClient.getJobClient().runTool(customToolInlineParams, queryParams);
     }
 
     private RestResponse<JobTop> top() throws Exception {
