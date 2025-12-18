@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.client.rest;
 
 import com.zettagenomics.opencga.enterprise.client.rest.clients.*;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.client.rest.clients.UserToolClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -80,6 +81,10 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
 
     public CohortClient getEnterpriseCohortClient() {
         return this.getClient(CohortClient.class, () -> new CohortClient(this.token, this.clientConfiguration));
+    }
+
+    public UserToolClient getEnterpriseUserToolClient() {
+        return this.getClient(UserToolClient.class, () -> new UserToolClient(this.token, this.clientConfiguration));
     }
 
     public ClinicalAnalysisClient getEnterpriseClinicalAnalysisClient() {

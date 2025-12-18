@@ -51,6 +51,9 @@
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
         <commons-io.version>2.8.0</commons-io.version>
         <json-smart.version>2.3</json-smart.version>
+        <flapdoodle.version>4.21.0</flapdoodle.version>
+        <flapdoodle.reverse.version>1.9.1</flapdoodle.reverse.version>
+        <flapdoodle.process.version>4.17.0</flapdoodle.process.version>
 
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
@@ -589,6 +592,24 @@
                 <groupId>org.mongodb</groupId>
                 <artifactId>bson</artifactId>
                 <version>${bson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.embed</groupId>
+                <artifactId>de.flapdoodle.embed.mongo</artifactId>
+                <version>${flapdoodle.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.embed</groupId>
+                <artifactId>de.flapdoodle.embed.process</artifactId>
+                <version>${flapdoodle.process.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>de.flapdoodle.reverse</groupId>
+                <artifactId>de.flapdoodle.reverse</artifactId>
+                <version>${flapdoodle.reverse.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

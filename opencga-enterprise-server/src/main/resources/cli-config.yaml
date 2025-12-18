@@ -19,6 +19,9 @@ options:
     - java.lang.Float
     - java.lang.
 apiConfig:
+  restMethodParseList:
+    - rest: "tools/custom/run"
+      methodName: "run-custom-docker"
   executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor
   executorsOpencgaClientPrefix: enterprise
   optionsParserParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.options.*
@@ -179,6 +182,9 @@ apiConfig:
         - name: import
           ## Rename needed as `import` is a reserved word in Java
           rename: importPanels
+    - name: tools
+      ignore: False
+      key: UserTool
     - name: analysisAlignment
       commandName: alignments
       ignore: False
