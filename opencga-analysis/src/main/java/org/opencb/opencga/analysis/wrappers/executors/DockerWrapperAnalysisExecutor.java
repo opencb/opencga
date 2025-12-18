@@ -365,6 +365,9 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     protected String getDockerGid() throws IOException {
+        // Check that docker daemon is alive
+        DockerUtils.checkDockerDaemonAlive();
+
         Path dockerSocket = Paths.get("/var/run/docker.sock");
         if (Files.exists(dockerSocket)) {
             PosixFileAttributes attrs = Files.readAttributes(dockerSocket, PosixFileAttributes.class);
