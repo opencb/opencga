@@ -46,7 +46,7 @@ public class InputFileUtils {
         this.catalogManager = catalogManager;
     }
 
-    public boolean isValidOpenCGAFile(String content) {
+    public static boolean isValidOpenCGAFile(String content) {
         return OPENCGA_PATH_PATTERN.matcher(content).matches();
     }
 

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -62,6 +63,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -107,9 +109,9 @@ public class JobManager extends ResourceManager<Job> {
 //        } else {
 //            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
 //        }
-////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
-////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
+    ////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+    ////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+    ////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
 //        OpenCGAResult<Job> jobDataResult = getJobDBAdaptor(organizationId).get(studyUid, queryCopy, options, user);
 //        if (jobDataResult.getNumResults() == 0) {
 //            jobDataResult = getJobDBAdaptor(organizationId).get(queryCopy, options);
@@ -458,91 +460,223 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
-        // Look for input files
-        String fileParamSuffix = "file";
-        List<File> inputFiles = new ArrayList<>();
-        if (job.getParams() != null) {
-            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                    String[] files = StringUtils.split((String) entry.getValue(), ',');
-                    for (String fileStr : files) {
-                        // We skip the ALL and NONE files as they are not real files
-                        if (files.length == 1 && (fileStr.equals(ParamConstants.ALL) || fileStr.equals(ParamConstants.NONE))) {
-                            continue;
-                        }
-                        try {
-                            // Validate the user has access to the file
-                            File file = catalogManager.getFileManager().get(study, fileStr,
-                                    FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                            inputFiles.add(file);
-                        } catch (CatalogException e) {
-                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                    + "from job param '" + entry.getKey() + "'; (study = " + study + ") :" + e.getMessage(), e);
+    /**
+     * Recursively extracts parameter paths from a nested map structure that match a given filter predicate.
+     * Supports traversal of Maps, Lists, and primitive values up to a maximum depth.
+     *
+     * @param keyPrefix Current path prefix (e.g., "nested.items[0]")
+     * @param result Accumulator map storing parameter paths to their string values
+     * @param params Parameter map to traverse
+     * @param currentDepth Current recursion depth (0-indexed)
+     * @param maxDepth Maximum recursion depth allowed (inclusive)
+     * @param filter BiPredicate to filter parameters by key and value
+     * @return Map of parameter paths to lists of string values
+     * @throws CatalogException if validation fails (e.g., partial list matches)
+     */
+    static Map<String, List<String>> extractParameterPaths(String keyPrefix, Map<String, List<String>> result,
+                                                           Map<String, Object> params, int currentDepth, int maxDepth,
+                                                           java.util.function.BiPredicate<String, Object> filter)
+            throws CatalogException {
+        // Stop recursion if we've reached max depth
+        if (currentDepth > maxDepth) {
+            logger.warn("Maximum depth {} reached at path '{}'. Stopping recursion.", maxDepth, keyPrefix);
+            return result;
+        }
+
+        if (params == null) {
+            return result;
+        }
+
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            String currentPath = keyPrefix.isEmpty() ? key : keyPrefix + "." + key;
+
+            logger.debug("Processing parameter: path='{}', depth={}, valueType={}, value={}",
+                    currentPath, currentDepth, value != null ? value.getClass().getSimpleName() : "null", value);
+
+            // Skip null values silently
+            if (value == null) {
+                continue;
+            }
+
+            if (value instanceof String) {
+                // Handle String values
+                String stringValue = (String) value;
+                if (filter.test(key, value)) {
+                    result.computeIfAbsent(currentPath, k -> new ArrayList<>()).add(stringValue);
+                }
+            } else if (value instanceof List) {
+                // Handle List values
+                List<?> listValue = (List<?>) value;
+
+                // Skip empty lists silently
+                if (listValue.isEmpty()) {
+                    continue;
+                }
+
+                // Check if it's a List<String> that matches the filter
+                boolean allStrings = listValue.stream().allMatch(item -> item instanceof String);
+                if (allStrings) {
+                    List<String> stringList = (List<String>) listValue;
+
+                    // Check if filter matches for each element
+                    List<String> matchingElements = new ArrayList<>();
+                    List<String> nonMatchingElements = new ArrayList<>();
+
+                    for (String element : stringList) {
+                        if (filter.test(key, element)) {
+                            matchingElements.add(element);
+                        } else {
+                            nonMatchingElements.add(element);
                         }
                     }
-                } else if (entry.getValue() instanceof Map) {
-                    // We look for files in the dynamic params
-                    Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
-                    for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
-                        if (subEntry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                            // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
-                            // catalog
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
-                                        + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
-                            }
-                        }
+
+                    // If some but not all elements match, throw exception
+                    if (!matchingElements.isEmpty() && !nonMatchingElements.isEmpty()) {
+                        throw new CatalogException("Parameter '" + currentPath + "' contains a list where only some elements "
+                                + "match the criteria. All elements must match: " + nonMatchingElements);
+                    }
+
+                    // If all match, add them to the result
+                    if (matchingElements.size() == stringList.size()) {
+                        result.computeIfAbsent(currentPath, k -> new ArrayList<>()).addAll(stringList);
+                    }
+
+                    continue; // Skip further recursion into list elements
+                }
+
+                // Recurse into list elements regardless of whether they matched
+                for (int i = 0; i < listValue.size(); i++) {
+                    Object listItem = listValue.get(i);
+                    String itemPath = currentPath + "[" + i + "]";
+
+                    if (listItem instanceof Map) {
+                        extractParameterPaths(itemPath, result, (Map<String, Object>) listItem, currentDepth + 1, maxDepth, filter);
+                    } else if (listItem instanceof List) {
+                        // Create a temporary map to handle nested lists
+                        Map<String, Object> tempMap = new HashMap<>();
+                        tempMap.put("", listItem);
+                        extractParameterPaths(itemPath, result, tempMap, currentDepth + 1, maxDepth, filter);
+                    }
+                }
+            } else if (value instanceof Map) {
+                // Handle nested Map values
+                extractParameterPaths(currentPath, result, (Map<String, Object>) value, currentDepth + 1, maxDepth, filter);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Extracts file parameters from a map by checking if keys end with "file", "files", or "dir" (case-insensitive).
+     *
+     * @param keyPrefix Current path prefix
+     * @param result Accumulator map
+     * @param params Parameter map to traverse
+     * @return Map of parameter paths to lists of file path strings
+     * @throws CatalogException if validation fails
+     */
+    static Map<String, List<String>> extractFileParametersBySuffix(String keyPrefix, Map<String, List<String>> result,
+                                                                   Map<String, Object> params) throws CatalogException {
+        BiPredicate<String, Object> suffixFilter = (key, value) -> {
+            String lowerKey = key.toLowerCase();
+            return lowerKey.endsWith("file") || lowerKey.endsWith("files") || lowerKey.endsWith("dir");
+        };
+
+        return extractParameterPaths(keyPrefix, result, params, 0, 5, suffixFilter);
+    }
+
+    /**
+     * Extracts file parameters from a map by checking if values match OpenCGA path patterns
+     * (ocga://, opencga://, file://).
+     *
+     * @param keyPrefix Current path prefix
+     * @param result Accumulator map
+     * @param params Parameter map to traverse
+     * @return Map of parameter paths to lists of OpenCGA file path strings
+     * @throws CatalogException if validation fails
+     */
+    static Map<String, List<String>> extractFileParametersByPattern(String keyPrefix, Map<String, List<String>> result,
+                                                                    Map<String, Object> params) throws CatalogException {
+        BiPredicate<String, Object> patternFilter = (key, value) -> {
+            if (value instanceof String) {
+                return InputFileUtils.isValidOpenCGAFile((String) value);
+            }
+            return false;
+        };
+
+        return extractParameterPaths(keyPrefix, result, params, 0, 5, patternFilter);
+    }
+
+    public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
+        List<File> inputFiles = new ArrayList<>();
+
+        if (MapUtils.isEmpty(job.getParams())) {
+            return inputFiles;
+        }
+
+        // Extract all file parameters using suffix-based detection (supports deep nesting)
+        Map<String, List<String>> fileParams = extractFileParametersBySuffix("", new LinkedHashMap<>(), job.getParams());
+
+        // Validate each extracted file path
+        for (Map.Entry<String, List<String>> entry : fileParams.entrySet()) {
+            String paramPath = entry.getKey();
+            List<String> filePaths = entry.getValue();
+
+            for (String filePath : filePaths) {
+                // Split by comma for backward compatibility with comma-separated file lists
+                String[] files = StringUtils.split(filePath, ',');
+
+                for (String fileStr : files) {
+                    // Skip special values when they appear as single values
+                    if (files.length == 1 && (ParamConstants.ALL.equalsIgnoreCase(fileStr)
+                            || ParamConstants.NONE.equalsIgnoreCase(fileStr))) {
+                        continue;
+                    }
+
+                    try {
+                        // Validate the user has access to the file
+                        File file = catalogManager.getFileManager().get(study, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                        inputFiles.add(file);
+                    } catch (CatalogException e) {
+                        throw new CatalogException("Cannot find file '" + fileStr + "' from job param '" + paramPath
+                                + "'; (study = " + study + "): " + e.getMessage(), e);
                     }
                 }
             }
         }
+
         return inputFiles;
     }
 
     public List<File> getWorkflowJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
         InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
-        // Look for input files
         List<File> inputFiles = new ArrayList<>();
-        if (job.getParams() != null) {
-            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                if (entry.getValue() instanceof String) {
-                    String fileStr = (String) entry.getValue();
-                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
-                        try {
-                            File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
-                            inputFiles.add(file);
-                        } catch (CatalogException e) {
-                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' from job param '" + entry.getKey()
-                                    + "'; (study = " + study + ") :" + e.getMessage(), e);
-                        }
-                    }
-                } else if (entry.getValue() instanceof Map) {
-                    // We look for files in the dynamic params
-                    Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
-                    for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
-                        if (subEntry.getValue() instanceof String) {
-                            String fileStr = (String) subEntry.getValue();
-                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
-                                try {
-                                    File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
-                                    inputFiles.add(file);
-                                } catch (CatalogException e) {
-                                    throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
-                                            + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
-                                }
-                            }
-                        }
-                    }
+
+        if (MapUtils.isEmpty(job.getParams())) {
+            return inputFiles;
+        }
+
+        // Extract all file parameters using pattern-based detection (supports deep nesting)
+        Map<String, List<String>> fileParams = extractFileParametersByPattern("", new LinkedHashMap<>(), job.getParams());
+
+        // Validate each extracted OpenCGA file path
+        for (Map.Entry<String, List<String>> entry : fileParams.entrySet()) {
+            String paramPath = entry.getKey();
+            List<String> filePaths = entry.getValue();
+            for (String fileStr : filePaths) {
+                try {
+                    File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
+                    inputFiles.add(file);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot find file '" + fileStr + "' from job param '" + paramPath
+                            + "'; (study = " + study + "): " + e.getMessage(), e);
                 }
             }
         }
+
         return inputFiles;
     }
 
@@ -1580,7 +1714,7 @@ public class JobManager extends ResourceManager<Job> {
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated job
             OpenCGAResult<Job> result = getJobDBAdaptor(organizationId).get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(),
-                            job.getUid()), options, userId);
+                    job.getUid()), options, userId);
             update.setResults(result.getResults());
         }
         return update;
