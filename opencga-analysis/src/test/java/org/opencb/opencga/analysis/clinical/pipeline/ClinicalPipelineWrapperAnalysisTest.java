@@ -383,7 +383,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // CEL files
         List<File> opencgaCelFiles = new ArrayList<>();
         String dataDirname = "data";
-        List<String> filenames = Arrays.asList("Axiom_KU8_A01.CEL"); // "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
+        List<String> filenames = Collections.singletonList("Axiom_KU8_A01.CEL"); // "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
         for (String filename: filenames) {
             localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
             inputStream = Files.newInputStream(localPath);

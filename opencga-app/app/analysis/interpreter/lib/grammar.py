@@ -18,8 +18,6 @@ class Grammar:
         """
         self.logger = logger
 
-    # def parse(self):
-    #     self.parser = Lark(self.grammar, start="expr")
 
     def parse(self, execution_logic: str) -> Tree:
         # Example -> execution_logic = "((query1 OR query2) AND (query3 OR query4)) AND (query5 OR query6)"
@@ -31,7 +29,3 @@ class Grammar:
         tree = self.parser.parse(execution_logic)
         self.logger.debug(f"Parsed execution logic tree: {tree.pretty()}")
         return tree
-
-# tree = parser.parse(execution_logic)
-# print(tree.pretty())
-
