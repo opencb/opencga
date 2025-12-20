@@ -40,7 +40,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.config.ExecutionQueue;
-import org.opencb.opencga.core.config.ExecutionRequest;
+import org.opencb.opencga.core.config.ExecutionRequirements;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -340,15 +340,18 @@ public class JobManager extends ResourceManager<Job> {
         if (job.getTool().getMinimumRequirements() == null) {
             job.getTool().setMinimumRequirements(new MinimumRequirements());
         }
-        ExecutionRequest request = configuration.getAnalysis().getExecution().getDefaultRequest();
+        ExecutionRequirements request = configuration.getAnalysis().getExecution().getDefaultRequirements();
         MinimumRequirements requirements = job.getTool().getMinimumRequirements();
         requirements.setCpu(ParamUtils.defaultString(requirements.getCpu(), String.valueOf(request.getCpu())));
         requirements.setMemory(ParamUtils.defaultString(requirements.getMemory(), request.getMemory()));
         requirements.setProcessorType(ParamUtils.defaultObject(requirements.getProcessorType(), ExecutionQueue.ProcessorType.CPU));
         if (StringUtils.isEmpty(requirements.getQueue())) {
-            ExecutionQueue executionQueue = JobExecutionUtils.findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(),
-                    requirements).get(0);
-            requirements.setQueue(executionQueue.getId());
+            List<ExecutionQueue> executionQueues = JobExecutionUtils
+                    .findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(), requirements);
+            if (CollectionUtils.isEmpty(executionQueues)) {
+                throw new CatalogException("No available queue found for the job requirements: " + requirements);
+            }
+            requirements.setQueue(executionQueues.get(0).getId());
         }
 
         if (StringUtils.isNotEmpty(job.getParentId())) {

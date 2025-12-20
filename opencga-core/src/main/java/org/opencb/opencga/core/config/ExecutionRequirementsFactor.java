@@ -2,7 +2,7 @@ package org.opencb.opencga.core.config;
 
 import org.opencb.commons.annotations.DataField;
 
-public class ExecutionFactor {
+public class ExecutionRequirementsFactor {
 
     @DataField(id = "cpu", description = "CPU factor to be applied to the cpu requested by the job. Must be a value between 0 and 1.")
     public float cpu;
@@ -11,16 +11,16 @@ public class ExecutionFactor {
             + " Must be a value between 0 and 1.")
     public float memory;
 
-    public ExecutionFactor() {
+    public ExecutionRequirementsFactor() {
     }
 
-    public ExecutionFactor(float cpu, float memory) {
+    public ExecutionRequirementsFactor(float cpu, float memory) {
         this.cpu = cpu;
         this.memory = memory;
     }
 
-    public static ExecutionFactor defaultFactor() {
-        return new ExecutionFactor(0.95f, 0.9f);
+    public static ExecutionRequirementsFactor defaultFactor() {
+        return new ExecutionRequirementsFactor(0.95f, 0.9f);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class ExecutionFactor {
         return cpu;
     }
 
-    public ExecutionFactor setCpu(float cpu) {
+    public ExecutionRequirementsFactor setCpu(float cpu) {
         this.cpu = cpu;
         return this;
     }
@@ -45,7 +45,7 @@ public class ExecutionFactor {
         return memory;
     }
 
-    public ExecutionFactor setMemory(float memory) {
+    public ExecutionRequirementsFactor setMemory(float memory) {
         this.memory = memory;
         return this;
     }

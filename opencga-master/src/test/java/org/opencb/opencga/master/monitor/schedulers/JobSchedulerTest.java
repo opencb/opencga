@@ -25,6 +25,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.opencb.opencga.master.monitor.schedulers.JobScheduler.NO_AVAILABLE_QUEUE;
 
 @Category(ShortTests.class)
 public class JobSchedulerTest {
@@ -140,7 +141,8 @@ public class JobSchedulerTest {
         Map<String, List<Job>> result = jobScheduler.schedule(organizationId, pendingJobs, exhaustedQueues);
 
         // Verify no jobs are scheduled when all queues are exhausted
-        assertTrue(result.isEmpty());
+        assertEquals(1, result.size());
+        assertTrue(result.keySet().contains(NO_AVAILABLE_QUEUE));
     }
 
     @Test

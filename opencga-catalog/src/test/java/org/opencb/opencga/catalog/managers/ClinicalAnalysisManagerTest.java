@@ -58,6 +58,7 @@ import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelImportParams;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
@@ -3047,7 +3048,10 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
     @Test
     public void createClinicalAnalysisWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(studyFqn, "gene-census", "", ownerToken);
+        PanelImportParams params1 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
         DataResult<Family> dummyFamily = createDummyFamily();
         // Leave only sample2 for child1 in family
@@ -3080,7 +3084,10 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
     @Test
     public void createInterpretationWithPanels() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(studyFqn, "gene-census", "", ownerToken);
+        PanelImportParams params1 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
 
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
@@ -3099,7 +3106,10 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
     @Test
     public void updatePanelsInClinicalAnalysis() throws CatalogException {
-        catalogManager.getPanelManager().importFromSource(studyFqn, "gene-census", "", ownerToken);
+        PanelImportParams params1 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();
@@ -4019,7 +4029,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         String fileStr = "clinical_analyses.json.gz";
         File file;
         try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
-            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, false, ownerToken).first();
+            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, ownerToken).first();
         }
 
         Path filePath = Paths.get(file.getUri());

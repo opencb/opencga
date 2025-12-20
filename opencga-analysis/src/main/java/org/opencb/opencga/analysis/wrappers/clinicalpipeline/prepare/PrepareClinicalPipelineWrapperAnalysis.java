@@ -81,6 +81,7 @@ public class PrepareClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         return Collections.singletonList(ID);
     }
 
+    @Override
     protected void run() throws ToolException, IOException {
         step(ID, this::runPipelinePrepareExecutor);
     }

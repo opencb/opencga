@@ -53,6 +53,7 @@ import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
 
+@Deprecated
 @ToolExecutor(id = "opencga-local",
         tool = TeamInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,

@@ -27,8 +27,19 @@ public class InputFileUtils {
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^{}]+)}");
     private static final String OUTPUT = "$OUTPUT";
-    private static final List<String> OUTPUT_LIST = Arrays.asList("$OUTPUT", "$JOB_OUTPUT");
     private static final String FLAG = "$FLAG";
+
+    // Precompiled patterns for output variables - matches exact variable (not $OUTPUTS, $OUTPUT1, etc.)
+    // The variable must be followed by non-word character or end of string (mimics bash behavior)
+    // Wrapped in a capturing group so we can get the matched variable name
+    private static final Pattern OUTPUT_PATTERN = Pattern.compile("(" + Pattern.quote("$OUTPUT") + ")(?![a-zA-Z0-9_])");
+    private static final Pattern JOB_OUTPUT_PATTERN = Pattern.compile("(" + Pattern.quote("$JOB_OUTPUT") + ")(?![a-zA-Z0-9_])");
+    private static final List<Pattern> OUTPUT_PATTERNS = Arrays.asList(OUTPUT_PATTERN, JOB_OUTPUT_PATTERN);
+
+    // Pattern to match at start of string for checking dynamic output folders
+    private static final Pattern OUTPUT_START_PATTERN = Pattern.compile("^(" + Pattern.quote("$OUTPUT") + ")(?![a-zA-Z0-9_])");
+    private static final Pattern JOB_OUTPUT_START_PATTERN = Pattern.compile("^(" + Pattern.quote("$JOB_OUTPUT") + ")(?![a-zA-Z0-9_])");
+    private static final List<Pattern> OUTPUT_START_PATTERNS = Arrays.asList(OUTPUT_START_PATTERN, JOB_OUTPUT_START_PATTERN);
     private final Logger logger = LoggerFactory.getLogger(InputFileUtils.class);
 
     public InputFileUtils(CatalogManager catalogManager) {
@@ -121,8 +132,8 @@ public class InputFileUtils {
     }
 
     public boolean isDynamicOutputFolder(String file) {
-        for (String prefix : OUTPUT_LIST) {
-            if (file.toUpperCase().startsWith(prefix)) {
+        for (Pattern pattern : OUTPUT_START_PATTERNS) {
+            if (pattern.matcher(file.toUpperCase()).find()) {
                 return true;
             }
         }
@@ -134,9 +145,13 @@ public class InputFileUtils {
     }
 
     public String getDynamicOutputFolder(String file, String outDir) throws CatalogException {
-        for (String prefix : OUTPUT_LIST) {
-            if (file.toUpperCase().startsWith(prefix)) {
-                return outDir + file.substring(prefix.length());
+        for (Pattern pattern : OUTPUT_START_PATTERNS) {
+            Matcher matcher = pattern.matcher(file.toUpperCase());
+            if (matcher.find()) {
+                // Get the matched variable name from the capturing group
+                String matchedVariable = matcher.group(1);
+                // Return outDir + everything after the matched variable
+                return outDir + file.substring(matchedVariable.length());
             }
         }
         throw new CatalogException("Unexpected error. File '" + file + "' is not a dynamic output folder");
@@ -247,8 +262,11 @@ public class InputFileUtils {
         String finalCli = sb.toString();
 
         // Replace output variables ($OUTPUT, $JOB_OUTPUT)
-        for (String outputVariable : OUTPUT_LIST) {
-            finalCli = finalCli.replaceAll(outputVariable, outDir);
+        // Use precompiled regex patterns to ensure we only replace the exact variable (not $OUTPUTS, $OUTPUT1, etc.)
+        // This mimics bash behavior where $OUTPUT is replaced but $OUTPUTS is not
+        for (Pattern outputPattern : OUTPUT_PATTERNS) {
+            Matcher outputMatcher = outputPattern.matcher(finalCli);
+            finalCli = outputMatcher.replaceAll(Matcher.quoteReplacement(outDir));
         }
 
         // Add parameters not included in the command line template

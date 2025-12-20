@@ -178,7 +178,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("format") File.Format format,
             @ApiParam(value = "[DEPRECATED] File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
-            @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
+            @ApiParam(value = "Expected SHA-256 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
             @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @FormDataParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog (directory) where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
@@ -221,7 +221,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setResource(isResource)
                     .setFormat(format)
                     .setBioformat(bioformat);
-            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, expectedChecksum, expectedSize, token));
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, expectedChecksum, expectedSize, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

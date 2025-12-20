@@ -178,21 +178,21 @@ public class ClinicalPipelineWrapperAnalysisTest {
         Path refLocalPath = NGS_PIPELINE_DATA_PATH.resolve(refBasename + ".fa.gz");
         inputStream = Files.newInputStream(refLocalPath);
         File refFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + refLocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + refLocalPath.getFileName()), false, true, token).first();
         System.out.println("refFile.getUri() = " + refFile.getUri());
 
         // FastQ #1
         Path fastq1LocalPath = NGS_PIPELINE_DATA_PATH.resolve("HI.4019.002.index_7.ANN0831_R1.fastq.gz");
         inputStream = Files.newInputStream(fastq1LocalPath);
         File fastq1File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, token).first();
         System.out.println("fastq1File.getUri() = " + fastq1File.getUri());
 
         // FastQ #2
         Path fastq2LocalPath = NGS_PIPELINE_DATA_PATH.resolve("HI.4019.002.index_7.ANN0831_R2.fastq.gz");
         inputStream = Files.newInputStream(fastq1LocalPath);
         File fastq2File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, token).first();
         System.out.println("fastq2File.getUri() = " + fastq2File.getUri());
 
         //---------------------------------
@@ -283,21 +283,21 @@ public class ClinicalPipelineWrapperAnalysisTest {
         Path refLocalPath = NGS_PIPELINE_DATA_PATH.resolve(refBasename + ".fa.gz");
         inputStream = Files.newInputStream(refLocalPath);
         File refFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + refLocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + refLocalPath.getFileName()), false, true, token).first();
         System.out.println("refFile.getUri() = " + refFile.getUri());
 
         // FastQ #1
         Path fastq1LocalPath = NGS_PIPELINE_DATA_PATH.resolve("HI.4019.002.index_7.ANN0831_R1.fastq.gz");
         inputStream = Files.newInputStream(fastq1LocalPath);
         File fastq1File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, token).first();
         System.out.println("fastq1File.getUri() = " + fastq1File.getUri());
 
         // FastQ #2
         Path fastq2LocalPath = NGS_PIPELINE_DATA_PATH.resolve("HI.4019.002.index_7.ANN0831_R2.fastq.gz");
         inputStream = Files.newInputStream(fastq1LocalPath);
         File fastq2File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, false, token).first();
+                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, token).first();
         System.out.println("fastq2File.getUri() = " + fastq2File.getUri());
 
         //---------------------------------
@@ -366,7 +366,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
         assertEquals(10, variantQueryResult.getNumResults());
     }
 
-    @Ignore
     @Test
     public void testClinicalPipelineAffyDataDir() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
@@ -384,12 +383,12 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // CEL files
         List<File> opencgaCelFiles = new ArrayList<>();
         String dataDirname = "data";
-        List<String> filenames = Arrays.asList("Axiom_KU8_A01.CEL"); // "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
+        List<String> filenames = Collections.singletonList("Axiom_KU8_A01.CEL"); // "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
         for (String filename: filenames) {
             localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
             inputStream = Files.newInputStream(localPath);
             File ceFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                    new File().setPath(dataDirname + "/" + localPath.getFileName()), false, true, false, token).first();
+                    new File().setPath(dataDirname + "/" + localPath.getFileName()), false, true, token).first();
             System.out.println("ceFile.getUri() = " + ceFile.getUri());
             opencgaCelFiles.add(ceFile);
         }
@@ -398,19 +397,23 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Preparing index dir
         String indexDirname = "affy-index";
-        filenames = Arrays.asList("Axiom_KU8.r2.spf", "Axiom_KU8.r2.generic_prior.txt", "Axiom_KU8.na36.r1.a2.annot.csv",
-                "Axiom_KU8.r2.apt-geno-qc.AxiomQC1.xml", "Axiom_KU8.r2.qca", "Axiom_KU8.r2.chrYprobes", "Axiom_KU8.r2.chrXprobes",
-                "Axiom_KU8.r2.qcc", "Axiom_KU8.r2.AxiomGT1.sketch",
-                "Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
+        filenames = Arrays.asList("Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
         for (String filename : filenames) {
             localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
             inputStream = Files.newInputStream(localPath);
             File opencgaFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-                    new File().setPath(indexDirname + "/" + localPath.getFileName()), false, true, false, token).first();
+                    new File().setPath(indexDirname + "/" + localPath.getFileName()), false, true, token).first();
             System.out.println("opencgaFile.getUri() = " + opencgaFile.getUri());
         }
         File indexDirFile = opencga.getCatalogManager().getFileManager().get(studyId, indexDirname, QueryOptions.empty(), token).first();
         System.out.println("indexDirFile.getUri() = " + indexDirFile.getUri());
+
+        localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve("index");
+        Path destIndexDirPath = Paths.get(indexDirFile.getUri());
+        for (java.io.File file : localPath.toFile().listFiles()) {
+            System.out.println("Copying file " + file.getAbsolutePath() + " to " + destIndexDirPath.resolve(file.getName()));
+            Files.copy(file.toPath(), destIndexDirPath.resolve(file.getName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
 
         //---------------------------------
         // Run affy clinical pipeline
@@ -426,7 +429,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         execute(AffyClinicalPipelineWrapperAnalysis.ID, "affy-pipeline-job", affyWrapperParams.toParams(), outDir);
 
-        Path path = outDir.resolve("Axiom_KU8.sorted.nodup.filtered.fixed.vcf.gz");
+        Path path = outDir.resolve("Axiom_KU8.vcf");
         Assert.assertTrue(Files.exists(path));
         Assert.assertTrue(Files.size(path) > 0);
     }

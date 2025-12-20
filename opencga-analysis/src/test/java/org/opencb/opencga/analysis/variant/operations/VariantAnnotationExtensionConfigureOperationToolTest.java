@@ -278,7 +278,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
                     .setPath(ParamConstants.RESOURCES_FOLDER + "/cosmic/" + cosmicFilePath.getFileName().toString())
                     .setResource(true);
             InputStream inputStream = Files.newInputStream(cosmicFilePath);
-            return catalogManager.getFileManager().upload(study, inputStream, file, false, true, false, null, null, token).first();
+            return catalogManager.getFileManager().upload(study, inputStream, file, false, true, null, null, token).first();
         }
     }
 

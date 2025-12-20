@@ -588,9 +588,13 @@ public class FileManager extends AnnotationSetManager<File> {
             try {
                 IOManager ioManager = ioManagerFactory.get(uri);
                 long fileSize = ioManager.getFileSize(uri);
-                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), fileSize);
+                String checksum = ioManager.calculateChecksum(uri);
+                ObjectMap params = new ObjectMap()
+                        .append(FileDBAdaptor.QueryParams.SIZE.key(), fileSize)
+                        .append(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
                 getFileDBAdaptor(organizationId).update(file.getUid(), params, null);
                 file.setSize(fileSize);
+                file.setChecksum(checksum);
             } catch (IOException e) {
                 throw new CatalogException("Could not update the new size of the file: " + uri, e);
             }
@@ -1029,19 +1033,18 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr          study where the file will be uploaded.
-     * @param fileInputStream   Input stream of the file to be uploaded.
-     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
-     * @param overwrite         Overwrite the current file if any.
-     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param token             session id of the user performing the upload.
+     * @param studyStr        study where the file will be uploaded.
+     * @param fileInputStream Input stream of the file to be uploaded.
+     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite       Overwrite the current file if any.
+     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param token           session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String token) throws CatalogException {
-        return upload(studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
+                                      String token) throws CatalogException {
+        return upload(studyStr, fileInputStream, file, overwrite, parents, null, null, token);
     }
 
     /**
@@ -1052,21 +1055,17 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param expectedChecksum  Expected checksum to be checked
+     * @param expectedChecksum  Expected SHA-256 checksum to be checked
      * @param expectedSize      Expected file size
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+                                      String expectedChecksum, Long expectedSize, String token)
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-        if (StringUtils.isNotEmpty(expectedChecksum)) {
-            calculateChecksum = true;
-        }
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1078,7 +1077,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("file", file)
                 .append("overwrite", overwrite)
                 .append("parents", parents)
-                .append("calculateChecksum", calculateChecksum)
                 .append("expectedChecksum", expectedChecksum)
                 .append("expectedSize", expectedSize)
                 .append("token", token);
@@ -1158,15 +1156,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     }
                 }
 
-                if (calculateChecksum) {
-                    checksum = ioManager.calculateChecksum(tempFileUri);
-                    if (StringUtils.isNotEmpty(expectedChecksum)) {
-                        // Validate checksum
-                        if (!checksum.equals(expectedChecksum)) {
-                            throw new CatalogIOException("MD5 Checksum mismatch!"
-                                    + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
-                                    + " Error uploading file " + file.getPath());
-                        }
+                // Always calculate SHA-256 checksum for uploaded files
+                checksum = ioManager.calculateChecksum(tempFileUri);
+                if (StringUtils.isNotEmpty(expectedChecksum)) {
+                    // Validate checksum
+                    if (!checksum.equals(expectedChecksum)) {
+                        throw new CatalogIOException("SHA-256 Checksum mismatch!"
+                                + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
+                                + " Error uploading file " + file.getPath());
                     }
                 }
             } catch (Exception e) {
@@ -1193,7 +1190,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 } else {
                     ioManager.move(tempFileUri, file.getUri());
                 }
-                if (calculateChecksum && !checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
+                // Verify the checksum after moving the file
+                if (!checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
                     throw new CatalogIOException("Error moving file from " + tempFileUri + " to " + file.getUri());
                 }
 

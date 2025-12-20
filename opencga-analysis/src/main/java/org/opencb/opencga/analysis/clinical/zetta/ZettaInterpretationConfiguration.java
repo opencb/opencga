@@ -18,5 +18,6 @@ package org.opencb.opencga.analysis.clinical.zetta;
 
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 
+@Deprecated
 public class ZettaInterpretationConfiguration extends InterpretationAnalysisConfiguration {
 }

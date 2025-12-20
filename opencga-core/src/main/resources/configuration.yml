@@ -224,6 +224,12 @@ analysis:
     defaultQueue: ""                   # DEPRECATED
     availableQueues:                   # DEPRECATED Use queues
     toolsPerQueue:                     # DEPRECATED Never used
+    defaultRequirements:
+      cpu: 2
+      memory: "8G"
+    requirementsFactor:
+      cpu: 0.95
+      memory: 0.9
     queues:
 #      - id: "default"
 #        executor: "local"
@@ -237,44 +243,35 @@ analysis:
         processorType: "CPU"
         cpu: 8
         memory: "32G"
+        options:
+          k8s.nodeSelector:
+            agentpool: scpu
+            kubernetes.io/os: linux
       - id: "mcpu"
         executor: "k8s"
         description: "Medium queue for execution"
         processorType: "CPU"
         cpu: 16
         memory: "64G"
+        options:
+          k8s.nodeSelector:
+            agentpool: mcpu
+            kubernetes.io/os: linux
       - id: "sgpu"
         executor: "k8s"
         description: "Small queue for GPU executions"
         processorType: "GPU"
         cpu: 6
         memory: "112G"
-    defaultRequest:
-      cpu: 2
-      memory: "8G"
-    requestFactor:
-      cpu: 0.95
-      memory: 0.9
-    #       docker:
-    #          - "circos"
-    #          - "deeptools"
-    #          - "bwa"
-    #          - "fastqc"
-    #          - "gatk"
-    #          - "picard"
-    #          - "plink"
-    #          - "rvtests"
-    #          - "samtools"
-    #          - "relatedness"
-    #          - "family-qc"
-    #          - "sample-qc"
-    #          - "individual-qc"
-    #          - "mutational-signature"
-    #       fast:
-    #          - "alignmentIndex"
-    #       slow:
-    #          - "coverage"
-    #          - "alignmentStats"
+        options:
+          k8s.runtimeClass: null
+          # Image supporting NVIDIA GPU in Docker-in-Docker. Override default dind image.
+          k8s.dind.imageName: "ghcr.io/ehfd/nvidia-dind:latest"
+          # Do not use rootless dind for GPU workloads.
+          k8s.dind.rootless: false
+          k8s.nodeSelector:
+            agentpool: sgpu
+            kubernetes.io/os: linux
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5
@@ -304,20 +301,11 @@ analysis:
       #        name : "dockerhub-secrets-name"
       k8s.ttlSecondsAfterFinished: 3600 # s
       k8s.namespace: "default"
-      # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.requests:
-        cpu: 3
-        memory: "12G"
-      k8s.limits:
-        cpu: 4
-        memory: "13G"
-      # Job java heap. If undefined, will use "requests.memory - 300MiB"
-      k8s.javaHeap: "11700M"
+
+      # Job java heap. If undefined, will use "requirements.memory - 300MiB"
+      k8s.javaHeap: # "7700M"
 #      k8s.envs:
 #        KEY: value
-      k8s.nodeSelector:
-        agentpool: jobs
-        kubernetes.io/os: linux
       # FOR ACI:
       # k8s.nodeSelector:
       #   kubernetes.io/role: agent

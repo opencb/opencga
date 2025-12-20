@@ -40,7 +40,6 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
-import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
@@ -104,6 +103,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.master.monitor.executors.BatchExecutor;
+import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
@@ -147,6 +148,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
+    private final ExecutorFactory executorFactory;
     private final List<ExecutionQueue> executionQueues;
 
     private List<String> packages;
@@ -183,8 +185,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(CohortTsvAnnotationLoader.ID, "cohorts tsv-load");
 
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
-
-            put(PanelImportTask.ID, "panels import");
 
             put("alignment-index-run", "alignment index-run");
             put("coverage-index-run", "alignment coverage-index-run");
@@ -267,6 +267,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING)
                 .append(QueryOptions.LIMIT, MAX_NUM_JOBS);
 
+        this.executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
         this.executionQueues = catalogManager.getConfiguration().getAnalysis().getExecution().getQueues();
         this.jobScheduler = new JobScheduler(catalogManager, this.executionQueues, token);
 
@@ -584,6 +585,16 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         }
 
         Map<String, List<Job>> jobQueueMap = jobScheduler.schedule(organizationId, pendingJobs, exhaustedQueues);
+        // Check and discard jobs that have no available queues
+        List<Job> jobs = jobQueueMap.get(JobScheduler.NO_AVAILABLE_QUEUE);
+        if (CollectionUtils.isNotEmpty(jobs)) {
+            for (Job job : jobs) {
+                logger.warn("No available execution queues found for pending job '{}'. Marking it as ERROR.", job.getId());
+                abortJob(job, "No available execution queues found for the job.");
+            }
+        }
+        jobQueueMap.remove(JobScheduler.NO_AVAILABLE_QUEUE);
+
         for (Map.Entry<String, List<Job>> entry : jobQueueMap.entrySet()) {
             String queueId = entry.getKey();
             boolean success = false;
@@ -1411,6 +1422,18 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private String getLogFileName(Job job) {
         // WARNING: If we change the way we name log files, we will also need to change it in the "log" method from the JobManager !!
         return job.getId() + ".log";
+    }
+
+    protected BatchExecutor getBatchExecutor(Job job) {
+        if (job.getExecution() == null || job.getExecution().getQueue() == null
+                || StringUtils.isEmpty(job.getExecution().getQueue().getId())) {
+            throw new IllegalArgumentException("Job or its queue ID cannot be null");
+        }
+        return getBatchExecutor(job.getExecution().getQueue().getId());
+    }
+
+    protected BatchExecutor getBatchExecutor(String queueId) {
+        return this.executorFactory.getExecutor(queueId);
     }
 
 }
