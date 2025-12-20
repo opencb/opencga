@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import argparse
+import getpass
 import json
 import logging
+import os
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from pyopencga.opencga_client import OpencgaClient
+from pyopencga.opencga_config import ClientConfiguration
 
 from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, AffymetrixAxiom
 
@@ -16,6 +21,8 @@ SENTINEL = "DONE"
 # Define global logger
 outdir = None
 logger = None
+
+
 
 
 def parse_args(argv=None):
@@ -61,6 +68,11 @@ def parse_args(argv=None):
     run_parser.add_argument("--chip-type", default="Axiom_KU8", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    run_parser.add_argument("--smn-only", action="store_true", help="OpenCGA user")
+    run_parser.add_argument("--organization", help="OpenCGA user")
+    run_parser.add_argument("-s", "--study", help="Pipeline step to execute")
+    run_parser.add_argument("-u", "--user", help="OpenCGA user")
+    run_parser.add_argument("--password", help="OpenCGA user")
     run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
     run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
 
@@ -296,8 +308,79 @@ def affy(args):
 
     ## 5. Execute Affymetrix Axiom processing
     affy_impl = AffymetrixAxiom(pipeline=pipeline, output=outdir, logger=logger)
-    affy_impl.execute()
+
+    if args.smn_only:
+        ## create OpenCGA client
+        oc = _create_opencga_client(args)
+
+        ## Fetch all files starting with 'SMNreport*' from OpenCGA
+        batch_variant_objs = oc.files.search(study=args.study, name="SMNreport_plate1.txt").get_results()
+        logger.info(f"Found {json.dumps(batch_variant_objs)} SMN report files in OpenCGA study '{args.study}'")
+
+        for file_obj in batch_variant_objs:
+            logger.info(f"Downloading SMN report file: {file_obj.get('name')} (id: {file_obj.get('id')})")
+            # oc.files.download(file_obj.get("id"), study=args.study)
+            file_content = oc.files.download(file=file_obj.get("id"), study=args.study)
+            with open(str("/tmp/" + file_obj.get('name')), 'wb') as f:
+                f.write(file_content)
+            smn_dict = affy_impl.smn(smn_report=os.path.join("/tmp/", file_obj.get("name")) )
+            logger.info(f"SMN Report: {smn_dict}")
+            ## Update variable set SMNRep
+            for sample, value in smn_dict.items():
+                # logger.info(f"Updating variable set 'SMNRep' - {sample}: {value}")
+                body = {
+                    "annotationSets": [
+                        {
+                            "id": "SMNRep",
+                            "variableSetId": "SMNRep",
+                            "annotations": value
+                        }
+                    ]
+                }
+                logger.info(f"Update body: {body}")
+                oc.samples.update(samples=sample, data=body, study=args.study)
+
+            # oc.samples.update(samples=file_obj.get("name").split("_")[0],
+
+    else:
+        affy_impl.execute()
+
     return 0
+
+
+def _create_opencga_client(args):
+    config_dict = {'rest': {
+        'host': "https://test.app.zettagenomics.com/task-7645/opencga" }
+    }
+    # self.logger.debug(f"OpenCGA configuration: {config_dict}")
+
+    ## 1. Load configuration and create the OpenCGA client
+    client_config = ClientConfiguration(config_dict)
+
+    ## 2. Read OPENCGA_TOKEN from environment variable and set it in the client
+    token = os.getenv("OPENCGA_TOKEN")
+    if token:
+        logger.debug("Setting OpenCGA token from environment variable OPENCGA_TOKEN")
+        oc = OpencgaClient(client_config, token=token)
+        logger.debug("OpenCGA Client token: %s", oc.token)
+    else:
+        logger.warning("Environment variable OPENCGA_TOKEN not set; proceeding without authentication token")
+        ## 3. If no token is provided, call to login with user and password from argparse
+        oc = OpencgaClient(client_config)
+        user = args.user
+        password = args.password or getpass.getpass("OpenCGA password: ")
+        organization = args.organization
+        if user and password:
+            # self.logger.debug(f"Logging in to OpenCGA as user: {user}")
+            oc.login(user, password, organization)
+            # self.logger.debug("OpenCGA Client token: %s", oc.token)
+            # self.logger.debug("OpenCGA Client configuration: %s",
+            #                   json.dumps(vars(oc.configuration), default=str, indent=2))
+        else:
+            # self.logger.error("OpenCGA user or password not provided; cannot login")
+            return 1
+    return oc
+
 
 def main(argv=None):
     args = parse_args(argv)

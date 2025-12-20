@@ -417,6 +417,90 @@ class AffymetrixAxiom(BaseProcessor):
 
         return [str(self.output / "Axiom_KU8.vcf")]
 
+    def smn(self, smn_report: str):
+        path = Path(smn_report)
+        """
+        #%array_type=Axiom_KU8,Axiom_KU8.r2,Axiom_KU8
+        #%software_version=1.1
+        #%analysis-date=Fri Dec  5 15:33:10 2025
+        #%DQC_threshold=0.88
+        #%QC_call_rate_threshold=98.5
+        Sample	Status	DQC	QC_call_rate	CN_pass_QC	SMN1_CN	SMN1:Exon7	SMN1:Exon8	SMN2_CN	SMN1_g.27134T>G	SMN1_g.27134T>G_call
+        A01_plate_1_sample_48217Date_18_11_2025.CEL	Normal	0.98814	99.69000	yes	1.99	2.15	1.95	1.01	T/T	REF/REF
+        A02_plate_1_sample_11534Date_18_11_2025.CEL	Normal	0.99407	99.93500	yes	2.04	2.04	1.96	1.96	T/T	REF/REF
+        A03_plate_1_sample_11535Date_18_11_2025.CEL	Normal	0.98617	99.93000	yes	2.01	2.17	1.90	0.99	T/T	REF/REF
+        A04_plate_1_sample_32590Date_18_11_2025.CEL	Normal	0.98617	99.93000	yes	1.99	2.02	2.02	2.01	T/T	REF/REF
+        """
+
+        name_to_id = [
+            {
+                "id": "status",
+                "name": "Status",
+            },
+            {
+                "id": "dqc",
+                "name": "DQC",
+            },
+            {
+                "id": "qc_call_rate",
+                "name": "QC_call_rate",
+            },
+            {
+                "id": "cn_pass_qc",
+                "name": "CN_pass_QC",
+            },
+            {
+                "id": "smn1_cn",
+                "name": "SMN1_CN",
+            },
+            {
+                "id": "smn1_exon7",
+                "name": "SMN1:Exon7"
+            },
+            {
+                "id": "smn1_exon8",
+                "name": "SMN1:Exon8",
+            },
+            {
+                "id": "smn2_cn",
+                "name": "SMN2_CN",
+            },
+            {
+                "id": "smn1_variant",
+                "name": "SMN1_g.27134T>G",
+            },
+            {
+                "id": "smn1_variant_call",
+                "name": "SMN1_g.27134T>G_call",
+            }
+        ]
+        smn_calls: dict[str, dict[str, str]] = {}
+        with path.open("r", encoding="utf-8") as fh:
+            header: list[str] = []
+            for line in fh:
+                if line.startswith("#%"):
+                    continue
+                elif line.startswith("Sample"):
+                    header = line.strip().split("\t")
+                else:
+                    fields = line.strip().split("\t")
+                    sample_id = fields[0]
+                    smn_calls[sample_id] = {}
+
+                    ## We must use the comment above to translate header names to ID
+                    for item in name_to_id:
+                        try:
+                            index = header.index(item["name"])
+                            smn_calls[sample_id][item["id"]] = fields[index]
+                        except ValueError:
+                            self.logger.warning(f"Header name '{item['name']}' not found in SMN report.")
+
+                    # for i in range(1, len(header)):
+                    #     smn_calls[sample_id][header[i]] = fields[i]
+
+        return smn_calls
+
+
     """
     Create a one-column file with all .CEL files and header line 'cel_files'
     """
