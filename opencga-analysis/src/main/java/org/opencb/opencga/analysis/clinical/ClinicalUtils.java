@@ -29,7 +29,6 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -62,7 +61,7 @@ public class ClinicalUtils {
             throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysisId);
         }
 
-        if (ListUtils.isEmpty(proband.getSamples())) {
+        if (CollectionUtils.isEmpty(proband.getSamples())) {
             throw new ToolException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
         }
 
@@ -81,7 +80,7 @@ public class ClinicalUtils {
             motherId = proband.getMother().getId();
         }
         if (fatherId != null && motherId != null && clinicalAnalysis.getFamily() != null
-                && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
                 if (member.getId().equals(fatherId)) {
                     proband.setFather(member);
@@ -106,7 +105,7 @@ public class ClinicalUtils {
 
             Map<String, Individual> individualMap = new HashMap<>();
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                if (ListUtils.isEmpty(member.getSamples())) {
+                if (CollectionUtils.isEmpty(member.getSamples())) {
 //                    throw new AnalysisException("No samples found for member " + member.getId());
                     continue;
                 }
@@ -195,7 +194,7 @@ public class ClinicalUtils {
 
             Map<String, Individual> individualMap = new HashMap<>();
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                if (ListUtils.isEmpty(member.getSamples())) {
+                if (CollectionUtils.isEmpty(member.getSamples())) {
 //                    throw new AnalysisException("No samples found for member " + member.getId());
                     continue;
                 }
@@ -225,7 +224,7 @@ public class ClinicalUtils {
     public static void removeMembersWithoutSamples(Pedigree pedigree, Family family) {
         Set<String> membersWithoutSamples = new HashSet<>();
         for (Individual member : family.getMembers()) {
-            if (ListUtils.isEmpty(member.getSamples())) {
+            if (CollectionUtils.isEmpty(member.getSamples())) {
                 membersWithoutSamples.add(member.getId());
             }
         }
