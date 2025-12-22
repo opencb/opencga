@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.clinical.xnet;
 
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -25,8 +25,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.util.List;
 
 @Deprecated
-@Tool(id = XQueryInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = XQueryInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class XQueryInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public final static String ID = "bionet-interpretation";
 

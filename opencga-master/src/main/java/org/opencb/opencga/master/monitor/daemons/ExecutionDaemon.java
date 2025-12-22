@@ -27,13 +27,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
-import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.FamilyTsvAnnotationLoader;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
@@ -227,11 +227,11 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(IndividualQcAnalysis.ID, "variant " + IndividualQcAnalysis.ID + "-run");
             put(SampleQcAnalysis.ID, "variant " + SampleQcAnalysis.ID + "-run");
 
-            put(TeamInterpretationAnalysis.ID, "clinical " + TeamInterpretationAnalysis.ID + "-run");
-            put(TieringInterpretationAnalysis.ID, "clinical " + TieringInterpretationAnalysis.ID + "-run");
-            put(ZettaInterpretationAnalysis.ID, "clinical " + ZettaInterpretationAnalysis.ID + "-run");
-            put(CancerTieringInterpretationAnalysis.ID, "clinical " + CancerTieringInterpretationAnalysis.ID + "-run");
-            put(ExomiserInterpretationAnalysis.ID, "clinical " + ExomiserInterpretationAnalysis.ID + "-run");
+            put(TeamInterpretationAnalysisTool.ID, "clinical " + TeamInterpretationAnalysisTool.ID + "-run");
+            put(TieringInterpretationAnalysisTool.ID, "clinical " + TieringInterpretationAnalysisTool.ID + "-run");
+            put(ZettaInterpretationAnalysisTool.ID, "clinical " + ZettaInterpretationAnalysisTool.ID + "-run");
+            put(CancerTieringInterpretationAnalysisTool.ID, "clinical " + CancerTieringInterpretationAnalysisTool.ID + "-run");
+            put(ExomiserInterpretationAnalysisTool.ID, "clinical " + ExomiserInterpretationAnalysisTool.ID + "-run");
 
             put(RgaAnalysis.ID, "clinical " + RgaAnalysis.ID + "-run");
             put(AuxiliarRgaAnalysis.ID, "clinical " + AuxiliarRgaAnalysis.ID + "-run");

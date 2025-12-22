@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.clinical.tiering;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -30,8 +30,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.util.List;
 
 @Deprecated
-@Tool(id = CancerTieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = CancerTieringInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class CancerTieringInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public final static String ID = "interpretation-cancer-tiering";
     public final static String DESCRIPTION = "Run cancer tiering interpretation analysis";
@@ -104,7 +104,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return studyId;
     }
 
-    public CancerTieringInterpretationAnalysis setStudyId(String studyId) {
+    public CancerTieringInterpretationAnalysisTool setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -113,7 +113,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return clinicalAnalysisId;
     }
 
-    public CancerTieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public CancerTieringInterpretationAnalysisTool setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -122,7 +122,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return variantIdsToDiscard;
     }
 
-    public CancerTieringInterpretationAnalysis setVariantIdsToDiscard(List<String> variantIdsToDiscard) {
+    public CancerTieringInterpretationAnalysisTool setVariantIdsToDiscard(List<String> variantIdsToDiscard) {
         this.variantIdsToDiscard = variantIdsToDiscard;
         return this;
     }
@@ -131,7 +131,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         return config;
     }
 
-    public CancerTieringInterpretationAnalysis setConfig(CancerTieringInterpretationConfiguration config) {
+    public CancerTieringInterpretationAnalysisTool setConfig(CancerTieringInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

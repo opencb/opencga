@@ -23,14 +23,14 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
-import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.rga.RgaQueryParams;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -1387,7 +1387,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/tiering/run")
-    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
+    @ApiOperation(value = TieringInterpretationAnalysisTool.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1398,13 +1398,13 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION, required = true) TieringInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, TieringInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, TieringInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 
     @POST
     @Path("/interpreter/exomiser/run")
-    @ApiOperation(value = ExomiserInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = ExomiserInterpretationAnalysisTool.DESCRIPTION, response = Job.class)
     public Response interpretationExomiserRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1421,14 +1421,14 @@ public class ClinicalWebService extends AnalysisWebService {
 
             // Submit the exomiser interpretation analysis
             ToolInfo toolInfo = new ToolInfo()
-                    .setId(ExomiserInterpretationAnalysis.ID);
+                    .setId(ExomiserInterpretationAnalysisTool.ID);
             return submitJobRaw(null, study, JobType.NATIVE_TOOL, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
         });
     }
 
     @POST
     @Path("/interpreter/team/run")
-    @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
+    @ApiOperation(value = TeamInterpretationAnalysisTool.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTeamRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1439,12 +1439,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = TeamInterpretationAnalysisParams.DESCRIPTION, required = true) TeamInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, TeamInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, TeamInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
     @Path("/interpreter/zetta/run")
-    @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
+    @ApiOperation(value = ZettaInterpretationAnalysisTool.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationZettaRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1455,12 +1455,12 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ZettaInterpretationAnalysisParams.DESCRIPTION, required = true) ZettaInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, ZettaInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, ZettaInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
     @Path("/interpreter/cancerTiering/run")
-    @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
+    @ApiOperation(value = CancerTieringInterpretationAnalysisTool.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationCancerTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1471,7 +1471,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = CancerTieringInterpretationAnalysisParams.DESCRIPTION, required = true) CancerTieringInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, CancerTieringInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, CancerTieringInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------

@@ -30,10 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
-import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TIERING_MODE;
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
@@ -79,7 +77,7 @@ public class TieringInterpretationAnalysisTest {
         TieringInterpretationAnalysisParams params = new TieringInterpretationAnalysisParams();
         params.setClinicalAnalysisId(ca.getId());
 
-        toolRunner.execute(TieringInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+        toolRunner.execute(TieringInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
@@ -117,7 +115,7 @@ public class TieringInterpretationAnalysisTest {
         params.setClinicalAnalysisId(ca.getId());
         params.setConfigFile(opencgaFile.getId());
 
-        toolRunner.execute(TieringInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+        toolRunner.execute(TieringInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,

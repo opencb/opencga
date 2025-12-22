@@ -23,7 +23,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.tools.clinical.tiering.TieringConfiguration;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -45,8 +45,8 @@ import java.nio.file.Paths;
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
 @Deprecated
-@Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class TieringInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = TieringInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class TieringInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public static final String ID = "interpretation-tiering";
     public static final String DESCRIPTION = "Run tiering interpretation analysis";

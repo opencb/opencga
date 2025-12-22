@@ -51,11 +51,11 @@ import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInherita
 import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.DE_NOVO;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
-import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
+import static org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool.PRIMARY_FINDINGS_FILENAME;
 
 @Deprecated
 @ToolExecutor(id = "opencga-local",
-        tool = TeamInterpretationAnalysis.ID,
+        tool = TeamInterpretationAnalysisTool.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {

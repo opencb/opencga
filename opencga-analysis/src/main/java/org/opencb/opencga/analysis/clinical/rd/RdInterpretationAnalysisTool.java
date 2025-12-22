@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -40,7 +40,7 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.S
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = RdInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
-public class RdInterpretationAnalysisTool extends InterpretationAnalysis {
+public class RdInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public static final String ID = RdInterpretationAnalysis.ID;
     public static final String DESCRIPTION = "Run interpretation analysis for rare diseases";

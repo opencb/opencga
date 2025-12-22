@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
@@ -62,8 +62,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Tool(id = ExomiserInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = ExomiserInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class ExomiserInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public static final String ID = "interpretation-exomiser";
     public static final String DESCRIPTION = "Run exomiser interpretation analysis";
@@ -515,7 +515,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         return studyId;
     }
 
-    public ExomiserInterpretationAnalysis setStudyId(String studyId) {
+    public ExomiserInterpretationAnalysisTool setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -524,7 +524,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         return clinicalAnalysisId;
     }
 
-    public ExomiserInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public ExomiserInterpretationAnalysisTool setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -533,7 +533,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
         return exomiserVersion;
     }
 
-    public ExomiserInterpretationAnalysis setExomiserVersion(String exomiserVersion) {
+    public ExomiserInterpretationAnalysisTool setExomiserVersion(String exomiserVersion) {
         this.exomiserVersion = exomiserVersion;
         return this;
     }

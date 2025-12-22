@@ -29,9 +29,9 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
@@ -62,7 +62,7 @@ import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 
 @Deprecated
 @Category(MediumTests.class)
-public class ClinicalInterpretationAnalysisTest {
+public class ClinicalInterpretationAnalysisToolTest {
 
     private static AbstractClinicalManagerTest clinicalTest;
     private Path outDir;
@@ -106,7 +106,7 @@ public class ClinicalInterpretationAnalysisTest {
 
         try {
             TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
-            TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
+            TeamInterpretationAnalysisTool teamAnalysis = new TeamInterpretationAnalysisTool();
             teamAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
             teamAnalysis.setStudyId(clinicalTest.studyFqn)
                     .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
@@ -129,7 +129,7 @@ public class ClinicalInterpretationAnalysisTest {
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
-        ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
+        ZettaInterpretationAnalysisTool customAnalysis = new ZettaInterpretationAnalysisTool();
         customAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
@@ -153,7 +153,7 @@ public class ClinicalInterpretationAnalysisTest {
         query.put(VariantQueryParam.SAMPLE.key(), clinicalTest.clinicalAnalysis.getProband().getSamples().get(0).getId());
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
-        ZettaInterpretationAnalysis customAnalysis = new ZettaInterpretationAnalysis();
+        ZettaInterpretationAnalysisTool customAnalysis = new ZettaInterpretationAnalysisTool();
         customAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
         customAnalysis.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
@@ -218,7 +218,7 @@ public class ClinicalInterpretationAnalysisTest {
 
     private Interpretation readInterpretation(ExecutionResult result, Path outDir)
             throws ToolException {
-        File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
+        File file = new java.io.File(outDir + "/" + InterpretationAnalysisTool.INTERPRETATION_FILENAME);
         if (file.exists()) {
             return ClinicalUtils.readInterpretation(file.toPath());
         }

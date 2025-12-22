@@ -57,7 +57,7 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 
 @Deprecated
 @ToolExecutor(id = "opencga-local",
-        tool = CancerTieringInterpretationAnalysis.ID,
+        tool = CancerTieringInterpretationAnalysisTool.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {

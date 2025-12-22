@@ -39,12 +39,12 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
+import static org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool.PRIMARY_FINDINGS_FILENAME;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @Deprecated
 @ToolExecutor(id = "opencga-local",
-        tool = ZettaInterpretationAnalysis.ID,
+        tool = ZettaInterpretationAnalysisTool.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class ZettaInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {

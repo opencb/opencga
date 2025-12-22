@@ -22,7 +22,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -33,8 +33,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.util.List;
 
 @Deprecated
-@Tool(id = TeamInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class TeamInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = TeamInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class TeamInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public final static String ID = "interpretation-team";
     public final static String DESCRIPTION = "Run TEAM interpretation analysis";
@@ -124,7 +124,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         return studyId;
     }
 
-    public TeamInterpretationAnalysis setStudyId(String studyId) {
+    public TeamInterpretationAnalysisTool setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -133,7 +133,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         return clinicalAnalysisId;
     }
 
-    public TeamInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public TeamInterpretationAnalysisTool setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -142,7 +142,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         return diseasePanelIds;
     }
 
-    public TeamInterpretationAnalysis setDiseasePanelIds(List<String> diseasePanelIds) {
+    public TeamInterpretationAnalysisTool setDiseasePanelIds(List<String> diseasePanelIds) {
         this.diseasePanelIds = diseasePanelIds;
         return this;
     }
@@ -151,7 +151,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         return moi;
     }
 
-    public TeamInterpretationAnalysis setMoi(ClinicalProperty.ModeOfInheritance moi) {
+    public TeamInterpretationAnalysisTool setMoi(ClinicalProperty.ModeOfInheritance moi) {
         this.moi = moi;
         return this;
     }
@@ -160,7 +160,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         return config;
     }
 
-    public TeamInterpretationAnalysis setConfig(TeamInterpretationConfiguration config) {
+    public TeamInterpretationAnalysisTool setConfig(TeamInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

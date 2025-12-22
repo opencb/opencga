@@ -25,14 +25,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
-import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
@@ -185,7 +185,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         Path outDir = Paths.get(cliOptions.outdir);
 
         // Execute tiering analysis
-        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
+        TeamInterpretationAnalysisTool teamAnalysis = new TeamInterpretationAnalysisTool();
         teamAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         teamAnalysis.setStudyId(cliOptions.study)
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
@@ -259,14 +259,14 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
         ZettaInterpretationConfiguration config = new ZettaInterpretationConfiguration();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        Path configPath = opencgaHome.resolve("analysis/" + ZettaInterpretationAnalysis.ID + "/config.yml");
+        Path configPath = opencgaHome.resolve("analysis/" + ZettaInterpretationAnalysisTool.ID + "/config.yml");
         if (configPath.toFile().exists()) {
             FileInputStream fis = new FileInputStream(configPath.toFile());
             config = objectMapper.readValue(fis, ZettaInterpretationConfiguration.class);
         }
 
         // Execute tiering analysis
-        ZettaInterpretationAnalysis zettaAnalysis = new ZettaInterpretationAnalysis();
+        ZettaInterpretationAnalysisTool zettaAnalysis = new ZettaInterpretationAnalysisTool();
         zettaAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         zettaAnalysis.setStudyId(cliOptions.study)
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
@@ -291,7 +291,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         Path outDir = Paths.get(cliOptions.outdir);
 
         // Execute cancer tiering analysis
-        CancerTieringInterpretationAnalysis cancerTieringAnalysis = new CancerTieringInterpretationAnalysis();
+        CancerTieringInterpretationAnalysisTool cancerTieringAnalysis = new CancerTieringInterpretationAnalysisTool();
         cancerTieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         cancerTieringAnalysis.setStudyId(cliOptions.study)
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis)
@@ -312,7 +312,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         Path outDir = Paths.get(cliOptions.outdir);
 
         // Execute cancer tiering analysis
-        ExomiserInterpretationAnalysis exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysis();
+        ExomiserInterpretationAnalysisTool exomiserInterpretationAnalysis = new ExomiserInterpretationAnalysisTool();
         exomiserInterpretationAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
         exomiserInterpretationAnalysis.setStudyId(cliOptions.study)
                 .setClinicalAnalysisId(cliOptions.clinicalAnalysis)

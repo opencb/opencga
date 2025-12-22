@@ -48,7 +48,7 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
 
-public abstract class InterpretationAnalysis extends OpenCgaTool {
+public abstract class InterpretationAnalysisTool extends OpenCgaTool {
 
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
@@ -65,7 +65,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     protected boolean primary;
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public InterpretationAnalysis() {
+    public InterpretationAnalysisTool() {
     }
 
     /**
@@ -193,7 +193,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         return primary;
     }
 
-    public InterpretationAnalysis setPrimary(boolean primary) {
+    public InterpretationAnalysisTool setPrimary(boolean primary) {
         this.primary = primary;
         return this;
     }

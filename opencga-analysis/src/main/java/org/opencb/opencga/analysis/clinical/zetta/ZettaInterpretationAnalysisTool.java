@@ -23,7 +23,7 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -40,8 +40,8 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
 @Deprecated
-@Tool(id = ZettaInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
+@Tool(id = ZettaInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
+public class ZettaInterpretationAnalysisTool extends InterpretationAnalysisTool {
 
     public final static String ID = "interpretation-zetta";
     public final static String DESCRIPTION = "Run Zetta interpretation analysis";
@@ -187,7 +187,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return studyId;
     }
 
-    public ZettaInterpretationAnalysis setStudyId(String studyId) {
+    public ZettaInterpretationAnalysisTool setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -196,7 +196,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return clinicalAnalysisId;
     }
 
-    public ZettaInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+    public ZettaInterpretationAnalysisTool setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -205,7 +205,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return query;
     }
 
-    public ZettaInterpretationAnalysis setQuery(Query query) {
+    public ZettaInterpretationAnalysisTool setQuery(Query query) {
         this.query = query;
         return this;
     }
@@ -214,7 +214,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return queryOptions;
     }
 
-    public ZettaInterpretationAnalysis setQueryOptions(QueryOptions queryOptions) {
+    public ZettaInterpretationAnalysisTool setQueryOptions(QueryOptions queryOptions) {
         this.queryOptions = queryOptions;
         return this;
     }
@@ -223,7 +223,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         return config;
     }
 
-    public ZettaInterpretationAnalysis setConfig(ZettaInterpretationConfiguration config) {
+    public ZettaInterpretationAnalysisTool setConfig(ZettaInterpretationConfiguration config) {
         this.config = config;
         return this;
     }

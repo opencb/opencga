@@ -56,7 +56,7 @@ import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInherita
 
 @Deprecated
 @ToolExecutor(id = "opencga-local",
-        tool = TieringInterpretationAnalysis.ID,
+        tool = TieringInterpretationAnalysisTool.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {

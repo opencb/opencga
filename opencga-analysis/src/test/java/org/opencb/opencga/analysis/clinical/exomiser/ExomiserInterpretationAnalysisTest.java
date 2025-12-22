@@ -93,7 +93,7 @@ public class ExomiserInterpretationAnalysisTest  {
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
         System.out.println("outDir = " + outDir);
 
-        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
+        ExomiserInterpretationAnalysisTool exomiser = new ExomiserInterpretationAnalysisTool();
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.CA_ID2)
@@ -144,7 +144,7 @@ public class ExomiserInterpretationAnalysisTest  {
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
 
-        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
+        ExomiserInterpretationAnalysisTool exomiser = new ExomiserInterpretationAnalysisTool();
 
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)
@@ -198,7 +198,7 @@ public class ExomiserInterpretationAnalysisTest  {
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID4, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().size());
 
-        ExomiserInterpretationAnalysis exomiser = new ExomiserInterpretationAnalysis();
+        ExomiserInterpretationAnalysisTool exomiser = new ExomiserInterpretationAnalysisTool();
 
         exomiser.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
         exomiser.setStudyId(clinicalTest.studyFqn)

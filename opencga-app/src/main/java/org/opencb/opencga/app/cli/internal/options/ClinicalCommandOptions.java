@@ -6,13 +6,13 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
-import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysisTool;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -21,7 +21,7 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 
 import java.util.List;
 
-import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
+import static org.opencb.opencga.analysis.clinical.InterpretationAnalysisTool.*;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
@@ -63,10 +63,10 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {TieringCommandOptions.TIERING_INTERPRETATION_RUN_COMMAND}, commandDescription =
-            TieringInterpretationAnalysis.DESCRIPTION)
+            TieringInterpretationAnalysisTool.DESCRIPTION)
     public class TieringCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String TIERING_INTERPRETATION_RUN_COMMAND = TieringInterpretationAnalysis.ID + "-run";
+        public static final String TIERING_INTERPRETATION_RUN_COMMAND = TieringInterpretationAnalysisTool.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -95,10 +95,10 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {TeamCommandOptions.TEAM_INTERPRETATION_RUN_COMMAND},
-            commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
+            commandDescription = TeamInterpretationAnalysisTool.DESCRIPTION)
     public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String TEAM_INTERPRETATION_RUN_COMMAND = TeamInterpretationAnalysis.ID + "-run";
+        public static final String TEAM_INTERPRETATION_RUN_COMMAND = TeamInterpretationAnalysisTool.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -127,10 +127,10 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {ZettaCommandOptions.ZETTA_INTERPRETATION_RUN_COMMAND},
-            commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+            commandDescription = ZettaInterpretationAnalysisTool.DESCRIPTION)
     public class ZettaCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String ZETTA_INTERPRETATION_RUN_COMMAND = ZettaInterpretationAnalysis.ID + "-run";
+        public static final String ZETTA_INTERPRETATION_RUN_COMMAND = ZettaInterpretationAnalysisTool.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -264,10 +264,10 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames =  {CancerTieringCommandOptions.CANCER_TIERING_INTERPRETATION_RUN_COMMAND},
-            commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+            commandDescription = CancerTieringInterpretationAnalysisTool.DESCRIPTION)
     public class CancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String CANCER_TIERING_INTERPRETATION_RUN_COMMAND = CancerTieringInterpretationAnalysis.ID + "-run";
+        public static final String CANCER_TIERING_INTERPRETATION_RUN_COMMAND = CancerTieringInterpretationAnalysisTool.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -325,10 +325,10 @@ public class ClinicalCommandOptions {
     }
 
     @Parameters(commandNames = {ExomiserInterpretationCommandOptions.EXOMISER_INTERPRETATION_RUN_COMMAND},
-            commandDescription = ExomiserInterpretationAnalysis.DESCRIPTION)
+            commandDescription = ExomiserInterpretationAnalysisTool.DESCRIPTION)
     public class ExomiserInterpretationCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String EXOMISER_INTERPRETATION_RUN_COMMAND = ExomiserInterpretationAnalysis.ID + "-run";
+        public static final String EXOMISER_INTERPRETATION_RUN_COMMAND = ExomiserInterpretationAnalysisTool.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

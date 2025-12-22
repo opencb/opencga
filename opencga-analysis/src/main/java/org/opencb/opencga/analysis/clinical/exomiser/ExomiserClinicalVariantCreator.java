@@ -111,7 +111,7 @@ public class ExomiserClinicalVariantCreator {
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
         // Interpretation method name
-        clinicalVariantEvidence.setInterpretationMethodName(ExomiserInterpretationAnalysis.ID);
+        clinicalVariantEvidence.setInterpretationMethodName(ExomiserInterpretationAnalysisTool.ID);
 
         // Genomic feature
         if (genomicFeature != null) {
