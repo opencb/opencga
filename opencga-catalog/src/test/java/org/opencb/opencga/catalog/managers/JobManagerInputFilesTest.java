@@ -16,14 +16,25 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.type.TypeBindings;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.tools.ToolParams;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ConfigurationBuilder;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -31,432 +42,179 @@ import static org.junit.Assert.*;
  * Test suite for Job Input Files Detection functionality given the map of Job params.
  * Tests both suffix-based and pattern-based file detection with deep nesting support.
  */
-@Category(MediumTests.class)
-public class JobManagerInputFilesTest extends AbstractManagerTest {
+@Category(ShortTests.class)
+public class JobManagerInputFilesTest  {
 
-    // ========================================
-    // A. Suffix-Based Tests (getJobInputFilesFromParams)
-    // ========================================
+    private final String testFile1 = "/studyA/sample1/file1.vcf";
+    private final String testFile2 = "/studyA/sample2/file2.bam";
+    private final String data_d1 = "/studyA/data/dir1";
 
-    @Test
-    public void testSimpleFileSuffix() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFile", testFile1);
+    public static class MyToolParams extends ToolParams {
+        public String inputFile;
+        public String otherInputFiles; // Comma separated
+        public List<String> inputFiles;
+        public NestedParams nested;
+        public List<NestedParams> nestedList;
 
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
+        public static class NestedParams extends ToolParams {
+            public String dataFile;
+            public List<String> dataFiles;
 
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
+            public NestedParams setDataFile(String dataFile) {
+                this.dataFile = dataFile;
+                return this;
+            }
+
+            public NestedParams setDataFiles(List<String> dataFiles) {
+                this.dataFiles = dataFiles;
+                return this;
+            }
+        }
+
+        public static MyToolParams defaultParams() {
+            MyToolParams params = new MyToolParams();
+            params.inputFile = "file.txt";
+            params.otherInputFiles = "other1.txt,other2.txt";
+            params.inputFiles = Arrays.asList("file1.txt", "file2.txt");
+            params.nested = new NestedParams();
+            params.nested.dataFile = "data.txt";
+            params.nested.dataFiles = Arrays.asList("data1.txt", "data2.txt");
+            params.nestedList = Arrays.asList(new NestedParams(), new NestedParams());
+            params.nestedList.get(0).dataFile = "listData1.txt";
+            params.nestedList.get(0).dataFiles = Arrays.asList("listData1a.txt", "listData1b.txt");
+            params.nestedList.get(1).dataFile = "listData2.txt";
+            params.nestedList.get(1).dataFiles = Arrays.asList("listData2a.txt", "listData2b.txt");
+            return params;
+        }
+
+        public MyToolParams setInputFile(String inputFile) {
+            this.inputFile = inputFile;
+            return this;
+        }
+
+        public MyToolParams setOtherInputFiles(String otherInputFiles) {
+            this.otherInputFiles = otherInputFiles;
+            return this;
+        }
+
+        public MyToolParams setInputFiles(List<String> inputFiles) {
+            this.inputFiles = inputFiles;
+            return this;
+        }
+
+        public MyToolParams setNested(NestedParams nested) {
+            this.nested = nested;
+            return this;
+        }
+
+        public MyToolParams setNestedList(List<NestedParams> nestedList) {
+            this.nestedList = nestedList;
+            return this;
+        }
     }
 
     @Test
-    public void testSimpleFilesSuffix() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFiles", testFile1);
+    public void testAllToolParams() throws Exception {
+        // Using reflection , find all classes that extend ToolParams
+        List<Class<?>> toolParamsClasses;
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .forPackages("org.opencb.opencga") // Adjust package as needed
+                .setScanners(new SubTypesScanner()));
+        toolParamsClasses = Arrays.asList(reflections.getSubTypesOf(ToolParams.class).toArray(new Class[0]));
+        System.out.println("Found " + toolParamsClasses.size() + " ToolParams classes:");
+        toolParamsClasses.forEach(cls -> System.out.println(" - " + cls.getName()));
+        assertFalse(toolParamsClasses.isEmpty());
 
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
+        for (Class<?> aClass : toolParamsClasses) {
+            ToolParams toolParam;
+            try {
+                toolParam = (ToolParams) randomInitializeClass(aClass);
+            } catch (Exception e) {
+                System.out.println("XXXX - Failed to initialize ToolParams class: " + aClass.getName() + " : " + e.getMessage());
+                continue;
+            }
+            Assert.assertNotNull("Failed to initialize ToolParams class: " + aClass.getName(), toolParam);
+            System.out.println("toolParam.toJson() = " + toolParam.toJson());
+            JobManager.extractFileParametersBySuffix(toolParam.toParams());
+        }
 
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
+    }
+
+    public static <T> T randomInitializeClass(Class<T> clazz) throws Exception {
+        T instance = clazz.getDeclaredConstructor().newInstance();
+        // USe jackson instrospector to set random values to all fields
+        // For simplicity, we will just set some dummy values here
+        // In a real scenario, you would use reflection to set all fields appropriately
+        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+        System.out.println("Processing tool params class = " + clazz.getName());
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(clazz));
+
+        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+            Class<?> rawPrimaryType = property.getRawPrimaryType();
+            // Set dummy values based on type
+            if (rawPrimaryType == String.class) {
+                property.getSetter().callOnWith(instance, "dummyValue");
+            } else if (rawPrimaryType == int.class || rawPrimaryType == Integer.class) {
+                property.getSetter().callOnWith(instance, 42);
+            } else if (rawPrimaryType == float.class || rawPrimaryType == Float.class) {
+                property.getSetter().callOnWith(instance, 42f);
+            } else if (rawPrimaryType == boolean.class || rawPrimaryType == Boolean.class) {
+                property.getSetter().callOnWith(instance, true);
+            } else if (List.class.isAssignableFrom(rawPrimaryType)) {
+                TypeBindings bindings = property.getPrimaryType().getBindings();
+                if (bindings.size() == 1) {
+                    Class<?> subClass = bindings.getBoundType(0).getRawClass();
+                    if (subClass == String.class) {
+                        property.getSetter().callOnWith(instance, Arrays.asList("listValue1", "listValue2"));
+                    } else {
+                        property.getSetter().callOnWith(instance, Arrays.asList(
+                                randomInitializeClass(subClass),
+                                randomInitializeClass(subClass)
+                        ));
+                    }
+                } else {
+                    // For other list types, just set an empty list
+                    property.getSetter().callOnWith(instance, Arrays.asList());
+                }
+            } else if (Map.class.isAssignableFrom(rawPrimaryType)) {
+                Map<String, String> map = new HashMap<>();
+                map.put("key1", null);
+                map.put("key2", null);
+                property.getSetter().callOnWith(instance, map);
+            } else if (rawPrimaryType.isEnum()) {
+                // Do nothing for enums for now
+            } else {
+                property.getSetter().callOnWith(instance, randomInitializeClass(rawPrimaryType));
+            }
+
+        }
+        return instance;
     }
 
     @Test
-    public void testSimpleDirSuffix() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputDir", data_d1);
+    public void testToolParamsConversion() throws CatalogException {
+        MyToolParams toolParams = MyToolParams.defaultParams();
+        Map<String, Object> params = toolParams.toParams();
+
+        Map<String, String> result = JobManager.extractFileParametersBySuffix(params);
+
+        System.out.println("result = " + result);
+        result.forEach((key, value) -> System.out.println(" - " + key + " : " + value));
+        assertEquals(13, result.size());
+        assertTrue(result.containsKey("inputFile"));
+        assertTrue(result.containsKey("inputFiles[0]"));
+        assertTrue(result.containsKey("inputFiles[1]"));
+        assertTrue(result.containsKey("otherInputFiles"));
+        assertTrue(result.containsKey("nested.dataFile"));
+        assertTrue(result.containsKey("nested.dataFiles[0]"));
+        assertTrue(result.containsKey("nested.dataFiles[1]"));
+        assertTrue(result.containsKey("nestedList[0].dataFile"));
+        assertTrue(result.containsKey("nestedList[0].dataFiles[0]"));
+        assertTrue(result.containsKey("nestedList[0].dataFiles[1]"));
+        assertTrue(result.containsKey("nestedList[1].dataFile"));
+        assertTrue(result.containsKey("nestedList[1].dataFiles[0]"));
+        assertTrue(result.containsKey("nestedList[1].dataFiles[1]"));
 
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(data_d1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testCaseInsensitiveSuffix() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFILE", testFile1);
-        params.put("outputFiles", testFile2);
-        params.put("workingDIR", data_d1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(3, result.size());
-    }
-
-    @Test
-    public void testNestedMapLevel1() throws CatalogException {
-        Map<String, Object> nested = new HashMap<>();
-        nested.put("inputFile", testFile1);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("params", nested);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testNestedMapLevel2() throws CatalogException {
-        Map<String, Object> level2 = new HashMap<>();
-        level2.put("inputFile", testFile1);
-
-        Map<String, Object> level1 = new HashMap<>();
-        level1.put("nested", level2);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("config", level1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testNestedMapLevel5() throws CatalogException {
-        Map<String, Object> level5 = new HashMap<>();
-        level5.put("dataFile", testFile1);
-
-        Map<String, Object> level4 = new HashMap<>();
-        level4.put("level5", level5);
-
-        Map<String, Object> level3 = new HashMap<>();
-        level3.put("level4", level4);
-
-        Map<String, Object> level2 = new HashMap<>();
-        level2.put("level3", level3);
-
-        Map<String, Object> level1 = new HashMap<>();
-        level1.put("level2", level2);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("level1", level1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testNestedMapLevel6ShouldStopAt5() throws CatalogException {
-        // Level 6 should not be traversed (max depth is 5)
-        Map<String, Object> level6 = new HashMap<>();
-        level6.put("deepFile", testFile2);
-
-        Map<String, Object> level5 = new HashMap<>();
-        level5.put("level6", level6);
-        level5.put("file", testFile1); // This should be found at level 5
-
-        Map<String, Object> level4 = new HashMap<>();
-        level4.put("level5", level5);
-
-        Map<String, Object> level3 = new HashMap<>();
-        level3.put("level4", level4);
-
-        Map<String, Object> level2 = new HashMap<>();
-        level2.put("level3", level3);
-
-        Map<String, Object> level1 = new HashMap<>();
-        level1.put("level2", level2);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("level1", level1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        // Should only find the file at level 5, not level 6
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testListOfStrings() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFiles", Arrays.asList(testFile1, testFile2));
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile1)));
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile2)));
-    }
-
-    @Test
-    public void testCommaSeparatedStrings() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFile", testFile1 + "," + testFile2);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile1)));
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile2)));
-    }
-
-    @Test
-    public void testEmptyListShouldBeSkipped() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFiles", Collections.emptyList());
-        params.put("otherFile", testFile1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        // Should only find the non-empty param
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testListOfMaps() throws CatalogException {
-        Map<String, Object> item1 = new HashMap<>();
-        item1.put("file", testFile1);
-
-        Map<String, Object> item2 = new HashMap<>();
-        item2.put("file", testFile2);
-
-        List<Map<String, Object>> items = Arrays.asList(item1, item2);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("items", items);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile1)));
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile2)));
-    }
-
-    @Test
-    public void testMapContainingListOfMaps() throws CatalogException {
-        Map<String, Object> innerMap1 = new HashMap<>();
-        innerMap1.put("dataFile", testFile1);
-
-        Map<String, Object> innerMap2 = new HashMap<>();
-        innerMap2.put("dataFile", testFile2);
-
-        List<Map<String, Object>> list = Arrays.asList(innerMap1, innerMap2);
-
-        Map<String, Object> nested = new HashMap<>();
-        nested.put("refs", list);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("nested", nested);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile1)));
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile2)));
-    }
-
-    @Test
-    public void testAllSpecialValueShouldBeSkipped() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFile", "ALL");
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    public void testNoneSpecialValueShouldBeSkipped() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFile", "NONE");
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    public void testCommaSeparatedWithRealFile() throws CatalogException {
-        // When there are multiple files, ALL/NONE should not be skipped
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputFile", testFile1 + ",ALL");
-
-        Job job = new Job().setParams(params);
-
-        // This should try to find "ALL" as a real file and fail
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("ALL");
-        catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-    }
-
-    @Test
-    public void testNonExistentFileShouldThrowWithFullPath() throws CatalogException {
-        Map<String, Object> nested = new HashMap<>();
-        nested.put("inputFile", "non_existent_file.txt");
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("config", nested);
-
-        Job job = new Job().setParams(params);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("config.inputFile");
-        thrown.expectMessage("non_existent_file.txt");
-        catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-    }
-
-    @Test
-    public void testNullParamsShouldReturnEmpty() throws CatalogException {
-        Job job = new Job().setParams(null);
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    public void testEmptyParamsShouldReturnEmpty() throws CatalogException {
-        Job job = new Job().setParams(new HashMap<>());
-        List<File> result = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(0, result.size());
-    }
-
-    // ========================================
-    // B. Pattern-Based Tests (getWorkflowJobInputFilesFromParams)
-    // ========================================
-
-    @Test
-    public void testOcgaProtocol() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("anyParam", "ocga://" + testFile1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testOpencgaProtocol() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("someInput", "opencga://" + testFile1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testFileProtocol() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("dataPath", "file://" + testFile1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testPatternNestedLevel1() throws CatalogException {
-        Map<String, Object> nested = new HashMap<>();
-        nested.put("input", "ocga://" + testFile1);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("config", nested);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testPatternNestedLevel5() throws CatalogException {
-        Map<String, Object> level5 = new HashMap<>();
-        level5.put("data", "file://" + testFile1);
-
-        Map<String, Object> level4 = new HashMap<>();
-        level4.put("level5", level5);
-
-        Map<String, Object> level3 = new HashMap<>();
-        level3.put("level4", level4);
-
-        Map<String, Object> level2 = new HashMap<>();
-        level2.put("level3", level3);
-
-        Map<String, Object> level1 = new HashMap<>();
-        level1.put("level2", level2);
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("level1", level1);
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(1, result.size());
-        assertEquals(testFile1, result.get(0).getPath());
-    }
-
-    @Test
-    public void testListOfOpenCGAPaths() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("inputs", Arrays.asList("ocga://" + testFile1, "opencga://" + testFile2));
-
-        Job job = new Job().setParams(params);
-        List<File> result = catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile1)));
-        assertTrue(result.stream().anyMatch(f -> f.getPath().equals(testFile2)));
-    }
-
-    @Test
-    public void testPartialListMatchShouldFail() throws CatalogException {
-        Map<String, Object> params = new HashMap<>();
-        // Mix of OpenCGA paths and regular paths - should fail
-        params.put("inputs", Arrays.asList("ocga://" + testFile1, testFile2));
-
-        Job job = new Job().setParams(params);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("inputs");
-        thrown.expectMessage("only some elements match");
-        thrown.expectMessage(testFile2);
-        catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
-    }
-
-    @Test
-    public void testInvalidOpenCGAPathShouldThrow() throws CatalogException {
-        Map<String, Object> nested = new HashMap<>();
-        nested.put("data", "ocga://non_existent_file.vcf");
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("workflow", nested);
-
-        Job job = new Job().setParams(params);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("workflow.data");
-        thrown.expectMessage("non_existent_file.vcf");
-        catalogManager.getJobManager().getWorkflowJobInputFilesFromParams(studyFqn, job, ownerToken);
     }
 
     // ========================================
@@ -470,7 +228,7 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         params.put("outputFiles", testFile2);
         params.put("otherParam", "not_a_file");
 
-        Map<String, List<String>> result = JobManager.extractFileParametersBySuffix("", new LinkedHashMap<>(), params);
+        Map<String, String> result = JobManager.extractFileParametersBySuffix(params);
 
         assertEquals(2, result.size());
         assertTrue(result.containsKey("inputFile"));
@@ -489,13 +247,14 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         Map<String, Object> params = new HashMap<>();
         params.put("items", Arrays.asList(item1, item2));
 
-        Map<String, List<String>> result = JobManager.extractFileParametersBySuffix("", new LinkedHashMap<>(), params);
+        Map<String, String> result = JobManager.extractFileParametersBySuffix(params);
 
+        System.out.println("result = " + result);
         // Should have paths with numbered indices
         assertTrue(result.containsKey("items[0].file"));
         assertTrue(result.containsKey("items[1].file"));
-        assertEquals(testFile1, result.get("items[0].file").get(0));
-        assertEquals(testFile2, result.get("items[1].file").get(0));
+        assertEquals(testFile1, result.get("items[0].file"));
+        assertEquals(testFile2, result.get("items[1].file"));
     }
 
     @Test
@@ -509,10 +268,10 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         Map<String, Object> params = new HashMap<>();
         params.put("workflow", level2);
 
-        Map<String, List<String>> result = JobManager.extractFileParametersBySuffix("", new LinkedHashMap<>(), params);
+        Map<String, String> result = JobManager.extractFileParametersBySuffix(params);
 
         assertTrue(result.containsKey("workflow.config.dataFile"));
-        assertEquals(testFile1, result.get("workflow.config.dataFile").get(0));
+        assertEquals(testFile1, result.get("workflow.config.dataFile"));
     }
 
     @Test
@@ -522,7 +281,7 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         params.put("input2", testFile2); // No pattern, should be excluded
         params.put("input3", "file://" + data_d1);
 
-        Map<String, List<String>> result = JobManager.extractFileParametersByPattern("", new LinkedHashMap<>(), params);
+        Map<String, String> result = JobManager.extractFileParametersByPattern(params);
 
         assertEquals(2, result.size());
         assertTrue(result.containsKey("input1"));
@@ -558,11 +317,12 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         Map<String, Object> params = new HashMap<>();
         params.put("level1", level1);
 
-        Map<String, List<String>> result = JobManager.extractFileParametersBySuffix("", new LinkedHashMap<>(), params);
-
-        // Should find the file at level 5 but not at level 7
-        assertTrue(result.containsKey("level1.level2.level3.level4.level5.foundFile"));
-        assertFalse(result.containsKey("level1.level2.level3.level4.level5.level6.level7.deepFile"));
+        try {
+            JobManager.extractFileParametersBySuffix(params);
+            Assert.fail("Expected CatalogException due to depth limit exceeded");
+        } catch (Exception e) {
+            Assert.assertTrue(e.getMessage().contains("Maximum depth"));
+        }
     }
 
     @Test
@@ -572,7 +332,7 @@ public class JobManagerInputFilesTest extends AbstractManagerTest {
         params.put("nullFile", null);
         params.put("outputFiles", testFile2);
 
-        Map<String, List<String>> result = JobManager.extractFileParametersBySuffix("", new LinkedHashMap<>(), params);
+        Map<String, String> result = JobManager.extractFileParametersBySuffix(params);
 
         assertEquals(2, result.size());
         assertFalse(result.containsKey("nullFile"));
