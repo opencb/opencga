@@ -646,6 +646,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             sortMembersFromFamily(clinicalAnalysis);
 
             List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+            clinicalAnalysis.setAudit(clinicalAuditList);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
             if (clinicalAnalysis.getInterpretation() == null
@@ -659,11 +660,19 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
                         "Create interpretation '" + clinicalAnalysis.getInterpretation().getId() + "'", TimeUtils.getTime()));
             }
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    catalogManager.getInterpretationManager().validateNewInterpretation(organizationId, study,
+                            secondaryInterpretation, clinicalAnalysis, userId);
+                    clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
+                            "Create secondary interpretation '" + secondaryInterpretation.getId() + "'", TimeUtils.getTime()));
+                }
+            }
 
             clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
                     "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime()));
             OpenCGAResult<ClinicalAnalysis> insert = getClinicalAnalysisDBAdaptor(organizationId).insert(study.getUid(), clinicalAnalysis,
-                    study.getVariableSets(), clinicalAuditList, options);
+                    study.getVariableSets(), options);
             insert.addEvents(events);
 
             auditManager.auditCreate(organizationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),

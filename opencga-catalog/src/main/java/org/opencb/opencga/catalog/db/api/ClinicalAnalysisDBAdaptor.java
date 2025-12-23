@@ -242,8 +242,8 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                         List<ClinicalAudit> clinicalAuditList, QueryOptions options) throws CatalogException;
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogException;
 
     OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<VariableSet> variableSetList,
                                            List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)

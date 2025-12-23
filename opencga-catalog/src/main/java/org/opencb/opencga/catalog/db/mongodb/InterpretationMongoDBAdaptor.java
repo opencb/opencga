@@ -244,6 +244,8 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         long interpretationUid = getNewUid(clientSession);
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
+        interpretation.setVersion(1);
+        interpretation.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyId));
         if (StringUtils.isEmpty(interpretation.getUuid())) {
             interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
