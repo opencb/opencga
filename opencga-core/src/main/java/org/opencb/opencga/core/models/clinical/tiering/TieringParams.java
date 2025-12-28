@@ -1,11 +1,8 @@
 package org.opencb.opencga.core.models.clinical.tiering;
 
-import org.checkerframework.checker.units.qual.C;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
 @Deprecated
 public class TieringParams {
