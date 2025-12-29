@@ -18,11 +18,12 @@ package org.opencb.opencga.analysis.clinical.meta.tree;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.opencga.analysis.clinical.meta.tree.evaluators.LoggingTreeEvaluator;
-import org.opencb.opencga.analysis.clinical.meta.tree.evaluators.SetTreeEvaluator;
-import org.opencb.opencga.analysis.clinical.meta.tree.node.OperatorTreeNode;
-import org.opencb.opencga.analysis.clinical.meta.tree.node.QueryTreeNode;
-import org.opencb.opencga.analysis.clinical.meta.tree.node.TreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.TreeParser;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.evaluators.LoggingTreeEvaluator;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.evaluators.SetTreeEvaluator;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.OperatorTreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.QueryTreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.TreeNode;
 
 import java.util.*;
 

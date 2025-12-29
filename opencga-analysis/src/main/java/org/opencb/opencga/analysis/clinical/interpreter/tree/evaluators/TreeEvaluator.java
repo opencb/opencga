@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.meta.tree.evaluators;
+package org.opencb.opencga.analysis.clinical.interpreter.tree.evaluators;
 
-import org.opencb.opencga.analysis.clinical.meta.tree.node.OperatorTreeNode;
-import org.opencb.opencga.analysis.clinical.meta.tree.node.QueryTreeNode;
-import org.opencb.opencga.analysis.clinical.meta.tree.node.TreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.OperatorTreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.QueryTreeNode;
+import org.opencb.opencga.analysis.clinical.interpreter.tree.node.TreeNode;
 
 import java.util.Map;
 import java.util.Set;

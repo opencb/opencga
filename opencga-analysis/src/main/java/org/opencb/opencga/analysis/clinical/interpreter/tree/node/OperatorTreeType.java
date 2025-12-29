@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical.meta.tree.node;
+package org.opencb.opencga.analysis.clinical.interpreter.tree.node;
 
 public enum OperatorTreeType {
     AND,
