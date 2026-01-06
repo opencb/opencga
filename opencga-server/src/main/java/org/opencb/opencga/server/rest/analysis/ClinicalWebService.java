@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
+import org.opencb.opencga.analysis.clinical.interpreter.InterpreterAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
@@ -1533,6 +1534,67 @@ public class ClinicalWebService extends AnalysisWebService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    // I N T E R P R E T E R : New configurable interpreter endpoints
+    //-------------------------------------------------------------------------
+    @GET
+    @Path("/interpreter")
+    @ApiOperation(value = "Rare disease interpretation analysis", response = Interpretation.class)
+    public Response interpreterAnalysis(
+            @ApiParam(value = "Clinical analysis ID") @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Proband ID") @QueryParam(value = "probandId") String probandId,
+            @ApiParam(value = "Family ID") @QueryParam(value = "familyId") String familyId,
+            @ApiParam(value = "Disorder ID") @QueryParam(value = "disorderId") String disorderId,
+            @ApiParam(value = "List of panel IDs (separated by commas)") @QueryParam(value = "panelIds") String panels,
+            @ApiParam(value = "Interpretation configuration file", required = true) @QueryParam(value = "configFile") String configFile,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+        try {
+            // Check configuration file
+            java.nio.file.Path configPath;
+            if (StringUtils.isEmpty(configFile)) {
+                configPath = opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME)
+                        .resolve(RdInterpretationAnalysisTool.RD_DIR)
+                        .resolve(RdInterpretationAnalysisTool.RD_INTERPRETATION_CONFIGURATION_FILE);
+            } else {
+                configPath = Paths.get(catalogManager.getFileManager().get(study, configFile, QueryOptions.empty(), token)
+                        .first().getUri().getPath()).toAbsolutePath();
+            }
+            // Check panels
+            List<String> panelsIds = StringUtils.isNotEmpty(panels) ? getIdList(panels) : null;
+
+            // Execute the RD interpretation analysis
+            int startTime = (int) System.currentTimeMillis();
+            RdInterpretationAnalysis rdInterpretationAnalysis = new RdInterpretationAnalysis(study, catalogManager,
+                    getVariantStorageManager(), token);
+            org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = rdInterpretationAnalysis
+                    .run(clinicalAnalysisId, probandId, familyId, panelsIds, disorderId, configPath);
+            int dbTime = (int) System.currentTimeMillis() - startTime;
+
+            // Build the response
+            DataResult<Interpretation> analysisResult = new DataResult<>(dbTime, null, 1,
+                    Collections.singletonList(new Interpretation(interpretation)), 1);
+            return createOkResponse(analysisResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/interpreter/run")
+    @ApiOperation(value = RdInterpretationAnalysisTool.DESCRIPTION, response = Job.class)
+    public Response interpreterRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = "Parameters to execute the rare disease interpretation analysis", required = true) RdInterpretationAnalysisToolParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, InterpreterAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------

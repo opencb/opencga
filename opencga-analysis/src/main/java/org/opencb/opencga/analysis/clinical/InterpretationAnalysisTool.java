@@ -62,8 +62,10 @@ public abstract class InterpretationAnalysisTool extends OpenCgaTool {
 
     public final static String PRIMARY_INTERPRETATION_PARAM_NAME = "secondary";
 
-    protected boolean primary;
     protected ClinicalInterpretationManager clinicalInterpretationManager;
+
+    protected ClinicalAnalysis clinicalAnalysis;
+    protected boolean primary;
 
     public InterpretationAnalysisTool() {
     }
