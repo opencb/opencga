@@ -104,6 +104,19 @@ public class IOUtilsTest {
     }
 
     @Test
+    public void toHumanReadableSize_ValidInput_ReturnsCorrectString() {
+        assertEquals("1.0 KiB", IOUtils.humanReadableByteCount(1024, IOUtils.ByteUnitSystem.BINARY_IEC, 10));
+        // Do not round up
+        assertEquals("1064 B", IOUtils.humanReadableByteCount(1064, IOUtils.ByteUnitSystem.BINARY_IEC, 10));
+
+        assertEquals("2g", IOUtils.humanReadableByteCount((int) (1.5 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, null));
+        assertEquals("1.5Gi", IOUtils.humanReadableByteCount((int) (1.5 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.KUBERNETES, null));
+        assertEquals("1537m", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 1024 * 1024 * 10));
+        assertEquals("1573913k", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 1024*10));
+        assertEquals("1611686477", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 10));
+    }
+
+    @Test
     public void copyBytesHandlesBufferSizeSmallerThanInput() throws Exception {
 //        byte[] inputData = "Hello, World!".getBytes();
         byte[] inputData = new byte[10 * 1024 * 1024 + 5]; // 10 MB
