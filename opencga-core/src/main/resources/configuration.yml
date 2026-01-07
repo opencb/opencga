@@ -302,8 +302,21 @@ analysis:
       k8s.ttlSecondsAfterFinished: 3600 # s
       k8s.namespace: "default"
 
-      # Job java heap. If undefined, will use "requirements.memory - 300MiB"
-      k8s.javaHeap: # "7700M"
+      # Job java heap.
+      # Can be defined as an absolute value (e.g., "1024M") or as a percentage of requirements.memory (e.g., "70%").
+      # If undefined, will use "requirements.memory - javaOffHeap - nonJavaMemory"
+      # This configures env variable JAVA_HEAP (which configures -Xmx for the JVM)
+      k8s.javaHeap: # undefined
+      # Job java off heap.
+      # Can be defined as an absolute value (e.g., "1024M") or as a percentage of requirements.memory (e.g., "10%").
+      # If undefined, will use 5% of requirements.memory
+      # Minimum off heap is 300MiB.
+      # This configures env variable JAVA_OFF_HEAP (which configures -XX:MaxDirectMemorySize for the JVM)
+      k8s.javaOffHeap: # undefined
+      # Job non-jvm memory. Overhead for non-jvm processes like OS processes, native libraries, docker runs, etc.
+      # Can be defined as an absolute value (e.g., "1024M") or as a percentage of requirements.memory (e.g., "10%").
+      # If undefined, will use 300MiB
+      k8s.memoryOverhead: "300MiB"
 #      k8s.envs:
 #        KEY: value
       # FOR ACI:

@@ -357,6 +357,45 @@ public class IOUtils {
         return result.toString().trim();
     }
 
+    public enum ByteUnitSystem {
+        /**
+         * Binary system using IEC standard (powers of 2, KiB, MiB, GiB, ...)
+         */
+        BINARY_IEC("KMGTPE", 1024, "B", "i", " ", 1),
+        /**
+         * International System using SI standard (powers of 10, kB, MB, GB, ...)
+         */
+        SI("kMGTPE", 1000, "B", "", " ", 1),
+        /**
+         * Java style (powers of 2, k, m, g, ...)
+         */
+        JAVA_STYLE("kmgtpe", 1024, "", "", "", 0),
+        /**
+         * Kubernetes style (powers of 2, Ki, Mi, Gi, ...)
+         */
+        KUBERNETES("KMGTPE", 1024, "", "i", "", 1);
+
+        private String units; // Unit symbols in magnitude order
+        private int unitBase; // Base of the unit (1000 or 1024)
+        private String unitSymbol; // Symbol to add to the unit (B for bytes, empty for Java)
+        private String unitSuffix; // Suffix to add to the unit (i for binary, empty for SI)
+        private String separator; // Separator between number and unit
+        private int decimalPoints;  // Number of decimal points to show
+
+        ByteUnitSystem(String units, int unitBase, String unitSymbol, String unitSuffix, String separator, int decimalPoints) {
+            this.units = units;
+            this.unitBase = unitBase;
+            this.unitSymbol = unitSymbol;
+            this.unitSuffix = unitSuffix;
+            this.separator = separator;
+            this.decimalPoints = decimalPoints;
+        }
+    }
+
+    public static String humanReadableByteCount(long bytes) {
+        return humanReadableByteCount(bytes, ByteUnitSystem.BINARY_IEC);
+    }
+
     /**
      * Get Bytes numbers in a human readable string
      * See http://stackoverflow.com/a/3758880
@@ -366,11 +405,54 @@ public class IOUtils {
      * @return
      */
     public static String humanReadableByteCount(long bytes, boolean si) {
-        int unit = si ? 1000 : 1024;
-        if (bytes < unit) return bytes + " B";
-        int exp = (int) (Math.log(bytes) / Math.log(unit));
-        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+        return humanReadableByteCount(bytes, si ? ByteUnitSystem.SI : ByteUnitSystem.BINARY_IEC);
+    }
+
+    public static String javaStyleByteCount(long bytes) {
+        // Avoid rounding up for sizes below 10 MB
+        return humanReadableByteCount(bytes, ByteUnitSystem.JAVA_STYLE, 10 * 1024 * 1024);
+    }
+
+    public static String kubernetesStyleByteCount(long bytes) {
+        // Avoid rounding up for sizes below 10 MB
+        return humanReadableByteCount(bytes, ByteUnitSystem.KUBERNETES, 10 * 1024 * 1024);
+    }
+
+    /**
+     * Get Bytes numbers in a human-readable string
+     * See http://stackoverflow.com/a/3758880
+     *
+     * @param bytes     Quantity of bytes
+     * @param system    Binary System to use
+     * @return          Human-readable string
+     */
+    public static String humanReadableByteCount(long bytes, ByteUnitSystem system) {
+        return humanReadableByteCount(bytes, system, 10 * 1024 * 1024);
+    }
+
+    /**
+     * Get Bytes numbers in a human-readable string
+     * See http://stackoverflow.com/a/3758880
+     *
+     * @param bytes        Quantity of bytes
+     * @param system       Binary System to use
+     * @param roundUpError Rounding error in bytes to consider when rounding up
+     * @return          Human-readable string
+     */
+    public static String humanReadableByteCount(long bytes, ByteUnitSystem system, Integer roundUpError) {
+        int exp = (int) (Math.log(bytes) / Math.log(system.unitBase));
+        if (roundUpError != null) {
+            // Check rounding error in bytes
+            while ((long) (bytes % Math.pow(system.unitBase, exp)) > roundUpError) {
+                // If error is greater than roundUpError, reduce exponent by 1 to add more precision
+                exp -= 1;
+            }
+        }
+        if (exp < 1) {
+            return bytes + system.separator + system.unitSymbol;
+        }
+        String pre = system.separator + system.units.charAt(exp - 1) + system.unitSuffix + system.unitSymbol;
+        return String.format("%." + system.decimalPoints + "f%s", bytes / Math.pow(system.unitBase, exp), pre);
     }
 
     /**
