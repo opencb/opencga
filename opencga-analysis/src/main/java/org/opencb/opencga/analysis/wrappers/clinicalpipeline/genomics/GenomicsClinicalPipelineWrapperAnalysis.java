@@ -79,6 +79,7 @@ public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         }
     }
 
+    @Override
     protected void run() throws ToolException, IOException {
         // Execute the pipeline
         step(GENOMICS_PIPELINE_STEP, this::runGenomicsPipeline);

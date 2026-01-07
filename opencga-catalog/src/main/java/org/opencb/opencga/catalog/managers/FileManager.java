@@ -588,9 +588,13 @@ public class FileManager extends AnnotationSetManager<File> {
             try {
                 IOManager ioManager = ioManagerFactory.get(uri);
                 long fileSize = ioManager.getFileSize(uri);
-                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), fileSize);
+                String checksum = ioManager.calculateChecksum(uri);
+                ObjectMap params = new ObjectMap()
+                        .append(FileDBAdaptor.QueryParams.SIZE.key(), fileSize)
+                        .append(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
                 getFileDBAdaptor(organizationId).update(file.getUid(), params, null);
                 file.setSize(fileSize);
+                file.setChecksum(checksum);
             } catch (IOException e) {
                 throw new CatalogException("Could not update the new size of the file: " + uri, e);
             }

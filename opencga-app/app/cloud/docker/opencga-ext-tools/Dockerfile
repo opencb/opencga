@@ -7,6 +7,8 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
+#COPY . /tmp/
+
 ## Run update and install necessary packages
 RUN apt-get update -y && \
     ## 0. Install system dependencies
@@ -16,6 +18,7 @@ RUN apt-get update -y && \
     apt-get remove libopenblas0-pthread && \
     pip3 install --no-cache-dir --user multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
+    pip3 install --no-cache-dir pyopencga && \
 
     ## 1. Install Docker repository
     install -m 0755 -d /etc/apt/keyrings && \
@@ -63,6 +66,7 @@ RUN apt-get update -y && \
     unzip apt_2.12.0_linux_64_x86_binaries.zip && \
     chmod +x bin/* && \
     cp bin/*-axiom bin/apt-copynumber-axiom-cnvmix bin/apt2-summary-plate-norm bin/ps-metrics bin/ps-classification bin/apt-format-result /usr/local/bin/ && \
+    #cp /tmp/apt2-smn-* /usr/local/bin/ && \
     cd .. && \
 
     ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
@@ -71,16 +75,16 @@ RUN apt-get update -y && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
 
     ## 7. Install signature.tools.lib installation \
-    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
-    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-    cd /opt/opencga/signature.tools.lib && \
-    git fetch origin --tags && \
-    git checkout tags/v2.4.4 && \
-    sed -i '/Mmusculus/d' DESCRIPTION && \
-    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-    sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
-    cd .. && \
+#    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
+#    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+#    cd /opt/opencga/signature.tools.lib && \
+#    git fetch origin --tags && \
+#    git checkout tags/v2.4.4 && \
+#    sed -i '/Mmusculus/d' DESCRIPTION && \
+#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+#    sed -i '/1000genomes/d' DESCRIPTION && \
+#    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+#    cd .. && \
 
     ## 8. Clean up
     rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2 affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \

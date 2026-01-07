@@ -32,7 +32,3 @@ class ExecTransformer(Transformer):
         result = self.transform(tree)
         self.logger.debug(f"Final result set: {result}")
         return result
-
-    # def execute(self, query_sets, tree):
-    #     self.query_sets = query_sets
-    #     return self.transform(tree)

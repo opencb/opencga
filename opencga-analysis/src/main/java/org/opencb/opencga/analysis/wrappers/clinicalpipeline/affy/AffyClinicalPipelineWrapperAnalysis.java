@@ -72,6 +72,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         }
     }
 
+    @Override
     protected void run() throws ToolException, IOException {
         // Execute the pipeline
         step(AFFY_PIPELINE_STEP, this::runAffyPipeline);

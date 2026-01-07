@@ -39,6 +39,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -51,6 +52,7 @@ public class PosixIOManager extends IOManager {
     protected static ObjectMapper jsonObjectMapper;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;
+    private static final Pattern LINE_SEPARATOR_PATTERN = Pattern.compile("\r?\n");
 
     @Override
     protected void checkUriExists(URI uri) throws CatalogIOException {
@@ -305,7 +307,7 @@ public class PosixIOManager extends IOManager {
                 String content = new String(buffer, java.nio.charset.StandardCharsets.UTF_8);
 
                 // Split the content into lines
-                String[] allLines = content.split("\r?\n", -1);
+                String[] allLines = LINE_SEPARATOR_PATTERN.split(content, -1);
                 List<String> contentList = new LinkedList<>();
 
                 // Skip first line if offset isn't at the beginning (might be incomplete)

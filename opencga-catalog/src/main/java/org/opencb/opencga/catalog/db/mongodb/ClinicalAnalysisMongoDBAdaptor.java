@@ -1149,13 +1149,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
     @Override
     public OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                                List<ClinicalAudit> clinicalAuditList, QueryOptions options) throws CatalogException {
+                                QueryOptions options) throws CatalogException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting ClinicalAnalysis insert transaction for ClinicalAnalysis id '{}'", clinicalAnalysis.getId());
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-                insert(clientSession, studyId, clinicalAnalysis, variableSetList, clinicalAuditList);
+                insert(clientSession, studyId, clinicalAnalysis, variableSetList);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
@@ -1164,13 +1164,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         }
     }
 
-    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                            List<ClinicalAudit> clinicalAudit)
+    ClinicalAnalysis insert(ClientSession clientSession, long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (clinicalAnalysis.getInterpretation() != null) {
             InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
             Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, clinicalAnalysis.getInterpretation());
             clinicalAnalysis.setInterpretation(interpretation);
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
+            List<Interpretation> secondaryInterpretations = new ArrayList<>();
+            for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, secondaryInterpretation);
+                secondaryInterpretations.add(interpretation);
+            }
+            clinicalAnalysis.setSecondaryInterpretations(secondaryInterpretations);
         }
 
         if (StringUtils.isEmpty(clinicalAnalysis.getId())) {
@@ -1183,10 +1191,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         long clinicalUid = getNewUid(clientSession);
 
-        clinicalAnalysis.setAudit(clinicalAudit);
-
         clinicalAnalysis.setUid(clinicalUid);
         clinicalAnalysis.setStudyUid(studyId);
+        clinicalAnalysis.setVersion(1);
+        clinicalAnalysis.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyId));
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
