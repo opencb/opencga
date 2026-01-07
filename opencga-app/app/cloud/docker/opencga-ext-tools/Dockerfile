@@ -18,6 +18,7 @@ RUN apt-get update -y && \
     apt-get remove libopenblas0-pthread && \
     pip3 install --no-cache-dir --user multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
+    pip3 install --no-cache-dir pyopencga && \
 
     ## 1. Install Docker repository
     install -m 0755 -d /etc/apt/keyrings && \
