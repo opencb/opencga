@@ -15,6 +15,7 @@ import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineInput;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -75,10 +76,8 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         // Execute the pipeline
         step(AFFY_PIPELINE_STEP, this::runAffyPipeline);
 
-        if (analysisParams.getPipelineParams().getVariantIndexParams() != null) {
-            // Index variants in OpenCGA storage
-            step(VARIANT_INDEX_STEP, this::runVariantIndex);
-        }
+        // Index variants in OpenCGA storage
+        step(VARIANT_INDEX_STEP, this::runVariantIndex);
     }
 
     private void runAffyPipeline() throws  ToolException {
@@ -99,7 +98,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         try (Stream<Path> stream = Files.list(getOutDir())) {
             vcfPath = stream
                     .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".vcf.gz"))
+                    .filter(path -> path.getFileName().toString().endsWith(".vcf") || path.getFileName().toString().endsWith(".vcf.gz"))
                     .findFirst()
                     .orElse(null);
         }
@@ -110,11 +109,14 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
                 "", "", "", null, null, null, null, null), false, token).first();
 
-        ObjectMap storageOptions = analysisParams.getPipelineParams().getVariantIndexParams() != null
-                // ? new ObjectMap(analysisParams.getPipelineParams().getVariantIndexParams())
-                ? analysisParams.getPipelineParams().getVariantIndexParams().toObjectMap()
-                : new ObjectMap();
+        VariantIndexParams variantIndexParams = analysisParams.getPipelineParams().getVariantIndexParams();
+        if (variantIndexParams == null) {
+            variantIndexParams = new VariantIndexParams();
+            variantIndexParams.setAnnotate(true);
+        }
+        ObjectMap storageOptions = variantIndexParams.toObjectMap();
 
+        analysisParams.getPipelineParams().getVariantIndexParams().setAnnotate(true);
         getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
     }
 
