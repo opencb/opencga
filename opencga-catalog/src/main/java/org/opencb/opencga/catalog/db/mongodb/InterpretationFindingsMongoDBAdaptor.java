@@ -69,6 +69,7 @@ public class InterpretationFindingsMongoDBAdaptor extends CatalogMongoDBAdaptor 
             throws CatalogDBException {
         List<Document> documents = new ArrayList<>(clinicalVariantList.size());
         for (ClinicalVariant clinicalVariant : clinicalVariantList) {
+            clinicalVariant.setVersion(1);
             Document document = findingConverter.convertToStorageType(clinicalVariant);
             documents.add(document);
         }

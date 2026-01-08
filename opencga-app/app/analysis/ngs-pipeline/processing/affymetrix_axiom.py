@@ -413,6 +413,17 @@ class AffymetrixAxiom(BaseProcessor):
                + ["--qc-geno-results", str(self.output / "apt-geno-qc-axiom.txt")])
         self.run_command(cmd)
 
+        ## 10. Execute:
+        ## bcftools view         -e 'REF ~ "[()]" || ALT ~ "[()]" || REF ~ "D" || ALT ~ "D" || REF ~ "I" || ALT ~ "I" || REF="." || ALT="."' "$f" -Oz -o "cleaned/${base}.clean.vcf.gz";     bcftools index "cleaned/${base}.clean.vcf.gz"
+        cmd = (["bcftools", "view"]
+               + ["-e", 'REF ~ "[()]" || ALT ~ "[()]" || REF ~ "D" || ALT ~ "D" || REF ~ "I" || ALT ~ "I" || REF="." || ALT="."']
+               + [str(self.output / "Axiom_KU8.vcf")]
+               + ["-Oz", "-o", str(self.output / "Axiom_KU8.clean.vcf.gz")])
+        self.run_command(cmd)
+        
+        ## Rename original VCF file
+        os.rename(str(self.output / "Axiom_KU8.vcf"), str(self.output / "Axiom_KU8.vcf.bkp"))
+
         ## 4. Call to post_process
         # self.post_process()
 

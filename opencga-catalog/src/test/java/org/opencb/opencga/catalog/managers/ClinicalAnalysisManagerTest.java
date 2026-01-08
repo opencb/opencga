@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.MiniPubmed;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -1015,11 +1016,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
                 new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
                 null);
+        // I set version to 0 because we had some issues with this scenario in the past
+        cv1.setVersion(0);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
                 new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
                 null);
+        cv2.setVersion(0);
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -1028,8 +1032,16 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setProband(individual)
                 .setInterpretation(new Interpretation()
                         .setPrimaryFindings(findingList)
-                );
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), ownerToken);
+                ).setSecondaryInterpretations(Arrays.asList(
+                        new Interpretation()
+                                .setPrimaryFindings(findingList),
+                        new Interpretation()
+                                .setPrimaryFindings(findingList)
+                ));
+        ClinicalAnalysis clinicalAnalysisRes = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis,
+                INCLUDE_RESULT, ownerToken).first();
+        assertNotNull(clinicalAnalysisRes.getInterpretation());
+        assertEquals(2, clinicalAnalysisRes.getSecondaryInterpretations().size());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(),
                 ownerToken).first();
@@ -1134,6 +1146,22 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
         assertEquals(3, interpretation.getStats().getPrimaryFindings().getNumVariants());
         assertEquals(3, (int) interpretation.getStats().getPrimaryFindings().getStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
+
+        // Set NEW finding
+        Variant v = new Variant("9:99999:A:T");
+        v.setId(v.toStringSimple());
+        ClinicalVariant cv = new ClinicalVariant(v.getImpl());
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(cv));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(studyFqn, clinicalAnalysis.getId(), clinicalAnalysis.getId() + ".1", updateParams,
+                null, options, ownerToken);
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals("9:99999:A:T", interpretation.getPrimaryFindings().get(0).getId());
 
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);

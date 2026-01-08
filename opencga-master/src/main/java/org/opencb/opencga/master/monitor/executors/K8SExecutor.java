@@ -58,6 +58,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_RUNTIME_CLASS = "k8s.runtimeClass";
     public static final String K8S_JAVA_HEAP = "k8s.javaHeap";
+    public static final String K8S_JAVA_OFFHEAP = "k8s.javaOffHeap";
+    public static final String K8S_MEMORY_OVERHEAD = "k8s.memoryOverhead";
     public static final String K8S_ENVS = "k8s.envs";
     public static final String K8S_NAMESPACE = "k8s.namespace";
     public static final String K8S_VOLUME_MOUNTS = "k8s.volumeMounts";
@@ -375,6 +377,12 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private ResourceRequirements getResources(MinimumRequirements minimumRequirements) {
+        return getResources(minimumRequirements, defaultRequirements, executionFactor);
+    }
+
+    protected static ResourceRequirements getResources(MinimumRequirements minimumRequirements,
+                                                       ExecutionRequirements defaultRequirements,
+                                                       ExecutionRequirementsFactor executionFactor) {
         if (minimumRequirements == null) {
             minimumRequirements = new MinimumRequirements(
                     String.valueOf(defaultRequirements.getCpu()),
@@ -386,13 +394,13 @@ public class K8SExecutor implements BatchExecutor {
         ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder();
         if (StringUtils.isNotEmpty(minimumRequirements.getMemory())) {
             long memoryBytes = IOUtils.fromHumanReadableToByte(minimumRequirements.getMemory());
-            Quantity memory = new Quantity(String.valueOf(memoryBytes * this.executionFactor.getMemory()));
+            Quantity memory = new Quantity(IOUtils.kubernetesStyleByteCount((long) (memoryBytes * executionFactor.getMemory())));
             resources.addToRequests("memory", memory);
             resources.addToLimits("memory", memory);
         }
         if (StringUtils.isNotEmpty(minimumRequirements.getCpu())) {
             double cpuUnits = Double.parseDouble(minimumRequirements.getCpu());
-            Quantity cpu = new Quantity(Double.toString(cpuUnits * this.executionFactor.getCpu()));
+            Quantity cpu = new Quantity(Double.toString(cpuUnits * executionFactor.getCpu()));
             resources.addToRequests("cpu", cpu);
             resources.addToLimits("cpu", cpu);
         }
@@ -400,10 +408,52 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private List<EnvVar> configureJavaHeap(org.opencb.opencga.core.models.job.Job job, ResourceRequirements requirements) {
-        String javaHeap = options.getString(K8S_JAVA_HEAP);
-        Quantity memory = requirements.getRequests().get("memory");
+        return configureJavaHeap(job, requirements, options);
+    }
 
-        if (StringUtils.isEmpty(javaHeap) && memory != null) {
+    protected static List<EnvVar> configureJavaHeap(org.opencb.opencga.core.models.job.Job job, ResourceRequirements requirements,
+                                                    ObjectMap options) {
+        String javaHeap = options.getString(K8S_JAVA_HEAP);
+        String javaOffheap = options.getString(K8S_JAVA_OFFHEAP, "5%");
+        String overhead = options.getString(K8S_MEMORY_OVERHEAD, "300Mi");
+        Quantity memory = requirements.getRequests().get("memory");
+        List<EnvVar> envVars = new ArrayList<>(2);
+        long memoryBytes = memory.getNumericalAmount().longValue();
+        long overHeadBytes;
+        long javaOffheapBytes;
+
+        if (overhead.endsWith("%")) {
+            String percentString = overhead.substring(0, overhead.length() - 1);
+            try {
+                double percent = Double.parseDouble(percentString) / 100.0;
+                overHeadBytes = (long) (memoryBytes * percent);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Unable to parse memoryOverhead percentage: " + overhead, e);
+            }
+        } else {
+            overHeadBytes = IOUtils.fromHumanReadableToByte(overhead);
+        }
+
+        if (javaOffheap.endsWith("%")) {
+            String percentString = javaOffheap.substring(0, javaOffheap.length() - 1);
+            try {
+                double percent = Double.parseDouble(percentString) / 100.0;
+                javaOffheapBytes = (long) (memoryBytes * percent);
+                // Set a minimum offheap size of 300MiB
+                if (javaOffheapBytes < (300 * 1024 * 1024)) {
+                    javaOffheapBytes = 300 * 1024 * 1024;
+                }
+                javaOffheap = IOUtils.javaStyleByteCount(javaOffheapBytes);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Unable to parse javaOffheap percentage: " + javaOffheap, e);
+            }
+        } else {
+            javaOffheapBytes = IOUtils.fromHumanReadableToByte(javaOffheap);
+            // Ensure the provided javaOffheap is in JAVA_STYLE
+            javaOffheap = IOUtils.javaStyleByteCount(javaOffheapBytes);
+        }
+
+        if (StringUtils.isEmpty(javaHeap)) {
             // TODO: Some of this magic should go to the JobManager
             long bytes;
             switch (job.getType()) {
@@ -415,18 +465,24 @@ public class K8SExecutor implements BatchExecutor {
                     break;
                 case NATIVE_TOOL:
                 default:
-                    String amount = Long.toString(memory.getNumericalAmount().longValue());
+                    String amount = Long.toString(memoryBytes);
                     bytes = IOUtils.fromHumanReadableToByte(amount);
-                    bytes -= IOUtils.fromHumanReadableToByte("300Mi");
+                    bytes -= javaOffheapBytes;
+                    bytes -= overHeadBytes;
                     break;
             }
-            javaHeap = Long.toString(bytes);
-        }
-        if (javaHeap != null) {
-            return Collections.singletonList(new EnvVar("JAVA_HEAP", javaHeap, null));
+            javaHeap = IOUtils.javaStyleByteCount(bytes);
         } else {
-            return Collections.emptyList();
+            // Ensure the provided javaHeap is in JAVA_STYLE
+            long heapBytes = IOUtils.fromHumanReadableToByte(javaHeap);
+            javaHeap = IOUtils.javaStyleByteCount(heapBytes);
         }
+
+        envVars.add(new EnvVar("JAVA_OFF_HEAP", javaOffheap, null));
+        if (javaHeap != null) {
+            envVars.add(new EnvVar("JAVA_HEAP", javaHeap, null));
+        }
+        return envVars;
     }
 
     private boolean shouldAddDockerDaemon(String queue) {

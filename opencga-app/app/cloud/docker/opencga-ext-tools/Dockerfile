@@ -7,7 +7,6 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
-#COPY . /tmp/
 
 ## Run update and install necessary packages
 RUN apt-get update -y && \
@@ -18,6 +17,7 @@ RUN apt-get update -y && \
     apt-get remove libopenblas0-pthread && \
     pip3 install --no-cache-dir --user multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
+    pip3 install --no-cache-dir pyopencga && \
 
     ## 1. Install Docker repository
     install -m 0755 -d /etc/apt/keyrings && \
@@ -63,9 +63,11 @@ RUN apt-get update -y && \
     cd affy && \
     wget https://downloads.thermofisher.com/APT/APT_2.12.0/apt_2.12.0_linux_64_x86_binaries.zip && \
     unzip apt_2.12.0_linux_64_x86_binaries.zip && \
-    chmod +x bin/* && \
+#    chmod +x bin/* && \
     cp bin/*-axiom bin/apt-copynumber-axiom-cnvmix bin/apt2-summary-plate-norm bin/ps-metrics bin/ps-classification bin/apt-format-result /usr/local/bin/ && \
-    #cp /tmp/apt2-smn-* /usr/local/bin/ && \
+    wget http://resources.opencb.org/apt-binaries/apt2-smn-status -O /usr/local/bin/apt2-smn-status && \
+    wget http://resources.opencb.org/apt-binaries/apt2-smn-ab -O /usr/local/bin/apt2-smn-ab && \
+    chmod +x /usr/local/bin/* && \
     cd .. && \
 
     ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
