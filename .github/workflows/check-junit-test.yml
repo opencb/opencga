@@ -1,3 +1,12 @@
+# This workflow runs JUnit tests for different OpenCGA modules and Hadoop profiles.
+# It supports short, medium, and long test types, and allows custom Maven options.
+#
+# Example usage:
+# - To test all modules and all Hadoop profiles with short and medium tests:
+#   Select 'all' for both 'hadoop' and 'module', enable 'short_tests' and 'medium_tests'.
+# - To test only 'opencga-core' on 'hdi5.1' with long tests:
+#   Select 'hdi5.1' for 'hadoop', 'opencga-core' for 'module', enable 'long_tests'.
+
 name: Check junits
 run-name: "Check Junit. Hadoop ${{ inputs.hadoop }} ${{ inputs.module == 'all' && ' ' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
 
@@ -6,7 +15,7 @@ on:
     inputs:
       hadoop:
         type: choice
-        description: 'Hadoop flavour.'
+        description: 'Hadoop flavour to test (e.g., hdi5.1, emr6.1, all).'
         required: false
         default: "hdi5.1"
         options:
@@ -18,7 +27,7 @@ on:
           - "emr7.5"
       module:
         type: choice
-        description: 'OpenCGA module to test.'
+        description: 'OpenCGA module to test (e.g., opencga-analysis, all).'
         required: false
         default: "all"
         options:
@@ -33,29 +42,29 @@ on:
           - "opencga-storage"
           - "opencga-test"
       short_tests:
-        description: 'Run short tests.'
+        description: 'Run short tests (recommended for quick feedback).'
         type: boolean
         required: false
         default: true
       medium_tests:
-        description: 'Run medium tests.'
+        description: 'Run medium tests (for more thorough validation).'
         type: boolean
         required: false
         default: false
       long_tests:
-        description: 'Run long tests.'
+        description: 'Run long tests (for full coverage, takes more time).'
         type: boolean
         required: false
         default: false
       mvn_opts:
-        description: 'Maven options.'
+        description: 'Additional Maven options (e.g., -DskipITs).'
         type: string
         required: false
         default: ""
 
 jobs:
   get_profiles:
-    name: Test JUnit
+    name: Build test matrices
     runs-on: ${{ vars.UBUNTU_VERSION }}
     outputs:
       profiles: ${{ steps.validate.outputs.profiles }}
@@ -65,45 +74,20 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
-      - name: Building string profiles to run
+      - name: Validate and build test profiles
         id: validate
         run: |
-          if [ -f "./.github/workflows/scripts/get_profiles.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_profiles.sh
-            profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})
-            modules='["${{ inputs.module }}"]'
-            hadoop='["${{ inputs.hadoop }}"]'
-          
-            if [ "${{ inputs.hadoop }}" == "all" ]; then
-              hadoop='["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]'
-          
-              # When testing all hadoop profiles, split matrix by profile
-              IFS=',' read -r -a profile_array <<< "$profiles"
-              profiles=""
-              for profile in "${profile_array[@]}"; do
-                if [ "$profiles" == "" ]; then
-                  profiles="\"$profile\""
-                else
-                  profiles="$profiles, \"$profile\""
-                fi
-              done
-              profiles="[$profiles]"
-            else
-              profiles='["'"$profiles"'"]'
-              if [ "${{ inputs.module }}" == "all" ]; then
-                # Only execute modules with matrix strategy if we are testing one single hadoop profile
-                modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
-              fi
-            fi
-            echo "profiles=$profiles" >> $GITHUB_OUTPUT
-            echo "modules=$modules" >> $GITHUB_OUTPUT
-            echo "hadoop=$hadoop" >> $GITHUB_OUTPUT
-            echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
-            echo "Modules -> $modules" >> $GITHUB_STEP_SUMMARY
-            echo "Hadoop -> $hadoop" >> $GITHUB_STEP_SUMMARY
-            #echo "matrix={\"hadoop\": $hadoop, \"modules\": $modules}" >> $GITHUB_OUTPUT
-          fi
+          # This step builds the test profile, module, and hadoop matrices for the test job using an external script.
+          chmod +x ./.github/workflows/scripts/get_matrix.sh
+          ./.github/workflows/scripts/get_matrix.sh "${{ inputs.short_tests }}" "${{ inputs.medium_tests }}" "${{ inputs.long_tests }}" "${{ inputs.hadoop }}" "${{ inputs.module }}"
+          # Read outputs from the script and set them for GitHub Actions
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_OUTPUT
+            echo "$key -> $value" >> $GITHUB_STEP_SUMMARY
+          done < matrix_outputs.txt
+
   test:
+    name: Run JUnit tests
     strategy:
       fail-fast: false
       matrix:
