@@ -236,7 +236,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         // Get latest study metadata from DB, might have been changed since
                         StudyMetadata studyMetadata = storageETL.getStudyMetadata();
                         // Get file ID for the provided file name
-                        Integer fileId = storageETL.getMetadataManager().getFileId(studyMetadata.getId(), fileName);
+                        Integer fileId = storageETL.getMetadataManager().getFileId(studyMetadata.getId(), filePath);
                         indexedFiles.add(fileId);
                     }
                     return storagePipelineResult;

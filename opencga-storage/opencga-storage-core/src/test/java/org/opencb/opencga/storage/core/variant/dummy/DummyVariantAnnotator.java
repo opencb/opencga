@@ -92,7 +92,8 @@ public class DummyVariantAnnotator extends VariantAnnotator {
             EvidenceEntry evidenceEntry = new EvidenceEntry();
             int i = Math.abs(v.toString().hashCode() % SOURCES.size());
             evidenceEntry.setSource(new EvidenceSource(SOURCES.get(i), "v1", ""));
-            a.setTraitAssociation(Collections.singletonList(evidenceEntry));
+            a.setTraitAssociation(new ArrayList<>());
+            a.getTraitAssociation().add(evidenceEntry);
             a.setAdditionalAttributes(
                     Collections.singletonMap(GROUP_NAME.key(),
                             new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));
