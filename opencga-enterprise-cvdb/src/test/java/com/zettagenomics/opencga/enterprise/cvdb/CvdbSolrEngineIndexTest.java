@@ -270,8 +270,8 @@ public class CvdbSolrEngineIndexTest {
         query = new Query(PROJECT_PARAM_NAME, projectId);
         query.put(CA_ID_NAME, caId);
 
-        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        assertEquals(1, result.getNumResults());
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
+        assertEquals("init search", 1, result.getNumResults());
         ClinicalAnalysis prevCa = result.first();
 
         ClinicalAnalysis clinicalAnalysis = result.first();
@@ -304,9 +304,13 @@ public class CvdbSolrEngineIndexTest {
                 prevCa.getInterpretation().getId(), ciUpdateParams, null, queryOptions, opencgaToken).first();
 
         // CVDB index the given clinical analysis from catalog
-        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), true, userToken);
-        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        assertEquals(1, result.getNumResults());
+        CvdbIndexResult cvdbIndexResult = cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), true, userToken);
+        System.out.println("cvdbIndexResult.toString() = " + cvdbIndexResult.toString());
+        assertEquals("cvdbIndexResult", 1, cvdbIndexResult.getNumIndexed());
+        System.out.println("query.toJson() = " + query.toJson());
+        result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
+        System.out.println("query.toJson() = " + query.toJson());
+        assertEquals("after re-indexing", 1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();
         assertEquals(newDescription, updatedClinicalAnalysis.getDescription());
 
@@ -325,7 +329,7 @@ public class CvdbSolrEngineIndexTest {
             cvs = solrIterator.next();
             counter++;
         }
-        Assert.assertEquals(1, counter);
+        Assert.assertEquals("final check", 1, counter);
         cv = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalVariant.class).readValue(cvs.getJson());
         System.out.println("cv.getId() = " + cv.getId());
         System.out.println("v.getId() = " + v.getId());
