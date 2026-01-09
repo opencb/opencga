@@ -420,6 +420,13 @@ public class K8SExecutor implements BatchExecutor {
                 ).build();
 
         jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
+        logger.info("Creating K8S job '{}/{}' for OpenCGA job '{}'", namespace, jobName, job.getId());
+        logger.info(" - Image: {}", imageName);
+        logger.info(" - Request Memory: {} (limit {})", resources.getRequests().get("memory"), resources.getLimits().get("memory"));
+        logger.info(" - Java Heap Env Vars: {}", javaHeapEnvVars.stream()
+                .map(envVar -> envVar.getName() + "=" + envVar.getValue())
+                .reduce((a, b) -> a + ", " + b).orElse("None"));
+
         getKubernetesClient().batch().v1().jobs().inNamespace(namespace).resource(k8sJob).create();
     }
 
@@ -462,9 +469,8 @@ public class K8SExecutor implements BatchExecutor {
                                                     ObjectMap options) {
         String javaHeap = options.getString(K8S_JAVA_HEAP);
         String javaOffheap = options.getString(K8S_JAVA_OFFHEAP, "5%");
-        String overhead = options.getString(K8S_MEMORY_OVERHEAD, "300Mi");
+        String overhead = options.getString(K8S_MEMORY_OVERHEAD, "10%");
         Quantity memory = requirements.getRequests().get("memory");
-        List<EnvVar> envVars = new ArrayList<>(2);
         long memoryBytes = memory.getNumericalAmount().longValue();
         long overHeadBytes;
         long javaOffheapBytes;
@@ -525,6 +531,7 @@ public class K8SExecutor implements BatchExecutor {
             javaHeap = IOUtils.javaStyleByteCount(heapBytes);
         }
 
+        List<EnvVar> envVars = new ArrayList<>(2);
         envVars.add(new EnvVar("JAVA_OFF_HEAP", javaOffheap, null));
         if (javaHeap != null) {
             envVars.add(new EnvVar("JAVA_HEAP", javaHeap, null));
