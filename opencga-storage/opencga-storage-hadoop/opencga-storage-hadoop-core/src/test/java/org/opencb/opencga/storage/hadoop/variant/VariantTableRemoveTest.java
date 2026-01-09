@@ -31,8 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -166,13 +165,43 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 
     @Test
     public void removeFileTestMultiFile() throws Exception {
+        removeFileTestMultiFile(false, false);
+    }
+
+    @Test
+    public void removeFileTestMultiFileWithAnnotationAndFamilyIndex() throws Exception {
+        removeFileTestMultiFile(true, true);
+    }
+
+    public void removeFileTestMultiFile(boolean annotate, boolean familyIndex) throws Exception {
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
 
         loadFile("s1.genome.vcf", studyMetadata, new ObjectMap());
         loadFile("s2.genome.vcf", studyMetadata, new ObjectMap());
         loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true));
+        if (annotate) {
+            variantStorageEngine.annotate(newOutputUri(), new ObjectMap());
+        }
+        if (familyIndex) {
+            variantStorageEngine.familyIndex(studyMetadata.getName(), Collections.singletonList(new Trio("s1", null, "s2")), new ObjectMap());
+        }
+        int sampleId = metadataManager.getSampleIdOrFail(studyMetadata.getId(), "s2");
+
+        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyMetadata.getId(), sampleId);
+        // Ensure sample index status is ready
+        assertEquals(TaskMetadata.Status.READY, sampleMetadata.getSampleIndexStatus(1));
+        assertEquals(annotate ? TaskMetadata.Status.READY : TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        assertEquals(familyIndex ? TaskMetadata.Status.READY : TaskMetadata.Status.NONE, sampleMetadata.getFamilyIndexStatus(1));
+
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         removeFile("s2.genome.vcf", studyMetadata, Collections.emptyMap());
+
+        sampleMetadata = metadataManager.getSampleMetadata(studyMetadata.getId(), sampleId);
+        // Ensure sample index status is still ready
+        assertEquals(TaskMetadata.Status.READY, sampleMetadata.getSampleIndexStatus(1));
+        assertEquals(annotate ? TaskMetadata.Status.READY : TaskMetadata.Status.NONE, sampleMetadata.getSampleIndexAnnotationStatus(1));
+        assertEquals(familyIndex ? TaskMetadata.Status.READY : TaskMetadata.Status.NONE, sampleMetadata.getFamilyIndexStatus(1));
+
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 

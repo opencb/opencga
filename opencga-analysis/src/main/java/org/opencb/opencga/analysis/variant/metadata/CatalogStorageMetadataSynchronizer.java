@@ -1063,7 +1063,7 @@ public class CatalogStorageMetadataSynchronizer {
             catalogManager.getSampleManager()
                     .updateSampleInternalVariantIndex(study.getName(), sample,
                             new SampleInternalVariantIndex(
-                                    new IndexStatus(sampleMetadata.getIndexStatus().name()),
+                                    toIndexStatus(sampleMetadata.getIndexStatus()),
                                     sampleMetadata.getFiles().size(),
                                     sampleMetadata.isMultiFileSample()), token);
             modified = true;
@@ -1073,7 +1073,7 @@ public class CatalogStorageMetadataSynchronizer {
             catalogManager.getSampleManager()
                     .updateSampleInternalVariantAnnotationIndex(study.getName(), sample,
                             new SampleInternalVariantAnnotationIndex(
-                                    new IndexStatus(sampleMetadata.getAnnotationStatus().name())), token);
+                                    toIndexStatus(sampleMetadata.getAnnotationStatus())), token);
             modified = true;
         }
 
@@ -1083,7 +1083,7 @@ public class CatalogStorageMetadataSynchronizer {
             catalogManager.getSampleManager()
                     .updateSampleInternalVariantSecondaryAnnotationIndex(study.getName(), sample,
                             new SampleInternalVariantSecondaryAnnotationIndex(
-                                    new IndexStatus(sampleMetadata.getSecondaryAnnotationIndexStatus().name())), token);
+                                    toIndexStatus(sampleMetadata.getSecondaryAnnotationIndexStatus())), token);
             modified = true;
         }
 
@@ -1136,14 +1136,15 @@ public class CatalogStorageMetadataSynchronizer {
             catalogVariantSecondarySampleIndexModified = true;
         }
 
-        String sampleIndexFamilyStatus = sampleMetadata.getFamilyIndexStatus(sampleIndexVersion).name();
-        String catalogSecondarySampleIndexFamilyStatus = secureGet(sample, s -> s.getInternal().getVariant().getSecondarySampleIndex().getFamilyStatus().getId(), null);
-        if (!sampleIndexFamilyStatus.equals(catalogSecondarySampleIndexFamilyStatus)) {
+        IndexStatus sampleIndexFamilyStatus = toIndexStatus(sampleMetadata.getFamilyIndexStatus(sampleIndexVersion));
+        String catalogSecondarySampleIndexFamilyStatus = secureGet(sample, s -> s.getInternal().getVariant()
+                .getSecondarySampleIndex().getFamilyStatus().getId(), null);
+        if (!sampleIndexFamilyStatus.getId().equals(catalogSecondarySampleIndexFamilyStatus)) {
             String message = "Family Index is "
-                    + (sampleIndexFamilyStatus.equals(IndexStatus.READY) ? "ready" : "not ready")
+                    + (sampleIndexFamilyStatus.getId().equals(IndexStatus.READY) ? "ready" : "not ready")
                     + " with version=" + sampleIndexVersion;
             catalogVariantSecondarySampleIndex.setFamilyStatus(
-                    new IndexStatus(sampleIndexFamilyStatus, message));
+                    new IndexStatus(sampleIndexFamilyStatus.getId(), message));
             catalogVariantSecondarySampleIndexModified = true;
         }
 
@@ -1212,6 +1213,41 @@ public class CatalogStorageMetadataSynchronizer {
         }
 
         return modified;
+    }
+
+    private static IndexStatus toIndexStatus(TaskMetadata.Status indexStatus) {
+        return toIndexStatus(indexStatus, "");
+    }
+
+    private static IndexStatus toIndexStatus(TaskMetadata.Status storageStatus, String message) {
+        String statusName;
+        switch (storageStatus) {
+            case NONE:
+            case ERROR:
+            case ABORTED:
+                statusName = IndexStatus.NONE;
+                break;
+            case RUNNING:
+                statusName = IndexStatus.INDEXING;
+                break;
+            case DONE:
+            case READY:
+                statusName = IndexStatus.READY;
+                break;
+            case INVALID:
+                statusName = IndexStatus.INVALID;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + storageStatus);
+        }
+        if (message.isEmpty()) {
+            if (statusName.equals(storageStatus.name())) {
+                message = "Index is " + statusName.toLowerCase();
+            } else {
+                message = "Index is " + statusName.toLowerCase() + " (storage status: " + storageStatus.name().toLowerCase() + ")";
+            }
+        }
+        return new IndexStatus(statusName, message);
     }
 
     public void synchronizeRemovedStudyFromStorage(String study, String token) throws CatalogException {
