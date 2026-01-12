@@ -16,20 +16,16 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.glassfish.jersey.media.multipart.FormDataBodyPart;
-import org.glassfish.jersey.media.multipart.MultiPart;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.server.rest.WSServerTestUtils.catalogManagerResource;
 
 @Category(MediumTests.class)
 public class OpenCGAWSServerTest {
@@ -56,7 +52,8 @@ public class OpenCGAWSServerTest {
 
         //Drop default user mongoDB database.
         String databaseName = WSServerTestUtils.DATABASE_PREFIX + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
-        MongoDataStoreManager dataStoreManager = new MongoDataStoreManager("localhost", 27017);
+        String[] host = catalogManagerResource.getConfiguration().getCatalog().getDatabase().getHosts().get(0).split(":");
+        MongoDataStoreManager dataStoreManager = new MongoDataStoreManager(host[0], Integer.valueOf(host[1]));
         dataStoreManager.get(databaseName);
         dataStoreManager.drop(databaseName);
 
@@ -68,7 +65,7 @@ public class OpenCGAWSServerTest {
     @After
     public void after() throws Exception {
         // It is here to avoid restarting the server again and again
-        serverTestUtils.setUp();
+//        serverTestUtils.setUp();
     }
 
     /** First echo message to test Server connectivity **/
