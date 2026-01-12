@@ -396,14 +396,14 @@ function build_opencga() {
       ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
     fi
 
-    BYTES_PRE=$(du -s .)
+    BYTES_PRE=$(du -s . | cut -f 1)
 
     ## Delete all content of all target folders but "*/target/site/" and "*/target/surefire-reports/"
     find . -type d -name target | while read -r target_dir; do
       find "$target_dir" -mindepth 1 -maxdepth 1 ! -name "site" ! -name "surefire-reports" -exec rm -rf {} +
     done
 
-    BYTES_POST=$(du -s .)
+    BYTES_POST=$(du -s . | cut -f 1)
     ## Convert to human readable format (IEC)
     FREED_SPACE=$(numfmt --to=iec-i --suffix=B "$((BYTES_PRE - BYTES_POST))")
     log_summary "Freed space after cleaning target folders: $FREED_SPACE"
