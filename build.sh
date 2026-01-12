@@ -396,14 +396,14 @@ function build_opencga() {
       ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
     fi
 
-    BYTES_PRE=$(du -s . | cut -f 1)
+    BYTES_PRE=$(du -s --block-size=1 . | cut -f1)
 
     ## Delete all content of all target folders but "*/target/site/" and "*/target/surefire-reports/"
     find . -type d -name target | while read -r target_dir; do
       find "$target_dir" -mindepth 1 -maxdepth 1 ! -name "site" ! -name "surefire-reports" -exec rm -rf {} +
     done
 
-    BYTES_POST=$(du -s . | cut -f 1)
+    BYTES_POST=$(du -s --block-size=1 . | cut -f1)
     ## Convert to human readable format (IEC)
     FREED_SPACE=$(numfmt --to=iec-i --suffix=B "$((BYTES_PRE - BYTES_POST))")
     echo "Freed space after cleaning target folders: $FREED_SPACE"
@@ -430,6 +430,15 @@ function build_opencga_enterprise() {
         log_summary "$COMMAND opencga-enterprise build Success!"
       fi
   elif [ "$COMMAND" == "test" ]; then
+
+      echo "Disk usage before testing opencga-enterprise:"
+      df -H .
+
+      echo "Docker pull opencga-ext-tools"
+      docker pull opencb/opencga-ext-tools:$OPENCGA_DEPENDENCY_VERSION
+
+      echo "Compiling and testing opencga-enterprise... $(pwd)"
+
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
     # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
