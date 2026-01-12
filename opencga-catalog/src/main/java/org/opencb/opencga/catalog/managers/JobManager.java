@@ -86,7 +86,7 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
-    public final static String OUTDIR_PARAM = "outdir";
+    public static final String OUTDIR_PARAM = "outdir";
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
