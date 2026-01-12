@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -735,8 +736,8 @@ public class CatalogStorageMetadataSynchronizer {
             for (Integer virtualFile : virtualFiles) {
                 File file = catalogManager.getFileManager()
                         .get(study.getName(), filePathMap.get(virtualFile), INDEXED_FILES_QUERY_OPTIONS, token).first();
-                boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getUri());
-                boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getUri());
+                boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(getFileUri(file));
+                boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(getFileUri(file));
                 if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, true)) {
                     modified = true;
                 }
@@ -760,8 +761,8 @@ public class CatalogStorageMetadataSynchronizer {
                             .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, token)) {
                         while (iterator.hasNext()) {
                             File file = iterator.next();
-                            boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getUri());
-                            boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getUri());
+                            boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(getFileUri(file));
+                            boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(getFileUri(file));
                             if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, true)) {
                                 modifiedFiles++;
                                 modified = true;
@@ -769,7 +770,7 @@ public class CatalogStorageMetadataSynchronizer {
 
                             // Remove processed file from list of uris.
                             // Avoid double processing in case of exception
-                            batch.remove(file.getUri().toString());
+                            batch.remove(getFileUri(file).toString());
                             numFiles++;
                             processedFilesInBatch++;
                             progressLogger.increment(1, modifiedFiles + " updated files");
@@ -818,7 +819,7 @@ public class CatalogStorageMetadataSynchronizer {
                 .iterator(study.getName(), indexedFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                Integer fileId = fileURIMap.get(file.getUri());
+                Integer fileId = fileURIMap.get(getFileUri(file));
                 if (fileId == null || !indexedFilesFromStorage.contains(fileId)) {
                     // Check for annotation index and secondary annotation index
                     boolean annotationIndexReady;
@@ -827,8 +828,8 @@ public class CatalogStorageMetadataSynchronizer {
                         annotationIndexReady = false;
                         secondaryIndexReady = false;
                     } else {
-                        annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getUri());
-                        secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getUri());
+                        annotationIndexReady = annotationReadyFilesFromStorage.contains(getFileUri(file));
+                        secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(getFileUri(file));
                     }
                     synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, false);
                     modified = true;
@@ -854,7 +855,7 @@ public class CatalogStorageMetadataSynchronizer {
                 .iterator(study.getName(), runningIndexFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                Integer fileId = fileURIMap.get(file.getUri());
+                Integer fileId = fileURIMap.get(getFileUri(file));
                 FileMetadata fileMetadata;
                 if (fileId == null) {
                     fileMetadata = null;
@@ -893,10 +894,10 @@ public class CatalogStorageMetadataSynchronizer {
                         modified = true;
                     } else {
                         // Running job. Might be transforming, or have just started. Do not modify the status!
-                        loadingFilesRegardingCatalog.add(file.getUri());
+                        loadingFilesRegardingCatalog.add(getFileUri(file));
                     }
                 } else {
-                    loadingFilesRegardingCatalog.add(file.getUri());
+                    loadingFilesRegardingCatalog.add(getFileUri(file));
                 }
             }
         }
@@ -939,6 +940,14 @@ public class CatalogStorageMetadataSynchronizer {
         modified |= synchronizeSamples(study, allSamples, token);
 
         return modified;
+    }
+
+    private static URI getFileUri(File file) {
+        if (file.getType() == File.Type.VIRTUAL) {
+            return UriUtils.toUri(file.getPath());
+        } else {
+            return file.getUri();
+        }
     }
 
     private boolean synchronizeIndexedFile(StudyMetadata study, File file, Map<URI, Set<String>> fileSamplesMap,
@@ -996,7 +1005,7 @@ public class CatalogStorageMetadataSynchronizer {
             modified = true;
         }
 
-        Set<String> storageSamples = fileSamplesMap.get(file.getUri());
+        Set<String> storageSamples = fileSamplesMap.get(getFileUri(file));
         Set<String> catalogSamples = new HashSet<>(file.getSampleIds());
         if (storageSamples == null) {
             storageSamples = new HashSet<>();
