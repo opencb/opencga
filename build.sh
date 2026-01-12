@@ -396,14 +396,18 @@ function build_opencga() {
       ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
     fi
 
-    echo "Disk usage of opencga folder before clean"
-    du -sh .
+    BYTES_PRE=$(du -s .)
 
-    ## Maven clean of opencga, all but opencga-app
-    mvn_step "opencga-clean" clean -pl '!opencga-app' -P "$STORAGE_HADOOP_DEPS" -Dcheckstyle.skip $MVN_OPTS
+    ## Delete all content of all target folders but "*/target/site/" and "*/target/surefire-reports/"
+    find . -type d -name target | while read -r target_dir; do
+      find "$target_dir" -mindepth 1 -maxdepth 1 ! -name "site" ! -name "surefire-reports" -exec rm -rf {} +
+    done
 
-    echo "Disk usage of opencga after clean"
-    du -sh .
+    BYTES_POST=$(du -s .)
+    ## Convert to human readable format (IEC)
+    FREED_SPACE=$(numfmt --to=iec-i --suffix=B "$((BYTES_PRE - BYTES_POST))")
+    log_summary "Freed space after cleaning target folders: $FREED_SPACE"
+
 }
 
 # Function to build or/and test the opencga-enterprise
