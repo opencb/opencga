@@ -135,6 +135,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID("internal.variant.annotationIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", TEXT_ARRAY, ""),
+        INTERNAL_QUALITY_CONTROL_STATUS("internal.qualityControlStatus", OBJECT, ""),
+        INTERNAL_QUALITY_CONTROL_STATUS_ID("internal.qualityControlStatus.id", TEXT, ""),
         INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID("internal.variant.secondaryAnnotationIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_AGGREGATE_FAMILY("internal.variant.aggregateFamily", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created

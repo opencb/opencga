@@ -42,10 +42,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -796,45 +793,74 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return result;
     }
 
+    public OpenCGAResult<?> updateSampleInternalQualityControlStatus(String studyFqn, Sample sample,
+                                                                     QualityControlStatus qualityControlStatus, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = getStudyDBAdaptor(organizationId).get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyFqn", studyFqn)
+                .append("sample", sample.getId())
+                .append("internal.qualityControlStatus", qualityControlStatus)
+                .append("token", token);
+
+        long studyId = study.getUid();
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
+
+        ObjectMap params;
+        try {
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            params = new ObjectMap(SampleDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse SampleInternalQualityControlStatus object: " + e.getMessage(), e);
+        }
+        OpenCGAResult<?> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), params, QueryOptions.empty());
+        auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+        return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
+    }
+
     public OpenCGAResult<?> updateSampleInternalVariantIndex(String studyFqn, Sample sample, SampleInternalVariantIndex index,
                                                              String token) throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant().setIndex(index);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
     public OpenCGAResult<?> updateSampleInternalVariantSecondarySampleIndex(String studyFqn, Sample sample,
                                                                             SampleInternalVariantSecondarySampleIndex index, String token)
             throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, index, Arrays.asList(
-                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
-                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key()), token);
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant()
+                .setSecondarySampleIndex(index)
+                .setSampleGenotypeIndex(index);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
     public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(
             String studyFqn, Sample sample, SampleInternalVariantAnnotationIndex index, String token) throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, index,
-                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant().setAnnotationIndex(index);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
     public OpenCGAResult<?> updateSampleInternalVariantSecondaryAnnotationIndex(String studyFqn, Sample sample,
                                                                                 SampleInternalVariantSecondaryAnnotationIndex index,
                                                                                 String token) throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, index,
-                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(), token);
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant().setSecondaryAnnotationIndex(index);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
-    public OpenCGAResult<?> updateSampleInternalVariantAggregateFamily(
-            String studyFqn, Sample sample, List<SampleInternalVariantAggregateFamily> aggregateFamily, String token)
-            throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, aggregateFamily,
-                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_AGGREGATE_FAMILY.key(), token);
+    public OpenCGAResult<?> updateSampleInternalVariantAggregateFamily(String studyFqn, Sample sample,
+                                                                       List<SampleInternalVariantAggregateFamily> aggregateFamily,
+                                                                       String token) throws CatalogException {
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant().setAggregateFamily(aggregateFamily);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
-    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, String fieldKey, String token)
-            throws CatalogException {
-        return updateSampleInternalVariant(studyFqn, sample, value, Collections.singletonList(fieldKey), token);
-    }
-
-    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, List<String> fieldKeys,
+    private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, SampleInternalVariant internalVariant,
                                                          String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
@@ -845,27 +871,28 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyFqn", studyFqn)
                 .append("sample", sample.getId())
+                .append("internal.variant", internalVariant)
                 .append("token", token);
-        for (String fieldKey : fieldKeys) {
-            auditParams.append(fieldKey, value);
-        }
 
         long studyId = study.getUid();
         authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
-        ObjectMap params = new ObjectMap();
-        ObjectMap valueAsObjectMap;
-        if (value instanceof Collection) {
-            List<ObjectMap> objectMaps = getUpdateObjectMapper()
-                    .convertValue(value, getUpdateObjectMapper().getTypeFactory().constructParametricType(List.class, ObjectMap.class));
-            for (String fieldKey : fieldKeys) {
-                params.append(fieldKey, objectMaps);
+        ObjectMap params;
+        try {
+            params = new ObjectMap();
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(internalVariant));
+            for (Map.Entry<String, Object> entry : valueAsObjectMap.entrySet()) {
+                params.put(SampleDBAdaptor.QueryParams.INTERNAL_VARIANT.key() + "." + entry.getKey(), entry.getValue());
             }
-        } else {
-            valueAsObjectMap = getUpdateObjectMapper().convertValue(value, ObjectMap.class);
-            for (String fieldKey : fieldKeys) {
-                params.append(fieldKey, valueAsObjectMap);
+            if (internalVariant.getIndex() != null && internalVariant.getIndex().getStatus() != null
+                    && IndexStatus.READY.equals(internalVariant.getIndex().getStatus().getId())) {
+                // If the index is ready, update QualityControl status to PENDING so it can be calculated
+                QualityControlStatus qcStatus = new QualityControlStatus(QualityControlStatus.PENDING);
+                ObjectMap qcStatusAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qcStatus));
+                params.put(SampleDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), qcStatusAsMap);
             }
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse SampleInternalVariant object: " + e.getMessage(), e);
         }
         OpenCGAResult<?> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), params, QueryOptions.empty());
         auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -1063,7 +1090,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
             try {
-                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId, token);
                 result.append(updateResult);
 
                 auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -1120,7 +1147,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleId = sample.getId();
             sampleUuid = sample.getUuid();
 
-            OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
+            OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId, token);
             result.append(updateResult);
 
             auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -1199,7 +1226,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 sampleId = sample.getId();
                 sampleUuid = sample.getUuid();
 
-                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, sample, updateParams, options, userId, token);
                 result.append(updateResult);
 
                 auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -1220,7 +1247,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     private OpenCGAResult update(String organizationId, Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options,
-                                 String userId) throws CatalogException {
+                                 String userId, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         SampleUpdateParams updateParamsClone;
@@ -1264,7 +1291,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (updateParamsClone != null && updateParamsClone.getAnnotationSets() != null) {
+        if (updateParamsClone.getAnnotationSets() != null) {
             authorizationManager.checkSamplePermission(organizationId, study.getUid(), sample.getUid(), userId,
                     SamplePermissions.WRITE_ANNOTATIONS);
         }
@@ -1275,11 +1302,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SamplePermissions.WRITE);
         }
 
-        if (updateParamsClone != null && updateParamsClone.getId() != null) {
+        if (updateParamsClone.getId() != null) {
             ParamUtils.checkIdentifier(updateParamsClone.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
-        if (updateParamsClone != null && StringUtils.isNotEmpty(updateParamsClone.getIndividualId())) {
+        if (StringUtils.isNotEmpty(updateParamsClone.getIndividualId())) {
             // Check individual id exists
             OpenCGAResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(organizationId,
                     study.getUid(), updateParamsClone.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
@@ -1294,8 +1321,39 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         checkUpdateAnnotations(organizationId, study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE,
                 getSampleDBAdaptor(organizationId), userId);
 
+        if (updateParamsClone.getQualityControl() != null) {
+            QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.READY);
+            ObjectMap valueAsObjectMap;
+            try {
+                valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Internal error serializing quality control status.\n" + e.getMessage(), e);
+            }
+            // If user is updating the quality control object, we set its status to READY
+            logger.info("Setting internal quality control status automatically to READY for sample '{}'", sample.getId());
+            parameters.put(SampleDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        }
+
         OpenCGAResult<Sample> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), parameters, study.getVariableSets(),
                 options);
+
+        if (updateParamsClone.getQualityControl() != null) {
+            // Check if corresponding individual exists and the quality control status is not ready
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+                    .append(IndividualDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS_ID.key(),
+                            Arrays.asList(QualityControlStatus.NONE, QualityControlStatus.ERROR));
+            OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(study.getFqn(), query,
+                    IndividualManager.INCLUDE_INDIVIDUAL_IDS, token);
+            if (search.getNumResults() == 1) {
+                // Update Individual quality control status to PENDING
+                logger.info("Setting internal quality control status automatically to PENDING for individual '{}'", search.first().getId());
+                QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.PENDING);
+                catalogManager.getIndividualManager().updateInternalQualityControlStatus(study.getFqn(), search.first(),
+                        qualityControlStatus, token);
+            }
+        }
+
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated sample
             OpenCGAResult<Sample> queryResult = getSampleDBAdaptor(organizationId).get(study.getUid(),

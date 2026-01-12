@@ -108,6 +108,7 @@
 {"collections": ["sample", "sample_archive"], "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["sample", "sample_archive"], "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {}}
+{"collections": ["sample", "sample_archive"], "fields": {"internal.qualityControlStatus.id": 1, "studyUid": 1}, "options": {}}
 
 {"collections": ["individual", "individual_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["individual", "individual_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
@@ -141,6 +142,7 @@
 {"collections": ["individual", "individual_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"internal.qualityControlStatus.id": 1, "studyUid": 1}, "options": {}}
 
 {"collections": ["cohort"], "fields": {"uuid": 1}, "options": {"unique": true}}
 {"collections": ["cohort"], "fields": {"uid": 1}, "options": {"unique": true}}
@@ -186,6 +188,7 @@
 {"collections": ["family", "family_archive"], "fields": {"_ias.id": 1, "_ias.value": 1, "studyUid": 1}, "options": {}}
 {"collections": ["family", "family_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["family", "family_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["family", "family_archive"], "fields": {"internal.qualityControlStatus.id": 1, "studyUid": 1}, "options": {}}
 
 {"collections": ["panel", "panel_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["panel", "panel_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
@@ -234,6 +237,7 @@
 {"collections": ["clinical", "clinical_archive"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"internal.cvdbIndex.status.id": 1, "studyUid": 1}, "options": {}}
 
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}

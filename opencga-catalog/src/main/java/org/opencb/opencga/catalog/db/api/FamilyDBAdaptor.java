@@ -64,6 +64,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        INTERNAL_QUALITY_CONTROL_STATUS("internal.qualityControlStatus", OBJECT, ""),
+        INTERNAL_QUALITY_CONTROL_STATUS_ID("internal.qualityControlStatus.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
