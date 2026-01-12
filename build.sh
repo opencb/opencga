@@ -406,7 +406,7 @@ function build_opencga() {
     BYTES_POST=$(du -s . | cut -f 1)
     ## Convert to human readable format (IEC)
     FREED_SPACE=$(numfmt --to=iec-i --suffix=B "$((BYTES_PRE - BYTES_POST))")
-    log_summary "Freed space after cleaning target folders: $FREED_SPACE"
+    echo "Freed space after cleaning target folders: $FREED_SPACE"
 
 }
 
