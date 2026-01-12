@@ -395,6 +395,15 @@ function build_opencga() {
       #Do not put quotes in the following command or it will not work
       ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
     fi
+
+    echo "Disk usage of opencga folder before clean"
+    du -sh .
+
+    ## Maven clean of opencga, all but opencga-app
+    mvn_step "opencga-clean" clean -pl '!opencga-app' -P "$STORAGE_HADOOP_DEPS" -Dcheckstyle.skip $MVN_OPTS
+
+    echo "Disk usage of opencga after clean"
+    du -sh .
 }
 
 # Function to build or/and test the opencga-enterprise
