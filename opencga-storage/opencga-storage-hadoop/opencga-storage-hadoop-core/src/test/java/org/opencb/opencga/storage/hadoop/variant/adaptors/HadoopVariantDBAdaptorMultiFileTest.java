@@ -40,7 +40,17 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Override
     public void before() throws Exception {
         boolean wasLoaded = loaded;
-        super.before();
+        try {
+            super.before();
+        } catch (Exception e) {
+            try {
+                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor()), newOutputUri());
+            } catch (Exception e1) {
+                e1.addSuppressed(e);
+                throw e1;
+            }
+            throw e;
+        }
         if (loaded && !wasLoaded) {
             VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor()), newOutputUri());
 //            for (String study : variantStorageEngine.getDBAdaptor().getStudyConfigurationManager().getStudies(null).keySet()) {

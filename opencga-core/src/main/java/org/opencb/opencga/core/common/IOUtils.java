@@ -473,7 +473,7 @@ public class IOUtils {
      * @return number of bytes
      */
     public static long fromHumanReadableToByte(String value, boolean assumeBinary) {
-        if (value.endsWith("B")) {
+        if (value.endsWith("B") || value.endsWith("b")) {
             value = value.substring(0, value.length() - 1);
         }
         final boolean si;

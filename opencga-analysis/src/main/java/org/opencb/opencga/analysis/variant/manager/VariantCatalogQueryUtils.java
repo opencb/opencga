@@ -1392,7 +1392,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     public static String toStorageFilePath(File file) {
-        return file.getUri().getPath();
+        switch (file.getType()) {
+            case FILE:
+                return file.getUri().getPath();
+            case VIRTUAL:
+                return file.getPath();
+            case DIRECTORY:
+            default:
+                throw new IllegalArgumentException("Unexpected file type: " + file.getType());
+        }
     }
 
     public abstract class FilterValidator {
