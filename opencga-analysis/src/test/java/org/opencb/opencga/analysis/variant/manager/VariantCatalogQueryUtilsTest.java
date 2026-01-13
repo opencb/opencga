@@ -596,6 +596,50 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     @Test
+    public void queryByFileData() throws Exception {
+        List<String> queries = Arrays.asList(
+                "<FILE1>:DP>10;FILTER=PASS" + "," + "<FILE2>:MQ<50;QUAL>=20",
+                "<FILE1>:DP>10;FILTER=PASS",
+                "<FILE1>:DP>10;FILTER=PASS" + ";" + "<FILE2>:MQ<50;QUAL>=20");
+
+        List<List<String>> combinations = new ArrayList<>();
+        combinations.add(Arrays.asList(file1.getId(), file2.getId()));
+        combinations.add(Arrays.asList(file1.getUuid(), file2.getUuid()));
+        combinations.add(Arrays.asList(file1.getPath(), file2.getPath()));
+        combinations.add(Arrays.asList(file1.getName(), file2.getName()));
+
+        combinations.add(Arrays.asList(file1.getId(), file2.getPath()));
+
+        List<List<String>> invalidCombinations = new ArrayList<>();
+        invalidCombinations.add(Arrays.asList(file1.getPath(), file2.getUuid()));
+        invalidCombinations.add(Arrays.asList(file1.getPath(), file2.getName()));
+        invalidCombinations.add(Arrays.asList(file1.getId(), file2.getName()));
+
+
+        for (String queryTemplate : queries) {
+            for (List<String> combination : combinations) {
+                String query = queryTemplate.replace("<FILE1>", combination.get(0)).replace("<FILE2>", combination.get(1));
+                String expected = queryTemplate.replace("<FILE1>", file1.getUri().getPath()).replace("<FILE2>", file2.getUri().getPath());
+
+                String actual = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE_DATA.key(), query), null, cellBaseUtils, sessionId)
+                        .getString(FILE_DATA.key());
+                assertEquals(expected, actual);
+            }
+            for (List<String> invalidCombination : invalidCombinations) {
+                String query = queryTemplate.replace("<FILE1>", invalidCombination.get(0)).replace("<FILE2>", invalidCombination.get(1));
+
+                try {
+                    queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE_DATA.key(), query), null, cellBaseUtils, sessionId)
+                            .getString(FILE_DATA.key());
+                    fail("Expected exception for combination: " + invalidCombination);
+                } catch (Exception e) {
+                    // Expected exception
+                }
+            }
+        }
+    }
+
+    @Test
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "BEX2"), set(query, GENE));
