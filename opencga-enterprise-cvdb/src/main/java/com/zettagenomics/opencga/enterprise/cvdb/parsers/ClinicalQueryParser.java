@@ -560,9 +560,9 @@ public class ClinicalQueryParser {
     }
 
     protected void logQueries(Query query, QueryOptions queryOptions, SolrQuery solrQuery, String title) {
-        logger.info("{} query: {}", title, query != null ? query.toJson() : null);
-        logger.info("{} query options: {}", title, queryOptions.toJson());
-        logger.info("Solr query: {}", solrQuery.toQueryString());
+        logger.debug("{} query: {}", title, query != null ? query.toJson() : null);
+        logger.debug("{} query options: {}", title, query != null ? queryOptions.toJson() : null);
+        logger.debug("Solr query: {}", solrQuery != null ? solrQuery.toQueryString() : null);
     }
 
     //-------------------------------------------------------------------------

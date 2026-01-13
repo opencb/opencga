@@ -6,6 +6,8 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
@@ -17,6 +19,8 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+
+import java.util.Map;
 
 @Tool(id = CvdbIndexTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbIndexTask.DESCRIPTION)
 public class CvdbIndexTask extends OpenCgaTool {
@@ -82,6 +86,22 @@ public class CvdbIndexTask extends OpenCgaTool {
             } else {
                 // All clinical analyses for the given study
                 result = cvdbEngine.indexStudy(getStudyFqn(), params.isOverwrite(), token);
+            }
+
+            // Check results and add events if needed
+            if (MapUtils.isNotEmpty(result.getFailures())) {
+                addEvent(Event.Type.ERROR, NUM_NOT_INDEXED_ATTR + ": " + result.getFailures().size());
+                if (result.getFailures().size() < 50) {
+                    for (Map.Entry<String, String> entry : result.getFailures().entrySet()) {
+                        addEvent(Event.Type.WARNING, "Clinical analysis ID '" + entry.getKey() + "' could not be indexed: "
+                                + entry.getValue());
+                    }
+                } else {
+                    addEvent(Event.Type.ERROR, "More than 50 clinical analyses could not be indexed. Please check the logs for details.");
+                    for (Map.Entry<String, String> entry : result.getFailures().entrySet()) {
+                        logger.error("Clinical analysis ID '{}' could not be indexed: {}", entry.getKey(), entry.getValue());
+                    }
+                }
             }
 
             // Add results as attributes

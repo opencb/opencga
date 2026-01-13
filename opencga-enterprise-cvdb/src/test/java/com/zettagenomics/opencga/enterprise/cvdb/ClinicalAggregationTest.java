@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 
@@ -24,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STUDY_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static org.junit.Assert.assertEquals;
@@ -35,8 +37,16 @@ public class ClinicalAggregationTest {
     protected static CvdbSolrEngine cvdbEngine;
     protected static CollectionNameGenerator collectionNameGenerator;
     protected static String organizationId = "test";
+
     protected static String projectId = "project1";
+    protected static Project project;
+    protected static String studyId = "study1";
     protected static Study study;
+
+    protected static String projectId2 = "project2";
+    protected static Project project2;
+    protected static String studyId2 = "study2";
+    protected static Study study2;
 
     public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
@@ -98,10 +108,19 @@ public class ClinicalAggregationTest {
 
         userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
-        catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
+        project = catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
-        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+        assertEquals(projectId, project.getId());
+        study = catalogManager.getStudyManager().create(projectId, studyId, null, "Phase 1", "Done", null, null, null, null,
                 INCLUDE_RESULT, userToken).first();
+        assertEquals(studyId, study.getId());
+
+        project2 = catalogManager.getProjectManager().create(projectId2, "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, userToken).first();
+        assertEquals(projectId2, project2.getId());
+        study2 = catalogManager.getStudyManager().create(projectId2, studyId2, null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
+        assertEquals(studyId2, study2.getId());
     }
 
     //-----------------------------------------------------------------------
@@ -119,7 +138,7 @@ public class ClinicalAggregationTest {
         String facetName = "disorderId";
 //        queryOptions.put(QueryOptions.FACET, CA_DISORDER_ID_NAME);
         queryOptions.put(QueryOptions.FACET, facetName);
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(STUDY_PARAM_NAME, studyId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
         assertEquals(2L, facetResult.first().getCount());
@@ -139,7 +158,7 @@ public class ClinicalAggregationTest {
         // Check existing type
 //        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FACET_SEPARATOR + CA_DISORDER_ID_NAME);
         queryOptions.put(QueryOptions.FACET, "type" + FACET_SEPARATOR + "disorderId");
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(STUDY_PARAM_NAME, studyId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(2, facetResult.getNumResults());
         Set<String> fieldNames = facetResult.getResults().stream().map(f -> f.getName()).collect(Collectors.toSet());
@@ -161,7 +180,7 @@ public class ClinicalAggregationTest {
         // Check existing type
         queryOptions.put(QueryOptions.FACET, "type" + FacetQueryParser.NESTED_FACET_SEPARATOR + "disorderId");
 //        queryOptions.put(QueryOptions.FACET, CA_TYPE_NAME + FacetQueryParser.NESTED_FACET_SEPARATOR + CA_DISORDER_ID_NAME);
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(STUDY_PARAM_NAME, studyId);
         DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, facetResult.getNumResults());
         assertEquals("type", facetResult.first().getName());
@@ -169,5 +188,21 @@ public class ClinicalAggregationTest {
         for (FacetField result : facetResult.getResults()) {
             System.out.println(result);
         }
+    }
+
+    @Test
+    public void testFacetClinicalAnalysesNoCvdbStore() throws IOException, CvdbException, CatalogException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        // Check existing type
+        String facetName = "disorderId";
+//        queryOptions.put(QueryOptions.FACET, CA_DISORDER_ID_NAME);
+        queryOptions.put(QueryOptions.FACET, facetName);
+        query = new Query(STUDY_PARAM_NAME, studyId2);
+        DataResult<FacetField> facetResult = cvdbEngine.facetClinicalAnalyses(query, queryOptions, userToken);
+        assertEquals(0, facetResult.getNumResults());
     }
 }
