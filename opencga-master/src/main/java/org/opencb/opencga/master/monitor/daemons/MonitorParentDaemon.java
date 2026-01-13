@@ -28,8 +28,8 @@ import java.io.IOException;
  */
 public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
-    protected int interval;
-    protected CatalogManager catalogManager;
+    protected final int interval;
+    protected final CatalogManager catalogManager;
 
     protected volatile boolean exit = false;
 
@@ -87,10 +87,10 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
     }
 
     public void init() throws Exception {
-
     }
 
     @Override
     public void close() throws IOException {
     }
+
 }

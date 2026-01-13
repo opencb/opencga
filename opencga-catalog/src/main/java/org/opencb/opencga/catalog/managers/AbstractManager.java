@@ -82,10 +82,6 @@ public abstract class AbstractManager {
         return getCatalogDBAdaptorFactory().getMigrationDBAdaptor(organization);
     }
 
-    protected MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
-        return getCatalogDBAdaptorFactory().getCatalogMetaDBAdaptor(organization);
-    }
-
     protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) throws CatalogDBException {
         return getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organization);
     }
@@ -142,7 +138,7 @@ public abstract class AbstractManager {
         return getCatalogDBAdaptorFactory().getInterpretationDBAdaptor(organization);
     }
 
-    protected WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
+    protected ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getWorkflowDBAdaptor(organization);
     }
 

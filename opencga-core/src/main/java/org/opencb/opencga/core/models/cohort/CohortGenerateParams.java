@@ -12,6 +12,7 @@ public class CohortGenerateParams {
     private String id;
     private String name;
     private Enums.CohortType type;
+    private List<String> tags;
     private String description;
     private String creationDate;
     private String modificationDate;
@@ -22,12 +23,13 @@ public class CohortGenerateParams {
     public CohortGenerateParams() {
     }
 
-    public CohortGenerateParams(String id, String name, Enums.CohortType type, String description, String creationDate,
+    public CohortGenerateParams(String id, String name, Enums.CohortType type, List<String> tags, String description, String creationDate,
                                 String modificationDate, List<AnnotationSet> annotationSets, StatusParams status,
                                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
+        this.tags = tags;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -37,7 +39,7 @@ public class CohortGenerateParams {
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, name, type, creationDate, modificationDate, description, null, 0, annotationSets,
+        return new Cohort(id, name, type, tags, creationDate, modificationDate, description, null, 0, annotationSets,
                 0, status != null ? status.toStatus() : null, null, attributes);
     }
 
@@ -47,6 +49,7 @@ public class CohortGenerateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name=").append(name);
         sb.append(", type=").append(type);
+        sb.append(", tags=").append(tags);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -81,6 +84,15 @@ public class CohortGenerateParams {
 
     public CohortGenerateParams setType(Enums.CohortType type) {
         this.type = type;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public CohortGenerateParams setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

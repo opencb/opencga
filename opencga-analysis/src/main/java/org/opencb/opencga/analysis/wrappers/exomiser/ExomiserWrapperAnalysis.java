@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.wrappers.exomiser;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -35,7 +35,7 @@ import java.util.List;
 
 @Tool(id = ExomiserWrapperAnalysis.ID, resource = Enums.Resource.CLINICAL_ANALYSIS,
         description = ExomiserWrapperAnalysis.DESCRIPTION)
-public class ExomiserWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class ExomiserWrapperAnalysis extends OpenCgaTool {
 
     public static final String ID = "exomiser";
     public static final String DESCRIPTION = "The Exomiser is a Java program that finds potential disease-causing variants"

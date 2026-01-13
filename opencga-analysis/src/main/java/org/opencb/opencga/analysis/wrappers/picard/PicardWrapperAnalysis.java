@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.picard;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
@@ -33,7 +33,7 @@ import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMANDS_SUPPORT
 import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMAND_DESCRIPTION;
 
 @Tool(id = PicardWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = PicardWrapperAnalysis.DESCRIPTION)
-public class PicardWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class PicardWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "picard";
     public final static String DESCRIPTION = "Picard is a set of command line tools (in Java) for manipulating high-throughput sequencing"

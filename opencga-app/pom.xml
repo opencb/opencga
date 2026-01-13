@@ -69,11 +69,19 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
             <exclusions>
+<!--                <exclusion>-->
+<!--                    <groupId>org.opencb.opencga</groupId>-->
+<!--                    <artifactId>opencga-storage-benchmark</artifactId>-->
+<!--                </exclusion>-->
                 <exclusion>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-benchmark</artifactId>
+                    <artifactId>opencga-storage-server</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-benchmark</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -176,8 +184,20 @@
             <artifactId>jline-terminal</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -519,6 +539,13 @@
                                 <exec executable="${build.dir}/bin/utils/opencga-clicompletion.sh" failonerror="true">
                                     <arg value="${build.dir}/misc/completion"/>
                                 </exec>
+
+                                <echo>Copying benchmark files</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-storage/build/benchmark"/>
+                                    <arg value="${build.dir}/misc/"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -648,14 +675,14 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
 
-            <dependencies>
-                <dependency>
-                    <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-benchmark</artifactId>
-                    <version>${project.parent.version}</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>org.opencb.opencga</groupId>-->
+<!--                    <artifactId>opencga-storage-benchmark</artifactId>-->
+<!--                    <version>${project.parent.version}</version>-->
+<!--                    <scope>provided</scope>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
             <build>
                 <plugins>
                     <plugin>
@@ -697,6 +724,10 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>

@@ -815,6 +815,38 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
+    void filePathHasChanged(ClientSession clientSession, long studyUid, String oldFilePath, String newFilePath)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        // Change path in files.path
+        Bson filesBsonQuery = Filters.and(
+                Filters.eq(STUDY_UID.key(), studyUid),
+                Filters.eq(FILES_PATH.key(), oldFilePath)
+        );
+        // Replace the id for the new one
+        UpdateDocument clinicalUpdate = new UpdateDocument();
+        clinicalUpdate.getSet().append(FILES.key() + ".$." + FileDBAdaptor.QueryParams.PATH.key(), newFilePath);
+        transactionalUpdate(clientSession, studyUid, filesBsonQuery, clinicalUpdate);
+
+        // Change path in report.files.path
+        Bson reportFilesQuery = Filters.and(
+                Filters.eq(STUDY_UID.key(), studyUid),
+                Filters.eq(REPORT_FILES.key() + "." + FileDBAdaptor.QueryParams.PATH.key(), oldFilePath)
+        );
+        UpdateDocument reportUpdate = new UpdateDocument();
+        reportUpdate.getSet().append(REPORT_FILES.key() + ".$." + FileDBAdaptor.QueryParams.PATH.key(), newFilePath);
+        transactionalUpdate(clientSession, studyUid, reportFilesQuery, reportUpdate);
+
+        // Change path in report.supportingEvidences.path
+        Bson reportSupportingEvidencesQuery = Filters.and(
+                Filters.eq(STUDY_UID.key(), studyUid),
+                Filters.eq(REPORT_SUPPORTING_EVIDENCES.key() + "." + FileDBAdaptor.QueryParams.PATH.key(), oldFilePath)
+        );
+        UpdateDocument reportSupportingEvidencesUpdate = new UpdateDocument();
+        reportSupportingEvidencesUpdate.getSet().append(REPORT_SUPPORTING_EVIDENCES.key() + ".$." + FileDBAdaptor.QueryParams.PATH.key(),
+                newFilePath);
+        transactionalUpdate(clientSession, studyUid, reportSupportingEvidencesQuery, reportSupportingEvidencesUpdate);
+    }
+
     void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         ObjectMap parameters = new ObjectMap(FILES.key(), Collections.singletonList(file));

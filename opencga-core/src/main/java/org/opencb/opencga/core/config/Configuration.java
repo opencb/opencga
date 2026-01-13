@@ -22,7 +22,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
-import org.opencb.opencga.core.models.workflow.WorkflowSystem;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +61,7 @@ public class Configuration {
     private Email email;
     private Catalog catalog;
     private Analysis analysis;
+    @Deprecated
     private Panel panel;
 
     private ServerConfiguration server;
@@ -243,6 +244,16 @@ public class Configuration {
             if (reportedFields.add(field)) {
                 // Only log the first time a field is found
                 logger.warn("Ignored configuration option '{}' with value '{}'. The option was deprecated and removed.", field, value);
+            }
+        }
+    }
+
+    public static void reportUnusedField(String field, Object value, String description) {
+        // Report only if the value is not null and not an empty string
+        if (value != null && !(value instanceof String && ((String) value).isEmpty())) {
+            if (reportedFields.add(field)) {
+                // Only log the first time a field is found
+                logger.warn("Ignored configuration option '{}' with value '{}'. {}.", field, value, description);
             }
         }
     }
@@ -453,12 +464,14 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Panel getPanel() {
         return panel;
     }
 
+    @Deprecated
     public Configuration setPanel(Panel panel) {
-        this.panel = panel;
+        reportUnusedField("configuration.yml#panel", panel);
         return this;
     }
 

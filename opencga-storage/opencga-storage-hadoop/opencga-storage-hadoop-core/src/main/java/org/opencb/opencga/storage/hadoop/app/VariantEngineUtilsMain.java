@@ -5,8 +5,10 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +156,7 @@ public class VariantEngineUtilsMain extends AbstractMain {
             return tables;
         }
 
-        private void delete(String[] args) throws IOException, SQLException, ClassNotFoundException {
+        private void delete(String[] args) throws IOException, SQLException, ClassNotFoundException, StorageEngineException {
             ObjectMap map = getArgsMap(args, "dbName", "namespace", "dryRun");
             String dbName = requireArgument("dbName", map);
             String namespace = checkNamespace(map.getString("namespace"), dbName);
@@ -162,11 +164,12 @@ public class VariantEngineUtilsMain extends AbstractMain {
             boolean dryRun = map.getBoolean("dryRun");
 
             List<String> tables = getTables(namespace, dbName, false);
-
+            List<String> variantTables = new LinkedList<>();
             try (Admin admin = hBaseManager.getConnection().getAdmin()) {
                 // Drop Phoenix View
                 for (String table : tables) {
                     if (HBaseVariantTableNameGenerator.isValidVariantsTable(table)) {
+                        variantTables.add(table);
                         if (dryRun) {
                             LOGGER.info("[DRY-RUN] drop phoenix view '{}'", table);
                         } else {
@@ -195,6 +198,23 @@ public class VariantEngineUtilsMain extends AbstractMain {
                         LOGGER.info("Drop hbase table '{}'", tableName);
                         admin.deleteTable(tableName);
                     }
+                }
+            }
+
+            // Delete secondary-annotation-index pending-variants files from hdfs
+            for (String variantTable : variantTables) {
+                SecondaryIndexPendingVariantsFileBasedManager manager = new SecondaryIndexPendingVariantsFileBasedManager(
+                        variantTable, hBaseManager.getConf());
+                if (manager.exists()) {
+                    if (dryRun) {
+                        LOGGER.info("[DRY-RUN] - delete pending secondary annotation index for '{}' at '{}'",
+                                variantTable, manager.getPendingVariantsDir());
+                    } else {
+                        LOGGER.info("Delete pending secondary annotation index for '{}'", variantTable);
+                        manager.delete();
+                    }
+                } else {
+                    LOGGER.info("No pending secondary annotation index for '{}'", variantTable);
                 }
             }
         }

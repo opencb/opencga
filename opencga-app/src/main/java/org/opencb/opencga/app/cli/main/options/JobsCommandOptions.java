@@ -123,6 +123,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
     
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
+    
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
@@ -203,7 +212,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
         public String toolResource;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE_TOOL, WORKFLOW, CUSTOM_TOOL, VARIANT_WALKER", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)
@@ -270,6 +279,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
     
         @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
         public String toolExternalExecutorId; 
@@ -409,6 +427,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
     
         @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
         public String toolExternalExecutorId; 
@@ -561,23 +588,38 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
-        public String commandLine;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String dockerId;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-tag"}, description = "The body web service tag parameter", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-token"}, description = "The body web service token parameter", required = false, arity = 1)
-        public String dockerToken;
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--git-repository"}, description = "The body web service repository parameter", required = false, arity = 1)
-        public String gitRepository;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
     
-        @Parameter(names = {"--git-reference"}, description = "The body web service reference parameter", required = false, arity = 1)
-        public String gitReference;
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
+    
+        @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsCpu;
+    
+        @Parameter(names = {"--minimum-requirements-memory"}, description = "Minimum memory required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsMemory;
+    
+        @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
     
     }
 

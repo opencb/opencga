@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
@@ -56,11 +55,10 @@ import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.exceptions.AnalysisExecutionException;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
@@ -68,7 +66,6 @@ import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -110,7 +107,6 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -167,9 +163,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case SECONDARY_INDEX_COMMAND:
                 secondaryIndex();
-                break;
-            case SECONDARY_INDEX_DELETE_COMMAND:
-                secondaryIndexRemove();
                 break;
             case STATS_RUN_COMMAND:
                 statsRun();
@@ -414,31 +407,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new VariantSecondaryAnnotationIndexParams(
                 cliOptions.region,
-                cliOptions.sample,
                 cliOptions.overwrite)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        if (CollectionUtils.isEmpty(cliOptions.sample)) {
-            toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
-        } else {
-            toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
-        }
-    }
-
-    private void secondaryIndexRemove() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageEngineException,
-            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
-        VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions =
-                variantCommandOptions.variantSecondaryIndexDeleteCommandOptions;
-
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-        variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), params, token);
+        toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, dryRun, token);
     }
 
     private void statsRun() throws ToolException {
@@ -691,7 +665,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
-        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
@@ -777,7 +751,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
         cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, dryRun, token);
+                cliOptions.study, variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
@@ -871,7 +845,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         mendelianErrorAnalysis.setStudy(cliOptions.study)
                 .setFamilyId(cliOptions.family)
@@ -886,7 +860,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         inferredSexAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)
@@ -900,7 +874,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         RelatednessAnalysis relatednessAnalysis = new RelatednessAnalysis();
-        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        relatednessAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         relatednessAnalysis.setStudyId(cliOptions.study)
                 .setIndividualIds(cliOptions.individuals)
@@ -916,7 +890,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         FamilyQcAnalysis familyQcAnalysis = new FamilyQcAnalysis();
-        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        familyQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         familyQcAnalysis.setStudyId(cliOptions.study)
                 .setFamilyId(cliOptions.family)
@@ -931,7 +905,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         IndividualQcAnalysis individualQcAnalysis = new IndividualQcAnalysis();
-        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+        individualQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.study,
                 variantCommandOptions.internalJobOptions.jobId, dryRun, token);
         individualQcAnalysis.setStudyId(cliOptions.study)
                 .setIndividualId(cliOptions.individual)

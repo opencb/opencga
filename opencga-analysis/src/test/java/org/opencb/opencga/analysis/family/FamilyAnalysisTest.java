@@ -45,7 +45,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(MediumTests.class)
 public class FamilyAnalysisTest extends GenericTest {
@@ -488,6 +489,13 @@ public class FamilyAnalysisTest extends GenericTest {
         // 3. Convert byte array to BufferedImage
         BufferedImage actualImage = ImageIO.read(new ByteArrayInputStream(decodedBytes));
         assertTrue(actualImage != null);
+
+        // 3.1 Save actual image to disk for debugging (optional)
+//        try {
+//            ImageIO.write(actualImage, "png", Paths.get("/tmp/actualImage." + TimeUtils.getTimeMillis() + ".png").toFile());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         // 4. Load the expected "golden master" image from resources
         InputStream expectedImageStream = FamilyAnalysisTest.class.getClassLoader().getResourceAsStream(resourceImage);

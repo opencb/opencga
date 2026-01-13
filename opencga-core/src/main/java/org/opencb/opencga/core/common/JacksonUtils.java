@@ -27,14 +27,19 @@ import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.GwasAssociationStudyTraitScores;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantStats;
 import org.opencb.opencga.core.models.PrivateUidMixin;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.*;
+import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowRepository;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowRepositoryMixin;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
@@ -51,7 +56,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.workflow.Workflow;
 
 import javax.ws.rs.ext.ContextResolver;
 import java.io.IOException;
@@ -94,10 +98,18 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
+        addVariantMixIn(objectMapper);
+        return objectMapper;
+    }
+
+    public static void addVariantMixIn(ObjectMapper objectMapper) {
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        return objectMapper;
+        objectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
+        objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        objectMapper.addMixIn(GwasAssociationStudyTraitScores.class, GwasAssociationStudyTraitScoresMixin.class);
+        objectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
     }
 
     private static ObjectMapper generateUpdateObjectMapper() {
@@ -118,7 +130,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(Workflow.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(ExternalTool.class, PrivateUidMixin.class);
 
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
@@ -153,9 +165,11 @@ public class JacksonUtils {
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(Workflow.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(ExternalTool.class, PrivateUidMixin.class);
         objectMapper.addMixIn(FederationServerParams.class, FederationServerParamsMixin.class);
         objectMapper.addMixIn(FederationClientParams.class, FederationClientParamsMixin.class);
+        objectMapper.addMixIn(WorkflowRepository.class, WorkflowRepositoryMixin.class);
+        objectMapper.addMixIn(Container.class, ContainerRedactedMixin.class);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         return objectMapper;

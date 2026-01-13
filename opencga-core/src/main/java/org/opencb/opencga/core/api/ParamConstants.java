@@ -399,6 +399,7 @@ public class ParamConstants {
     public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
     public static final String COHORT_TYPE_PARAM = "type";
+    public static final String COHORT_TAGS_PARAM = "tags";
     public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
     public static final String COHORT_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
     public static final String COHORT_DELETED_PARAM = DELETED_PARAM;
@@ -423,6 +424,7 @@ public class ParamConstants {
     public static final String COHORT_ACL_DESCRIPTION = ACL_PARAM;
     public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
     public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
+    public static final String COHORT_TAGS_DESCRIPTION = "Tags" + REGEX_SUPPORT;
     public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
     public static final String CLINICAL_ID_PARAM = "id";
     public static final String CLINICAL_UUID_PARAM = "uuid";
@@ -547,8 +549,12 @@ public class ParamConstants {
             + "panel versions. Not supported if multiple panel ids are provided";
     public static final String PANEL_SOURCE_PARAM = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of source ids or names.";
-    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'cancer-gene-census'";
+    public static final String PANEL_IMPORT_SOURCE_DESCRIPTION = "Source id from where the panels will be imported. It can be either "
+            + "PANEL_APP or CANCER_GENE_CENSUS.";
+    public static final String PANEL_IMPORT_IDS_PARAM = "panelIds";
+    public static final String PANEL_IMPORT_IDS_DESCRIPTION = "Panel id list to be imported from the source";
+    public static final String PANEL_IMPORT_CONTENT_PARAM = "content";
+    public static final String PANEL_IMPORT_CONTENT_DESCRIPTION = "Panel content. Only expected for CANCER_GENE_CENSUS source currently.";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
@@ -579,9 +585,16 @@ public class ParamConstants {
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM = "tool.minimumRequirements.processorType";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_PARAM = "tool.minimumRequirements.queue";
+    public static final String JOB_EXECUTION_QUEUE_ID_PARAM = "execution.queue.id";
     public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION = "Processor type required to run the job. "
+            + "Allowed values: [CPU, GPU, FPGA]";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION = "Queue where the job is expected to be executed.";
+    public static final String JOB_EXECUTION_QUEUE_ID_DESCRIPTION = "Queue id where the job has been submitted to be executed.";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
@@ -604,6 +617,33 @@ public class ParamConstants {
             + " not actually run.";
 
     // ---------------------------------------------
+    // EXTERNAL TOOLS
+    public static final String EXTERNAL_TOOLS_DESCRIPTION = "Comma separated of external tool ids.";
+    public static final String EXTERNAL_TOOL_VERSION_PARAM = "version";
+    public static final String EXTERNAL_TOOL_VERSION_DESCRIPTION = "Comma separated list of external tool versions. "
+            + "'all' to get all the external tool versions. Not supported if multiple external tool ids are provided";
+    public static final String EXTERNAL_TOOL_ID_PARAM = "id";
+    public static final String EXTERNAL_TOOL_UUID_PARAM = "uuid";
+    public static final String EXTERNAL_TOOL_NAME_PARAM = "name";
+    public static final String EXTERNAL_TOOL_TYPE_PARAM = "type";
+    public static final String EXTERNAL_TOOL_SCOPE_PARAM = "scope";
+    public static final String EXTERNAL_TOOL_TAGS_PARAM = "tags";
+    public static final String EXTERNAL_TOOL_DRAFT_PARAM = "draft";
+    public static final String EXTERNAL_TOOL_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
+    public static final String EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM = "workflowRepositoryName";
+    public static final String EXTERNAL_TOOL_CONTAINER_NAME_PARAM = "containerName";
+    public static final String EXTERNAL_TOOL_ID_DESCRIPTION = "Comma separated list of external tool IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String EXTERNAL_TOOL_NAME_DESCRIPTION = "Comma separated list of external tool names" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String EXTERNAL_TOOL_UUID_DESCRIPTION = "Comma separated list of external tool UUIDs" + UP_TO_100;
+    public static final String EXTERNAL_TOOL_TYPE_DESCRIPTION = "External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW]";
+    public static final String EXTERNAL_TOOL_SCOPE_DESCRIPTION = "External tool scope. Allowed types: [CLINICAL_INTERPRETATION,"
+            + " SECONDARY_ANALYSIS, RESEARCH or OTHER]";
+    public static final String EXTERNAL_TOOL_TAGS_DESCRIPTION = "Comma separated list of tags";
+    public static final String EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_DESCRIPTION = "Workflow repository name";
+    public static final String EXTERNAL_TOOL_CONTAINER_NAME_DESCRIPTION = "Container name";
+    public static final String EXTERNAL_TOOL_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
+    public static final String EXTERNAL_TOOL_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
+
     // INDEX PARAMS DESCRIPTIONS
     public static final String COVERAGE_INDEX_PARAMS_DESCRIPTION = "Coverage computation parameters";
     public static final String ALIGNMENT_INDEX_PARAMS_DESCRIPTION = "Alignment index params";
@@ -633,9 +673,7 @@ public class ParamConstants {
     public static final String WORKFLOWS_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
     public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
     public static final String WORKFLOWS_MANAGER_ID_DESCRIPTION = "Id of the workflow system (Allowed values: NEXTFLOW).";
-    public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
-            + "[SET, ADD, REMOVE]";
-    public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";
+
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";

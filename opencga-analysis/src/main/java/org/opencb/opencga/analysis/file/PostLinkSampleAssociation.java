@@ -4,7 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,7 +25,7 @@ import java.util.*;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = PostLinkSampleAssociation.DESCRIPTION, priority = Enums.Priority.HIGH)
-public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
+public class PostLinkSampleAssociation extends OpenCgaTool {
 
     public static final String ID = "postlink";
     public static final String DESCRIPTION = "Associate samples to files that were linked and could not associate their samples because "

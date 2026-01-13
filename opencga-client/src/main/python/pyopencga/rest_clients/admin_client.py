@@ -27,7 +27,7 @@ class Admin(_ParentRestClient):
         :param str entity: Entity to be grouped by. Allowed values: ['AUDIT
             NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL
             COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION
-            VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW
+            VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL EXTERNAL_TOOL
             RESOURCE'] (REQUIRED)
         :param str fields: Comma separated list of fields by which to group
             by. (REQUIRED)
@@ -54,16 +54,23 @@ class Admin(_ParentRestClient):
 
         return self._post(category='admin', resource='install', subcategory='catalog', data=data, **options)
 
-    def jwt_catalog(self, data=None, **options):
+    def update_catalog_workspace(self, data=None, **options):
         """
-        Change JWT secret key.
-        PATH: /{apiVersion}/admin/catalog/jwt
+        Update the OpenCGA Catalog workspace.
+        PATH: /{apiVersion}/admin/catalog/workspace/update
 
-        :param dict data: JSON containing the parameters. (REQUIRED)
-        :param str organization: Organization id.
+        :param dict data: JSON containing the workspace parameters. (REQUIRED)
         """
 
-        return self._post(category='admin', resource='jwt', subcategory='catalog', data=data, **options)
+        return self._post(category='admin', resource='update', subcategory='catalog/workspace', data=data, **options)
+
+    def list_organizations(self, **options):
+        """
+        List current Organizations.
+        PATH: /{apiVersion}/admin/organizations/list
+        """
+
+        return self._get(category='admin', resource='list', subcategory='organizations', **options)
 
     def fetch_resource(self, data=None, **options):
         """

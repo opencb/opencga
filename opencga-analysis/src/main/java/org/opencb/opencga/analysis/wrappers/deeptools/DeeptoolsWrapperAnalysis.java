@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.deeptools;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
@@ -32,7 +32,7 @@ import java.util.*;
 import static org.opencb.opencga.core.api.ParamConstants.DEEPTOOLS_COMMANDS_SUPPORTED;
 
 @Tool(id = DeeptoolsWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = DeeptoolsWrapperAnalysis.DESCRIPTION)
-public class DeeptoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class DeeptoolsWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "deeptools";
     public final static String DESCRIPTION = "Deeptools is a suite of python tools particularly developed for the efficient analysis of"

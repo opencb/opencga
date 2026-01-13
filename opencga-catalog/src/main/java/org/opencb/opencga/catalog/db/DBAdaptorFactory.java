@@ -79,8 +79,6 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException;
 
-    MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException;
-
     OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId) throws CatalogException;
 
     void deleteOrganization(Organization organization) throws CatalogDBException;
@@ -115,5 +113,5 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException;
 
-    WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
+    ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
 }

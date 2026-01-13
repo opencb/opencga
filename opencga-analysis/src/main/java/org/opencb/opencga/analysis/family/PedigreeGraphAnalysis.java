@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -29,7 +29,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.family.PedigreeGraphAnalysisExecutor;
 
 @Tool(id = PedigreeGraphAnalysis.ID, resource = Enums.Resource.FAMILY)
-public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
+public class PedigreeGraphAnalysis extends OpenCgaTool {
 
     public static final String ID = "pedigree-graph";
     public static final String DESCRIPTION = "Compute the family pedigree graph image.";
@@ -74,4 +74,3 @@ public class PedigreeGraphAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 }
-

@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -61,7 +61,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  * Created by jacobo on 06/03/15.
  */
 @Tool(id = VariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT, description = VariantStatsAnalysis.DESCRIPTION)
-public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
+public class VariantStatsAnalysis extends OpenCgaTool {
 
     public final static String ID = "variant-stats";
     public static final String DESCRIPTION = "Compute variant stats for any cohort and any set of variants.";

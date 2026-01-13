@@ -57,7 +57,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.jar.JarOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -281,7 +280,7 @@ public class AlignmentAnalysisTest {
         String geneName = "BRCA2";
         params.setGenes(Arrays.asList(geneName));
 
-        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, new ObjectMap(), outdir, "coverage-job-id", false, token);
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, STUDY, params, outdir, "coverage-job-id", false, token);
 
         bamFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFilename, "", "", "", null, null, null,
                 null, null), false, token).first();

@@ -24,6 +24,7 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.admin.options.BenchmarkCommandOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -46,9 +47,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final ToolsCommandOptions toolsCommandOptions;
     private final ServerCommandOptions serverCommandOptions;
     private final PanelCommandOptions panelCommandOptions;
-    private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
     private final StorageCommandOptions storageCommandOptions;
+    private final BenchmarkCommandOptions benchmarkCommandOptions;
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
 
@@ -110,11 +111,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         panelSubCommands.addCommand("panelapp", panelCommandOptions.panelAppCommandOptions);
         panelSubCommands.addCommand("cancer-gene-census", panelCommandOptions.cancerGeneCensusCommandOptions);
 
-        this.metaCommandOptions = new AdminCliOptionsParser.MetaCommandOptions();
-        this.jCommander.addCommand("meta", this.metaCommandOptions);
-        JCommander metaSubCommands = this.jCommander.getCommands().get("meta");
-        metaSubCommands.addCommand("update", this.metaCommandOptions.metaKeyCommandOptions);
-
         this.migrationCommandOptions = new MigrationCommandOptions(jCommander, commonCommandOptions);
         this.jCommander.addCommand("migration", this.migrationCommandOptions);
         JCommander migrationSubCommands = this.jCommander.getCommands().get("migration");
@@ -129,6 +125,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander storageSubCommands = this.jCommander.getCommands().get("storage");
         storageSubCommands.addCommand("status", this.storageCommandOptions.getStatusCommandOptions());
         storageSubCommands.addCommand("update-database-prefix", this.storageCommandOptions.getUpdateDatabasePrefix());
+
+        this.benchmarkCommandOptions = new BenchmarkCommandOptions(commonCommandOptions, jCommander);
+        this.jCommander.addCommand("benchmark", this.benchmarkCommandOptions);
+        JCommander benchmarkSubCommands = this.jCommander.getCommands().get("benchmark");
+        benchmarkSubCommands.addCommand("variant", this.benchmarkCommandOptions.variantBenchmarkCommandOptions);
+//        benchmarkSubCommands.addCommand("alignment", this.benchmarkCommandOptions.alignmentBenchmarkCommandOptions);
     }
 
     @Override
@@ -320,17 +322,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
             this.grpcServerCommandOptions = new GrpcServerCommandOptions();
-        }
-    }
-
-    @Parameters( commandNames = {"meta"}, commandDescription = "Manage Meta data")
-    public class MetaCommandOptions extends AdminCliOptionsParser.CommandOptions {
-
-        public MetaKeyCommandOptions metaKeyCommandOptions;
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        public MetaCommandOptions() {
-            this.metaKeyCommandOptions = new MetaKeyCommandOptions();
         }
     }
 
@@ -777,11 +768,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
+        @Parameter(names = {"--start"}, description = "Ignored", arity = 0, hidden = true)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
-        public boolean stop;
+//        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
+//        public boolean stop;
+
+        @Parameter(names = {"--port"}, description = "GRPC port to be used", arity = 1)
+        public int port;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
         public boolean background;
@@ -862,10 +856,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         return serverCommandOptions;
     }
 
-    public AdminCliOptionsParser.MetaCommandOptions getMetaCommandOptions() {
-        return this.metaCommandOptions;
-    }
-
     public PanelCommandOptions getPanelCommandOptions() {
         return panelCommandOptions;
     }
@@ -876,5 +866,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     public StorageCommandOptions getStorageCommandOptions() {
         return storageCommandOptions;
+    }
+
+    public BenchmarkCommandOptions getBenchmarkCommandOptions() {
+        return benchmarkCommandOptions;
     }
 }

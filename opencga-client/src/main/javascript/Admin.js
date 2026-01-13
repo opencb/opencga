@@ -37,7 +37,7 @@ export default class Admin extends OpenCGAParentClass {
     /** Group by operation
     * @param {String} fields - Comma separated list of fields by which to group by.
     * @param {"AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS
-    *     INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE"} entity - Entity to be grouped by.
+    *     INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL EXTERNAL_TOOL RESOURCE"} entity - Entity to be grouped by.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {Boolean} [params.count] - Count the number of elements matching the group.
     * @param {Number} [params.limit = "50"] - Maximum number of documents (groups) to be returned. The default value is 50.
@@ -59,14 +59,20 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "install", data);
     }
 
-    /** Change JWT secret key
-    * @param {Object} data - JSON containing the parameters.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.organization] - Organization id.
+    /** Update the OpenCGA Catalog workspace
+    * @param {Object} data - JSON containing the workspace parameters.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    jwtCatalog(data, params) {
-        return this._post("admin", null, "catalog", null, "jwt", data, params);
+    updateCatalogWorkspace(data) {
+        return this._post("admin", null, "catalog/workspace", null, "update", data);
+    }
+
+    /** List current Organizations
+    * 
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    listOrganizations() {
+        return this._get("admin", null, "organizations", null, "list");
     }
 
     /** Fetch resources from the public server and save them into the OpenCGA local installation

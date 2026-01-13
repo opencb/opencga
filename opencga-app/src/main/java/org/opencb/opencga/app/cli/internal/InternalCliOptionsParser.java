@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
@@ -74,7 +74,6 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -110,7 +109,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private CohortCommandOptions cohortCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private JobCommandOptions jobCommandOptions;
-    private DiseasePanelInternalCommandOptions panelInternalCommandOptions;
     private StudyCommandOptions studyCommandOptions;
     private WorkflowCommandOptions workflowCommandOptions;
 
@@ -144,7 +142,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(INDEX_RUN_COMMAND, variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand(VARIANT_DELETE_COMMAND, variantCommandOptions.variantDeleteCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_COMMAND, variantCommandOptions.variantSecondaryIndexCommandOptions);
-        variantSubCommands.addCommand(SECONDARY_INDEX_DELETE_COMMAND, variantCommandOptions.variantSecondaryIndexDeleteCommandOptions);
         variantSubCommands.addCommand(STATS_RUN_COMMAND, variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand(SCORE_INDEX_COMMAND, variantCommandOptions.variantScoreIndexCommandOptions);
         variantSubCommands.addCommand(SCORE_DELETE_COMMAND, variantCommandOptions.variantScoreDeleteCommandOptions);
@@ -271,11 +268,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 //        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
 //        jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
 
-        panelInternalCommandOptions = new DiseasePanelInternalCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("panels", panelInternalCommandOptions);
-        JCommander panelSubCommands = jCommander.getCommands().get("panels");
-        panelSubCommands.addCommand("import", panelInternalCommandOptions.panelImportCommandOptions);
-
         studyCommandOptions = new StudyCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
         JCommander studySubcommands = jCommander.getCommands().get("studies");
@@ -284,7 +276,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         workflowCommandOptions = new WorkflowCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("workflows", workflowCommandOptions);
         JCommander workflowSubcommands = jCommander.getCommands().get("workflows");
-        workflowSubcommands.addCommand(NextFlowExecutor.ID, workflowCommandOptions.nextflowCommandOptions);
+        workflowSubcommands.addCommand(NextFlowToolExecutor.ID, workflowCommandOptions.nextflowCommandOptions);
     }
 
     @Override
@@ -560,10 +552,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public JobCommandOptions getJobCommandOptions() {
         return jobCommandOptions;
-    }
-
-    public DiseasePanelInternalCommandOptions getPanelInternalCommandOptions() {
-        return panelInternalCommandOptions;
     }
 
     public StudyCommandOptions getStudyCommandOptions() {

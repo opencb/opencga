@@ -18,5 +18,6 @@ package org.opencb.opencga.analysis.clinical.xnet;
 
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysisConfiguration;
 
+@Deprecated
 public class BionetInterpretationConfiguration extends InterpretationAnalysisConfiguration {
 }

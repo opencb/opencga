@@ -226,6 +226,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
                 writeAll(path, objectMapper, prefix + "samples_", sm, SAMPLE_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
                 writeAll(path, objectMapper, prefix + "cohort_", sm, COHORT_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
                 writeAll(path, objectMapper, prefix + "task_", sm, TASK_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
+                writeAll(path, objectMapper, prefix + "file_", sm, DummyFileMetadataDBAdaptor.FILE_METADATA_MAP.getOrDefault(sm.getId(), Collections.emptyMap()).values());
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

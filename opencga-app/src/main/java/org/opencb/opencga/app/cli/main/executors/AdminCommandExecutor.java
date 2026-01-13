@@ -17,9 +17,9 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
-import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
+import org.opencb.opencga.core.models.admin.WorkspaceUpdateParams;
 import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
@@ -70,8 +70,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             case "catalog-install":
                 queryResponse = installCatalog();
                 break;
-            case "catalog-jwt":
-                queryResponse = jwtCatalog();
+            case "catalog-workspace-update":
+                queryResponse = updateCatalogWorkspace();
+                break;
+            case "organizations-list":
+                queryResponse = listOrganizations();
                 break;
             case "resource-fetch":
                 queryResponse = fetchResource();
@@ -146,33 +149,37 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAdminClient().installCatalog(installationParams);
     }
 
-    private RestResponse<ObjectMap> jwtCatalog() throws Exception {
-        logger.debug("Executing jwtCatalog in Admin command line");
+    private RestResponse<ObjectMap> updateCatalogWorkspace() throws Exception {
+        logger.debug("Executing updateCatalogWorkspace in Admin command line");
 
-        AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
+        AdminCommandOptions.UpdateCatalogWorkspaceCommandOptions commandOptions = adminCommandOptions.updateCatalogWorkspaceCommandOptions;
 
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organization", commandOptions.organization);
-
-
-        JWTParams jWTParams = null;
+        WorkspaceUpdateParams workspaceUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<ObjectMap> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/workspace/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            jWTParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), JWTParams.class);
+            workspaceUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkspaceUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "secretKey", commandOptions.secretKey, true);
+            putNestedIfNotEmpty(beanParams, "oldWorkspace", commandOptions.oldWorkspace, true);
+            putNestedIfNotEmpty(beanParams, "newWorkspace", commandOptions.newWorkspace, true);
 
-            jWTParams = JacksonUtils.getDefaultObjectMapper().copy()
+            workspaceUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), JWTParams.class);
+                    .readValue(beanParams.toJson(), WorkspaceUpdateParams.class);
         }
-        return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
+        return openCGAClient.getAdminClient().updateCatalogWorkspace(workspaceUpdateParams);
+    }
+
+    private RestResponse<String> listOrganizations() throws Exception {
+        logger.debug("Executing listOrganizations in Admin command line");
+
+        AdminCommandOptions.ListOrganizationsCommandOptions commandOptions = adminCommandOptions.listOrganizationsCommandOptions;
+        return openCGAClient.getAdminClient().listOrganizations();
     }
 
     private RestResponse<Job> fetchResource() throws Exception {

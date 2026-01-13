@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -146,8 +147,9 @@ public class HadoopVariantExporter extends VariantExporter {
                             EXPORT_SMALL_QUERY_SCAN_VARIANTS_THRESHOLD.defaultValue());
                     if (engine.secondaryAnnotationIndexActiveAndAlive()) {
                         try {
-                            long totalCount = engine.getVariantSearchManager().count(engine.getDBName(), new Query());
-                            long count = engine.getVariantSearchManager().count(engine.getDBName(), getSearchEngineQuery(query));
+                            SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForQueries();
+                            long totalCount = engine.getVariantSearchManager().count(indexMetadata, new Query());
+                            long count = engine.getVariantSearchManager().count(indexMetadata, getSearchEngineQuery(query));
                             if (count < variantsThreshold) {
                                 logger.info("Query for approximately {} of {} variants, using HBase native SCAN."
                                                 + " Consider small query."
@@ -175,8 +177,9 @@ public class HadoopVariantExporter extends VariantExporter {
                         EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.key(),
                         EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.defaultValue());
                 try {
-                    long totalCount = engine.getVariantSearchManager().count(engine.getDBName(), new Query());
-                    long count = engine.getVariantSearchManager().count(engine.getDBName(), getSearchEngineQuery(query));
+                    SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForQueries();
+                    long totalCount = engine.getVariantSearchManager().count(indexMetadata, new Query());
+                    long count = engine.getVariantSearchManager().count(indexMetadata, getSearchEngineQuery(query));
                     double matchRate = ((double) count) / ((double) totalCount);
                     logger.info("Count {}/{} variants from query {}", count, totalCount, getSearchEngineQuery(query));
                     if (count < variantsThreshold || matchRate < matchRatioThreshold) {

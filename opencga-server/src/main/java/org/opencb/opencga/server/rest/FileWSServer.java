@@ -104,7 +104,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        return submitJob(studyStr, JobType.NATIVE, FetchAndRegisterTask.ID, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE_TOOL, FetchAndRegisterTask.ID, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -613,6 +613,16 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/uri/update")
+    @ApiOperation(value = "Update URIs of files that have been manually moved in disk", notes = "Only for study administrators",
+            response = File.class)
+    public Response uriUpdate(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUriChangeRestParam param) {
+        return run(() -> fileManager.updateFileUri(studyStr, param.getUri(), token));
+    }
+
     //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
@@ -730,7 +740,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
-        return submitJob(studyStr, JobType.NATIVE, PostLinkSampleAssociation.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE_TOOL, PostLinkSampleAssociation.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -746,7 +756,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
-        return submitJob(studyStr, JobType.NATIVE, FileLinkTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE_TOOL, FileLinkTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @DELETE
@@ -761,7 +771,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, "files-unlink", Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE_TOOL, "files-unlink", Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -972,7 +982,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE_TOOL, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {

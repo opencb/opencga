@@ -8,13 +8,14 @@ on:
         type: choice
         description: 'Hadoop flavour.'
         required: false
-        default: "hdp3.1"
+        default: "hdi5.1"
         options:
           - "all"
-          - "hdp3.1"
+          - "hbase2.0"
           - "hdi5.1"
           - "emr6.1"
           - "emr6.13"
+          - "emr7.5"
       module:
         type: choice
         description: 'OpenCGA module to test.'
@@ -74,12 +75,27 @@ jobs:
             hadoop='["${{ inputs.hadoop }}"]'
           
             if [ "${{ inputs.hadoop }}" == "all" ]; then
-              hadoop='["hdp3.1", "hdi5.1", "emr6.1", "emr6.13"]'
-            elif [ "${{ inputs.module }}" == "all" ]; then
-              # Only execute modules with matrix strategy if we are testing one single hadoop profile
-              modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
+              hadoop='["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]'
+          
+              # When testing all hadoop profiles, split matrix by profile
+              IFS=',' read -r -a profile_array <<< "$profiles"
+              profiles=""
+              for profile in "${profile_array[@]}"; do
+                if [ "$profiles" == "" ]; then
+                  profiles="\"$profile\""
+                else
+                  profiles="$profiles, \"$profile\""
+                fi
+              done
+              profiles="[$profiles]"
+            else
+              profiles='["'"$profiles"'"]'
+              if [ "${{ inputs.module }}" == "all" ]; then
+                # Only execute modules with matrix strategy if we are testing one single hadoop profile
+                modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
+              fi
             fi
-            echo "profiles=[\"$profiles\"]" >> $GITHUB_OUTPUT
+            echo "profiles=$profiles" >> $GITHUB_OUTPUT
             echo "modules=$modules" >> $GITHUB_OUTPUT
             echo "hadoop=$hadoop" >> $GITHUB_OUTPUT
             echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
@@ -102,4 +118,5 @@ jobs:
       module: ${{ matrix.module }}
       mvn_opts: ${{ inputs.mvn_opts }}
       sonar: false
+      upload_artifact: false
     secrets: inherit

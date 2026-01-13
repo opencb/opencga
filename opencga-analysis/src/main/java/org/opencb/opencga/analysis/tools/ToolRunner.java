@@ -81,32 +81,35 @@ public class ToolRunner {
     public ExecutionResult execute(String study, String jobId, String token) throws CatalogException, ToolException {
         // We get the job information.
         Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
-
-        return execute(job, token);
+        return execute(study, job, token);
     }
 
     /**
      * Execute a command tool.
-     * @param job job to execute
+     *
+     * @param study Study containing the job
+     * @param job   job to execute
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(Job job, String token) throws CatalogException, ToolException {
-        return execute(job, Paths.get(job.getOutDir().getUri()), token);
+    public ExecutionResult execute(String study, Job job, String token) throws CatalogException, ToolException {
+        return execute(study, job, Paths.get(job.getOutDir().getUri()), token);
     }
 
     /**
      * Execute a command tool.
-     * @param job job to execute
+     *
+     * @param study
+     * @param job    job to execute
      * @param outDir job output directory
-     * @param token session id of the user that will execute the tool.
+     * @param token  session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(Job job, Path outDir, String token) throws CatalogException, ToolException {
+    public ExecutionResult execute(String study, Job job, Path outDir, String token) throws CatalogException, ToolException {
         String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
-        return execute(toolId, new ObjectMap(job.getParams()), outDir, job.getId(), job.isDryRun(), token);
+        return execute(toolId, new ObjectMap(job.getParams()), outDir, study, job.getId(), job.isDryRun(), token);
     }
 
     /**
@@ -115,12 +118,14 @@ public class ToolRunner {
      * @param toolId Tool identifier. It can be either the tool id itself, or the class name.
      * @param params Params for the execution.
      * @param outDir Output directory. Mandatory
+     * @param study  Study containing the job
+     * @param jobId  Job Id (if any)
      * @param dryRun Dry-run mode.
      * @param token  session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String jobId, boolean dryRun, String token)
+    public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String study, String jobId, boolean dryRun, String token)
             throws ToolException {
         OpenCgaTool tool;
         if (configuration != null && configuration.getAnalysis() != null
@@ -129,7 +134,7 @@ public class ToolRunner {
         } else {
             tool = toolFactory.createTool(toolId);
         }
-        return tool.setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, dryRun, token)
+        return tool.setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, study, jobId, dryRun, token)
                 .start();
     }
 
@@ -217,7 +222,7 @@ public class ToolRunner {
 
         return toolFactory
                 .createTool(tool)
-                .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, jobId, dryRun, token)
+                .setUp(opencgaHome, catalogManager, variantStorageManager, params, outDir, "", jobId, dryRun, token)
                 .start();
     }
 

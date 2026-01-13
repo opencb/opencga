@@ -721,7 +721,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return samplesWithVariant;
         } else {
             for (Integer file : filesInThisVariant) {
-                for (String sample : getSamplesInFile(studyMetadata.getId(), file)) {
+                for (String sample : getIncludeSamplesInFile(studyMetadata.getId(), file)) {
                     Integer sampleIdx = returnedSamplesPosition.get(sample);
                     if (sampleIdx != null) {
                         samplesWithVariant.set(sampleIdx, true);
@@ -805,7 +805,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         se.getFiles().add(fileEntry);
                     }
                     Integer fileId = metadataManager.getFileId(studyMetadata.getId(), fileName);
-                    List<String> samples = getSamplesInFile(studyMetadata.getId(), fileId);
+                    List<String> samples = getIncludeSamplesInFile(studyMetadata.getId(), fileId);
                     for (String sample : samples) {
                         SampleEntry sampleEntry = studyEntry.getSample(sample);
                         // At this point, fileIndex is actually the fileId
@@ -1045,7 +1045,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 id -> metadataManager.getFileIdsFromSampleIds(id, getReturnedSampleIds(id)));
     }
 
-    private List<String> getSamplesInFile(int studyId, int fileId) {
+    private List<String> getIncludeSamplesInFile(int studyId, int fileId) {
         List<String> list = samplesFromFileMap.get(studyId + "_" + fileId);
         if (list != null) {
             return list;
@@ -1054,16 +1054,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return samplesFromFileMap.computeIfAbsent(studyId + "_" + fileId, s -> {
             LinkedHashSet<Integer> sampleIds = metadataManager.getSampleIdsFromFileId(studyId, fileId);
             List<String> samples = new ArrayList<>(sampleIds.size());
+            Set<Integer> samplesSet;
+            if (configuration.getProjection() == null) {
+                samplesSet = null;
+            } else {
+                samplesSet = new HashSet<>(configuration.getProjection().getStudy(studyId).getSamples());
+            }
             for (Integer sample : sampleIds) {
-                samples.add(metadataManager.getSampleName(studyId, sample));
+                if (samplesSet == null || samplesSet.contains(sample)) {
+                    samples.add(metadataManager.getSampleName(studyId, sample));
+                }
             }
             return samples;
         });
-    }
-
-    private List<String> getSamplesInFile(int studyId, String fileName) {
-        Integer fileId = metadataManager.getFileId(studyId, fileName);
-        return getSamplesInFile(studyId, fileId);
     }
 
     private String getSampleName(int studyId, int sampleId) {
@@ -1131,6 +1134,16 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         @Override
         public String getSampleData(int idx) {
             return sampleColumnWithoutFile.getSampleData(idx);
+        }
+
+        @Override
+        public boolean hasTimestamp() {
+            return sampleColumnWithoutFile.hasTimestamp();
+        }
+
+        @Override
+        public long getTimestamp() {
+            return sampleColumnWithoutFile.getTimestamp();
         }
     }
 }
