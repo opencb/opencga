@@ -96,7 +96,24 @@ public class ClinicalPipelineWrapperAnalysisTest {
         ProjectCreateParams projectCreateParams = new ProjectCreateParams()
                 .setId(projectId)
                 .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
-        Project project = catalogManager.getProjectManager().create(projectCreateParams, queryOptions, token).first();
+
+        // Try three times to create the project otherwise raise a exception
+        Project project = null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                project = catalogManager.getProjectManager().create(projectCreateParams, queryOptions, token).first();
+                break;
+            } catch (CatalogException e) {
+                if (i == 2) {
+                    throw e;
+                }
+                System.out.println("Attempt " + (i + 1) + " to create project failed: " + e.getMessage() + ". Retrying...");
+                Thread.sleep(1000);
+            }
+        }
+        if (project == null) {
+            throw new IllegalStateException("Project creation failed after 3 attempts");
+        }
         System.out.println("project.getFqn() = " + project.getFqn());
 
         Study study = catalogManager.getStudyManager().create(projectId, new Study().setId(studyId), queryOptions, token).first();

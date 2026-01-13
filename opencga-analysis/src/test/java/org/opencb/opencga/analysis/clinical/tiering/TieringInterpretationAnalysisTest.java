@@ -56,7 +56,7 @@ public class TieringInterpretationAnalysisTest {
     @Before
     public void setUp() throws Exception {
         opencga.clear();
-        clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga, TIERING_MODE);
+        clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
         resourceManager = new ResourceManager(opencga.getOpencgaHome());
 
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toAbsolutePath().toString(), clinicalTest.catalogManager,
