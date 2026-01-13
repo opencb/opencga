@@ -3,25 +3,25 @@
   "version": "1",
   "description": "A sample bioinformatics pipeline configuration.",
   "input": {
-    "indexDir": "/data/index-dir",
+    "indexDir": "",
     "samples": [
       {
         "id": "s1",
         "role": "father",
         "somatic": false,
-        "files": ["fastq", "fastq"]
+        "files": []
       },
       {
         "id": "s2",
         "role": "mother",
         "somatic": true,
-        "files": ["fastq", "fastq"]
+        "files": []
       },
       {
         "id": "son",
         "role": "child",
         "somatic": false,
-        "files": ["fastq", "fastq"]
+        "files": []
       }
     ]
   },

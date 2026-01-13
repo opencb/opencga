@@ -565,7 +565,7 @@ public class JobManager extends ResourceManager<Job> {
         };
 
         Map<String, String> result = new LinkedHashMap<>();
-        extractPaths("", result, 0, 6, suffixFilter, "", params);
+        extractPaths("", result, 0, 10, suffixFilter, "", params);
 
         return result;
     }
@@ -587,7 +587,7 @@ public class JobManager extends ResourceManager<Job> {
         };
 
         Map<String, String> result = new LinkedHashMap<>();
-        extractPaths("", result, 0, 6, patternFilter, "", params);
+        extractPaths("", result, 0, 10, patternFilter, "", params);
 
 
         return result;

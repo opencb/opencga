@@ -446,7 +446,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         execute(AffyClinicalPipelineWrapperAnalysis.ID, "affy-pipeline-job", affyWrapperParams.toParams(), outDir);
 
-        Path path = outDir.resolve("Axiom_KU8.vcf");
+        Path path = outDir.resolve("Axiom_KU8.clean.vcf.gz");
         Assert.assertTrue(Files.exists(path));
         Assert.assertTrue(Files.size(path) > 0);
     }
