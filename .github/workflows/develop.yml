@@ -5,31 +5,26 @@ on:
     branches:
       - develop
       - release-*
+      - TASK-*
   workflow_dispatch:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/ci-core/.github/workflows/build.yml@main
     with:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       dependency_repos: "java-common-libs,biodata"
-    secrets: inherit
-
-  deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: build
-    with:
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
-      cache_key: ${{ needs.build.outputs.cache_key }}
+      deploy_maven: ${{ !startsWith(github.ref_name, 'TASK-') }}
     secrets: inherit
 
   deploy-docker-workflow:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/ci-core/.github/workflows/deploy-docker.yml@main
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag "${{ needs.build.outputs.version }}"
+      org: opencb
     secrets: inherit
 
   deploy-zetta-docker:
@@ -37,4 +32,5 @@ jobs:
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}"
+      org: zettagenomics
     secrets: inherit
