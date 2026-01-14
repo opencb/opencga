@@ -28,7 +28,7 @@ jobs:
     secrets: inherit
 
   deploy-zetta-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
+    uses: opencb/ci-core/.github/workflows/deploy-docker.yml@main
     needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}"
