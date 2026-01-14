@@ -109,8 +109,10 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         if (vcfPath == null || !Files.exists(vcfPath)) {
             throw new ToolException("Could not find the generated VCF: " + vcfPath + " from Affymetrix pipeline execution.");
         }
-        File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
-                "", "", "", null, null, null, null, null), false, token).first();
+
+        File vcfFile = catalogManager.getFileManager()
+                .link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(), getJobId() + "_" + vcfPath.toFile().getName() , "", "", null, null, null, null, null), false, token)
+                .first();
 
         VariantIndexParams variantIndexParams = analysisParams.getPipelineParams().getVariantIndexParams();
 
