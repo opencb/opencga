@@ -13,7 +13,7 @@ jobs:
     uses: opencb/ci-core/.github/workflows/build.yml@main
     with:
       needs_hadoop_preparation: true
-      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      storage_hadoop: ${{ vars.HADOOP_FLAVOUR }}
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       dependency_repos: "java-common-libs,biodata"
       deploy_maven: ${{ !startsWith(github.ref_name, 'TASK-') }}
