@@ -14,10 +14,10 @@ RUN apt-get update -y && \
     DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y curl libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
     libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools tabix fastqc plink1.9 plink2 bwa r-base wget libopenblas0-openmp libcholmod5 libsuitesparse-dev python3 python3-pip && \
-    apt-get remove libopenblas0-pthread && \
-    pip3 install --no-cache-dir --user multiqc --break-system-packages && \
+    apt-get remove -y libopenblas0-pthread && \
+    pip3 install --no-cache-dir multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
-    pip3 install --no-cache-dir pyopencga && \
+    pip3 install --no-cache-dir requests pyopencga --break-system-packages && \
 
     ## 1. Install Docker repository
     install -m 0755 -d /etc/apt/keyrings && \
@@ -69,28 +69,27 @@ RUN apt-get update -y && \
     wget http://resources.opencb.org/apt-binaries/apt2-smn-ab -O /usr/local/bin/apt2-smn-ab && \
     chmod +x /usr/local/bin/* && \
     cd .. && \
+    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2 affy /var/lib/apt/lists/* /tmp/* && \
 
-    ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
+    ## 6. Install R dependencies
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
-    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
+    R -e "options(timeout = 7200); for(i in 1:3) { tryCatch({ BiocManager::install('BSgenome.Hsapiens.UCSC.hg38'); break }, error = function(e) { Sys.sleep(30); if(i == 3) stop(e) }) }"  && \
 
-    ## 7. Install signature.tools.lib installation \
-#    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
-#    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-#    cd /opt/opencga/signature.tools.lib && \
-#    git fetch origin --tags && \
-#    git checkout tags/v2.4.4 && \
-#    sed -i '/Mmusculus/d' DESCRIPTION && \
-#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-#    sed -i '/1000genomes/d' DESCRIPTION && \
-#    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
-#    cd .. && \
-
-    ## 8. Clean up
-    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2 affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    ## 7. Install signature.tools.lib
+    R -e "install.packages(c('devtools', 'getopt'), repos='https://cran.rstudio.com/')" && \
+    R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/GenSA/GenSA_1.1.7.tar.gz', repos=NULL, type='source')" && \
+    R -e "if (!requireNamespace('GenSA', quietly=TRUE)) stop('GenSA installation failed')" && \
+    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+    cd /opt/opencga/signature.tools.lib && \
+    git fetch origin --tags && \
+    git checkout tags/v2.4.4 && \
+    sed -i '/Mmusculus/d' DESCRIPTION && \
+    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+    sed -i '/1000genomes/d' DESCRIPTION && \
+    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+    rm -rf /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
-
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
 
