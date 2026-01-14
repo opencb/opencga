@@ -2,11 +2,14 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.junit.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -16,10 +19,13 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -97,16 +103,16 @@ public class CvdbTaskTest {
 
         catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
-                sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
+                INCLUDE_RESULT, sessionIdUser).first();
     }
 
     @Test
     public void testIndexTask() throws CatalogException, IOException, ToolException {
         Assume.assumeTrue(solrIsAlive());
 
-        catalogManagerResource.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study.getId(),
-                sessionIdUser);
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, sessionIdUser, opencgaToken, catalogManager);
+        TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, sessionIdUser);
 
         // Run clinical analysis load task
         Path indexOutDir = getTempDir();
@@ -142,6 +148,20 @@ public class CvdbTaskTest {
         Assert.assertEquals(0, numIndexed);
         numFailures = result.getAttributes().getInt(CvdbIndexTask.NUM_NOT_INDEXED_ATTR);
         Assert.assertEquals(2, numFailures);
+    }
+
+    @Test
+    public void testFactoryToolCvdbIndexTask() throws ToolException {
+        Class<? extends OpenCgaTool> tool = new ToolFactory().getToolClass(CvdbIndexTask.ID, Arrays.asList("org.opencb.opencga", "com.zettagenomics.opencga.enterprise"));
+        System.out.println("tool.getName() = " + tool.getName());
+        Assert.assertTrue(tool.getName().endsWith("CvdbIndexTask"));
+    }
+
+    @Test
+    public void testFactoryToolCvdbUpdateAclTask() throws ToolException {
+        Class<? extends OpenCgaTool> tool = new ToolFactory().getToolClass(CvdbUpdateAclTask.ID, Arrays.asList("org.opencb.opencga", "com.zettagenomics.opencga.enterprise"));
+        System.out.println("tool.getName() = " + tool.getName());
+        Assert.assertTrue(tool.getName().endsWith("CvdbUpdateAclTask"));
     }
 
     @Test
