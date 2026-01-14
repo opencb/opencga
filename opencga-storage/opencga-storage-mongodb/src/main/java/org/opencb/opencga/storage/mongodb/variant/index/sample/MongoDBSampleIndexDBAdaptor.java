@@ -1,7 +1,8 @@
 package org.opencb.opencga.storage.mongodb.variant.index.sample;
 
 import com.google.common.collect.Iterators;
-import com.mongodb.client.model.*;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -24,9 +25,15 @@ import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndex
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.annotation.MongoDBSampleAnnotationIndexer;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.family.MongoDBSampleFamilyIndexer;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleGenotypeIndexer;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleIndexWriter;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.iterators.MongoDBSingleSampleIndexRawIterator;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.iterators.MongoDBSingleSampleIndexVariantIterator;
 
 import java.io.IOException;
 import java.util.*;
@@ -35,15 +42,17 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     private final MongoDataStore dataStore;
     private final DocumentToSampleIndexEntryConverter converter = new DocumentToSampleIndexEntryConverter();
+    private final MongoDBSampleIndexQueryBuilder queryBuilder;
 
     public MongoDBSampleIndexDBAdaptor(MongoDataStore dataStore, VariantStorageMetadataManager metadataManager) {
         super(metadataManager);
         this.dataStore = dataStore;
+        this.queryBuilder = new MongoDBSampleIndexQueryBuilder(metadataManager);
     }
 
     @Override
     public SampleGenotypeIndexer newSampleGenotypeIndexer(VariantStorageEngine engine) throws StorageEngineException {
-        return null;
+        return new MongoDBSampleGenotypeIndexer(this, engine);
     }
 
     @Override
@@ -55,6 +64,10 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
                 splitData);
     }
 
+    public MongoDBSampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, int version) {
+        return new MongoDBSampleIndexEntryWriter(this, studyId, version);
+    }
+
     @Override
     public SampleAnnotationIndexer newSampleAnnotationIndexer(VariantStorageEngine engine)
             throws StorageEngineException {
@@ -63,7 +76,11 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     public SampleFamilyIndexer newSampleFamilyIndexer(VariantStorageEngine engine) throws StorageEngineException {
-        return null;
+        return new MongoDBSampleFamilyIndexer(this);
+    }
+
+    public DocumentToSampleIndexEntryConverter getConverter() {
+        return converter;
     }
 
     @Override
@@ -89,15 +106,13 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     protected VariantDBIterator internalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
-//        return new MongoDBSingleSampleIndexVariantIterator(query, schema, this, false);
-        return null;
+        return new MongoDBSingleSampleIndexVariantIterator(query, schema, this);
     }
 
     @Override
     protected CloseableIterator<SampleIndexVariant> rawInternalIterator(SingleSampleIndexQuery query,
             SampleIndexSchema schema) {
-//        return new MongoDBSingleSampleIndexVariantIterator(query, schema, this, true);
-        return null;
+        return new MongoDBSingleSampleIndexRawIterator(query, schema, this);
     }
 
     @Override
@@ -118,7 +133,18 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     protected long count(SingleSampleIndexQuery query) {
-        return 0;
+        try (CloseableIterator<SampleIndexVariant> iterator = rawIterator(query)) {
+             long count = 0;
+             while (iterator.hasNext()) {
+                 iterator.next();
+                 count++;
+             }
+             return count;
+        } catch (IOException | RuntimeException e) {
+            throw new RuntimeException("Error computing sample-index count", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error closing sample-index iterator", e);
+        }
     }
 
     public MongoDBCollection createCollectionIfNeeded(int studyId, int version) {
@@ -132,11 +158,10 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     public void writeEntry(MongoDBCollection collection, SampleIndexEntry sampleIndexEntry) {
-        Pair<String, Bson> pair = toUpsertBson(sampleIndexEntry);
-        writeEntry(collection, pair);
+        writeEntryRaw(collection, toUpsertBson(sampleIndexEntry));
     }
 
-    public void writeEntry(MongoDBCollection collection, Pair<String, Bson> pair) {
+    private void writeEntryRaw(MongoDBCollection collection, Pair<String, Bson> pair) {
         String documentId = pair.getLeft();
         Bson update = pair.getRight();
         if (update == null) {
@@ -146,7 +171,15 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
                 new QueryOptions(MongoDBCollection.UPSERT, true));
     }
 
-    public void writeEntries(MongoDBCollection collection, List<Pair<String, Bson>> entries) {
+    public void writeEntries(MongoDBCollection collection, List<SampleIndexEntry> entries) {
+        List<Pair<String, Bson>> pairs = new ArrayList<>(entries.size());
+        for (SampleIndexEntry entry : entries) {
+            pairs.add(toUpsertBson(entry));
+        }
+        writeEntriesRaw(collection, pairs);
+    }
+
+    private void writeEntriesRaw(MongoDBCollection collection, List<Pair<String, Bson>> entries) {
         List<Bson> queries = new ArrayList<>(entries.size());
         List<Bson> updates = new ArrayList<>(entries.size());
         for (Pair<String, Bson> pair : entries) {
@@ -190,4 +223,13 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         return Pair.of(document.getString("_id"), update);
     }
 
-}
+    public MongoDBIterator<Document> buildQuery(SingleSampleIndexQuery query, LocusQuery locusQuery, boolean includeAllFields) {
+        MongoDBCollection collection = getCollection(toStudyId(query.getStudy()), query.getSchema().getVersion());
+        Bson filter = queryBuilder.buildFilter(query, locusQuery);
+        Bson projection = queryBuilder.buildProjection(query, includeAllFields);
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, projection)
+                .append(QueryOptions.SORT, queryBuilder.defaultSort());
+        return collection.iterator(filter, options);
+    }
+ }

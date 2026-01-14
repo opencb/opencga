@@ -40,6 +40,21 @@ public class DocumentToSampleIndexEntryConverter implements ComplexTypeConverter
     public static final String KEY_PREFIX_GT = "gt_";
     private static final char KEY_SEPARATOR = '_';
 
+    public static final List<String> GT_FIELDS = Arrays.asList(
+            GT_COUNT,
+            GT_VARIANTS,
+            GT_FILE_INDEX,
+            GT_FILE_DATA,
+            GT_ANNOTATION_INDEX,
+            GT_ANNOTATION_COUNTS,
+            GT_CT_INDEX,
+            GT_BT_INDEX,
+            GT_TF_INDEX,
+            GT_CT_BT_TF_INDEX,
+            GT_POP_FREQ_INDEX,
+            GT_CLINICAL_INDEX,
+            GT_PARENTS_INDEX
+    );
     public static final List<String> BINARY_FIELDS = Arrays.asList(
             GT_VARIANTS,
             GT_FILE_INDEX,
@@ -274,13 +289,17 @@ public class DocumentToSampleIndexEntryConverter implements ComplexTypeConverter
         return gtKey.replace('v', '/').replace('p', '|');
     }
 
-    private void putGtField(Document document, String gt, String suffix, Object value) {
-        String key = KEY_PREFIX_GT + gtToKey(gt) + KEY_SEPARATOR + suffix;
+    private void putGtField(Document document, String gt, String field, Object value) {
+        String key = getGenotypeField(gt, field);
         if (value == null) {
             document.remove(key);
         } else {
             document.put(key, value);
         }
+    }
+
+    public static String getGenotypeField(String gt, String field) {
+        return KEY_PREFIX_GT + gtToKey(gt) + KEY_SEPARATOR + field;
     }
 
     private void putByteSlice(Document document, String key, byte[] bytes, int offset, int length) {

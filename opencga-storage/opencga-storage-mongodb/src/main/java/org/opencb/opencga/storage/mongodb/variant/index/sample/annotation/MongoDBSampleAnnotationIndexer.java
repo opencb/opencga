@@ -48,7 +48,7 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
         List<String> sampleNames = samplesAsNames(studyId, samples);
         String studyName = metadataManager.getStudyName(studyId);
         SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaFactory()
-                .getSchema(studyId, sampleNames, false, false);
+                .getSchemaForVersion(studyId, sampleIndexVersion);
         SampleIndexVariantAnnotationConverter annotationConverter = new SampleIndexVariantAnnotationConverter(schema);
         MongoDBCollection collection = mongoAdaptor.createCollectionIfNeeded(studyId, sampleIndexVersion);
 
@@ -131,10 +131,6 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
                     Integer sampleId = sampleBuilders.getKey();
                     Map<String, SampleIndexVariantAnnotationBuilder> buildersMap = sampleBuilders.getValue();
 
-                    if (sampleId == 1 && chromosome.equals("19") && batchStart == 37000000) {
-                        int debug = 0;
-                        System.out.println(debug);
-                    }
                     SampleIndexEntry sampleIndexEntry = new SampleIndexEntry(sampleId, chromosome, batchStart);
                     for (Map.Entry<String, SampleIndexVariantAnnotationBuilder> builderEntry : buildersMap.entrySet()) {
                         String gt = builderEntry.getKey();
@@ -152,8 +148,7 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
 //                        }
 //                    }
                     if (!sampleIndexEntry.getGts().isEmpty()) {
-                        Pair<String, Bson> pair = mongoAdaptor.toUpdateBson(sampleIndexEntry);
-                        mongoAdaptor.writeEntry(collection, pair);
+                        mongoAdaptor.writeEntry(collection, sampleIndexEntry);
                     }
                 }
                 progressLogger.increment(1, () -> " [" + region + "]");

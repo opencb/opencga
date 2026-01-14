@@ -19,6 +19,17 @@ public class SampleIndexSchemaFactory {
         this.metadataManager = metadataManager;
     }
 
+    public SampleIndexSchema getSchemaForVersion(int studyId, int version) {
+        StudyMetadata studyMetadata = getStudyMetadata(studyId);
+        SampleIndexConfiguration sampleIndexConfiguration = studyMetadata.getSampleIndexConfiguration(version).getConfiguration();
+
+        if (sampleIndexConfiguration == null) {
+            throw new VariantQueryException("Unable to use sample index version " + version
+                    + " for study " + studyMetadata.getName());
+        }
+        return new SampleIndexSchema(sampleIndexConfiguration, version);
+    }
+
     public SampleIndexSchema getSchema(int studyId, int sampleId) {
         return getSchema(studyId, sampleId, true);
     }

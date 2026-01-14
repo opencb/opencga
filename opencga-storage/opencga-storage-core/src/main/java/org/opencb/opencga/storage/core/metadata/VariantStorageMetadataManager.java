@@ -1865,6 +1865,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         } else {
             if (!(obj instanceof String)) {
+                if (obj == null) {
+                    throw new IllegalArgumentException("Unable to parse null obj");
+                }
                 throw new IllegalArgumentException("Unable to parse obj type " + obj.getClass());
             }
             String str = obj.toString();

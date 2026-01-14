@@ -22,6 +22,13 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.INCL
 import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.getChunkStart;
 import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.validGenotype;
 
+/**
+ * Writer for Sample Index entries.
+ *
+ * It buffers entries by chunks, and writes them when the buffer exceeds a certain size.
+ *
+ * @author Jacobo Coll &lt;
+ */
 public abstract class SampleIndexWriter implements DataWriter<Variant> {
 
     protected final int studyId;

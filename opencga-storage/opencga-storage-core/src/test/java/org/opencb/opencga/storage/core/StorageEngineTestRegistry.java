@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core;
 
+import org.junit.experimental.categories.Category;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -41,12 +42,22 @@ public final class StorageEngineTestRegistry {
                 .setUrls(ClasspathHelper.forPackage(basePackage))
                 .setScanners(new SubTypesScanner()));
         Map<Class<?>, Set<Class<?>>> map = new HashMap<>();
+        Set<Class<?>> missingCategoryAnnotation = new HashSet<>();
         for (Class<?> coreTest : findAnnotatedCoreTests()) {
             @SuppressWarnings("unchecked")
             Set<Class<?>> subTypes = reflections.getSubTypesOf((Class<Object>) coreTest);
+            for (Class<?> subType : subTypes) {
+                if (!subType.isAnnotationPresent(Category.class)) {
+                    missingCategoryAnnotation.add(subType);
+                }
+            }
             if (!subTypes.isEmpty()) {
                 map.put(coreTest, new HashSet<>(subTypes));
             }
+        }
+        if (!missingCategoryAnnotation.isEmpty()) {
+            throw new IllegalStateException("The following test implementations are missing the @Category annotation: "
+                    + missingCategoryAnnotation.stream().map(Class::getName).collect(Collectors.joining(", ")));
         }
         return map;
     }

@@ -111,7 +111,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions(),
+        ObjectMap options = new ObjectMap(getOptions());
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, options,
                 getSampleIndexDBAdaptor());
     }
 
@@ -132,15 +133,15 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = metadataManager.getStudyId(study);
         for (Trio trio : trios) {
-            Integer father = metadataManager.getSampleId(studyId, trio.getFather());
-            Integer mother = metadataManager.getSampleId(studyId, trio.getMother());
-            Integer child = metadataManager.getSampleId(studyId, trio.getChild());
+            Integer father = trio.getFather() == null ? null : metadataManager.getSampleIdOrFail(studyId, trio.getFather());
+            Integer mother = trio.getMother() == null ? null : metadataManager.getSampleIdOrFail(studyId, trio.getMother());
+            int child = metadataManager.getSampleIdOrFail(studyId, trio.getChild());
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
                 sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
-                if (father != null && father > 0) {
+                if (father != null) {
                     sampleMetadata.setFather(father);
                 }
-                if (mother != null && mother > 0) {
+                if (mother != null) {
                     sampleMetadata.setMother(mother);
                 }
             });

@@ -1,7 +1,5 @@
-package org.opencb.opencga.storage.mongodb.variant.index.sample;
+package org.opencb.opencga.storage.mongodb.variant.index.sample.genotype;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -9,6 +7,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 
 import java.util.Iterator;
 import java.util.List;
@@ -51,8 +50,7 @@ public class MongoDBSampleIndexWriter extends SampleIndexWriter {
                 if (builder.isEmpty()) {
                     continue;
                 }
-                Pair<String, Bson> pair = dbAdaptor.toUpsertBson(builder.buildEntry());
-                dbAdaptor.writeEntry(collection, pair);
+                dbAdaptor.writeEntry(collection, builder.buildEntry());
             }
             iterator.remove();
         }

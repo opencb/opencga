@@ -97,9 +97,11 @@ public abstract class SampleAnnotationIndexer {
         }
 
         if (finalSamplesList.size() < 20) {
-            logger.info("Run sample index annotation on samples " + finalSamplesNameList);
+            logger.info("Run sample index annotation on study '{}' for samples {}", metadataManager.getStudyName(studyId),
+                    finalSamplesNameList);
         } else {
-            logger.info("Run sample index annotation on " + finalSamplesList.size() + " samples");
+            logger.info("Run sample index annotation on study '{}' for {} samples", metadataManager.getStudyName(studyId),
+                    finalSamplesList.size());
         }
 
         run(studyId, finalSamplesList, sampleIndexVersion, options);
