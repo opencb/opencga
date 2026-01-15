@@ -99,8 +99,10 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
     private void runVariantIndex() throws CatalogException, StorageEngineException, ToolException, IOException {
         Path vcfPath = checkGeneratedVcf();
-        File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
-                "", "", "", null, null, null, null, null), false, token).first();
+        File vcfFile = catalogManager.getFileManager()
+                .link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(), getJobId() + "_" + vcfPath.toFile().getName() , "", "",
+                        null, null, null, null, null), false, token)
+                .first();
 
         VariantIndexParams variantIndexParams = analysisParams.getPipelineParams().getVariantIndexParams();
 
