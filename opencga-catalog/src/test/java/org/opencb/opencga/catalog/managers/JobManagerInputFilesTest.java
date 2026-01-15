@@ -292,8 +292,24 @@ public class JobManagerInputFilesTest  {
     @Test
     public void testExtractParametersDepthLimiting() throws CatalogException {
         // Build a structure deeper than 5 levels
+        Map<String, Object> level11 = new HashMap<>();
+        level11.put("level11File", testFile1);
+
+        Map<String, Object> level10 = new HashMap<>();
+        level10.put("level11", level11);
+        level10.put("myFile", testFile1);
+
+        Map<String, Object> level9 = new HashMap<>();
+        level9.put("level10", level10);
+        level9.put("myFile", testFile1);
+
+        Map<String, Object> level8 = new HashMap<>();
+        level8.put("level9", level9);
+        level8.put("myFile", testFile1);
+
         Map<String, Object> level7 = new HashMap<>();
-        level7.put("deepFile", testFile1);
+        level7.put("level8", level8);
+        level7.put("myFile", testFile1);
 
         Map<String, Object> level6 = new HashMap<>();
         level6.put("level7", level7);
