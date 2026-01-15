@@ -1,4 +1,5 @@
-name: Push OpenCGA develop
+name: Push OpenCGA develop branches
+run-name: 'Push on ${{ github.ref_name }} by @${{ github.actor }}'
 
 on:
   push:
@@ -34,3 +35,4 @@ jobs:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}"
       org: zettagenomics
     secrets: inherit
+
