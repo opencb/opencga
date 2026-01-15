@@ -41,6 +41,7 @@ import java.util.*;
 public class ToolFactory {
     private static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
     private static Map<String, Class<? extends OpenCgaTool>> toolsCache;
+    private static Set<String> toolsCachePackages;
     private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
     private static List<Class<? extends OpenCgaTool>> toolsList;
 
@@ -60,7 +61,7 @@ public class ToolFactory {
     }
 
     private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools(List<String> packages) {
-        if (toolsCache == null) {
+        if (isCacheOutdated(packages)) {
             Reflections reflections = new Reflections(new ConfigurationBuilder()
                     .setScanners(
                             new SubTypesScanner(),
@@ -104,18 +105,63 @@ public class ToolFactory {
             ToolFactory.toolsList = Collections.unmodifiableList(toolsList);
             ToolFactory.duplicatedTools = Collections.unmodifiableMap(duplicatedTools);
             ToolFactory.toolsCache = cache;
+            // And add packages to the cache record
+            if (ToolFactory.toolsCachePackages == null) {
+                ToolFactory.toolsCachePackages = new HashSet<>();
+            }
+            ToolFactory.toolsCachePackages.addAll(packages);
+
+            // Log tools list
+            logger.info("Registered {} tools:", toolsList.size());
+            for (Class<? extends OpenCgaTool> aClass : toolsList) {
+                Tool annotation = aClass.getAnnotation(Tool.class);
+                logger.info("    - {} (type: {}, resource: {}, class: {})", annotation.id(), annotation.type(), annotation.resource(),
+                        aClass.getName());
+            }
+            // Log tools cache
+            logger.info("Tools cache contains {} tools:", cache.size());
+            for (Map.Entry<String, Class<? extends OpenCgaTool>> entry : cache.entrySet()) {
+                Tool annotation = entry.getValue().getAnnotation(Tool.class);
+                logger.info("    - {} (type: {}, resource: {}, class: {})", annotation.id(), annotation.type(), annotation.resource(),
+                        entry.getValue().getName());
+            }
+            // Log packages
+            logger.info("Packages cache updated. Cached packages: {}", ToolFactory.toolsCachePackages);
         }
         return toolsCache;
     }
+
+    private static boolean isCacheOutdated(List<String> packages) {
+        if (toolsCache == null || toolsCachePackages == null) {
+            // Cache is empty
+            logger.info("Tools/packages cache is empty");
+            return true;
+        }
+        Set<String> packageSet = new HashSet<>(packages);
+        if (!toolsCachePackages.containsAll(packageSet)) {
+            // There is at least one package missing in the cache
+            logger.info("Tools/packages cache is outdated. Cached packages: {}, requested packages: {}", toolsCachePackages, packageSet);
+            return true;
+        }
+        // Cache is up to date
+        return false;
+    }
+
     static Collection<URL> getUrlsFromPackages(List<String> packages) {
         Collection<URL> urls = new LinkedList<>();
         for (String pack :packages){
             for (URL url : ClasspathHelper.forPackage(pack)) {
                 String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+                logger.info("name = {}, from url = {}", name, url);
                 if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-hadoop-shaded"))) {
                     urls.add(url);
                 }
             }
+        }
+        // Log URLs
+        logger.info("Scanning the following URLs for tools:");
+        for (URL url : urls) {
+            logger.info("    {}", url);
         }
         return urls;
     }
