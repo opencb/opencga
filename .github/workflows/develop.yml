@@ -18,6 +18,7 @@ jobs:
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       dependency_repos: "java-common-libs,biodata"
       deploy_maven: ${{ !startsWith(github.ref_name, 'TASK-') }}
+      upload_artifact: true
     secrets: inherit
 
   deploy-docker-workflow:
