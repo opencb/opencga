@@ -607,11 +607,11 @@ public class VariantCatalogQueryUtilsTest {
         combinations.add(Arrays.asList(file1.getUuid(), file2.getUuid()));
         combinations.add(Arrays.asList(file1.getPath(), file2.getPath()));
         combinations.add(Arrays.asList(file1.getName(), file2.getName()));
-
         combinations.add(Arrays.asList(file1.getId(), file2.getPath()));
 
         List<List<String>> invalidCombinations = new ArrayList<>();
         invalidCombinations.add(Arrays.asList(file1.getPath(), file2.getUuid()));
+        invalidCombinations.add(Arrays.asList(file2.getUuid(), file1.getPath()));
         invalidCombinations.add(Arrays.asList(file1.getPath(), file2.getName()));
         invalidCombinations.add(Arrays.asList(file1.getId(), file2.getName()));
 
@@ -624,6 +624,10 @@ public class VariantCatalogQueryUtilsTest {
                 String actual = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE_DATA.key(), query), null, cellBaseUtils, sessionId)
                         .getString(FILE_DATA.key());
                 assertEquals(expected, actual);
+            }
+            if (queryTemplate.indexOf("<FILE1>") < 0 || queryTemplate.indexOf("<FILE2>") < 0) {
+                // No two files to compare, skip invalid combinations test
+                continue;
             }
             for (List<String> invalidCombination : invalidCombinations) {
                 String query = queryTemplate.replace("<FILE1>", invalidCombination.get(0)).replace("<FILE2>", invalidCombination.get(1));
