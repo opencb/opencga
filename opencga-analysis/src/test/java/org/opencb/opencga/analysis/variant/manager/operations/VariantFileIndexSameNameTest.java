@@ -26,13 +26,16 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
@@ -49,6 +52,7 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
 
     private File inputFile1;
     private File inputFile2;
+    private File inputFile3;
 
     @Override
     protected Aggregation getAggregation() {
@@ -57,11 +61,13 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
 
     @Before
     public void before() throws Exception {
-        inputFile1 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_1/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_1/");
-        inputFile2 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_2/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"), "data/platinum_2/");
+        inputFile1 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_1/input.vcf.gz"), "data/platinum_1/");
+        inputFile2 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "platinum_2/input.vcf.gz"), "data/platinum_2/");
+        inputFile3 = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", "platinum_3/input.vcf.gz"), "data/platinum_3/");
 
         System.out.println("inputFile1 = " + inputFile1.getUid());
         System.out.println("inputFile2 = " + inputFile2.getUid());
+        System.out.println("inputFile3 = " + inputFile3.getUid());
     }
 
     @Test
@@ -101,8 +107,29 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
     @Test
     public void testIndexBoth() throws Exception {
         indexFile(inputFile1, new QueryOptions(), outputId);
-        thrown.expect(hasMessage(containsString("Exception executing transform")));
-        thrown.expect(hasCause(hasMessage(containsString("Already loaded"))));
+        // Loading second file should work fine (as long as we set LOAD_MULTI_FILE_DATA to true)
+
+        String outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index2").toString(), true, null,
+                QueryOptions.empty(), sessionId).first().getId();
+
+        indexFile(inputFile2, new QueryOptions().append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true), outputId);
+    }
+
+    @Test
+    public void testIndexBothDifferentSamples() throws Exception {
+        indexFile(inputFile1, new QueryOptions(), outputId);
+        String outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index2").toString(), true, null,
+                QueryOptions.empty(), sessionId).first().getId();
+
+        indexFile(inputFile3, new QueryOptions().append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), false), outputId);
+    }
+
+    @Test
+    public void testIndexBothNoMultiFileData() throws Exception {
+        indexFile(inputFile1, new QueryOptions(), outputId);
+        StorageEngineException expected = StorageEngineException.alreadyLoadedSamples(inputFile2.getUri().getPath(), Arrays.asList("NA12877"));
+        thrown.expect(hasMessage(containsString("Exception executing load")));
+        thrown.expect(hasCause(hasMessage(equalTo(expected.getMessage()))));
         indexFile(inputFile2, new QueryOptions(), outputId);
     }
 
@@ -118,7 +145,9 @@ public class VariantFileIndexSameNameTest extends AbstractVariantOperationManage
         String outputId2 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index2").toString(), true, null,
                 QueryOptions.empty(), sessionId).first().getId();
 
-        indexFile(inputFile2, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false), outputId2);
+//        indexFile(inputFile2, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false)
+//                .append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true), outputId2);
+        indexFile(inputFile3, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, false), outputId2);
     }
 
     @Test

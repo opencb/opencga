@@ -70,7 +70,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -590,8 +589,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (splitData != null) {
                 logger.info("Loading split data");
             } else {
-                String fileName = Paths.get(variantFileMetadata.getPath()).getFileName().toString();
-                throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
+                throw StorageEngineException.alreadyLoadedSamples(fileMetadata.getName(), new ArrayList<>(alreadyIndexedSamples));
             }
             for (Integer sampleId : processedSamples) {
                 getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
