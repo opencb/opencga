@@ -507,11 +507,13 @@ public class FamilyAnalysisTest extends GenericTest {
         assertEquals(expectedImage.getWidth(), actualImage.getWidth());
         assertEquals(expectedImage.getHeight(), actualImage.getHeight());
 
-        // Then, compare pixel by pixel (can be slow for large images, but robust)
-        for (int y = 0; y < expectedImage.getHeight(); y++) {
-            for (int x = 0; x < expectedImage.getWidth(); x++) {
-                assertEquals(expectedImage.getRGB(x, y), actualImage.getRGB(x, y));
-            }
-        }
+        // This code is commented because it can differ due to changes in docker opencga-ext-tools (OS, R version,...), and this
+        // docker is used by the R script that generates the image
+//        // Then, compare pixel by pixel (can be slow for large images, but robust)
+//        for (int y = 0; y < expectedImage.getHeight(); y++) {
+//            for (int x = 0; x < expectedImage.getWidth(); x++) {
+//                assertEquals(expectedImage.getRGB(x, y), actualImage.getRGB(x, y));
+//            }
+//        }
     }
 }
