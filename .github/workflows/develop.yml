@@ -1,5 +1,5 @@
 name: Push OpenCGA develop branches
-run-name: 'Push on ${{ github.ref_name }} by @${{ github.actor }}'
+
 
 on:
   push:
