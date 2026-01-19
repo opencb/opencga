@@ -231,7 +231,7 @@ public class LocalSampleIndexDBAdaptorTest {
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "2", 0));
 
         // Get iterator
-        Iterator<SampleIndexEntry> iterator = adaptor.rawIterator(studyId, sampleId1);
+        Iterator<SampleIndexEntry> iterator = adaptor.indexEntryIterator(studyId, sampleId1);
 
         // Count entries
         int count = 0;

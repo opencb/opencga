@@ -84,7 +84,11 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
         Task<Variant, SampleIndexEntry> task = new SampleIndexEntryConverter(sampleIndexDBAdaptor, studyId, sampleIds, options, schema);
         MongoDBSampleIndexEntryWriter writer = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, schema, options);
 
-        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(1000).build();
+        // Note: Using a single task
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(1)
+                .setSorted(true)
+                .setBatchSize(10).build();
         new ParallelTaskRunner<>(reader,
                 task,
                 writer, config);

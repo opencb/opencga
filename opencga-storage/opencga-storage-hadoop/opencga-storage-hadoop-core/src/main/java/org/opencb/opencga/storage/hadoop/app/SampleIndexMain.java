@@ -158,7 +158,7 @@ public class SampleIndexMain extends AbstractMain {
         Region region = argsMap.containsKey(VariantQueryParam.REGION.key())
                 ? Region.parseRegion(argsMap.getString(VariantQueryParam.REGION.key()))
                 : null;
-        CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region);
+        CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.indexEntryIterator(studyId, sampleId, region);
         if (argsMap.getBoolean("quiet", false)) {
             print(Iterators.size(iterator));
         } else {
@@ -172,7 +172,7 @@ public class SampleIndexMain extends AbstractMain {
 
     private void detailedQuery(HBaseSampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
-        CloseableIterator<SampleIndexVariant> iterator = dbAdaptor.rawIterator(sampleIndexQuery);
+        CloseableIterator<SampleIndexVariant> iterator = dbAdaptor.indexVariantIterator(sampleIndexQuery);
         SampleIndexSchema schema = sampleIndexQuery.getSchema();
         if (argsMap.getBoolean("quiet", false)) {
             print(Iterators.size(iterator));
@@ -209,7 +209,7 @@ public class SampleIndexMain extends AbstractMain {
         } else {
             schema = dbAdaptor.getSchemaFactory().getSchema(studyId, sampleId, false);
         }
-        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region, schema)) {
+        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.indexEntryIterator(studyId, sampleId, region, schema)) {
             while (iterator.hasNext()) {
                 SampleIndexEntry entry = iterator.next();
                 for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {

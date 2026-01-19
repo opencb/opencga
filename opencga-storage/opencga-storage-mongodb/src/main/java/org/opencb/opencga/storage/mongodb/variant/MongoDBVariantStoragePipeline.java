@@ -20,7 +20,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
-import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -52,6 +51,7 @@ import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsR
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantStag
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.StageWriteOperations;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
@@ -316,17 +317,18 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .then(remapIdsTask)
                     .then(largestVariantTask);
 
-            SampleIndexVariantWriter indexWriter;
+            SampleIndexVariantWriter sampleIndexWriter;
             if (loadSampleIndex) {
-                logger.info("Sample Index will be populated during direct load");
+                logger.info("Secondary Sample Index will be populated during stage load");
                 List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
-                indexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds,
-                        sampleIndexDBAdaptor.getSchemaLatest(getStudyId()), getOptions(),
-                        VariantStorageEngine.SplitData.from(getOptions()));
-                variantReader = variantReader.then(indexWriter.asTask());
+                SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
+                sampleIndexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds, schema,
+                        getOptions(), VariantStorageEngine.SplitData.from(getOptions()));
+                // Load sample index happens at reader task before the variants are transformed into stage documents
+                variantReader = variantReader.then(sampleIndexWriter.asTask());
             } else {
-                logger.info("Sample Index will NOT be populated during direct load");
-                indexWriter = null;
+                logger.info("Sample Index will NOT be populated");
+                sampleIndexWriter = null;
             }
 
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
@@ -378,10 +380,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
-            if (indexWriter != null) {
+            if (sampleIndexWriter != null) {
                 // Update list of loaded genotypes
-                this.loadedGenotypes = indexWriter.getLoadedGenotypes();
-                this.sampleIndexVersion = indexWriter.getSampleIndexVersion();
+                this.loadedGenotypes = sampleIndexWriter.getLoadedGenotypes();
+                this.sampleIndexVersion = sampleIndexWriter.getSampleIndexVersion();
             }
             this.largestVariantLength = largestVariantTask.getMaxLength();
 
@@ -423,28 +425,62 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         long numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
-        final int numReaders = 1;
-//        final int numTasks = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
 
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        SampleIndexVariantWriter sampleIndexWriter;
+        if (loadSampleIndex) {
+            logger.info("Secondary Sample Index will be populated during stage load");
+            if (loadThreads > 1) {
+                logger.warn("Secondary Sample Index population is not thread safe. Setting load threads to 1");
+            }
+            loadThreads = 1; // Sample index writer is not thread safe (yet)
+            List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
+            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
+            sampleIndexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds, schema, getOptions(),
+                    VariantStorageEngine.SplitData.from(getOptions()));
+        } else {
+            logger.info("Sample Index will NOT be populated");
+            sampleIndexWriter = null;
+        }
 
         try {
             StudyMetadata studyMetadata = getStudyMetadata();
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
 
             //Reader
-            VariantReader variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin);
-
             DuplicatedVariantsResolverFactory dedupFactory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
             AbstractDuplicatedVariantsResolver resolver = dedupFactory.getResolver(UriUtils.fileName(input), outdir);
             VariantDeduplicationTask duplicatedVariantsDetector = dedupFactory.getTask(resolver);
 
-            //Remapping ids task
-            Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+            Task<Variant, Variant> remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
+
+            GetLargestVariantTask largestVariantTask = new GetLargestVariantTask();
+
+            DataReader<Variant> variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin)
+                    .then(duplicatedVariantsDetector);
 
             //Runner
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
-            MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(progressLogger);
+            Task<Variant, Variant> progressLoggerTask = progressLogger.asTask(variant -> "up to variant " + variant.toString());
+
+            MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask();
+
+            Task<Variant, StageWriteOperations> task;
+            if (sampleIndexWriter == null) {
+                task = remapIdsTask
+                        .then(progressLoggerTask)
+                        .then(largestVariantTask)
+                        .then(converterTask);
+            } else {
+                task = remapIdsTask
+                        .then(sampleIndexWriter)
+                        .then(progressLoggerTask)
+                        .then(largestVariantTask)
+                        .then(converterTask);
+            }
+
+            // Writer step
             MongoDBVariantStageLoader stageLoader =
                     new MongoDBVariantStageLoader(stageCollection, studyMetadata.getId(), fileId,
                             isResumeStage(options));
@@ -456,13 +492,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
             if (isStageParallelWrite(options)) {
-                logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
-                        remapIdsTask.then(converterTask).then(stageLoader), null, config);
+                logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", 1, loadThreads);
+                ptr = new ParallelTaskRunner<>(variantReader,
+                        task.then(stageLoader), null, config);
             } else {
-                logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(variantReader.then(duplicatedVariantsDetector),
-                        remapIdsTask.then(converterTask), stageLoader, config);
+                logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", 1, loadThreads, 1);
+                ptr = new ParallelTaskRunner<>(variantReader,
+                        task, stageLoader, config);
             }
 
             Thread hook = new Thread(() -> {
@@ -484,6 +520,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             long skippedVariants = converterTask.getSkippedVariants();
             stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
+
+            if (sampleIndexWriter != null) {
+                // Update list of loaded genotypes
+                this.loadedGenotypes = sampleIndexWriter.getLoadedGenotypes();
+                this.sampleIndexVersion = sampleIndexWriter.getSampleIndexVersion();
+            }
+            this.largestVariantLength = largestVariantTask.getMaxLength();
+
             loadStats.append(MERGE.key(), false);
             loadStats.append("stageWriteResult", stageLoader.getWriteResult());
             loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());

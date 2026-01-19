@@ -113,7 +113,7 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+    public CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample, Region region, SampleIndexSchema schema)
             throws IOException {
         MongoDBCollection collection = getCollection(study, schema.getVersion());
         List<Bson> filters = new ArrayList<>();
@@ -130,7 +130,7 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     protected long count(SingleSampleIndexQuery query) {
-        try (CloseableIterator<SampleIndexVariant> iterator = rawIterator(query)) {
+        try (CloseableIterator<SampleIndexVariant> iterator = indexVariantIterator(query)) {
              long count = 0;
              while (iterator.hasNext()) {
                  iterator.next();

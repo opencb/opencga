@@ -28,6 +28,10 @@ import static org.opencb.opencga.storage.core.variant.index.sample.schema.Sample
  *
  * It buffers entries by chunks, and writes them when the buffer exceeds a certain size.
  *
+ * This class is not thread safe.
+ * This class assumes that variants from the same chunk will be processed together.
+ * Variants must be provided ordered by chromosome and position.
+ *
  * @author Jacobo Coll &lt;
  */
 public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry> {

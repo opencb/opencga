@@ -207,6 +207,7 @@ public class VariantMongoDBQueryParser {
                     : parsedVariantQuery.getInputQuery()));
             logger.debug("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         }
+        logger.info("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         return filter;
     }
 

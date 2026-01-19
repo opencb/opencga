@@ -480,7 +480,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
         MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getId());
         MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getId(), fileId, false);
-        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
+        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask();
 
         variantStageLoader.write(converterTask.apply(variants));
 

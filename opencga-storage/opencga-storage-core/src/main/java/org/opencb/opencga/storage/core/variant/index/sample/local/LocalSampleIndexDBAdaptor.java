@@ -117,7 +117,7 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         Iterator<Iterator<Variant>> iterators = locusQueries.stream()
                 .map(locusQuery -> {
                     try {
-                        CloseableIterator<SampleIndexEntry> entryIterator = rawIterator(studyId, sampleId,
+                        CloseableIterator<SampleIndexEntry> entryIterator = indexEntryIterator(studyId, sampleId,
                                 locusQuery == null ? null : locusQuery.getChunkRegion(),
                                 schema);
                         SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, locusQuery);
@@ -174,7 +174,7 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
                 : null;
 
         try {
-            CloseableIterator<SampleIndexEntry> entryIterator = rawIterator(studyId, sampleId, region, schema);
+            CloseableIterator<SampleIndexEntry> entryIterator = indexEntryIterator(studyId, sampleId, region, schema);
             Iterator<Iterator<SampleIndexVariant>> transform = Iterators.transform(entryIterator,
                     entry -> filter.filter(entry).iterator());
             return Iterators.concat(transform);
@@ -184,8 +184,8 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region,
-            SampleIndexSchema schema) throws IOException {
+    public CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample, Region region,
+                                                                  SampleIndexSchema schema) throws IOException {
 
         List<SampleIndexEntry> entries = new ArrayList<>();
 

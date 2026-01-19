@@ -477,7 +477,7 @@ public class VariantHbaseTestUtils {
                     out.println("MISSING SAMPLE INDEX");
                     continue;
                 }
-                try (CloseableIterator<SampleIndexVariant> it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
+                try (CloseableIterator<SampleIndexVariant> it = sampleIndexDBAdaptor.indexVariantIterator(studyName, sampleName)) {
                     while (it.hasNext()) {
                         SampleIndexVariant entry = it.next();
                         out.println("_______________________");

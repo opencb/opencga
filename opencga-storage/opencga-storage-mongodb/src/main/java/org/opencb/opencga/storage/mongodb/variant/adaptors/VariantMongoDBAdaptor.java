@@ -1263,4 +1263,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.metadataManager = variantStorageMetadataManager;
     }
 
+    public MongoDataStoreManager getMongoDataStoreManager() {
+        return mongoManager;
+    }
 }

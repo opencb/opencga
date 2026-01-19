@@ -186,7 +186,7 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+    public CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample, Region region, SampleIndexSchema schema)
             throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         return hBaseManager.act(tableName, table -> {

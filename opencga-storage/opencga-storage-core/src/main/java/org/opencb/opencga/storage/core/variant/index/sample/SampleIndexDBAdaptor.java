@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
@@ -155,15 +156,15 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
 
     protected abstract CloseableIterator<SampleIndexVariant> rawInternalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema);
 
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
-        return rawIterator(study, sample, null);
+    public CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample) throws IOException {
+        return indexEntryIterator(study, sample, null);
     }
 
-    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        return rawIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
+    public CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample, Region region) throws IOException {
+        return indexEntryIterator(study, sample, region, schemaFactory.getSchema(study, sample, false));
     }
 
-    public abstract CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region, SampleIndexSchema schema)
+    public abstract CloseableIterator<SampleIndexEntry> indexEntryIterator(int study, int sample, Region region, SampleIndexSchema schema)
             throws IOException;
 
     /**
@@ -173,21 +174,21 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
      * @param sample sample
      * @return CloseableIterator<SampleIndexVariant>
      */
-    public CloseableIterator<SampleIndexVariant> rawIterator(String study, String sample) {
-        Query query = new Query(VariantQueryParam.STUDY.key(), study).append(VariantQueryParam.SAMPLE.key(), sample);
+    public CloseableIterator<SampleIndexVariant> indexVariantIterator(String study, String sample) {
+        Query query = new VariantQuery().study(study).sample(sample);
         SingleSampleIndexQuery sampleIndexQuery = parseSampleIndexQuery(query).forSample(sample);
         return rawInternalIterator(sampleIndexQuery, sampleIndexQuery.getSchema());
     }
 
-    public CloseableIterator<SampleIndexVariant> rawIterator(Query query) throws IOException {
-        return rawIterator(parseSampleIndexQuery(query));
+    public CloseableIterator<SampleIndexVariant> indexVariantIterator(Query query) throws IOException {
+        return indexVariantIterator(parseSampleIndexQuery(query));
     }
 
-    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query) throws IOException {
-        return rawIterator(query, new QueryOptions());
+    public CloseableIterator<SampleIndexVariant> indexVariantIterator(SampleIndexQuery query) throws IOException {
+        return indexVariantIterator(query, new QueryOptions());
     }
 
-    public CloseableIterator<SampleIndexVariant> rawIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
+    public CloseableIterator<SampleIndexVariant> indexVariantIterator(SampleIndexQuery query, QueryOptions options) throws IOException {
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {

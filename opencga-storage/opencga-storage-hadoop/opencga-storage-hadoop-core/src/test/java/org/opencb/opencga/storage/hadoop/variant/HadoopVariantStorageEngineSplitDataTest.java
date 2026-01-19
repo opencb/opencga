@@ -977,8 +977,8 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
         for (Integer sampleIdExpected : mm.getIndexedSamples(studyIdExpected)) {
             String sampleName = mm.getSampleName(studyIdExpected, sampleIdExpected);
-            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.rawIterator(studyIdExpected, sampleIdExpected);
-            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.rawIterator(studyIdActual, mm.getSampleId(studyIdActual, sampleName));
+            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.indexEntryIterator(studyIdExpected, sampleIdExpected);
+            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.indexEntryIterator(studyIdActual, mm.getSampleId(studyIdActual, sampleName));
 
             while (itExp.hasNext()) {
                 assertTrue(itAct.hasNext());

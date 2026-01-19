@@ -269,7 +269,7 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
         Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(studyId);
         while (it.hasNext()) {
             SampleMetadata sample = it.next();
-            Iterator<SampleIndexEntry> indexIt = sampleIndexDBAdaptor.rawIterator(studyId, sample.getId());
+            Iterator<SampleIndexEntry> indexIt = sampleIndexDBAdaptor.indexEntryIterator(studyId, sample.getId());
             while (indexIt.hasNext()) {
                 SampleIndexEntry record = indexIt.next();
 
@@ -600,8 +600,10 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
 
         // Query SampleIndex
         System.out.println("#Query SampleIndex");
-        Query sampleIndexVariantQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
-        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
+        Query preProcessQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
+        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(preProcessQuery));
+        Query sampleIndexVariantQuery = indexQuery.getUncoveredQuery();
+
 //        int onlyIndex = (int) ((VariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         List<Variant> result = ((VariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -620,6 +622,7 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
         System.out.println("--- RESULTS -----");
         System.out.println("testQuery          = " + testQuery.toJson());
         System.out.println("query              = " + query.toJson());
+        System.out.println("preProcessQuery    = " + preProcessQuery.toJson());
         System.out.println("dbAdaptorQuery     = " + sampleIndexVariantQuery.toJson());
 //        System.out.println("Native dbAdaptor   = " + VariantHBaseQueryParser.isSupportedQuery(sampleIndexVariantQuery) + " -> " + VariantHBaseQueryParser.unsupportedParamsFromQuery(sampleIndexVariantQuery));
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));

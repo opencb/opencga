@@ -116,7 +116,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
         logger.info("Filter transcript = {}", filterTranscript);
 
-        try (CloseableIterator<SampleIndexVariant> sampleIndexVariantIterator = sampleIndexDBAdaptor.rawIterator(query)) {
+        try (CloseableIterator<SampleIndexVariant> sampleIndexVariantIterator = sampleIndexDBAdaptor.indexVariantIterator(query)) {
             // Init top level fields
             for (FacetFieldAccumulator<SampleIndexVariant> accumulator : accumulators) {
                 fields.add(accumulator.createField());

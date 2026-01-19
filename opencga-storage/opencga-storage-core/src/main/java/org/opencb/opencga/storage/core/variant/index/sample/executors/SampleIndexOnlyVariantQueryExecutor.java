@@ -172,7 +172,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             logger.info("Using sample index raw iterator Iterator<{}>", SampleIndexVariant.class.getSimpleName());
             CloseableIterator<SampleIndexVariant> rawIterator;
             try {
-                rawIterator = sampleIndexDBAdaptor.rawIterator(sampleIndexQuery, options);
+                rawIterator = sampleIndexDBAdaptor.indexVariantIterator(sampleIndexQuery, options);
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e).setQuery(parsedQuery.getInputQuery());
             }
