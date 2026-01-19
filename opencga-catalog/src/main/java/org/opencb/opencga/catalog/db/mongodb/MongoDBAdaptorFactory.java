@@ -53,7 +53,7 @@ import java.util.concurrent.Executors;
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
-    private static final ExecutorService FUTURE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+    private final ExecutorService FUTURE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r);
         thread.setDaemon(true);
         thread.setName("organization-collection-and-index-creator");
