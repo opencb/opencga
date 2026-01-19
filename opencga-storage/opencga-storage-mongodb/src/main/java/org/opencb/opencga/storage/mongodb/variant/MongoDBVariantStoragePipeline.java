@@ -51,7 +51,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantWriter;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -316,11 +316,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .then(remapIdsTask)
                     .then(largestVariantTask);
 
-            SampleIndexWriter indexWriter;
+            SampleIndexVariantWriter indexWriter;
             if (loadSampleIndex) {
                 logger.info("Sample Index will be populated during direct load");
                 List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
-                indexWriter = sampleIndexDBAdaptor.newSampleIndexWriter(getStudyId(), getFileId(), sampleIds,
+                indexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds,
                         sampleIndexDBAdaptor.getSchemaLatest(getStudyId()), getOptions(),
                         VariantStorageEngine.SplitData.from(getOptions()));
                 variantReader = variantReader.then(indexWriter.asTask());

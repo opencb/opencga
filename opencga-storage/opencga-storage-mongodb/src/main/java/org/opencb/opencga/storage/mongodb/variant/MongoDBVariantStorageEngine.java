@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -35,7 +34,6 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -126,27 +124,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
         return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider, getSampleIndexDBAdaptor()
                 .newSampleAnnotationIndexer(this));
-    }
-
-    @Override
-    public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = metadataManager.getStudyId(study);
-        for (Trio trio : trios) {
-            Integer father = trio.getFather() == null ? null : metadataManager.getSampleIdOrFail(studyId, trio.getFather());
-            Integer mother = trio.getMother() == null ? null : metadataManager.getSampleIdOrFail(studyId, trio.getMother());
-            int child = metadataManager.getSampleIdOrFail(studyId, trio.getChild());
-            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
-                if (father != null) {
-                    sampleMetadata.setFather(father);
-                }
-                if (mother != null) {
-                    sampleMetadata.setMother(mother);
-                }
-            });
-        }
-        return new DataResult<Trio>().setResults(trios);
     }
 
     @Override

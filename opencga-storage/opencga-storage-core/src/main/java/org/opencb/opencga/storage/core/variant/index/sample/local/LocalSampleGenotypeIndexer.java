@@ -36,7 +36,7 @@ public class LocalSampleGenotypeIndexer extends SampleGenotypeIndexer {
     }
 
     @Override
-    protected void runBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+    protected void indexBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
             throws StorageEngineException {
         SampleIndexVariantConverter variantConverter = new SampleIndexVariantConverter(schema);
 

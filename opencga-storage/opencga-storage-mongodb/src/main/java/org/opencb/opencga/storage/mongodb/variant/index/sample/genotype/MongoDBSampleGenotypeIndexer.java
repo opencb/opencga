@@ -15,12 +15,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexEntryWriter;
 
 import java.util.*;
 
@@ -40,7 +40,7 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
     }
 
     @Override
-    protected void runBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+    protected void indexBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
             throws StorageEngineException {
         String studyName = metadataManager.getStudyName(studyId);
         List<String> sampleNames = samplesAsNames(studyId, sampleIds);
@@ -81,11 +81,8 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
             variantQuery.includeSample(sampleNames);
         }
         VariantDBReader reader = new VariantDBReader(engine.getDBAdaptor(), variantQuery, variantOptions);
-        Task<Variant, SampleIndexEntry> task = v -> {
-            // TODO
-            return null;
-        };
-        MongoDBSampleIndexEntryWriter writer = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, schema.getVersion());
+        Task<Variant, SampleIndexEntry> task = new SampleIndexEntryConverter(sampleIndexDBAdaptor, studyId, sampleIds, options, schema);
+        MongoDBSampleIndexEntryWriter writer = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, schema, options);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(4).setBatchSize(1000).build();
         new ParallelTaskRunner<>(reader,

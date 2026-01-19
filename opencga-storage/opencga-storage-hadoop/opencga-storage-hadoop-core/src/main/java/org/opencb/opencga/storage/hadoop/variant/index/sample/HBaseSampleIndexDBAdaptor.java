@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleAnnotationIndexer;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.family.HBaseSampleFamilyIndexer;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseSampleGenotypeIndexer;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseSampleIndexDBWriter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseSampleIndexEntryDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -73,11 +73,11 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public HBaseSampleIndexDBWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-            SampleIndexSchema schema, ObjectMap options,
-            VariantStorageEngine.SplitData splitData) throws StorageEngineException {
-        return new HBaseSampleIndexDBWriter(this, hBaseManager, metadataManager, studyId, fileId, sampleIds,
-                splitData, options, schema);
+    public HBaseSampleIndexEntryDBWriter newSampleIndexEntryWriter(int studyId, int fileId, SampleIndexSchema schema, ObjectMap options)
+            throws StorageEngineException {
+        List<Integer> sampleIds = new ArrayList<>(metadataManager.getSampleIdsFromFileId(studyId, fileId));
+        return new HBaseSampleIndexEntryDBWriter(this, hBaseManager, studyId, sampleIds,
+                options, schema, false);
     }
 
     @Override

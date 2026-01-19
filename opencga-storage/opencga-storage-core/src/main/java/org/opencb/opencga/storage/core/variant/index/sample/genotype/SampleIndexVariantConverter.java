@@ -34,8 +34,13 @@ public class SampleIndexVariantConverter {
 
     public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int filePosition, Variant variant) {
         // Expecting only one study and only one file
+        return createSampleIndexVariant(sampleIdx, 0, filePosition, variant);
+    }
+
+    public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int fileIdx, int filePosition, Variant variant) {
+        // Expecting only one study
         StudyEntry study = variant.getStudies().get(0);
-        FileEntry file = study.getFiles().get(0);
+        FileEntry file = study.getFiles().get(fileIdx);
 
         BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, file.getData(),
                 study.getSampleDataKeyPositions(), study.getSampleData(sampleIdx));

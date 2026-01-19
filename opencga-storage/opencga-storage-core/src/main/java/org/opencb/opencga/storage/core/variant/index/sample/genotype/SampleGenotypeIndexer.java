@@ -80,19 +80,26 @@ public abstract class SampleGenotypeIndexer {
         }
 
         run(studyId, schema, finalSamplesList, options);
+
+        sampleIndexDBAdaptor.updateSampleIndexSchemaStatus(studyId, version);
     }
 
     protected void run(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
             throws StorageEngineException {
         // By default, run one single batch
         runBatch(studyId, schema, sampleIds, options);
-        postRunBatch(studyId, schema, sampleIds);
     }
 
-    protected abstract void runBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+    protected void runBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
+            throws StorageEngineException {
+        indexBatch(studyId, schema, sampleIds, options);
+        postIndexBatch(studyId, schema, sampleIds);
+    }
+
+    protected abstract void indexBatch(int studyId, SampleIndexSchema schema, List<Integer> sampleIds, ObjectMap options)
             throws StorageEngineException;
 
-    protected void postRunBatch(int studyId, SampleIndexSchema schema, List<Integer> samples) throws StorageEngineException {
+    protected void postIndexBatch(int studyId, SampleIndexSchema schema, List<Integer> samples) throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                 sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.READY, schema.getVersion());

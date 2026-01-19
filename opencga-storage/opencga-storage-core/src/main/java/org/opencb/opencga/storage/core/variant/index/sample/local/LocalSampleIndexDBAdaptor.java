@@ -18,7 +18,6 @@ import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenot
 import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
@@ -60,10 +59,10 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-                                                  SampleIndexSchema schema, ObjectMap options, VariantStorageEngine.SplitData splitData)
+    public LocalSampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, int fileId,
+                                                                 SampleIndexSchema schema, ObjectMap options)
             throws StorageEngineException {
-        return new LocalSampleIndexWriter(this, metadataManager, studyId, fileId, sampleIds, splitData, options, schema);
+        return new LocalSampleIndexEntryWriter(this, studyId, schema);
     }
 
     @Override

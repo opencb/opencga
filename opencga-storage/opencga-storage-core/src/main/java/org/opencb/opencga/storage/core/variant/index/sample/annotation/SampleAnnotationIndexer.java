@@ -113,13 +113,18 @@ public abstract class SampleAnnotationIndexer {
             throws StorageEngineException {
         // By default, run all in a single batch
         runBatch(studyId, samples, sampleIndexVersion, options);
-        postRunBatch(studyId, samples, sampleIndexVersion);
     }
 
-    protected abstract void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+    protected void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+            throws StorageEngineException {
+        indexBatch(studyId, samples, sampleIndexVersion, options);
+        postIndexBatch(studyId, samples, sampleIndexVersion);
+    }
+
+    protected abstract void indexBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException;
 
-    public void postRunBatch(int studyId, List<Integer> samples, int version)
+    public void postIndexBatch(int studyId, List<Integer> samples, int version)
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {

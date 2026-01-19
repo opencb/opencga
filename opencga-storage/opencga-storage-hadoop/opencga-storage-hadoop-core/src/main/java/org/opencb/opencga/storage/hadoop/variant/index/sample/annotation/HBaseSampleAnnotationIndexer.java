@@ -50,16 +50,14 @@ public class HBaseSampleAnnotationIndexer extends SampleAnnotationIndexer {
                 List<Integer> batch = batches.get(i);
                 logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches.size(), batch.size());
                 runBatch(studyId, batch, sampleIndexVersion, options);
-                postRunBatch(studyId, batch, sampleIndexVersion);
             }
         } else {
             runBatch(studyId, samples, sampleIndexVersion, options);
-            postRunBatch(studyId, samples, sampleIndexVersion);
         }
     }
 
     @Override
-    protected void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+    protected void indexBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException {
         options.put(SampleIndexAnnotationLoaderDriver.OUTPUT,
                 sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId));

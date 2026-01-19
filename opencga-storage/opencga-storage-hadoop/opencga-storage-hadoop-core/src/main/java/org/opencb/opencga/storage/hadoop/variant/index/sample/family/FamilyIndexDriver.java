@@ -245,25 +245,6 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed && !partial) {
-            VariantStorageMetadataManager metadataManager = getMetadataManager();
-            for (int i = 0; i < sampleIds.size(); i += 3) {
-                Integer father = sampleIds.get(i);
-                Integer mother = sampleIds.get(i + 1);
-                Integer child = sampleIds.get(i + 2);
-                metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
-                    sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
-                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
-                    sampleMetadata.setFamilyIndexDefined(true);
-                    if (father > 0) {
-                        sampleMetadata.setFather(father);
-                    }
-                    if (mother > 0) {
-                        sampleMetadata.setMother(mother);
-                    }
-                });
-            }
-        }
     }
 
     @Override

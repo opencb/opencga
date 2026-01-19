@@ -54,16 +54,14 @@ public class HBaseSampleGenotypeIndexer extends SampleGenotypeIndexer {
                 List<Integer> subSet = batches.get(i);
                 logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
                 runBatch(studyId, schema, subSet, options);
-                postRunBatch(studyId, schema, subSet);
             }
         } else {
             runBatch(studyId, schema, sampleIds, options);
-            postRunBatch(studyId, schema, sampleIds);
         }
     }
 
     @Override
-    protected void runBatch(int studyId, SampleIndexSchema schema, List<Integer> samples, ObjectMap options)
+    protected void indexBatch(int studyId, SampleIndexSchema schema, List<Integer> samples, ObjectMap options)
             throws StorageEngineException {
         options = new ObjectMap(options);
         options.put(SampleIndexDriver.SAMPLE_IDS, samples);

@@ -35,7 +35,7 @@ public class LocalSampleAnnotationIndexer extends SampleAnnotationIndexer {
     }
 
     @Override
-    protected void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+    protected void indexBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException {
         SampleIndexSchema schema = new SampleIndexSchema(localAdaptor.getMetadataManager().getStudyMetadata(studyId)
                 .getSampleIndexConfiguration(sampleIndexVersion).getConfiguration(), sampleIndexVersion);

@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnn
 import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
@@ -31,7 +30,7 @@ import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSc
 import org.opencb.opencga.storage.mongodb.variant.index.sample.annotation.MongoDBSampleAnnotationIndexer;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.family.MongoDBSampleFamilyIndexer;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleGenotypeIndexer;
-import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleIndexWriter;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleIndexEntryWriter;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.iterators.MongoDBSingleSampleIndexRawIterator;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.iterators.MongoDBSingleSampleIndexVariantIterator;
 
@@ -56,16 +55,14 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     @Override
-    public SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-            SampleIndexSchema schema,
-            ObjectMap options, VariantStorageEngine.SplitData splitData)
+    public MongoDBSampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, int fileId, SampleIndexSchema schema, ObjectMap options)
             throws StorageEngineException {
-        return new MongoDBSampleIndexWriter(this, getMetadataManager(), studyId, fileId, sampleIds, schema, options,
-                splitData);
+        return new MongoDBSampleIndexEntryWriter(this, studyId, schema);
     }
 
-    public MongoDBSampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, int version) {
-        return new MongoDBSampleIndexEntryWriter(this, studyId, version);
+    public MongoDBSampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, SampleIndexSchema schema, ObjectMap options)
+            throws StorageEngineException {
+        return new MongoDBSampleIndexEntryWriter(this, studyId, schema);
     }
 
     @Override

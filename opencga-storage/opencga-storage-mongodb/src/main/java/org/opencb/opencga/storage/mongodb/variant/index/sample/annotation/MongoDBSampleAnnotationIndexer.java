@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.index.sample.annotation;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -43,7 +41,7 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
     }
 
     @Override
-    protected void runBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
+    protected void indexBatch(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException {
         List<String> sampleNames = samplesAsNames(studyId, samples);
         String studyName = metadataManager.getStudyName(studyId);

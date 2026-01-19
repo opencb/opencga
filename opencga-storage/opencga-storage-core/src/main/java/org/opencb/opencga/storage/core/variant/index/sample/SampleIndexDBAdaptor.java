@@ -27,10 +27,7 @@ import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
-import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.*;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.*;
@@ -68,9 +65,17 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
     public abstract SampleGenotypeIndexer newSampleGenotypeIndexer(VariantStorageEngine engine)
             throws StorageEngineException;
 
-    public abstract SampleIndexWriter newSampleIndexWriter(int studyId, int fileId, List<Integer> sampleIds,
-            SampleIndexSchema schema, ObjectMap options,
-            VariantStorageEngine.SplitData splitData) throws StorageEngineException;
+
+    public SampleIndexVariantWriter newSampleIndexVariantWriter(int studyId, int fileId, List<Integer> sampleIds,
+                                                                SampleIndexSchema schema, ObjectMap options,
+                                                                VariantStorageEngine.SplitData splitData) throws StorageEngineException {
+        SampleIndexEntryConverter converter = new SampleIndexEntryConverter(this, studyId, fileId, sampleIds, splitData, options, schema);
+        SampleIndexEntryWriter writer = newSampleIndexEntryWriter(studyId, fileId, schema, options);
+        return new SampleIndexVariantWriter(converter, writer);
+    }
+
+    public abstract SampleIndexEntryWriter newSampleIndexEntryWriter(int studyId, int fileId, SampleIndexSchema schema, ObjectMap options)
+            throws StorageEngineException;
 
     public abstract SampleAnnotationIndexer newSampleAnnotationIndexer(VariantStorageEngine engine)
             throws StorageEngineException;
@@ -398,7 +403,8 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
                         .setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
             });
         } else {
-            logger.info("Not all samples had the sample index version {} on GENOTYPES and ANNOTATION", version);
+            logger.info("Not all samples from study {} have the sample index version {} on GENOTYPES and ANNOTATION",
+                    studyMetadata.getName(), version);
         }
     }
 

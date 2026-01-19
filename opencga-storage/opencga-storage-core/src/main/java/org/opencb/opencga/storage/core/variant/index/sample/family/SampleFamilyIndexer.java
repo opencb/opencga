@@ -102,8 +102,35 @@ public abstract class SampleFamilyIndexer {
     }
 
 
-    protected abstract void runBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
+    protected void runBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
+            throws StorageEngineException {
+        indexBatch(study, trios, options, studyId, version);
+        postIndexBatch(studyId, trios, version);
+    }
+
+    protected abstract void indexBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
             throws StorageEngineException;
+
+    protected void postIndexBatch(int studyId, List<Trio> trios, int version)
+            throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = sampleIndexDBAdaptor.getMetadataManager();
+        for (Trio trio : trios) {
+            Integer father = trio.getFather() == null ? -1 : metadataManager.getSampleId(studyId, trio.getFather());
+            Integer mother = trio.getMother() == null ? -1 : metadataManager.getSampleId(studyId, trio.getMother());
+            Integer child = metadataManager.getSampleId(studyId, trio.getChild());
+            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
+                sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, version);
+                sampleMetadata.setFamilyIndexDefined(true);
+                if (father > 0) {
+                    sampleMetadata.setFather(father);
+                }
+                if (mother > 0) {
+                    sampleMetadata.setMother(mother);
+                }
+            });
+        }
+    }
 
     public void postRun(int studyId, int version)
             throws StorageEngineException {

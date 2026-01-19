@@ -23,7 +23,7 @@ public class LocalSampleFamilyIndexer extends SampleFamilyIndexer {
     }
 
     @Override
-    protected void runBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
+    protected void indexBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
             throws StorageEngineException {
         // TODO: Implement family index for local files
         // This requires:

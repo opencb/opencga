@@ -5,6 +5,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -14,14 +16,17 @@ import java.util.List;
  */
 public class MongoDBSampleFamilyIndexer extends SampleFamilyIndexer {
 
+    private final Logger logger = LoggerFactory.getLogger(MongoDBSampleFamilyIndexer.class);
+
     public MongoDBSampleFamilyIndexer(SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         super(sampleIndexDBAdaptor);
     }
 
     @Override
-    protected void runBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
+    protected void indexBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
             throws StorageEngineException {
-        throw new StorageEngineException("Mongo SampleIndex family build is not implemented yet");
+        // TODO: Implement MongoDB SampleIndex family indexing
+        logger.warn("Mongo SampleIndex family build is not implemented yet");
     }
 }
 

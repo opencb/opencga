@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexWriter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,9 +103,9 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         DuplicatedVariantsResolverFactory factory = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider);
         AbstractDuplicatedVariantsResolver resolver = factory.getResolver(UriUtils.fileName(input), outdir);
 
-        SampleIndexWriter indexWriter;
+        SampleIndexVariantWriter indexWriter;
         if (loadSampleIndex) {
-            indexWriter = sampleIndexDBAdaptor.newSampleIndexWriter(getStudyId(), getFileId(), sampleIds,
+            indexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds,
                     sampleIndexDBAdaptor.getSchemaLatest(getStudyId()), getOptions(), VariantStorageEngine.SplitData.from(getOptions()));
             indexWriter.open();
             indexWriter.pre();

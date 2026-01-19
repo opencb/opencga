@@ -100,7 +100,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected Integer privateFileId;
     protected Integer privateStudyId;
     protected Integer sampleIndexVersion;
-    protected HashSet<String> loadedGenotypes;
+    protected Set<String> loadedGenotypes;
     protected int largestVariantLength;
 //    protected StudyMetadata privateStudyMetadata;
 
