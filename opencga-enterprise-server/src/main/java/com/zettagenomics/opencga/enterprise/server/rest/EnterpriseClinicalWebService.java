@@ -2,16 +2,18 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
 import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Api;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParam;
 import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_DESCR;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
+import static org.opencb.commons.datastore.core.QueryOptions.EXCLUDE;
 import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
 
@@ -166,10 +169,14 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
     })
     public Response variantQuery() {
-        // Get all query options
         return run(() -> {
+            // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = VariantWebService.getVariantQuery(queryOptions);
+
+            if (StringUtils.isEmpty(query.getString(ParamConstants.STUDY_PARAM, ""))) {
+                throw new IllegalArgumentException("Missing study");
+            }
 
             // Because of the parameter includeInterpretation is not a standard variant query parameter, it is added to the query
             // after parsing the query parameters
@@ -186,7 +193,22 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
                 }
             }
 
-            return CvdbUtils.getClinicalVariant(query, queryOptions, getClinicalInterpretationManager(), getCvdbEngine(), token);
+            // First, get clinical variants
+            OpenCGAResult<ClinicalVariant> cvResult = getClinicalInterpretationManager().get(query, queryOptions, token);
+
+            if (!getSkipStats(queryOptions)) {
+                for (ClinicalVariant cv : cvResult.getResults()) {
+                    DataResult<ClinicalVariantSummaryStats> summaryStatsResult = getCvdbEngine().getClinicalVariantSummaryStats(cv.getId(),
+                            null, token);
+                    cv.setStats(summaryStatsResult.getResults());
+                }
+            }
+
+            return cvResult;
         });
+    }
+
+    private boolean getSkipStats(QueryOptions queryOptions) {
+        return (queryOptions != null && queryOptions.containsKey(EXCLUDE) && queryOptions.getAsStringList(EXCLUDE).contains("stats"));
     }
 }
