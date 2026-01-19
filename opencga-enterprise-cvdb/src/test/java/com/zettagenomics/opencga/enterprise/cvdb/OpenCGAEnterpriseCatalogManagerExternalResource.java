@@ -47,6 +47,7 @@ public class OpenCGAEnterpriseCatalogManagerExternalResource extends CatalogMana
         super(Paths.get("../opencga-home/opencga-app/app/analysis/"));
     }
 
+    @Deprecated
     public void loadClinicalAnalsysesInCatalog(List<String> caFilenames, String studyId, String sessionIdUser)
             throws IOException, CatalogException {
         for (String caFilename : caFilenames) {

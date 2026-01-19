@@ -157,12 +157,6 @@ public class FederationsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
         @Parameter(names = {"--id"}, description = "Federation client id to be synchronized", required = true, arity = 1)
         public String id; 
     
@@ -248,12 +242,6 @@ public class FederationsCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
     
         @Parameter(names = {"--id"}, description = "Federation server id to reset", required = true, arity = 1)
         public String id; 

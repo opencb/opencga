@@ -138,6 +138,12 @@ public class CvdbUpdateAclTask extends OpenCgaTool {
     }
 
     private void updateUsersForClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn) throws CatalogException, CvdbException {
+        // Check clinical analysis list
+        if (CollectionUtils.isEmpty(clinicalAnalysisIds)) {
+            logger.warn("No clinical analyses to update ACLs");
+            return;
+        }
+
         numTotal += clinicalAnalysisIds.size();
 
         String studyId = FqnUtils.getStudy(studyFqn);

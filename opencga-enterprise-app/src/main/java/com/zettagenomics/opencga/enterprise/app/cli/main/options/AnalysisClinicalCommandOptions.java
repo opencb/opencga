@@ -47,6 +47,9 @@ public class AnalysisClinicalCommandOptions {
         public RdInterpreterCommandOptions rdInterpreterCommandOptions;
         public RunInterpreterRdCommandOptions runInterpreterRdCommandOptions;
         public LoadCommandOptions loadCommandOptions;
+        public RunPipelineAffyCommandOptions runPipelineAffyCommandOptions;
+        public RunPipelineGenomicsCommandOptions runPipelineGenomicsCommandOptions;
+        public RunPipelinePrepareCommandOptions runPipelinePrepareCommandOptions;
         public AggregationStatsRgaCommandOptions aggregationStatsRgaCommandOptions;
         public QueryRgaGeneCommandOptions queryRgaGeneCommandOptions;
         public SummaryRgaGeneCommandOptions summaryRgaGeneCommandOptions;
@@ -88,6 +91,9 @@ public class AnalysisClinicalCommandOptions {
         this.rdInterpreterCommandOptions = new RdInterpreterCommandOptions();
         this.runInterpreterRdCommandOptions = new RunInterpreterRdCommandOptions();
         this.loadCommandOptions = new LoadCommandOptions();
+        this.runPipelineAffyCommandOptions = new RunPipelineAffyCommandOptions();
+        this.runPipelineGenomicsCommandOptions = new RunPipelineGenomicsCommandOptions();
+        this.runPipelinePrepareCommandOptions = new RunPipelinePrepareCommandOptions();
         this.aggregationStatsRgaCommandOptions = new AggregationStatsRgaCommandOptions();
         this.queryRgaGeneCommandOptions = new QueryRgaGeneCommandOptions();
         this.summaryRgaGeneCommandOptions = new SummaryRgaGeneCommandOptions();
@@ -289,6 +295,15 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--interpretation-default-filter"}, description = "The body web service defaultFilter parameter. Use: --interpretation-default-filter key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> interpretationDefaultFilter = new HashMap<>(); //Dynamic parameters must be initialized;
     
+        @Parameter(names = {"--report-title"}, description = "Title of the clinical report", required = false, arity = 1)
+        public String reportTitle;
+    
+        @Parameter(names = {"--report-logo"}, description = "Base64 logo image for the clinical report", required = false, arity = 1)
+        public String reportLogo;
+    
+        @DynamicParameter(names = {"--report-library"}, description = "Map of library identifiers to their corresponding names or descriptions. Use: --report-library key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> reportLibrary = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
@@ -342,34 +357,40 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
     
-        @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
-        public String reportLogo;
+        @Parameter(names = {"--report-recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String reportRecommendation;
     
-        @Parameter(names = {"--report-signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String reportSignedBy;
+        @Parameter(names = {"--report-methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String reportMethodology;
     
-        @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
-        public String reportSignature;
+        @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String reportLimitations;
+    
+        @Parameter(names = {"--report-experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String reportExperimentalProcedure;
     
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
-        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--report-images"}, description = "Images related to the report", required = false, arity = 1)
+        public String reportImages;
+    
+        @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
-        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-justification"}, description = "Justification for the clinical request", required = false, arity = 1)
         public String requestJustification;
     
-        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-date"}, description = "Date of the clinical request", required = false, arity = 1)
         public String requestDate;
     
-        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        @DynamicParameter(names = {"--request-attributes"}, description = "Additional attributes for the clinical request. Use: --request-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
@@ -417,7 +438,7 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--interpretation-attributes"}, description = "The body web service attributes parameter. Use: --interpretation-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, CRITICAL, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
     
         @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
@@ -914,6 +935,159 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
+    
+    }
+
+    @Parameters(commandNames = {"pipeline-affy-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.")
+    public class RunPipelineAffyCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--pipeline-params-chip"}, description = "Chip type used in the Affymetrix experiment", required = false, arity = 1)
+        public String pipelineParamsChip;
+    
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory containing Affymetrix pipeline indexes", required = false, arity = 1)
+        public String pipelineParamsIndexDir;
+    
+        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory containing Affymetrix pipeline data (e.g., CEL files,...)", required = false, arity = 1)
+        public String pipelineParamsDataDir;
+    
+        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Affymetrix pipeline configuration file", required = false, arity = 1)
+        public String pipelineParamsPipelineFile;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
+        public String outdir;
+    
+    }
+
+    @Parameters(commandNames = {"pipeline-genomics-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.")
+    public class RunPipelineGenomicsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
+        public String pipelineParamsIndexDir;
+    
+        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling, genotype,...", required = false, arity = 1)
+        public String pipelineParamsSteps;
+    
+        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
+        public String pipelineParamsPipelineFile;
+    
+        @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
+        public String pipelineParamsSamples;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
+        public String outdir;
+    
+    }
+
+    @Parameters(commandNames = {"pipeline-prepare-run"}, commandDescription ="Prepare the clinical pipeline.")
+    public class RunPipelinePrepareCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--pipeline-params-reference-genome"}, description = "Reference genome to be used in the clinical pipeline.", required = false, arity = 1)
+        public String pipelineParamsReferenceGenome;
+    
+        @Parameter(names = {"--pipeline-params-indexes"}, description = "List of indexes to be prepared for the clinical pipeline, e.g., bwa, bowtie, affy,...", required = false, arity = 1)
+        public String pipelineParamsIndexes;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
+        public String outdir;
     
     }
 
@@ -1925,6 +2099,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analysts-action"}, description = "Action to be performed if the array of analysts is being updated.", required = false, arity = 1)
         public String analystsAction = "ADD"; 
     
+        @Parameter(names = {"--reported-files-action"}, description = "Action to be performed if the array of reported files is being updated.", required = false, arity = 1)
+        public String reportedFilesAction = "ADD"; 
+    
         @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
         public String annotationSetsAction = "ADD"; 
     
@@ -1958,34 +2135,40 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
     
-        @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
-        public String reportLogo;
+        @Parameter(names = {"--report-recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String reportRecommendation;
     
-        @Parameter(names = {"--report-signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String reportSignedBy;
+        @Parameter(names = {"--report-methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String reportMethodology;
     
-        @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
-        public String reportSignature;
+        @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String reportLimitations;
+    
+        @Parameter(names = {"--report-experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String reportExperimentalProcedure;
     
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
-        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--report-images"}, description = "Images related to the report", required = false, arity = 1)
+        public String reportImages;
+    
+        @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
-        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-justification"}, description = "Justification for the clinical request", required = false, arity = 1)
         public String requestJustification;
     
-        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-date"}, description = "Date of the clinical request", required = false, arity = 1)
         public String requestDate;
     
-        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        @DynamicParameter(names = {"--request-attributes"}, description = "Additional attributes for the clinical request. Use: --request-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
@@ -2012,7 +2195,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
         public String responsiblePostcode;
     
-        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, CRITICAL, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
     
         @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
@@ -2173,12 +2356,6 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
         @Parameter(names = {"--study", "-s"}, description = "[[organization@]project:]study ID", required = false, arity = 1)
         public String study; 
     
@@ -2215,12 +2392,6 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
     
         @Parameter(names = {"--study", "-s"}, description = "[[organization@]project:]study ID", required = false, arity = 1)
         public String study; 
@@ -2328,14 +2499,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--supporting-evidences-action"}, description = "Action to be performed if the array of supporting evidences is being updated.", required = false, arity = 1)
-        public String supportingEvidencesAction = "ADD"; 
+        @Parameter(names = {"--signatures-action"}, description = "Action to be performed if the array of signatures is being updated.", required = false, arity = 1)
+        public String signaturesAction = "ADD"; 
+    
+        @Parameter(names = {"--references-action"}, description = "Action to be performed if the array of references is being updated.", required = false, arity = 1)
+        public String referencesAction = "ADD"; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
-    
-        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
-        public String title;
     
         @Parameter(names = {"--overview"}, description = "Report overview.", required = false, arity = 1)
         public String overview;
@@ -2349,17 +2520,35 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--discussion-text"}, description = "The body web service text parameter", required = false, arity = 1)
         public String discussionText;
     
-        @Parameter(names = {"--logo"}, description = "Report logo.", required = false, arity = 1)
-        public String logo;
+        @Parameter(names = {"--recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String recommendation;
     
-        @Parameter(names = {"--signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String signedBy;
+        @Parameter(names = {"--methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String methodology;
     
-        @Parameter(names = {"--signature"}, description = "Report signature.", required = false, arity = 1)
-        public String signature;
+        @Parameter(names = {"--limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String limitations;
+    
+        @Parameter(names = {"--experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String experimentalProcedure;
+    
+        @Parameter(names = {"--conclusion-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String conclusionAuthor;
+    
+        @Parameter(names = {"--conclusion-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String conclusionDate;
+    
+        @Parameter(names = {"--conclusion-text"}, description = "The body web service text parameter", required = false, arity = 1)
+        public String conclusionText;
     
         @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
         public String date;
+    
+        @Parameter(names = {"--images"}, description = "Images related to the report", required = false, arity = 1)
+        public String images;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

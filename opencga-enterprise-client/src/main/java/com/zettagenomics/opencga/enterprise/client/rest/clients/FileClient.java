@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.file.FileContentUpdateParams;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -374,7 +375,7 @@ public class FileClient extends ParentClient {
      *       format: File format.
      *       fileFormat: [DEPRECATED] File format.
      *       bioformat: File bioformat.
-     *       checksum: Expected MD5 file checksum.
+     *       checksum: Expected SHA-256 file checksum.
      *       resource: Boolean field indicating whether the file is a resource or not.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       relativeFilePath: Path within catalog (directory) where the file will be located (default: root folder).
@@ -504,6 +505,21 @@ public class FileClient extends ParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("files", file, "annotationSets", annotationSet, "annotations/update", params, POST, File.class);
+    }
+
+    /**
+     * Overwrite the content of a file.
+     * @param file File id or name.
+     * @param data File parameters.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> updateContent(String file, FileContentUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("files", file, "content", null, "update", params, POST, File.class);
     }
 
     /**

@@ -131,6 +131,9 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpreter-rd", analysisClinicalCommandOptions.rdInterpreterCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-rd-run", analysisClinicalCommandOptions.runInterpreterRdCommandOptions);
         analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
+        analysisClinicalSubCommands.addCommand("pipeline-affy-run", analysisClinicalCommandOptions.runPipelineAffyCommandOptions);
+        analysisClinicalSubCommands.addCommand("pipeline-genomics-run", analysisClinicalCommandOptions.runPipelineGenomicsCommandOptions);
+        analysisClinicalSubCommands.addCommand("pipeline-prepare-run", analysisClinicalCommandOptions.runPipelinePrepareCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-query", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-summary", analysisClinicalCommandOptions.summaryRgaGeneCommandOptions);
@@ -385,6 +388,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("unlink", filesCommandOptions.unlinkCommandOptions);
         filesSubCommands.addCommand("update", filesCommandOptions.updateCommandOptions);
         filesSubCommands.addCommand("annotation-sets-annotations-update", filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+        filesSubCommands.addCommand("content-update", filesCommandOptions.updateContentCommandOptions);
         filesSubCommands.addCommand("download", filesCommandOptions.downloadCommandOptions);
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
