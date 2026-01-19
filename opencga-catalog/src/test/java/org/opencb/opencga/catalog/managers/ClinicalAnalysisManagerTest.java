@@ -25,7 +25,9 @@ import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.MiniPubmed;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -371,14 +373,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertNull(case1.getReport());
 
         ClinicalReport report = new ClinicalReport()
-                .setTitle("my report")
+                .setOverview("my report")
                 .setComments(Arrays.asList(new ClinicalComment("author", "msg", null, null), new ClinicalComment("author2", "msg", null, null)));
 
         // Change report
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
                 new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
         assertNotNull(result.first().getReport());
-        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(report.getOverview(), result.first().getReport().getOverview());
         assertEquals(2, result.first().getReport().getComments().size());
         for (ClinicalComment comment : result.first().getReport().getComments()) {
             assertEquals(orgOwnerUserId, comment.getAuthor());
@@ -399,45 +401,30 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                         .setType(File.Type.FILE),
                 true, ownerToken);
 
-        List<File> fileList = Arrays.asList(new File().setId("data:file1.txt"), new File().setId("data:file2.txt"));
-        report.setSupportingEvidences(fileList);
-        result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
-                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
-        assertNotNull(result.first().getReport());
-        assertEquals(report.getTitle(), result.first().getReport().getTitle());
-        assertEquals(2, result.first().getReport().getComments().size());
-        for (ClinicalComment comment : result.first().getReport().getComments()) {
-            assertEquals(orgOwnerUserId, comment.getAuthor());
-            assertTrue(StringUtils.isNotEmpty(comment.getDate()));
-        }
-        assertEquals(2, result.first().getReport().getSupportingEvidences().size());
-        assertEquals("data/file1.txt", result.first().getReport().getSupportingEvidences().get(0).getPath());
-        assertEquals("data/file2.txt", result.first().getReport().getSupportingEvidences().get(1).getPath());
-        assertNull(result.first().getReport().getFiles());
+        List<FileReferenceParam> fileList = Arrays.asList(
+                new FileReferenceParam().setId("data:file1.txt"),
+                new FileReferenceParam().setId("data:file2.txt")
+        );
 
-        report.setFiles(fileList);
         result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
-                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
+                new ClinicalAnalysisUpdateParams().setReportedFiles(fileList), INCLUDE_RESULT, ownerToken);
         assertNotNull(result.first().getReport());
-        assertEquals(report.getTitle(), result.first().getReport().getTitle());
+        assertEquals(report.getOverview(), result.first().getReport().getOverview());
         assertEquals(2, result.first().getReport().getComments().size());
         for (ClinicalComment comment : result.first().getReport().getComments()) {
             assertEquals(orgOwnerUserId, comment.getAuthor());
             assertTrue(StringUtils.isNotEmpty(comment.getDate()));
         }
-        assertEquals(2, result.first().getReport().getSupportingEvidences().size());
-        assertEquals("data/file1.txt", result.first().getReport().getSupportingEvidences().get(0).getPath());
-        assertEquals("data/file2.txt", result.first().getReport().getSupportingEvidences().get(1).getPath());
-        assertEquals(2, result.first().getReport().getFiles().size());
-        assertEquals("data/file1.txt", result.first().getReport().getFiles().get(0).getPath());
-        assertEquals("data/file2.txt", result.first().getReport().getFiles().get(1).getPath());
+        assertEquals(2, result.first().getReportedFiles().size());
+        assertEquals("data/file1.txt", result.first().getReportedFiles().get(0).getPath());
+        assertEquals("data/file2.txt", result.first().getReportedFiles().get(1).getPath());
 
         // Provide non existing file
-        report.setFiles(Collections.singletonList(new File().setId("nonexisting.txt")));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
-                new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
+                new ClinicalAnalysisUpdateParams().setReportedFiles(Collections.singletonList(new FileReferenceParam("nonexisting.txt"))),
+                        INCLUDE_RESULT, ownerToken);
     }
 
     @Test
@@ -465,43 +452,44 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                         .setType(File.Type.FILE),
                 true, ownerToken);
 
-        ClinicalReport report = new ClinicalReport("title", "overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "logo",
-                "me", "signature", TimeUtils.getTime(), Arrays.asList(
-                new ClinicalComment().setMessage("comment1"),
-                new ClinicalComment().setMessage("comment2")
-        ),
-                Collections.singletonList(new File().setId("data:file1.txt")),
-                Collections.singletonList(new File().setId("data:file2.txt")));
+        ClinicalReport report = new ClinicalReport("overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "recommendation",
+                "methodology", "limitations", "Experimental procedure", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"),
+                Collections.singletonList(new ReportSignature("signature", "", "", "")), "",
+                Arrays.asList(
+                        new ClinicalComment().setMessage("comment1"),
+                        new ClinicalComment().setMessage("comment2")
+                ),
+                Collections.singletonList(new MiniPubmed().setId("pubmed")), Collections.singletonList("image1.png"), new HashMap<>());
         OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, case1.getId(),
                 new ClinicalAnalysisUpdateParams().setReport(report), INCLUDE_RESULT, ownerToken);
+        // Assert result object contains the same values passed in the report object
         assertNotNull(result.first().getReport());
-        assertEquals(report.getTitle(), result.first().getReport().getTitle());
         assertEquals(report.getOverview(), result.first().getReport().getOverview());
-        assertEquals(report.getDate(), result.first().getReport().getDate());
-        assertEquals(report.getLogo(), result.first().getReport().getLogo());
-        assertEquals(report.getSignature(), result.first().getReport().getSignature());
-        assertEquals(report.getSignedBy(), result.first().getReport().getSignedBy());
+        assertEquals(report.getDiscussion().getText(), result.first().getReport().getDiscussion().getText());
+        assertEquals(report.getRecommendation(), result.first().getReport().getRecommendation());
+        assertEquals(report.getMethodology(), result.first().getReport().getMethodology());
+        assertEquals(report.getLimitations(), result.first().getReport().getLimitations());
+        assertEquals(report.getExperimentalProcedure(), result.first().getReport().getExperimentalProcedure());
+        assertEquals(report.getConclusion().getText(), result.first().getReport().getConclusion().getText());
+        assertEquals(1, result.first().getReport().getSignatures().size());
+        assertEquals(report.getSignatures().get(0).getSignature(), result.first().getReport().getSignatures().get(0).getSignature());
+        assertTrue(StringUtils.isNotEmpty(result.first().getReport().getSignatures().get(0).getSignature()));
         assertEquals(2, result.first().getReport().getComments().size());
-        assertEquals(1, result.first().getReport().getFiles().size());
-        assertEquals(1, result.first().getReport().getSupportingEvidences().size());
+        for (ClinicalComment comment : result.first().getReport().getComments()) {
+            assertEquals(orgOwnerUserId, comment.getAuthor());
+            assertTrue(StringUtils.isNotEmpty(comment.getDate()));
+        }
+        assertEquals(1, result.first().getReport().getReferences().size());
+        assertEquals("pubmed", result.first().getReport().getReferences().get(0).getId());
 
         // Add comment
-        // Set files
-        // Remove supporting evidence
         ObjectMap actionMap = new ObjectMap()
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD)
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.SET)
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD);
         QueryOptions options = new QueryOptions()
                 .append(Constants.ACTIONS, actionMap)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
         ClinicalReport reportToUpdate = new ClinicalReport()
-                .setComments(Collections.singletonList(new ClinicalComment().setMessage("comment3")))
-                .setFiles(Arrays.asList(
-                        new File().setId("data:file2.txt"),
-                        new File().setId("data:file3.txt")
-                ))
-                .setSupportingEvidences(Collections.singletonList(new File().setId("data:file1.txt")));
+                .setComments(Collections.singletonList(new ClinicalComment().setMessage("comment3")));
         ClinicalReport reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
                 options, ownerToken).first();
         // Check comments
@@ -510,79 +498,22 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals("comment2", reportResult.getComments().get(1).getMessage());
         assertEquals("comment3", reportResult.getComments().get(2).getMessage());
 
-        // Check files
-        assertEquals(2, reportResult.getFiles().size());
-        assertTrue(reportResult.getFiles().stream().map(File::getPath).collect(Collectors.toSet()).containsAll(Arrays.asList("data/file2.txt", "data/file3.txt")));
-
-        // Check supporting evidences
-        assertEquals(0, reportResult.getSupportingEvidences().size());
-
-
         // Remove comment
         // Remove file
         // Set supporting evidences
         actionMap = new ObjectMap()
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE)
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.REMOVE)
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.SET);
+                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions()
                 .append(Constants.ACTIONS, actionMap)
                 .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
         reportToUpdate = new ClinicalReport()
-                .setComments(Arrays.asList(reportResult.getComments().get(0), reportResult.getComments().get(1)))
-                .setFiles(Collections.singletonList(new File().setId("data:file3.txt")))
-                .setSupportingEvidences(Arrays.asList(
-                        new File().setId("data:file1.txt"),
-                        new File().setId("data:file3.txt")
-                ));
+                .setComments(Arrays.asList(reportResult.getComments().get(0), reportResult.getComments().get(1)));
         ClinicalComment pendingComment = reportResult.getComments().get(2);
         reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
                 options, ownerToken).first();
         // Check comments
         assertEquals(1, reportResult.getComments().size());
         assertEquals(pendingComment.getMessage(), reportResult.getComments().get(0).getMessage());
-
-        // Check supporting evidences
-        assertEquals(2, reportResult.getSupportingEvidences().size());
-        assertTrue(reportResult.getSupportingEvidences().stream().map(File::getPath).collect(Collectors.toSet())
-                .containsAll(Arrays.asList("data/file1.txt", "data/file3.txt")));
-
-        // Check files
-        assertEquals(1, reportResult.getFiles().size());
-        assertEquals("data/file2.txt", reportResult.getFiles().get(0).getPath());
-
-
-        // Add file
-        // Add supporting evidences
-        actionMap = new ObjectMap()
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), ParamUtils.BasicUpdateAction.ADD)
-                .append(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), ParamUtils.BasicUpdateAction.ADD);
-        options = new QueryOptions()
-                .append(Constants.ACTIONS, actionMap)
-                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        reportToUpdate = new ClinicalReport()
-                .setFiles(Arrays.asList(
-                        new File().setId("data:file1.txt"),
-                        new File().setId("data:file3.txt")
-                ))
-                .setSupportingEvidences(Collections.singletonList(
-                        new File().setId("data:file2.txt")
-                ));
-        reportResult = catalogManager.getClinicalAnalysisManager().updateReport(studyFqn, case1.getId(), reportToUpdate,
-                options, ownerToken).first();
-        // Check comments
-        assertEquals(1, reportResult.getComments().size());
-        assertEquals("comment3", reportResult.getComments().get(0).getMessage());
-
-        // Check files
-        assertEquals(3, reportResult.getFiles().size());
-        assertTrue(reportResult.getFiles().stream().map(File::getPath).collect(Collectors.toSet())
-                .containsAll(Arrays.asList("data/file1.txt", "data/file2.txt", "data/file3.txt")));
-
-        // Check supporting evidences
-        assertEquals(3, reportResult.getSupportingEvidences().size());
-        assertTrue(reportResult.getSupportingEvidences().stream().map(File::getPath).collect(Collectors.toSet())
-                .containsAll(Arrays.asList("data/file1.txt", "data/file2.txt", "data/file3.txt")));
     }
 
     @Test
@@ -963,12 +894,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         List<ClinicalVariant> findingList = new ArrayList<>();
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -1014,13 +947,15 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         List<ClinicalVariant> findingList = new ArrayList<>();
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "",
+                null, new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(),
+                Collections.emptyList(), null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -1045,13 +980,15 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         List<ClinicalVariant> findingList = new ArrayList<>();
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv);
         findingList.add(cv);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -1076,12 +1013,17 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         List<ClinicalVariant> findingList = new ArrayList<>();
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
+        // I set version to 0 because we had some issues with this scenario in the past
+        cv1.setVersion(0);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
+        cv2.setVersion(0);
         findingList.add(cv2);
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -1090,8 +1032,16 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setProband(individual)
                 .setInterpretation(new Interpretation()
                         .setPrimaryFindings(findingList)
-                );
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), ownerToken);
+                ).setSecondaryInterpretations(Arrays.asList(
+                        new Interpretation()
+                                .setPrimaryFindings(findingList),
+                        new Interpretation()
+                                .setPrimaryFindings(findingList)
+                ));
+        ClinicalAnalysis clinicalAnalysisRes = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis,
+                INCLUDE_RESULT, ownerToken).first();
+        assertNotNull(clinicalAnalysisRes.getInterpretation());
+        assertEquals(2, clinicalAnalysisRes.getSecondaryInterpretations().size());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(),
                 ownerToken).first();
@@ -1103,8 +1053,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         findingList = new ArrayList<>();
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
-        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -1196,11 +1147,28 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(3, interpretation.getStats().getPrimaryFindings().getNumVariants());
         assertEquals(3, (int) interpretation.getStats().getPrimaryFindings().getStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
+        // Set NEW finding
+        Variant v = new Variant("9:99999:A:T");
+        v.setId(v.toStringSimple());
+        ClinicalVariant cv = new ClinicalVariant(v.getImpl());
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(cv));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(studyFqn, clinicalAnalysis.getId(), clinicalAnalysis.getId() + ".1", updateParams,
+                null, options, ownerToken);
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, clinicalAnalysis.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals("9:99999:A:T", interpretation.getPrimaryFindings().get(0).getId());
+
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
 
         updateParams = new InterpretationUpdateParams()
                 .setPrimaryFindings(Collections.singletonList(cv1));
@@ -1238,12 +1206,14 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         List<ClinicalVariant> findingList = new ArrayList<>();
         VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv1);
         variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
-        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv2);
 
         ClinicalAnalysis ca = new ClinicalAnalysis()
@@ -1267,8 +1237,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         findingList = new ArrayList<>();
         variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
-        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
@@ -1366,8 +1337,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
         evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
-        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
-                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), Collections.emptyList(),
+                null);
 
         updateParams = new InterpretationUpdateParams()
                 .setSecondaryFindings(Collections.singletonList(cv1));
@@ -1688,6 +1660,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDescription("My description")
+                .setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion("author", "date", "text")))
                 .setPriority(new PriorityParam("URGENT"));
 
         OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
@@ -1698,6 +1671,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 ownerToken).first();
         assertEquals("My description", ca.getDescription());
         assertEquals("URGENT", ca.getPriority().getId());
+        assertEquals("author", ca.getReport().getDiscussion().getAuthor());
+        assertEquals("date", ca.getReport().getDiscussion().getDate());
+        assertEquals("text", ca.getReport().getDiscussion().getText());
     }
 
     @Test
@@ -1912,7 +1888,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        List<ClinicalConsent> consents = configuration.getConsent().getConsents();
+        List<ClinicalConsent> consents = configuration.getConsents();
         Map<String, ClinicalConsent> consentMap = new HashMap<>();
         for (ClinicalConsent consent : consents) {
             consentMap.put(consent.getId(), consent);
@@ -2024,7 +2000,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setMethod(new InterpretationMethod("name", "", "", Collections.emptyList()))
                 .setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1",
                         1, 2, "ref", "alt", "+", null, 1, null, null, null))))
-                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1"
+                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id2", Collections.emptyList(), "chr1"
                         , 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
                 .setComments(Collections.singletonList(new ClinicalComment("me", "message", null, TimeUtils.getTime())));
         catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
@@ -2063,7 +2039,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setMethod(new InterpretationMethod("name", "", "", Collections.emptyList()))
                 .setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1",
                         1, 2, "ref", "alt", "+", null, 1, null, null, null))))
-                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1"
+                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id2", Collections.emptyList(), "chr1"
                         , 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
                 .setComments(Collections.singletonList(new ClinicalComment("me", "message", null, TimeUtils.getTime())));
         catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
@@ -2344,6 +2320,99 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 ownerToken).first();
         assertEquals(8, clinicalAnalysis.getAudit().size());
         assertEquals(7, clinicalAnalysis.getInterpretation().getVersion());
+    }
+
+    @Test
+    public void revertInterpretationWithFindigsTest() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), ownerToken);
+
+        // version 2
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam(normalUserId2));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, QueryOptions.empty(),
+                ownerToken);
+
+        // version 3
+        params = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(
+                                new ClinicalVariant(VariantAvro.newBuilder()
+                                        .setChromosome("1")
+                                        .setStart(100)
+                                        .setEnd(100)
+                                        .setLength(1)
+                                        .setReference("C")
+                                        .setAlternate("T")
+                                        .setId("1:100:C:T")
+                                        .setType(VariantType.SNV)
+                                        .setStudies(Collections.emptyList())
+                                        .build())
+                        ))
+                .setComments(Collections.singletonList(new ClinicalCommentParam("my first comment",
+                Collections.singletonList("tag1"))));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, QueryOptions.empty(),
+                ownerToken);
+
+        // version 4 (replace variant)
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        params = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(
+                        new ClinicalVariant(VariantAvro.newBuilder()
+                                .setChromosome("1")
+                                .setStart(100)
+                                .setEnd(200)
+                                .setLength(1)
+                                .setReference("C")
+                                .setAlternate("T")
+                                .setId("1:100:C:T")
+                                .setType(VariantType.SNV)
+                                .setStudies(Collections.emptyList())
+                                .build())
+                ))
+                .setComments(Collections.singletonList(new ClinicalCommentParam("my second comment",
+                Collections.singletonList("tag2"))));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, options, ownerToken);
+
+        // Current status
+        Interpretation interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(4, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(2, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getComments().get(1).getTags().size());
+        assertEquals("tag2", interpretation.getComments().get(1).getTags().get(0));
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals(2, interpretation.getPrimaryFindings().get(0).getVersion());
+        assertEquals(200, (int) interpretation.getPrimaryFindings().get(0).getEnd());
+
+        OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().revert(studyFqn, ca.getId(), ca.getId() + ".1", 2,
+                ownerToken);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(5, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(0, interpretation.getComments().size());
+        assertEquals(0, interpretation.getPrimaryFindings().size());
+
+        result = catalogManager.getInterpretationManager().revert(studyFqn, ca.getId(), ca.getId() + ".1", 3, ownerToken);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(6, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(1, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals(100, (int) interpretation.getPrimaryFindings().get(0).getEnd());
+        assertEquals(3, interpretation.getPrimaryFindings().get(0).getVersion());
     }
 
     @Test
@@ -3988,7 +4057,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         String fileStr = "clinical_analyses.json.gz";
         File file;
         try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
-            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, false, ownerToken).first();
+            file = catalogManager.getFileManager().upload(studyFqn, stream, new File().setPath("biofiles/" + fileStr), false, true, ownerToken).first();
         }
 
         Path filePath = Paths.get(file.getUri());
@@ -4221,6 +4290,67 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertTrue(fileIds.contains("HG00096.chrom20.small.bam"));
         assertTrue(fileIds.contains("variant-test-file.vcf.gz"));
         assertFalse(fileIds.contains("NA19600.chrom20.small.bam"));
+    }
+
+    @Test
+    public void updateReportedFilesTest() throws CatalogException {
+        // Create a dummy ClinicalAnalysis
+        ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, true).first();
+
+        // Verify initially there are no reported files
+        assertTrue(clinicalAnalysis.getReportedFiles().isEmpty());
+
+        // Create some test files
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file1.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file2.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file3.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+
+        // Set initial reported files
+        List<FileReferenceParam> reportedFiles = Arrays.asList(
+                new FileReferenceParam().setId("data:report_file1.txt"),
+                new FileReferenceParam().setId("data:report_file2.txt")
+        );
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn,
+                clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams().setReportedFiles(reportedFiles),
+                INCLUDE_RESULT, ownerToken);
+
+        // Verify reported files were set
+        assertNotNull(result.first().getReportedFiles());
+        assertEquals(2, result.first().getReportedFiles().size());
+        assertEquals("data/report_file1.txt", result.first().getReportedFiles().get(0).getPath());
+        assertEquals("data/report_file2.txt", result.first().getReportedFiles().get(1).getPath());
+
+        // Update reported files - replace with a different set
+        List<FileReferenceParam> updatedReportedFiles = Arrays.asList(
+                new FileReferenceParam().setId("data:report_file2.txt"),
+                new FileReferenceParam().setId("data:report_file3.txt")
+        );
+
+        result = catalogManager.getClinicalAnalysisManager().update(studyFqn,
+                clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams().setReportedFiles(updatedReportedFiles),
+                INCLUDE_RESULT, ownerToken);
+
+        // Verify reported files were updated
+        assertEquals(3, result.first().getReportedFiles().size());
+        assertEquals("data/report_file1.txt", result.first().getReportedFiles().get(0).getPath());
+        assertEquals("data/report_file2.txt", result.first().getReportedFiles().get(1).getPath());
+        assertEquals("data/report_file3.txt", result.first().getReportedFiles().get(2).getPath());
     }
 
 }

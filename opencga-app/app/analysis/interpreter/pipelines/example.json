@@ -1,0 +1,97 @@
+{
+  "method": {
+    "name": "example",
+    "version": "1.0.0"
+  },
+  "opencga": {
+    "host": "https://test.app.zettagenomics.com/task-7645/opencga",
+    "organization": "test",
+    "user": "test"
+  },
+  "input": {
+    "genes": ["BRCA1", "BRCA2", "TP53"],
+    "benign": "data/snv_benign_hg38_clean.vcf.gz",
+    "pathogenic": "data/snv_pathogenic_hg38.vcf.gz"
+  },
+  "execution": {
+    "logic": "(A OR B) AND (C OR D)",
+    "post_filtering": [
+      {
+        "filter": {
+          "type": "SNV",
+          "sampleData": "XISC>=3"
+        }
+      },
+      {
+        "exec": "..."
+      }
+    ],
+    "tier": [
+      {
+        "id": "tier1",
+        "name": "High Impact Variants",
+        "description": "Variants with high impact consequence types in known disease genes",
+        "filter": {
+          "genes": ["BRCA1", "BRCA2", "TP53"],
+          "consequence_types": ["transcript_ablation", "splice_acceptor_variant", "splice_donor_variant",
+            "stop_gained", "frameshift_variant", "stop_lost", "start_lost", "transcript_amplification",
+            "feature_elongation", "feature_truncation", "inframe_insertion", "inframe_deletion",
+            "missense_variant", "protein_altering_variant" ,"splice_region_variant"],
+          "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.01"]
+        }
+      },
+      {
+        "id": "tier2",
+        "name": "Moderate Impact Variants",
+        "description": "Variants with moderate impact consequence types in known disease genes",
+        "filter": {
+          "genes": ["BRCA1", "BRCA2", "TP53"],
+          "consequence_types": ["missense_variant", "inframe_insertion", "inframe_deletion",
+            "protein_altering_variant" ,"splice_region_variant"],
+          "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.01"]
+        }
+      }
+    ]
+  },
+  "queries": [
+    {
+      "id": "query1",
+      "filters": {
+        "genes": ["BRCA1", "BRCA2", "TP53"],
+        "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.001"]
+      }
+    },
+    {
+      "id": "query2",
+      "filters": {
+        "panels": "$CASE.panels",
+        "ct": ["missense_variant", "stop_gained"]
+      }
+    },
+    {
+      "id": "query3",
+      "filters": {
+        "populationFrequencyAlt": ["GNOMAD_GENOMES:ALL<0.01"]
+      }
+    },
+    {
+      "id": "query4",
+      "filters": {
+        "sampleData": "XISC>=3"
+      }
+    },
+    {
+      "id": "query5",
+      "filters": {
+        "id": "$INPUT.pathogenic"
+      }
+    }
+  ],
+  "clinical_analysis": {
+    "create_interpretation": true
+  },
+  "output": {
+    "variants_report": "output/sjd_pipeline_per_variant_report.csv",
+    "summary": "output/sjd_pipeline_summary.csv"
+  }
+}

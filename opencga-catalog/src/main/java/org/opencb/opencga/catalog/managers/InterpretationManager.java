@@ -23,10 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -47,11 +44,14 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalTierConfiguration;
 import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -333,10 +333,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus();
             for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                 if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
-                        && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                        && (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                        || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                        || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
                     String msg = "Interpretation '" + interpretation.getId() + "' created with status '"
-                            + interpretation.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
-                            + "Interpretation.";
+                            + interpretation.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
+                            + ". Automatically locking Interpretation.";
                     logger.info(msg);
                     interpretation.setLocked(true);
                 }
@@ -937,20 +939,33 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //            throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
 //                    + " the Interpretation.");
 //        }
-        if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
-            throw new CatalogException("Cannot update the Interpretation. Case status is " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+        if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
+            throw new CatalogException("Cannot update the Interpretation. Case status is " + clinicalAnalysis.getStatus().getType());
         }
 
         InterpretationStudyConfiguration interpretationStudyConfiguration = study.getInternal().getConfiguration().getClinical()
                 .getInterpretation();
-        // Get the interpretation status that are CLOSED and DONE
+        // Get the interpretation status that are CLOSED, INCONCLUSIVE and DONE
         Set<String> closedStatus = new HashSet<>();
+        Set<String> inconclusiveOrRejectedStatus = new HashSet<>();
         Set<String> doneStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : interpretationStudyConfiguration.getStatus()) {
-            if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
-                closedStatus.add(clinicalStatusValue.getId());
-            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
-                doneStatus.add(clinicalStatusValue.getId());
+            switch (clinicalStatusValue.getType()) {
+                case CLOSED:
+                    closedStatus.add(clinicalStatusValue.getId());
+                    break;
+                case DONE:
+                    doneStatus.add(clinicalStatusValue.getId());
+                    break;
+                case INCONCLUSIVE:
+                case REJECTED:
+                    inconclusiveOrRejectedStatus.add(clinicalStatusValue.getId());
+                    break;
+                default:
+                    // Do nothing
+                    break;
             }
         }
 
@@ -962,29 +977,37 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         if (interpretation.isLocked()
                 || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
                 || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
+                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED
                 || updateParams.getLocked() != null
                 || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
                 || doneStatus.contains(updateParams.getStatus().getId())))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
 
-            // Current status is of type CLOSED
-            if (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
-                // The only allowed action is to remove the CLOSED status
+            // Current status is of type CLOSED, INCONCLUSIVE or REJECTED
+            if (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                    || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                    || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
+                // The only allowed action is to change the status
                 if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
-                    throw new CatalogException("Cannot update a Interpretation with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
-                            + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
+                    throw new CatalogException("Cannot update a Interpretation with a " + interpretation.getStatus().getType()
+                            + " status. You need to remove the " + interpretation.getStatus().getType() + " status to be able "
                             + "to perform further updates on the Interpretation.");
-                } else if (closedStatus.contains(updateParams.getStatus().getId())) {
-                    // Users should be able to change from one CLOSED status to a different one but we should still control that no further
-                    // modifications are made
+                } else if ((interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                        && closedStatus.contains(updateParams.getStatus().getId()))
+                        || ((interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                        || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)
+                        && inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId()))) {
+                    // Users should be able to change from one "CLOSED" status to a different one but we should still control that no
+                    // further modifications are made
                     if (parameters.size() > 1) {
-                        throw new CatalogException("Cannot update a Interpretation with a " + ClinicalStatusValue.ClinicalStatusType.CLOSED
-                                + " status. You need to remove the " + ClinicalStatusValue.ClinicalStatusType.CLOSED + " status to be able "
+                        throw new CatalogException("Cannot update a Interpretation with a " + interpretation.getStatus().getType()
+                                + " status. You need to remove the " + interpretation.getStatus().getType() + " status to be able "
                                 + "to perform further updates on the Interpretation.");
                     } else if (interpretation.getStatus().getId().equals(updateParams.getStatus().getId())) {
                         throw new CatalogException("Interpretation already have the status '" + interpretation.getStatus().getId()
-                                + "' of type " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
+                                + "' of type " + interpretation.getStatus().getType());
                     }
                 }
             }
@@ -1089,48 +1112,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         // Check for repeated ids
-        if (updateParams != null && updateParams.getPrimaryFindings() != null && !updateParams.getPrimaryFindings().isEmpty()) {
-            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
-                    InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-
-            Set<String> findingIds;
-            if (action == ParamUtils.UpdateAction.ADD && interpretation.getPrimaryFindings() != null) {
-                findingIds = interpretation.getPrimaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
-            } else {
-                findingIds = new HashSet<>();
-            }
-
-            for (ClinicalVariant primaryFinding : updateParams.getPrimaryFindings()) {
-                if (StringUtils.isEmpty(primaryFinding.getId())) {
-                    throw new CatalogException("Missing primary finding id.");
-                }
-                if (findingIds.contains(primaryFinding.getId())) {
-                    throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
-                }
-                findingIds.add(primaryFinding.getId());
-            }
-        }
-        if (updateParams != null && updateParams.getSecondaryFindings() != null && !updateParams.getSecondaryFindings().isEmpty()) {
-            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
-                    InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-
-            Set<String> findingIds;
-            if (action == ParamUtils.UpdateAction.ADD && interpretation.getSecondaryFindings() != null) {
-                findingIds = interpretation.getSecondaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
-            } else {
-                findingIds = new HashSet<>();
-            }
-
-            for (ClinicalVariant finding : updateParams.getSecondaryFindings()) {
-                if (StringUtils.isEmpty(finding.getId())) {
-                    throw new CatalogException("Missing secondary finding id.");
-                }
-                if (findingIds.contains(finding.getId())) {
-                    throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + finding.getId() + "'");
-                }
-                findingIds.add(finding.getId());
-            }
-        }
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
+        validateFindings(interpretation.getPrimaryFindings(), updateParams.getPrimaryFindings(), actionMap,
+                clinicalConfiguration, InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key());
+        validateFindings(interpretation.getSecondaryFindings(), updateParams.getSecondaryFindings(), actionMap,
+                clinicalConfiguration, InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key());
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
@@ -1146,9 +1132,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 List<ClinicalStatusValue> clinicalStatusValues = interpretationConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
-                            && clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                            && (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
+                            || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                            || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
                         String msg = "User '" + userId + "' changed case '" + interpretation.getId() + "' to status '"
-                                + updateParams.getStatus().getId() + "', which is of type CLOSED. Automatically locking Interpretation";
+                                + updateParams.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
+                                + ". Automatically locking Interpretation";
                         logger.info(msg);
                         parameters.put(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true);
                         events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
@@ -1167,6 +1156,45 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    private void validateFindings(List<ClinicalVariant> currentFindings, List<ClinicalVariant> newFindings, Map<String, Object> actionMap,
+                                  ClinicalAnalysisStudyConfiguration clinicalConfiguration, String key) throws CatalogException {
+        if (CollectionUtils.isNotEmpty(newFindings)) {
+            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, key, ParamUtils.UpdateAction.ADD);
+
+            Set<String> findingIds;
+            if (action == ParamUtils.UpdateAction.ADD && CollectionUtils.isNotEmpty(currentFindings)) {
+                findingIds = currentFindings.stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
+            } else {
+                findingIds = new HashSet<>();
+            }
+
+            Set<String> tierIds = clinicalConfiguration.getTiers().stream()
+                    .map(ClinicalTierConfiguration::getId)
+                    .collect(Collectors.toSet());
+            for (ClinicalVariant finding : newFindings) {
+                if (StringUtils.isEmpty(finding.getId())) {
+                    throw new CatalogException("Missing " + key + " id.");
+                }
+                if (findingIds.contains(finding.getId())) {
+                    throw new CatalogException(key + " ids should be unique. Found repeated id '" + finding.getId() + "'");
+                }
+                findingIds.add(finding.getId());
+
+                if (CollectionUtils.isNotEmpty(finding.getEvidences())) {
+                    for (ClinicalVariantEvidence evidence : finding.getEvidences()) {
+                        if (evidence.getReview() != null && StringUtils.isNotEmpty(evidence.getReview().getTier())) {
+                            // Check Tier is one of the valid tier values defined in the configuration
+                            if (!tierIds.contains(evidence.getReview().getTier())) {
+                                throw new CatalogException("Tier '" + evidence.getReview().getTier() + "' is not a valid tier. "
+                                        + "Valid tiers are: " + String.join(", ", tierIds));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId,

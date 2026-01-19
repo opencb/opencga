@@ -42,6 +42,7 @@ public class ClinicalAnalysisUpdateParams {
 
     private DisorderReferenceParam disorder;
     private List<FileReferenceParam> files;
+    private List<FileReferenceParam> reportedFiles;
 
     private List<PanelReferenceParam> panels;
     private Boolean panelLocked;
@@ -76,8 +77,8 @@ public class ClinicalAnalysisUpdateParams {
     }
 
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                        List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLocked, Boolean locked,
+                                        List<FileReferenceParam> files, List<FileReferenceParam> reportedFiles, ProbandParam proband,
+                                        FamilyParam family, List<PanelReferenceParam> panels, Boolean panelLocked, Boolean locked,
                                         List<ClinicalAnalystParam> analysts, ClinicalReport report, ClinicalRequest request,
                                         ClinicalResponsible responsible, ClinicalAnalysisQualityControlUpdateParam qualityControl,
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
@@ -89,6 +90,7 @@ public class ClinicalAnalysisUpdateParams {
         this.type = type;
         this.disorder = disorder;
         this.files = files;
+        this.reportedFiles = reportedFiles;
         this.proband = proband;
         this.family = family;
         this.panels = panels;
@@ -120,6 +122,7 @@ public class ClinicalAnalysisUpdateParams {
     public ClinicalAnalysis toClinicalAnalysis() {
         return new ClinicalAnalysis(id, description, type, disorder.toDisorder(),
                 files != null ? files.stream().map(FileReferenceParam::toFile).collect(Collectors.toList()) : null,
+                reportedFiles != null ? reportedFiles.stream().map(FileReferenceParam::toFile).collect(Collectors.toList()) : null,
                 proband != null ? proband.toIndividual() : null,
                 family != null ? family.toFamily() : null,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
@@ -147,6 +150,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", reportedFiles=").append(reportedFiles);
         sb.append(", panels=").append(panels);
         sb.append(", panelLocked=").append(panelLocked);
         sb.append(", proband=").append(proband);
@@ -213,6 +217,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
+        return this;
+    }
+
+    public List<FileReferenceParam> getReportedFiles() {
+        return reportedFiles;
+    }
+
+    public ClinicalAnalysisUpdateParams setReportedFiles(List<FileReferenceParam> reportedFiles) {
+        this.reportedFiles = reportedFiles;
         return this;
     }
 

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -449,7 +450,7 @@ public interface AuthorizationManager {
 
         public static void addToList(List<Long> ids, List<String> permissions, Enums.Resource resource,
                                      List<CatalogAclParams> aclParamsList) {
-            if (ids != null && !ids.isEmpty()) {
+            if (CollectionUtils.isNotEmpty(ids)) {
                 aclParamsList.add(new CatalogAclParams(ids, permissions, resource));
             }
         }

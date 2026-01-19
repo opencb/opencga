@@ -300,14 +300,14 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.name] - File name to overwrite the input fileName.
     * @param {String} [params.fileName] - [DEPRECATED] File name to overwrite the input fileName.
     * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
-    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.format] - File format.
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN"} [params.format] - File format.
     * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
-    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.fileFormat] - [DEPRECATED] File format.
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN"} [params.fileFormat] - [DEPRECATED] File format.
     * @param {"MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX
     *     MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 CVDB
     *     VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
-    * @param {String} [params.checksum] - Expected MD5 file checksum.
+    * @param {String} [params.checksum] - Expected SHA-256 file checksum.
     * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {String} [params.relativeFilePath] - Path within catalog (directory) where the file will be located (default: root folder).
@@ -416,6 +416,17 @@ export default class File extends OpenCGAParentClass {
     */
     updateAnnotationSetsAnnotations(file, annotationSet, data, params) {
         return this._post("files", file, "annotationSets", annotationSet, "annotations/update", data, params);
+    }
+
+    /** Overwrite the content of a file.
+    * @param {String} file - File id or name.
+    * @param {Object} data - File parameters.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateContent(file, data, params) {
+        return this._post("files", file, "content", null, "update", data, params);
     }
 
     /** Download file

@@ -214,6 +214,7 @@
 {"collections": ["clinical", "clinical_archive"], "fields": {"uid": 1}, "options": {"unique": true}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"reportedFiles.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {}}
@@ -254,6 +255,10 @@
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"studyUid": 1, "release": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"locked": 1, "studyUid": 1}, "options": {}}
+
+{"collections": ["findings", "findings_archive"], "fields": {"_privateId": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["findings", "findings_archive"], "fields": {"_interpretationId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["findings", "findings_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
 
 {"collections": ["audit"], "fields": {"studyUuid": 1}, "options": {}}
 {"collections": ["audit"], "fields": {"userId": 1, "studyUuid": 1}, "options": {}}

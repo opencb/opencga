@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections4.map.LinkedMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -150,6 +151,10 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
                                  QueryOptions options) throws CatalogException;
+
+    OpenCGAResult<Family> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions,
+                                 boolean incrementVersion)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Family> get(long familyId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

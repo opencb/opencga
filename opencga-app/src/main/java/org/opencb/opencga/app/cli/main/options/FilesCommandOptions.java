@@ -53,6 +53,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         public UnlinkCommandOptions unlinkCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
         public UpdateAnnotationSetsAnnotationsCommandOptions updateAnnotationSetsAnnotationsCommandOptions;
+        public UpdateContentCommandOptions updateContentCommandOptions;
         public DownloadCommandOptions downloadCommandOptions;
         public GrepCommandOptions grepCommandOptions;
         public HeadCommandOptions headCommandOptions;
@@ -87,6 +88,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.updateAnnotationSetsAnnotationsCommandOptions = new UpdateAnnotationSetsAnnotationsCommandOptions();
+        this.updateContentCommandOptions = new UpdateContentCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
         this.grepCommandOptions = new GrepCommandOptions();
         this.headCommandOptions = new HeadCommandOptions();
@@ -290,7 +292,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: FILE, VIRTUAL, DIRECTORY", required = false, arity = 1)
         public String type;
     
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, JAVASCRIPT, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, CVDB, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
@@ -883,7 +885,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--sample-ids"}, description = "The body web service sampleIds parameter", required = false, arity = 1)
         public String sampleIds;
     
-        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, JAVASCRIPT, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
         @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, CVDB, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
@@ -989,6 +991,29 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action = "ADD"; 
+    
+    }
+
+    @Parameters(commandNames = {"content-update"}, commandDescription ="Overwrite the content of a file.")
+    public class UpdateContentCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--file"}, description = "File id or name.", required = true, arity = 1)
+        public String file; 
+    
+        @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
+        public String content;
     
     }
 

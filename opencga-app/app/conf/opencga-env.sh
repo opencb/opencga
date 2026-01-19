@@ -55,6 +55,10 @@ fi
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 
+if [ -n "$JAVA_OFF_HEAP" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -XX:MaxDirectMemorySize=${JAVA_OFF_HEAP}"
+fi
+
 # Configure JavaAgent
 JAVA_AGENT=""
 AGENTS_NUM="$(find "${BASEDIR}/monitor/" -name '*.jar' 2> /dev/null | wc -l)"

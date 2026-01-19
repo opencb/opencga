@@ -39,6 +39,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -51,6 +52,7 @@ public class PosixIOManager extends IOManager {
     protected static ObjectMapper jsonObjectMapper;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;
+    private static final Pattern LINE_SEPARATOR_PATTERN = Pattern.compile("\r?\n");
 
     @Override
     protected void checkUriExists(URI uri) throws CatalogIOException {
@@ -287,75 +289,52 @@ public class PosixIOManager extends IOManager {
                     + ". Attempting to fail " + lines + " lines");
         }
 
-        int averageBytesPerLine = 250;
+        try {
+            long length = Files.size(file);
 
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
-            long length = randomAccessFile.length();
+            // Read from end of file using charset-aware methods
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
+                // Calculate how much to read - we need to read enough to get all requested lines
+                // We'll read up to MAXIMUM_BYTES or the entire file if smaller
+                long bytesToRead = Math.min(length, MAXIMUM_BYTES);
+                long offset = length - bytesToRead;
 
-            long offset = length - (averageBytesPerLine * (lines + 10));
-            if (offset < 0) {
-                offset = 0;
-            }
-            if (length - offset > MAXIMUM_BYTES) {
-                offset = length - MAXIMUM_BYTES;
-            }
-
-            List<String> contentList = new LinkedList<>();
-            randomAccessFile.seek(offset);
-            if (offset != 0) {
-                // If there is an offset, discard first line as it could be truncated
-                randomAccessFile.readLine();
-            }
-
-            String line;
-            while ((line = randomAccessFile.readLine()) != null) {
-                contentList.add(line);
-            }
-
-            while (offset > 0 && contentList.size() < lines && length - MAXIMUM_BYTES < offset) {
-                // We need to get more lines
-
-                // Recalculate the average number of bytes per line from the file
-                if (contentList.size() > 0) {
-                    averageBytesPerLine = Math.round((length - offset) / ((float) contentList.size()));
-                } else {
-                    averageBytesPerLine = averageBytesPerLine * 2;
-                }
-
-                // We will always try to move the offset to 10 lines before
-                int remainingLines = 10 + lines - contentList.size();
-
-                long to = offset;
-                offset = to - (averageBytesPerLine * remainingLines);
-                if (offset < 0) {
-                    offset = 0;
-                }
-                if (length - offset > MAXIMUM_BYTES) {
-                    offset = length - MAXIMUM_BYTES;
-                }
-
+                byte[] buffer = new byte[(int) bytesToRead];
                 randomAccessFile.seek(offset);
-                List<String> additionalList = new LinkedList<>();
+                randomAccessFile.readFully(buffer, 0, buffer.length);
 
-                if (offset != 0) {
-                    // If there is an offset, discard first line as it could be truncated
-                    randomAccessFile.readLine();
+                // Convert bytes to string using UTF-8
+                String content = new String(buffer, java.nio.charset.StandardCharsets.UTF_8);
+
+                // Split the content into lines
+                String[] allLines = LINE_SEPARATOR_PATTERN.split(content, -1);
+                List<String> contentList = new LinkedList<>();
+
+                // Skip first line if offset isn't at the beginning (might be incomplete)
+                int startIdx = offset != 0 ? 1 : 0;
+
+                // Skip the last element if it's empty (happens when file ends with newline)
+                int endIdx = allLines.length;
+                if (endIdx > 0 && allLines[endIdx - 1].isEmpty()) {
+                    endIdx--;
                 }
-                while (randomAccessFile.getFilePointer() < to) {
-                    additionalList.add(randomAccessFile.readLine());
+
+                // Add all remaining lines to our content list
+                for (int i = startIdx; i < endIdx; i++) {
+                    contentList.add(allLines[i]);
                 }
 
-                // Remove first line as it will probably be incomplete and it will be completely added from the additionalList
-                contentList.addAll(0, additionalList);
-            }
 
-            if (contentList.size() > lines) {
-                contentList = contentList.subList(contentList.size() - lines, contentList.size());
-            }
-            String fullContent = StringUtils.join(contentList, System.lineSeparator());
+                // Take only the last 'lines' number of lines
+                if (contentList.size() > lines) {
+                    contentList = contentList.subList(contentList.size() - lines, contentList.size());
+                }
 
-            return new FileContent(file.toAbsolutePath().toString(), true, length, fullContent.getBytes().length, contentList.size(),
-                    fullContent);
+                String fullContent = StringUtils.join(contentList, System.lineSeparator());
+
+                return new FileContent(file.toAbsolutePath().toString(), true, length,
+                        fullContent.getBytes(java.nio.charset.StandardCharsets.UTF_8).length, contentList.size(), fullContent);
+            }
         } catch (IOException e) {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString() + ": " + e.getMessage(), e);
         }
@@ -621,7 +600,7 @@ public class PosixIOManager extends IOManager {
     public String calculateChecksum(URI file) throws CatalogIOException {
         String checksum;
         try {
-            String[] command = {"md5sum", file.getPath()};
+            String[] command = {"sha256sum", file.getPath()};
             logger.debug("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -631,7 +610,7 @@ public class PosixIOManager extends IOManager {
                 //TODO: Handle error in checksum
                 logger.info("checksum = " + checksum);
                 br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
+                throw new CatalogIOException("sha256sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }
         } catch (IOException | InterruptedException e) {
             //TODO: Handle error in checksum

@@ -74,7 +74,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
@@ -899,8 +898,19 @@ public class SampleManagerTest extends AbstractManagerTest {
         individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), ownerToken).first();
         assertEquals(3, individualResult.getVersion());
         assertEquals(2, individualResult.getSamples().size());
-        assertEquals(3, individualResult.getSamples().get(0).getVersion());
-        assertEquals(2, individualResult.getSamples().get(1).getVersion());
+        int sample3Pos = -1;
+        int sample4Pos = -1;
+        List<Sample> samples = individualResult.getSamples();
+        for (int i = 0; i < samples.size(); i++) {
+            Sample individualResultSample = samples.get(i);
+            if (individualResultSample.getId().equals("sample3")) {
+                sample3Pos = i;
+            } else {
+                sample4Pos = i;
+            }
+        }
+        assertEquals(3, individualResult.getSamples().get(sample3Pos).getVersion());
+        assertEquals(2, individualResult.getSamples().get(sample4Pos).getVersion());
 
         familyResult = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), ownerToken).first();
         assertEquals(3, familyResult.getVersion());

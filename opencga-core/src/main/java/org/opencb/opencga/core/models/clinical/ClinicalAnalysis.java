@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -35,7 +33,6 @@ import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotation;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -87,6 +84,9 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.CLINICAL_ANALYSIS_FILES)
     private List<File> files;
 
+    @DataField(id = "reportedFiles", description = FieldConstants.CLINICAL_REPORT_FILES)
+    private List<File> reportedFiles;
+
     @DataField(id = "proband", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_PROBAND)
     private Individual proband;
@@ -115,20 +115,14 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.CLINICAL_ANALYSIS_SECONDARY_INTERPRETATION)
     private List<Interpretation> secondaryInterpretations;
 
-    @DataField(id = "consent", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
+    @DataField(id = "consent", description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
     private ClinicalConsentAnnotation consent;
-
-    @Deprecated
-    @DataField(id = "analyst")
-    private ClinicalAnalyst analyst;
 
     @DataField(id = "analysts", indexed = true,
             description = FieldConstants.CLINICAL_ANALYSIS_ANALYST)
     private List<ClinicalAnalyst> analysts;
 
-    @DataField(id = "report", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
+    @DataField(id = "report", description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
     private ClinicalReport report;
 
     @DataField(id = "request", since = "2.12.0",
@@ -190,12 +184,10 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private ClinicalAnalysisQualityControl qualityControl;
 
-    @DataField(id = "comments", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_COMMENTS)
+    @DataField(id = "comments", description = FieldConstants.CLINICAL_ANALYSIS_COMMENTS)
     private List<ClinicalComment> comments;
 
-    @DataField(id = "audit", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_AUDIT)
+    @DataField(id = "audit", description = FieldConstants.CLINICAL_ANALYSIS_AUDIT)
     private List<ClinicalAudit> audit;
 
     /**
@@ -229,9 +221,9 @@ public class ClinicalAnalysis extends Annotable {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, List<Panel> panels, boolean panelLocked, boolean locked, Interpretation interpretation,
-                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, List<File> reportedFiles,
+                            Individual proband, Family family, List<Panel> panels, boolean panelLocked, boolean locked,
+                            Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
                             List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
                             ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
                             String dueDate, int release, int version, List<ClinicalComment> comments,
@@ -242,6 +234,7 @@ public class ClinicalAnalysis extends Annotable {
         this.type = type;
         this.disorder = disorder;
         this.files = files;
+        this.reportedFiles = reportedFiles;
         this.proband = proband;
         this.family = family;
         this.panels = panels;
@@ -279,6 +272,7 @@ public class ClinicalAnalysis extends Annotable {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", reportedFiles=").append(reportedFiles);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
@@ -365,6 +359,15 @@ public class ClinicalAnalysis extends Annotable {
         return this;
     }
 
+    public List<File> getReportedFiles() {
+        return reportedFiles;
+    }
+
+    public ClinicalAnalysis setReportedFiles(List<File> reportedFiles) {
+        this.reportedFiles = reportedFiles;
+        return this;
+    }
+
     public Individual getProband() {
         return proband;
     }
@@ -390,17 +393,6 @@ public class ClinicalAnalysis extends Annotable {
     public ClinicalAnalysis setPanels(List<Panel> panels) {
         this.panels = panels;
         return this;
-    }
-
-    @Deprecated
-    @JsonIgnore
-    public boolean isPanelLock() {
-        return isPanelLocked();
-    }
-
-    @Deprecated
-    public ClinicalAnalysis setPanelLock(boolean panelLock) {
-        return setPanelLocked(panelLock);
     }
 
     public boolean isPanelLocked() {
@@ -445,20 +437,6 @@ public class ClinicalAnalysis extends Annotable {
 
     public ClinicalAnalysis setConsent(ClinicalConsentAnnotation consent) {
         this.consent = consent;
-        return this;
-    }
-
-    @Deprecated
-    @JsonIgnore
-    public ClinicalAnalyst getAnalyst() {
-        return analyst;
-    }
-
-    @Deprecated
-    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
-        if (analyst != null && CollectionUtils.isEmpty(this.analysts)) {
-            this.analysts = Collections.singletonList(analyst);
-        }
         return this;
     }
 

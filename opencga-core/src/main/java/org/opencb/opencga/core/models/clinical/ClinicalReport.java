@@ -1,93 +1,137 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
+import org.opencb.biodata.models.clinical.interpretation.MiniPubmed;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
+import java.util.Map;
 
 public class ClinicalReport {
 
-    @DataField(id = "title", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_TITLE)
-    private String title;
-
-    @DataField(id = "overview", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_OVERVIEW)
+    @DataField(id = "overview", description = FieldConstants.CLINICAL_REPORT_OVERVIEW)
     private String overview;
 
-    @DataField(id = "discussion", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_DISCUSSION)
+    @DataField(id = "discussion", description = FieldConstants.CLINICAL_REPORT_DISCUSSION)
     private ClinicalDiscussion discussion;
 
-    @DataField(id = "logo", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_LOGO)
-    private String logo;
+    @DataField(id = "recommendation", description = "Recommendation for the report")
+    private String recommendation;
 
-    @DataField(id = "signedBy", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_SIGNED_BY)
-    private String signedBy;
+    @DataField(id = "methodology", description = "Methodology used to generate the report")
+    private String methodology;
 
-    @DataField(id = "signature", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_SIGNATURE)
-    private String signature;
+    @DataField(id = "limitations", description = "Limitations of the report")
+    private String limitations;
 
-    @DataField(id = "date", indexed = true,
-            description = FieldConstants.CLINICAL_REPORT_DATE)
+    @DataField(id = "experimentalProcedure", description = "Experimental procedure of the report", since = "5.0.0")
+    private String experimentalProcedure;
+
+    @DataField(id = "conclusion", description = "Conclusion of the report", since = "5.0.0")
+    private ClinicalDiscussion conclusion;
+
+    @DataField(id = "signatures", description = "Signatures of the report")
+    private List<ReportSignature> signatures;
+
+    @DataField(id = "date", description = FieldConstants.CLINICAL_REPORT_DATE)
     private String date;
 
     @DataField(id = "comments", description = FieldConstants.CLINICAL_REPORT_COMMENTS, since = "2.12.0")
     private List<ClinicalComment> comments;
 
-    @DataField(id = "supportingEvidences", description = FieldConstants.CLINICAL_REPORT_SUPPORTING_EVIDENCES, since = "2.12.0")
+    @DataField(id = "references", description = "References to PubMed articles supporting the report")
+    private List<MiniPubmed> references;
+
+    @DataField(id = "images", description = "Images related to the report")
+    private List<String> images;
+
+    @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
+    private Map<String, Object> attributes;
+
+    // Deprecated fields
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "title", description = FieldConstants.CLINICAL_REPORT_TITLE, deprecated = true)
+    private String title;
+
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "logo", description = FieldConstants.CLINICAL_REPORT_LOGO, deprecated = true)
+    private String logo;
+
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "signedBy", description = FieldConstants.CLINICAL_REPORT_SIGNED_BY, deprecated = true)
+    private String signedBy;
+
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "signature", description = FieldConstants.CLINICAL_REPORT_SIGNATURE, deprecated = true)
+    private String signature;
+
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "supportingEvidences", description = FieldConstants.CLINICAL_REPORT_SUPPORTING_EVIDENCES, since = "2.12.0",
+            deprecated = true)
     private List<File> supportingEvidences;
 
-    @DataField(id = "files", description = FieldConstants.CLINICAL_REPORT_FILES, since = "2.12.0")
+    @Deprecated
+    @JsonIgnore
+    @DataField(id = "files", description = FieldConstants.CLINICAL_REPORT_FILES, since = "2.12.0", deprecated = true)
     private List<File> files;
 
     public ClinicalReport() {
     }
 
-    public ClinicalReport(String title, String overview, ClinicalDiscussion discussion, String logo, String signedBy, String signature,
-                          String date, List<ClinicalComment> comments, List<File> supportingEvidences, List<File> files) {
-        this.title = title;
+    public ClinicalReport(String overview, ClinicalDiscussion discussion, String recommendation, String methodology, String limitations,
+                          String experimentalProcedure, ClinicalDiscussion conclusion, List<ReportSignature> signatures, String date,
+                          List<ClinicalComment> comments, List<MiniPubmed> references, List<String> images,
+                          Map<String, Object> attributes) {
         this.overview = overview;
         this.discussion = discussion;
-        this.logo = logo;
-        this.signedBy = signedBy;
-        this.signature = signature;
+        this.recommendation = recommendation;
+        this.methodology = methodology;
+        this.limitations = limitations;
+        this.experimentalProcedure = experimentalProcedure;
+        this.conclusion = conclusion;
+        this.signatures = signatures;
         this.date = date;
         this.comments = comments;
-        this.supportingEvidences = supportingEvidences;
-        this.files = files;
+        this.references = references;
+        this.images = images;
+        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalReport{");
-        sb.append("title='").append(title).append('\'');
-        sb.append(", overview='").append(overview).append('\'');
+        sb.append("overview='").append(overview).append('\'');
         sb.append(", discussion=").append(discussion);
+        sb.append(", recommendation='").append(recommendation).append('\'');
+        sb.append(", methodology='").append(methodology).append('\'');
+        sb.append(", limitations='").append(limitations).append('\'');
+        sb.append(", experimentalProcedure='").append(experimentalProcedure).append('\'');
+        sb.append(", conclusion=").append(conclusion);
+        sb.append(", signatures=").append(signatures);
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", comments=").append(comments);
+        sb.append(", references=").append(references);
+        sb.append(", images=").append(images);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", title='").append(title).append('\'');
         sb.append(", logo='").append(logo).append('\'');
         sb.append(", signedBy='").append(signedBy).append('\'');
         sb.append(", signature='").append(signature).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append(", comments=").append(comments);
         sb.append(", supportingEvidences=").append(supportingEvidences);
         sb.append(", files=").append(files);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public ClinicalReport setTitle(String title) {
-        this.title = title;
-        return this;
     }
 
     public String getOverview() {
@@ -108,30 +152,57 @@ public class ClinicalReport {
         return this;
     }
 
-    public String getLogo() {
-        return logo;
+    public String getRecommendation() {
+        return recommendation;
     }
 
-    public ClinicalReport setLogo(String logo) {
-        this.logo = logo;
+    public ClinicalReport setRecommendation(String recommendation) {
+        this.recommendation = recommendation;
         return this;
     }
 
-    public String getSignedBy() {
-        return signedBy;
+    public String getMethodology() {
+        return methodology;
     }
 
-    public ClinicalReport setSignedBy(String signedBy) {
-        this.signedBy = signedBy;
+    public ClinicalReport setMethodology(String methodology) {
+        this.methodology = methodology;
         return this;
     }
 
-    public String getSignature() {
-        return signature;
+    public String getLimitations() {
+        return limitations;
     }
 
-    public ClinicalReport setSignature(String signature) {
-        this.signature = signature;
+    public ClinicalReport setLimitations(String limitations) {
+        this.limitations = limitations;
+        return this;
+    }
+
+    public String getExperimentalProcedure() {
+        return experimentalProcedure;
+    }
+
+    public ClinicalReport setExperimentalProcedure(String experimentalProcedure) {
+        this.experimentalProcedure = experimentalProcedure;
+        return this;
+    }
+
+    public ClinicalDiscussion getConclusion() {
+        return conclusion;
+    }
+
+    public ClinicalReport setConclusion(ClinicalDiscussion conclusion) {
+        this.conclusion = conclusion;
+        return this;
+    }
+
+    public List<ReportSignature> getSignatures() {
+        return signatures;
+    }
+
+    public ClinicalReport setSignatures(List<ReportSignature> signatures) {
+        this.signatures = signatures;
         return this;
     }
 
@@ -153,21 +224,114 @@ public class ClinicalReport {
         return this;
     }
 
+    public List<MiniPubmed> getReferences() {
+        return references;
+    }
+
+    public ClinicalReport setReferences(List<MiniPubmed> references) {
+        this.references = references;
+        return this;
+    }
+
+    public List<String> getImages() {
+        return images;
+    }
+
+    public ClinicalReport setImages(List<String> images) {
+        this.images = images;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public ClinicalReport setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
+    @Deprecated
+    public String getTitle() {
+        return title;
+    }
+
+    @Deprecated
+    public ClinicalReport setTitle(String title) {
+        if (title != null) {
+            throw new UnsupportedOperationException("Title field is deprecated. Add title to Study clinical report configuration instead.");
+        }
+        return this;
+    }
+
+    @Deprecated
+    public String getLogo() {
+        return logo;
+    }
+
+    @Deprecated
+    public ClinicalReport setLogo(String logo) {
+        if (logo != null) {
+            throw new UnsupportedOperationException("Logo field is deprecated. Add logo to Study clinical report configuration instead.");
+        }
+        return this;
+    }
+
+    @Deprecated
+    public String getSignedBy() {
+        return CollectionUtils.isNotEmpty(signatures) ? signatures.get(0).getSignedBy() : signedBy;
+    }
+
+    @Deprecated
+    public ClinicalReport setSignedBy(String signedBy) {
+        if (signedBy != null) {
+            throw new UnsupportedOperationException("SignedBy field is deprecated. Use array of signatures instead.");
+        }
+        if (CollectionUtils.isNotEmpty(signatures) && StringUtils.isEmpty(signatures.get(0).getSignedBy())) {
+            signatures.get(0).setSignedBy(signedBy);
+        }
+        return this;
+    }
+
+    @Deprecated
+    public String getSignature() {
+        return CollectionUtils.isNotEmpty(signatures) ? signatures.get(0).getSignature() : signature;
+    }
+
+    @Deprecated
+    public ClinicalReport setSignature(String signature) {
+        if (signature != null) {
+            throw new UnsupportedOperationException("Signature field is deprecated. Use array of signatures instead.");
+        }
+        if (CollectionUtils.isNotEmpty(signatures) && StringUtils.isEmpty(signatures.get(0).getSignature())) {
+            signatures.get(0).setSignature(signature);
+        }
+        return this;
+    }
+
+    @Deprecated
     public List<File> getSupportingEvidences() {
         return supportingEvidences;
     }
 
+    @Deprecated
     public ClinicalReport setSupportingEvidences(List<File> supportingEvidences) {
-        this.supportingEvidences = supportingEvidences;
+        if (supportingEvidences != null) {
+            throw new UnsupportedOperationException("Supporting evidences field is deprecated. Use references and images instead.");
+        }
         return this;
     }
 
+    @Deprecated
     public List<File> getFiles() {
         return files;
     }
 
+    @Deprecated
     public ClinicalReport setFiles(List<File> files) {
-        this.files = files;
+        if (files != null) {
+            throw new UnsupportedOperationException("Files field is deprecated. Moved to ClinicalAnalysis.reportedFiles.");
+        }
         return this;
     }
 }
