@@ -53,7 +53,12 @@ import java.util.concurrent.Executors;
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
-    private static final ExecutorService FUTURE_EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final ExecutorService FUTURE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r);
+        thread.setDaemon(true);
+        thread.setName("organization-collection-and-index-creator");
+        return thread;
+    });
 
     private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
@@ -152,6 +157,10 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public void close() {
         for (OrganizationMongoDBAdaptorFactory dbAdaptorFactory : organizationDBAdaptorMap.values()) {
             dbAdaptorFactory.close();
+        }
+        // Shutdown the executor to prevent thread leaks
+        if (!FUTURE_EXECUTOR.isShutdown()) {
+            FUTURE_EXECUTOR.shutdown();
         }
     }
 
