@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -44,8 +43,8 @@ public class DummyVariantAnnotator extends VariantAnnotator {
         if (options.containsKey(ANNOT_METADATA)) {
             metadata = options.get(ANNOT_METADATA, ProjectMetadata.VariantAnnotationMetadata.class);
         } else {
-            DataRelease dataRelease = new DataRelease();
-            dataRelease.setRelease(dataReleaseId);
+            ObjectMap dataRelease = new ObjectMap();
+            dataRelease.put("release", dataReleaseId);
             metadata = new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
                     new ProjectMetadata.VariantAnnotatorProgram(key, version, null), new HashMap<>(),
                     Collections.singletonList(new ObjectMap("data", "genes")), dataRelease, null);

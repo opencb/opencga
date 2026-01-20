@@ -167,7 +167,7 @@ public class CellBaseValidator {
 
         String serverVersion = getVersionFromServer();
         if (!supportsDataRelease(serverVersion)) {
-            logger.warn("DataRelease not supported on version '" + serverVersion + ".x'");
+            logger.warn("DataRelease not supported on version '{}.x'", serverVersion);
         } else {
             String dataRelease = getDataRelease();
             if (StringUtils.isEmpty(dataRelease)) {

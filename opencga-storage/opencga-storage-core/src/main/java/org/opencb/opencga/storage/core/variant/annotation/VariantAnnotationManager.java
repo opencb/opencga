@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -120,7 +119,7 @@ public abstract class VariantAnnotationManager {
         if (current.getDataRelease() != null && newVariantAnnotationMetadata.getDataRelease() == null) {
             // Regression. DataRelease is lost.
             String msg = "DataRelease missing. "
-                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().getRelease()
+                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().get("release")
                             + ", attempting to annotate without explicit dataRelease";
 
             if (overwrite) {
@@ -156,8 +155,8 @@ public abstract class VariantAnnotationManager {
             } else {
                 if (!dataReleaseEquals(current.getDataRelease(), newVariantAnnotationMetadata.getDataRelease())) {
                     String msg = "DataRelease has changed. "
-                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().getRelease()
-                            + ", attempting to annotate with " + newVariantAnnotationMetadata.getDataRelease().getRelease();
+                            + "Existing annotation calculated with dataRelease " + current.getDataRelease().get("release")
+                            + ", attempting to annotate with " + newVariantAnnotationMetadata.getDataRelease().get("release");
 
                     if (overwrite) {
                         logger.info(msg);
@@ -222,7 +221,7 @@ public abstract class VariantAnnotationManager {
     }
 
     /**
-     * Check if two DataRelease are equal.
+     * Check if two data releases are equal.
      *
      * Fields to compare:
      * - release
@@ -234,15 +233,15 @@ public abstract class VariantAnnotationManager {
      * - active
      * - activeByDefaultIn
      *
-     * @param current Current DataRelease
-     * @param other Other DataRelease
-     * @return true if both DataRelease are equal
+     * @param current Current data release
+     * @param other Other data release
+     * @return true if both data release are equal
      */
-    public static boolean dataReleaseEquals(DataRelease current, DataRelease other) {
-        return current.getRelease() == other.getRelease()
-                && Objects.equals(current.getDate(), other.getDate())
-                && Objects.equals(current.getCollections(), other.getCollections())
-                && Objects.equals(current.getSources(), other.getSources());
+    public static boolean dataReleaseEquals(ObjectMap current, ObjectMap other) {
+        return current.get("release") == other.get("release")
+                && Objects.equals(current.get("date"), other.get("date"))
+                && Objects.equals(current.get("collections"), other.get("collections"))
+                && Objects.equals(current.get("sources"), other.get("sources"));
     }
 
     private static String removePatchFromVersion(String version) {

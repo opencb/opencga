@@ -3,10 +3,8 @@ package org.opencb.opencga.storage.core.metadata.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.models.project.VariantSecondaryAnnotationIndexSets;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.util.*;
@@ -124,7 +122,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         private VariantAnnotatorProgram annotator;
         private Map<String, ObjectMap> extensions;
         private List<ObjectMap> sourceVersion;
-        private DataRelease dataRelease;
+        private ObjectMap dataRelease;
         private List<String> privateSources;
 
         public VariantAnnotationMetadata() {
@@ -133,7 +131,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         }
 
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
-                                         Map<String, ObjectMap> extensions, List<ObjectMap> sourceVersion, DataRelease dataRelease,
+                                         Map<String, ObjectMap> extensions, List<ObjectMap> sourceVersion, ObjectMap dataRelease,
                                          List<String> privateSources) {
             this.id = id;
             this.name = name;
@@ -155,7 +153,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             for (ObjectMap source : other.sourceVersion) {
                 this.sourceVersion.add(new ObjectMap(source));
             }
-            this.dataRelease = other.dataRelease == null ? null : JacksonUtils.copySafe(other.dataRelease, DataRelease.class);
+            this.dataRelease = other.dataRelease == null ? null : new ObjectMap(other.dataRelease);
             this.privateSources = other.privateSources != null ? new ArrayList<>(other.privateSources) : null;
         }
 
@@ -217,11 +215,11 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return this;
         }
 
-        public DataRelease getDataRelease() {
+        public ObjectMap getDataRelease() {
             return dataRelease;
         }
 
-        public VariantAnnotationMetadata setDataRelease(DataRelease dataRelease) {
+        public VariantAnnotationMetadata setDataRelease(ObjectMap dataRelease) {
             this.dataRelease = dataRelease;
             return this;
         }
