@@ -22,14 +22,11 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.models.DataRelease;
-import org.opencb.cellbase.core.models.Release;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.VersionUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -97,38 +94,29 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
     @Override
     public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
-        ObjectMap dataRelease = null;
+        DataRelease dataRelease = null;
+        String url = "/meta/" + species + "/dataReleases";
         try {
             if (cellBaseUtils.supportsDataRelease()) {
-                if (VersionUtils.isMinVersion("6.7.0", cellBaseUtils.getVersion())) {
-                    Release dr = cellBaseClient.getMetaClient()
-                            .releases()
-                            .allResults()
-                            .stream()
-                            .filter(r -> String.valueOf(r.getRelease()).equals(cellBaseClient.getDataRelease()))
-                            .findFirst()
-                            .orElse(null);
-                    if (dr != null) {
-                        // Convert Release to ObjectMap
-                        dataRelease = JacksonUtils.getDefaultObjectMapper().convertValue(dr, ObjectMap.class);
-                    }
-                } else {
-                    DataRelease dr = cellBaseClient.getMetaClient()
-                            .dataReleases()
-                            .allResults()
-                            .stream()
-                            .filter(r -> String.valueOf(r.getRelease()).equals(cellBaseClient.getDataRelease()))
-                            .findFirst()
-                            .orElse(null);
-                    if (dr != null) {
-                        dataRelease = JacksonUtils.getDefaultObjectMapper().convertValue(dr, ObjectMap.class);
-                    }
-                }
+//                if (cellBaseUtils.supportsRelease()) {
+//                    url = "/meta/" + species + "/releases";
+//                    Release dr = cellBaseClient.getMetaClient()
+//                            .releases()
+//                            .allResults()
+//                            .stream()
+//                            .filter(r -> String.valueOf(r.getRelease()).equals(cellBaseClient.getDataRelease()))
+//                            .findFirst()
+//                            .orElse(null);
+//                }
+                dataRelease = cellBaseClient.getMetaClient()
+                        .dataReleases()
+                        .allResults()
+                        .stream()
+                        .filter(r -> String.valueOf(r.getRelease()).equals(cellBaseClient.getDataRelease()))
+                        .findFirst()
+                        .orElse(null);
             }
         } catch (IOException e) {
-            String url = VersionUtils.isMinVersion("6.7.0", cellBaseUtils.getVersion())
-                    ? "/meta/" + species + "/releases"
-                    : "/meta/" + species + "/dataRreleases";
             throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo(url) + ". ");
         }
         List<String> privateSources;

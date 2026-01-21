@@ -10,8 +10,6 @@ import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.cellbase.core.models.DataReleaseSource;
-import org.opencb.cellbase.core.models.DataSource;
-import org.opencb.cellbase.core.models.Release;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -171,7 +169,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // First annotation. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap());
-        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().get("release"));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
         assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
@@ -187,7 +185,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // New annotator. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().get("release"));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
         assertEquals("k2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
@@ -205,7 +203,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // Same annotator, new datarelease. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().get("release"));
+        assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
         assertEquals("k2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
@@ -224,7 +222,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().get("release"));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
         assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
@@ -232,8 +230,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         // Change data release "active" and "activeByDefaultIn". Do not overwrite. Should run ok.
         ProjectMetadata.VariantAnnotationMetadata current = variantStorageEngine.getMetadataManager().getProjectMetadata().copy()
                 .getAnnotation().getCurrent();
-//        current.getDataRelease().setActive(!current.getDataRelease().isActive());
-        current.getDataRelease().put("activeByDefaultIn", Arrays.asList("here", "there"));
+        current.getDataRelease().setActive(!current.getDataRelease().isActive());
+        current.getDataRelease().setActiveByDefaultIn(Arrays.asList("here", "there"));
         variantStorageEngine.getOptions()
                 .append(DummyVariantAnnotator.ANNOT_METADATA, current);
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
@@ -243,46 +241,20 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     public void testDataReleaseEquals() throws IOException {
         DataRelease dr1 = new DataRelease(1, "date", Arrays.asList("here", "there"), new HashMap<String, String>(){{put("a", "b");}}, Arrays.asList(new DataReleaseSource("source", "v2", "so", "2020", null)));
         DataRelease dr2 = JacksonUtils.copy(dr1);
-        assertTrue(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
 
         dr2 = JacksonUtils.copy(dr1).setActive(!dr2.isActive());
-        assertTrue(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
 
         dr2 = JacksonUtils.copy(dr1).setActiveByDefaultIn(Arrays.asList("h", "d"));
-        assertTrue(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
 
         dr2 = JacksonUtils.copy(dr1).setDate("otherDate");
-        assertFalse(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
+        assertFalse(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
 
         dr2 = JacksonUtils.copy(dr1);
         dr2.getSources().get(0).setName("otherName");
-        assertFalse(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
-    }
-
-    @Test
-    public void testDataReleaseEqualsWithRelease() throws IOException {
-        Release dr1 = new Release(1, "date", Arrays.asList("here", "there"), new HashMap<String, String>(){{put("a", "b");}}, Arrays.asList(new DataSource("source", "name", "category", "v2", "2020", null)));
-        Release dr2 = JacksonUtils.copy(dr1);
-        assertTrue(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
-
-        dr2 = JacksonUtils.copy(dr1).setActiveByDefaultIn(Arrays.asList("h", "d"));
-        assertTrue(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
-
-        dr2 = JacksonUtils.copy(dr1).setDate("otherDate");
-        assertFalse(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
-
-        dr2 = JacksonUtils.copy(dr1);
-        dr2.getSources().get(0).setName("otherName");
-        assertFalse(VariantAnnotationManager.dataReleaseEquals(JacksonUtils.getDefaultObjectMapper().convertValue(dr1, ObjectMap.class),
-                JacksonUtils.getDefaultObjectMapper().convertValue(dr2, ObjectMap.class)));
+        assertFalse(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
     }
 
     @Test
@@ -362,7 +334,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         long numVariants = variantStorageEngine.count(new Query()).first();
         long annotatedVariants = variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().get("release"));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
         assertEquals(numVariants, annotatedVariants);
         assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
@@ -628,7 +600,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         int count = 0;
         for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, new QueryOptions(QueryOptions.LIMIT, 5000)).getResults()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
-//            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
+//            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().getRelease());
             assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(GROUP_NAME.key())
                     .getAttribute().get(VariantField.AdditionalAttributes.ANNOTATION_ID.key()));
             count++;

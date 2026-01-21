@@ -290,6 +290,24 @@ public class CellBaseValidator {
         return VersionUtils.isMinVersion("5.1.0", serverVersion);
     }
 
+    /**
+     * Check if the CellBase server supports Releases.
+     *
+     * Release support starts at version 6.7.0.
+     * This is different from Data Release support which starts at version 5.1.0
+     *
+     * @return
+     * @throws IOException
+     */
+    public boolean supportsRelease() throws IOException {
+        return supportsRelease(getVersionFromServer());
+    }
+
+    public static boolean supportsRelease(String serverVersion) {
+        // Release support starts at version 6.7.0
+        return VersionUtils.isMinVersion("6.7.0", serverVersion);
+    }
+
     public boolean supportsDataReleaseActiveByDefaultIn() throws IOException {
         return supportsDataReleaseActiveByDefaultIn(getVersionFromServer());
     }
