@@ -5,8 +5,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.metadata.models.project.VariantSecondaryAnnotationIndexSets;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.util.*;
@@ -219,10 +219,6 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
 
         public DataRelease getDataRelease() {
             return dataRelease;
-        }
-
-        public int getDataReleaseId() {
-            return dataRelease.getRelease();
         }
 
         public VariantAnnotationMetadata setDataRelease(DataRelease dataRelease) {
