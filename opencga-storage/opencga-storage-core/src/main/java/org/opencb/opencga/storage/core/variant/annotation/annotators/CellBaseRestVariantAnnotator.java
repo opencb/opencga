@@ -27,6 +27,8 @@ import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.VersionUtils;
+import org.opencb.opencga.core.common.DependenciesState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
@@ -46,6 +48,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
     private final CellBaseClient cellBaseClient;
     private final CellBaseUtils cellBaseUtils;
+    private ProjectMetadata.VariantAnnotatorProgram variantAnnotatorProgram;
 
     public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
@@ -74,6 +77,34 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throw new VariantAnnotatorException(e.getMessage(), e);
         }
 
+        logger.info("CellBase client version: {}", DependenciesState.getInstance().getCellBaseVersion());
+        ProjectMetadata.VariantAnnotatorProgram program = getVariantAnnotatorProgram();
+        logger.info("CellBase server version: {} commit: {}",
+                program.getVersion(),
+                program.getCommit());
+
+        VersionUtils.Version serverCellbaseVersion = new VersionUtils.Version(program.getVersion());
+        VersionUtils.Version cellbaseClientVersion = new VersionUtils.Version(DependenciesState.getInstance().getCellBaseVersion());
+
+        // If server version is ahead of client version, warn the user
+        if (serverCellbaseVersion.compareTo(cellbaseClientVersion) > 0) {
+            logger.warn("CellBase server version '{}' is more recent than CellBase client version '{}'. "
+                            + "It is recommended to update the CellBase client library to avoid compatibility issues.",
+                    serverCellbaseVersion, cellbaseClientVersion);
+        }
+    }
+
+    public static void main(String[] args) {
+
+        VersionUtils.Version serverCellbaseVersion = new VersionUtils.Version("6.7.0");
+        VersionUtils.Version cellbaseClientVersion = new VersionUtils.Version("6.6.0");
+
+        // If server version is ahead of client version, warn the user
+        if (serverCellbaseVersion.compareTo(cellbaseClientVersion, true) > 0) {
+            logger.warn("CellBase server version '{}' is more recent than CellBase client version '{}'. "
+                            + "It is recommended to update the CellBase client library to avoid compatibility issues.",
+                    serverCellbaseVersion, cellbaseClientVersion);
+        }
     }
 
     @Override
@@ -88,7 +119,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                     .getAnnotationByVariantIds(variantIds, new QueryOptions(queryOptions), true);
             return response.getResponses();
         } catch (IOException e) {
-            throw new VariantAnnotatorException("Error fetching variants from " + getDebugInfo("/genomic/variant/annotation"));
+            throw new VariantAnnotatorException("Error fetching variants from " + getDebugInfo("/genomic/variant/annotation"), e);
         }
     }
 
@@ -117,7 +148,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                         .orElse(null);
             }
         } catch (IOException e) {
-            throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo(url) + ". ");
+            throw new VariantAnnotatorException("Error fetching CellBase information from " + getDebugInfo(url) + ". ", e);
         }
         List<String> privateSources;
         if (StringUtils.isNotEmpty(cellBaseUtils.getApiKey())) {
@@ -134,6 +165,13 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     }
 
     private ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws VariantAnnotatorException {
+        if (variantAnnotatorProgram == null) {
+            variantAnnotatorProgram = fetchVariantAnnotatorProgram();
+        }
+        return variantAnnotatorProgram;
+    }
+
+    private ProjectMetadata.VariantAnnotatorProgram fetchVariantAnnotatorProgram() throws VariantAnnotatorException {
         CellBaseDataResponse<ObjectMap> response;
         try {
             response = cellBaseClient.getMetaClient().about();
