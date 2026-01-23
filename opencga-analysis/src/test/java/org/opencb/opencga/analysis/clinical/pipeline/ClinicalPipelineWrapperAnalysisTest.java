@@ -441,7 +441,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         affyParams.setDataDir(dataDirFile.getId());
         affyParams.setIndexDir(indexDirFile.getId());
         affyParams.setPipeline(ngsPipeline);
-        affyParams.setVariantIndexParams(null);
+        affyParams.setVariantIndexParams(new VariantIndexParams());
         affyWrapperParams.setPipelineParams(affyParams);
 
         execute(AffyClinicalPipelineWrapperAnalysis.ID, "affy-pipeline-job", affyWrapperParams.toParams(), outDir);
