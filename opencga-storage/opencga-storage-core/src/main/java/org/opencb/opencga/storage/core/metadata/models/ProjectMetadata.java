@@ -262,6 +262,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     public static class VariantAnnotatorProgram {
         private String name;
         private String version;
+        // TODO: Add clientVersion;
         private String commit;
 
         public VariantAnnotatorProgram() {
