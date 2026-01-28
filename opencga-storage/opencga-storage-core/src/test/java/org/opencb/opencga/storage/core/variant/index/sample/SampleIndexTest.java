@@ -56,7 +56,6 @@ import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.gte;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.lte;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -595,7 +594,7 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
         // Query DBAdaptor
         System.out.println("#Query DBAdaptor");
         query.putAll(testQuery);
-        VariantQueryResult<Variant> queryResult = dbAdaptorQuery(new Query(query), new QueryOptions());
+        VariantQueryResult<Variant> queryResult = dbAdaptorQuery(new Query(query), new QueryOptions(QueryOptions.SORT, true));
         List<String> onlyDBAdaptor = queryResult.getResults().stream().map(Variant::toString).sorted().collect(toList());
 
         // Query SampleIndex
@@ -672,7 +671,7 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
         }
         if (!sampleIndexMightBeMoreAccurate) {
             assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
-            assertThat(onlyDBAdaptor.size(), lte(onlyIndex.size()));
+            assertThat(onlyIndex.size(), gte(onlyDBAdaptor.size()));
         }
 //        assertThat(queryResult, numResults(gt(0)));
         return indexQuery;

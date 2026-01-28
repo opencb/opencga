@@ -70,7 +70,7 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
     public SampleIndexVariantWriter newSampleIndexVariantWriter(int studyId, int fileId, List<Integer> sampleIds,
                                                                 SampleIndexSchema schema, ObjectMap options,
                                                                 VariantStorageEngine.SplitData splitData) throws StorageEngineException {
-        SampleIndexEntryConverter converter = new SampleIndexEntryConverter(this, studyId, fileId, sampleIds, splitData, options, schema);
+        SampleGenotypeIndexerTask converter = new SampleGenotypeIndexerTask(this, studyId, fileId, sampleIds, splitData, options, schema);
         SampleIndexEntryWriter writer = newSampleIndexEntryWriter(studyId, fileId, schema, options);
         return new SampleIndexVariantWriter(converter, writer);
     }

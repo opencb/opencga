@@ -266,7 +266,7 @@ public final class SampleIndexSchema {
         return getChunkRegion(variant.getChromosome(), variant.getStart(), variant.getStart());
     }
 
-    private static Region getChunkRegion(String chromosome, int start, int end) {
+    public static Region getChunkRegion(String chromosome, int start, int end) {
         return new Region(chromosome, SampleIndexSchema.getChunkStart(start),
                 end == Integer.MAX_VALUE
                         ? Integer.MAX_VALUE

@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryChunk;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
@@ -34,12 +35,12 @@ import static org.opencb.opencga.storage.core.variant.index.sample.schema.Sample
  *
  * @author Jacobo Coll &lt;
  */
-public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry> {
+public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry> {
 
     protected final int studyId;
     protected final List<Integer> sampleIds;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, SortedSet<VariantFileIndex>>
-    protected final Map<IndexChunk, Chunk> buffer = new LinkedHashMap<>();
+    protected final Map<SampleIndexEntryChunk, Chunk> buffer = new LinkedHashMap<>();
     protected final HashSet<String> genotypes = new HashSet<>();
     protected final boolean rebuildIndex;
     protected final boolean[] multiFileIndex;
@@ -51,20 +52,20 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
     protected final SampleIndexSchema schema;
     private final Integer fileId;
 
-    public SampleIndexEntryConverter(SampleIndexDBAdaptor dbAdaptor,
+    public SampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                      int studyId, List<Integer> sampleIds, ObjectMap options, SampleIndexSchema schema) {
         this(dbAdaptor, studyId, sampleIds, null, null, options, schema);
     }
 
 
-    public SampleIndexEntryConverter(SampleIndexDBAdaptor dbAdaptor,
+    public SampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                      int studyId, int fileId, List<Integer> sampleIds,
                                      VariantStorageEngine.SplitData splitData, ObjectMap options, SampleIndexSchema schema) {
         this(dbAdaptor, studyId, sampleIds, fileId, splitData, options, schema);
     }
 
-    private SampleIndexEntryConverter(SampleIndexDBAdaptor dbAdaptor,
-                                     int studyId, List<Integer> sampleIds, Integer fileId,
+    private SampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
+                                      int studyId, List<Integer> sampleIds, Integer fileId,
                                       VariantStorageEngine.SplitData splitData, ObjectMap options, SampleIndexSchema schema) {
         this.studyId = studyId;
         this.sampleIds = sampleIds;
@@ -143,7 +144,7 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
             return samples.iterator();
         }
 
-        Chunk(IndexChunk indexChunk) {
+        Chunk(SampleIndexEntryChunk indexChunk) {
             samples = new ArrayList<>(sampleIds.size());
             merging = false;
             int idx = 0;
@@ -156,7 +157,7 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
                     }
                 } else {
                     // This loader can't ensure an ordered input data to the SampleIndexEntryBuilder.
-                    builder = new SampleIndexEntryBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema,
+                    builder = new SampleIndexEntryBuilder(sampleId, indexChunk.getChromosome(), indexChunk.getBatchStart(), schema,
                             false, multiFileIndex[idx]);
                 }
                 samples.add(builder);
@@ -172,9 +173,9 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
             return samples.get(sampleIdx);
         }
 
-        private SampleIndexEntryBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
+        private SampleIndexEntryBuilder fetchIndex(SampleIndexEntryChunk indexChunk, Integer sampleId) {
             try {
-                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position, schema);
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.getChromosome(), indexChunk.getBatchStart(), schema);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -196,43 +197,10 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
         }
     }
 
-    protected static class IndexChunk {
-        private final String chromosome;
-        private final Integer position;
-
-        IndexChunk(String chromosome, Integer position) {
-            this.chromosome = chromosome;
-            this.position = position;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof IndexChunk)) {
-                return false;
-            }
-            IndexChunk that = (IndexChunk) o;
-            return Objects.equals(chromosome, that.chromosome)
-                    && Objects.equals(position, that.position);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(chromosome, position);
-        }
-
-        @Override
-        public String toString() {
-            return chromosome + ":" + position;
-        }
-    }
-
     @Override
     public List<SampleIndexEntry> apply(List<Variant> variants) {
         for (Variant variant : variants) {
-            IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
+            SampleIndexEntryChunk indexChunk = new SampleIndexEntryChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
             // The variant hasGT if has the SampleDataKey GT AND the genotypes are not being excluded
@@ -240,20 +208,27 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
                     && studyEntry.getSampleDataKeys().get(0).equals("GT");
             for (SampleEntry sample : studyEntry.getSamples()) {
                 String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
-                Integer fileIndex = sample.getFileIndex();
-                Integer fileId = null;
-                if (fileIndex == null) {
-                    fileIndex = 0;
-                    fileId = this.fileId;
-                } else if (multiFileIndex[sampleIdx]) {
-                    String fileName = studyEntry.getFiles().get(fileIndex).getFileId();
-                    fileId = dbAdaptor.getMetadataManager().getFileId(studyId, fileName);
-                }
                 if (validVariant(variant) && validGenotype(gt)) {
+                    final int fileIndex;
+                    final int filePosition;
+                    if (sample.getFileIndex() == null) {
+                        filePosition = fileIdxMap[sampleIdx].get(fileId);
+                        fileIndex = 0;
+                    } else {
+                        fileIndex = sample.getFileIndex();
+                        if (multiFileIndex[sampleIdx]) {
+                            String fileName = studyEntry.getFiles().get(fileIndex).getFileId();
+                            int fileId = dbAdaptor.getMetadataManager().getFileId(studyId, fileName);
+                            filePosition = fileIdxMap[sampleIdx].get(fileId);
+                        } else {
+                            // Single file per sample
+                            filePosition = 0;
+                        }
+                    }
                     genotypes.add(gt);
                     Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
                     SampleIndexVariant indexEntry = sampleIndexVariantConverter
-                            .createSampleIndexVariant(sampleIdx, fileIndex, fileIdxMap[sampleIdx].get(fileId), variant);
+                            .createSampleIndexVariant(sampleIdx, fileIndex, filePosition, variant);
                     chunk.addVariant(sampleIdx, gt, indexEntry);
                 }
                 sampleIdx++;
@@ -264,14 +239,27 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
         return convert(3);
     }
 
+    @Override
+    public List<SampleIndexEntry> drain() {
+        // Drain buffer
+        System.out.println("DRAIN HERE");
+        List<SampleIndexEntry> r = convert(0);
+        for (SampleIndexEntry sampleIndexEntry : r) {
+            System.out.println("DRAIN ENTRY: " + sampleIndexEntry.getSampleId() + " - " + sampleIndexEntry.getChromosome()
+                    + ":" + sampleIndexEntry.getBatchStart() + " - " + sampleIndexEntry.getGts().keySet());
+        }
+        System.out.println("DRAIN DONE : " + r.size());
+        return r;
+    }
+
     private List<SampleIndexEntry> convert(int remain) {
         if (buffer.size() <= remain) {
             return Collections.emptyList();
         }
         List<SampleIndexEntry> entries = new ArrayList<>();
-        Iterator<Map.Entry<IndexChunk, Chunk>> iterator = buffer.entrySet().iterator();
+        Iterator<Map.Entry<SampleIndexEntryChunk, Chunk>> iterator = buffer.entrySet().iterator();
         while (buffer.size() > remain && iterator.hasNext()) {
-            Map.Entry<IndexChunk, Chunk> entry = iterator.next();
+            Map.Entry<SampleIndexEntryChunk, Chunk> entry = iterator.next();
             Chunk chunk = entry.getValue();
             for (SampleIndexEntryBuilder builder : chunk) {
                 if (builder.isEmpty()) {
@@ -286,12 +274,6 @@ public class SampleIndexEntryConverter implements Task<Variant, SampleIndexEntry
 
     public static boolean validVariant(Variant variant) {
         return !variant.getType().equals(VariantType.NO_VARIATION);
-    }
-
-    @Override
-    public List<SampleIndexEntry> drain() {
-        // Drain buffer
-        return convert(0);
     }
 
     public HashSet<String> getLoadedGenotypes() {

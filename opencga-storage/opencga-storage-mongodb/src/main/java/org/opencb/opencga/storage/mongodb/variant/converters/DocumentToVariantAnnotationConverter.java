@@ -26,6 +26,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
@@ -195,7 +196,15 @@ public class DocumentToVariantAnnotationConverter
 //        String reference = null;
 //        String alternate = null;
 
-        byte[] jsonRaw = object.get(JSON_RAW, byte[].class);
+        Object jsonRawO = object.get(JSON_RAW);
+        byte[] jsonRaw;
+        if (jsonRawO instanceof byte[]) {
+            jsonRaw = (byte[]) jsonRawO;
+        } else if (jsonRawO instanceof Binary) {
+            jsonRaw = ((Binary) jsonRawO).getData();
+        } else {
+            throw new IllegalStateException("Unexpected object type for field " + JSON_RAW + ": " + jsonRawO.getClass());
+        }
         VariantAnnotation va;
         if (jsonRaw != null && jsonRaw.length > 0) {
             try {

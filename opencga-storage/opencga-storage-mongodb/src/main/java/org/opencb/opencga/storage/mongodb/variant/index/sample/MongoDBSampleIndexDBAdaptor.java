@@ -150,7 +150,7 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         return collection;
     }
 
-    private String getSampleIndexCollectionName(int studyId, int version) {
+    public String getSampleIndexCollectionName(int studyId, int version) {
         return "sample_index_" + studyId + "_v" + version;
     }
 
@@ -177,6 +177,9 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
     }
 
     private void writeEntriesRaw(MongoDBCollection collection, List<Pair<String, Bson>> entries) {
+        if (entries.isEmpty()) {
+            return;
+        }
         List<Bson> queries = new ArrayList<>(entries.size());
         List<Bson> updates = new ArrayList<>(entries.size());
         for (Pair<String, Bson> pair : entries) {
@@ -224,6 +227,9 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         MongoDBCollection collection = getCollection(toStudyId(query.getStudy()), query.getSchema().getVersion());
         Bson filter = queryBuilder.buildFilter(query, locusQuery);
         Bson projection = queryBuilder.buildProjection(query, includeAllFields);
+        System.out.println("SampleIndex query filter: " + filter.toBsonDocument().toJson());
+        System.out.println("SampleIndex query projection: " + (projection != null ? projection.toBsonDocument().toJson() : "null"));
+        System.out.println(" Collection: " + getSampleIndexCollectionName(toStudyId(query.getStudy()), query.getSchema().getVersion()));
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, projection)
                 .append(QueryOptions.SORT, queryBuilder.defaultSort());

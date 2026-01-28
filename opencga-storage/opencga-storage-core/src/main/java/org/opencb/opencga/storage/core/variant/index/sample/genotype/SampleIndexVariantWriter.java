@@ -15,10 +15,10 @@ import java.util.Set;
  */
 public class SampleIndexVariantWriter implements DataWriter<Variant> {
 
-    private final SampleIndexEntryConverter converter;
+    private final SampleGenotypeIndexerTask converter;
     private final SampleIndexEntryWriter writer;
 
-    public SampleIndexVariantWriter(SampleIndexEntryConverter converter, SampleIndexEntryWriter writer) {
+    public SampleIndexVariantWriter(SampleGenotypeIndexerTask converter, SampleIndexEntryWriter writer) {
         this.converter = converter;
         this.writer = writer;
     }

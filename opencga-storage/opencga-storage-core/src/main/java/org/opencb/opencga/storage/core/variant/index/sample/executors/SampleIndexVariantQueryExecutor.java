@@ -89,7 +89,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator, SampleIndexQuery sampleIndexQuery) {
-        logger.info("HBase SampleIndex intersect");
+        logger.info("Secondary Sample Index intersect");
         QueryOptions inputOptions = variantQuery.getInputOptions();
         Query uncoveredQuery = new Query(sampleIndexQuery.getUncoveredQuery());
         Future<Long> asyncCountFuture;

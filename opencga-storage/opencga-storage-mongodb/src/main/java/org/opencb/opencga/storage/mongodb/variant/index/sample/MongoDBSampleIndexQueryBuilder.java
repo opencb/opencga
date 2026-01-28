@@ -32,6 +32,8 @@ public final class MongoDBSampleIndexQueryBuilder {
         } else {
             filter.put(DocumentToSampleIndexEntryConverter.SAMPLE_ID, sampleId);
         }
+        System.out.println("Building filter for sampleId: " + sampleId);
+        System.out.println(" Filter: " + filter.toJson());
         // Additional filters mostly handled in-memory; placeholder left for future expansion
         return filter;
     }
@@ -58,7 +60,7 @@ public final class MongoDBSampleIndexQueryBuilder {
     }
 
     public Document defaultSort() {
-        return new Document(DocumentToSampleIndexEntryConverter.BATCH_START, 1);
+        return new Document("_id", 1);
     }
 
     private int resolveStudyId(Object study) {

@@ -99,6 +99,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
+    public static final int CHUNK_SIZE_LARGE = 1000000;
     // Number of opened dbAdaptors
     public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
 

@@ -4,25 +4,23 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryConverter;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexerTask;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * MongoDB implementation of SampleGenotypeIndexer that builds the sample genotype index
@@ -44,15 +42,6 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
             throws StorageEngineException {
         String studyName = metadataManager.getStudyName(studyId);
         List<String> sampleNames = samplesAsNames(studyId, sampleIds);
-        MongoDBCollection collection = sampleIndexDBAdaptor.createCollectionIfNeeded(studyId, schema.getVersion());
-        SampleIndexVariantConverter variantConverter = new SampleIndexVariantConverter(schema);
-
-        // Build map of sampleId -> SampleMetadata for file position lookup
-        Map<Integer, SampleMetadata> sampleMetadataMap = new HashMap<>();
-        for (Integer sampleId : sampleIds) {
-            sampleMetadataMap.put(sampleId, metadataManager.getSampleMetadata(studyId, sampleId));
-        }
-
 
         ProgressLogger progressLogger = new ProgressLogger("Building sample genotype index");
 
@@ -69,29 +58,32 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
                         VariantField.STUDIES_FILES))
                 .append(QueryOptions.SORT, true);
 
-        // Process chromosome in batches
-        Map<Integer, Map<Integer, SampleIndexEntryBuilder>> sampleBuilders = new HashMap<>();
-
         VariantQuery variantQuery = new VariantQuery()
                 .study(studyName);
 
         if (sampleIds.size() < 50) {
-            variantQuery.put(VariantQueryParam.SAMPLE.key(), sampleNames);
+            variantQuery.sample(sampleNames);
         } else {
             variantQuery.includeSample(sampleNames);
         }
         VariantDBReader reader = new VariantDBReader(engine.getDBAdaptor(), variantQuery, variantOptions);
-        Task<Variant, SampleIndexEntry> task = new SampleIndexEntryConverter(sampleIndexDBAdaptor, studyId, sampleIds, options, schema);
+        Task<Variant, SampleIndexEntry> task = new SampleGenotypeIndexerTask(sampleIndexDBAdaptor, studyId, sampleIds, options, schema);
         MongoDBSampleIndexEntryWriter writer = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, schema, options);
 
         // Note: Using a single task
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(1)
-                .setSorted(true)
+                .setSorted(false)
                 .setBatchSize(10).build();
-        new ParallelTaskRunner<>(reader,
-                task,
+        ParallelTaskRunner<Variant, SampleIndexEntry> ptr = new ParallelTaskRunner<>(reader,
+                task.then(progressLogger.asTask()),
                 writer, config);
+
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new StorageEngineException("Error building sample genotype index", e);
+        }
 
     }
 

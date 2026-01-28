@@ -38,6 +38,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
  */
 public class DocumentToVariantConverter extends AbstractDocumentConverter implements ComplexTypeConverter<Variant, Document> {
 
+    public static final String ID_FIELD = "id";
     public static final String CHROMOSOME_FIELD = "chromosome";
     public static final String START_FIELD = "start";
     public static final String END_FIELD = "end";
@@ -122,7 +123,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(
                 STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        map.put(VariantField.ANNOTATION, Arrays.asList(JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
+        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
 //        map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
 //        map.put(VariantField.ANNOTATION_ID, emptyList());
 //        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
@@ -352,7 +353,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
     public Document convertToStorageType(Variant variant) {
         // Attributes easily calculated
         Document mongoVariant = new Document("_id", buildStorageId(variant))
-//                .append(IDS_FIELD, object.getIds())    //Do not include IDs.
+                .append(ID_FIELD, variant.toString())    //Do not include IDs.
                 .append(CHROMOSOME_FIELD, variant.getChromosome())
                 .append(START_FIELD, variant.getStart())
                 .append(END_FIELD, variant.getEnd())
@@ -403,8 +404,11 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                 + VariantMongoDBAdaptor.CHUNK_SIZE_SMALL / 1000 + "k";
         String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_BIG + "_"
                 + VariantMongoDBAdaptor.CHUNK_SIZE_BIG / 1000 + "k";
+        String chunkLarge = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_LARGE + "_"
+                + VariantMongoDBAdaptor.CHUNK_SIZE_LARGE / 1000 + "k";
         chunkIds.add(chunkSmall);
         chunkIds.add(chunkBig);
+        chunkIds.add(chunkLarge);
         at.append(CHUNK_IDS_FIELD, chunkIds);
 
         // Files
