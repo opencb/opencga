@@ -89,9 +89,31 @@ public class IOUtilsTest {
     @Test
     public void fromHumanReadableToByte_ValidInputWithBinaryUnits_ReturnsCorrectBytes() {
         assertEquals(1048576, IOUtils.fromHumanReadableToByte("1Mi"));
+        assertEquals(1048576, IOUtils.fromHumanReadableToByte("1MiB"));
+        assertEquals(1048576, IOUtils.fromHumanReadableToByte("1Mib"));
+        assertEquals(1048576, IOUtils.fromHumanReadableToByte("1 MiB"));
         assertEquals(1073741824, IOUtils.fromHumanReadableToByte("1Gi"));
         assertEquals(1099511627776L, IOUtils.fromHumanReadableToByte("1Ti"));
     }
+
+    // Test to check that works in both directions "fromHumanReadableToByte" and "humanReadableByteCount" for exact powers of 1024
+    @Test
+    public void fromHumanReadableToByte_And_ToHumanReadableSize_ExactPowersOf1024() {
+        String[] units = {"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"};
+        long bytes = 1;
+        for (String unit : units) {
+            String humanReadable = IOUtils.humanReadableByteCount(bytes, IOUtils.ByteUnitSystem.BINARY_IEC, null);
+            if (unit.equals("B")) {
+                Assert.assertEquals("1 B", humanReadable);
+            } else {
+                Assert.assertEquals("1.0 " + unit, humanReadable);
+            }
+            long parsedBytes = IOUtils.fromHumanReadableToByte(humanReadable);
+            Assert.assertEquals(bytes, parsedBytes);
+            bytes *= 1024;
+        }
+    }
+
 
     @Test
     public void fromHumanReadableToByte_InvalidInput_ThrowsNumberFormatException() {
@@ -101,6 +123,19 @@ public class IOUtilsTest {
     @Test
     public void fromHumanReadableToByte_NullInput_ThrowsNullPointerException() {
         assertThrows(NullPointerException.class, () -> IOUtils.fromHumanReadableToByte(null));
+    }
+
+    @Test
+    public void toHumanReadableSize_ValidInput_ReturnsCorrectString() {
+        assertEquals("1.0 KiB", IOUtils.humanReadableByteCount(1024, IOUtils.ByteUnitSystem.BINARY_IEC, 10));
+        // Do not round up
+        assertEquals("1064 B", IOUtils.humanReadableByteCount(1064, IOUtils.ByteUnitSystem.BINARY_IEC, 10));
+
+        assertEquals("2g", IOUtils.humanReadableByteCount((int) (1.5 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, null));
+        assertEquals("1.5Gi", IOUtils.humanReadableByteCount((int) (1.5 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.KUBERNETES, null));
+        assertEquals("1537m", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 1024 * 1024 * 10));
+        assertEquals("1573913k", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 1024*10));
+        assertEquals("1611686477", IOUtils.humanReadableByteCount((int) (1.501 * 1024 * 1024 * 1024), IOUtils.ByteUnitSystem.JAVA_STYLE, 10));
     }
 
     @Test

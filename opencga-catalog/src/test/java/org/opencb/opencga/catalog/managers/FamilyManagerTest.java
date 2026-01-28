@@ -1130,8 +1130,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", -1, Collections.emptyList(), Collections.emptyMap
                 ());
 
-        DataResult<Family> familyDataResult = familyManager.create(studyFqn, family, INCLUDE_RESULT, ownerToken);
-        assertEquals(4, familyDataResult.first().getMembers().size());
+        familyManager.create(studyFqn, family, INCLUDE_RESULT, ownerToken);
     }
 
     @Test

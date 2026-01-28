@@ -73,8 +73,6 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         ANALYSTS_ASSIGNED_BY("analysts.assignedBy", TEXT, ""),
         REPORT("report", OBJECT, ""),
         REPORT_UPDATE("report_update", OBJECT, ""),   // Made up key to be able to set inner fields and not the entire object
-        REPORT_SUPPORTING_EVIDENCES("report.supportingEvidences", TEXT_ARRAY, ""),
-        REPORT_FILES("report.files", TEXT_ARRAY, ""),
         REQUEST("request", OBJECT, ""),
         RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
@@ -95,6 +93,8 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", LONG_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         FILES_UID("files.uid", LONG_ARRAY, ""),
+        REPORTED_FILES("reportedFiles", TEXT_ARRAY, ""),
+        REPORTED_FILES_UID("reportedFiles.uid", LONG_ARRAY, ""),
         FILES_PATH("files.path", TEXT_ARRAY, ""),
         PANELS("panels", TEXT_ARRAY, ""),
         PANELS_UID("panels.uid", LONG_ARRAY, ""),
@@ -168,16 +168,20 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
     }
 
     enum ReportQueryParams implements QueryParam {
-        TITLE("title", STRING, ""),
         OVERVIEW("overview", STRING, ""),
         DISCUSSION("discussion", OBJECT, ""),
-        LOGO("logo", STRING, ""),
-        SIGNED_BY("signedBy", STRING, ""),
-        SIGNATURE("signature", STRING, ""),
+        RECOMMENDATION("recommendation", STRING, ""),
+        METHODOLOGY("methodology", STRING, ""),
+        LIMITATIONS("limitations", STRING, ""),
+        EXPERIMENTAL_PROCEDURE("experimentalProcedure", STRING, ""),
+        CONCLUSION("conclusion", OBJECT, ""),
+        SIGNATURES("signatures", OBJECT, ""),
+        SIGNATURES_SIGNED_BY("signatures.signedBy", STRING, ""),
         DATE("date", STRING, ""),
         COMMENTS("comments", OBJECT, ""),
-        SUPPORTING_EVIDENCES("supportingEvidences", TEXT_ARRAY, ""),
-        FILES("files", TEXT_ARRAY, "");
+        REFERENCES("references", OBJECT, ""),
+        IMAGES("images", OBJECT, ""),
+        ATTRIBUTES("attributes", TEXT, ""); // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
         private static Map<String, ReportQueryParams> map;
 
@@ -238,8 +242,8 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList,
-                         List<ClinicalAudit> clinicalAuditList, QueryOptions options) throws CatalogException;
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogException;
 
     OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<VariableSet> variableSetList,
                                            List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)

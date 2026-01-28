@@ -13,7 +13,11 @@ public class ClinicalAnalysisStudyConfiguration {
     private InterpretationStudyConfiguration interpretation;
     private List<ClinicalPriorityValue> priorities;
     private List<FlagValue> flags;
+    @Deprecated
     private ClinicalConsentConfiguration consent;
+    private List<ClinicalConsent> consents;
+    private List<ClinicalTierConfiguration> tiers;
+    private ClinicalReportConfiguration report;
 
 
     public ClinicalAnalysisStudyConfiguration() {
@@ -21,43 +25,60 @@ public class ClinicalAnalysisStudyConfiguration {
 
     public ClinicalAnalysisStudyConfiguration(List<ClinicalStatusValue> status, InterpretationStudyConfiguration interpretation,
                                               List<ClinicalPriorityValue> priorities, List<FlagValue> flags,
-                                              ClinicalConsentConfiguration consent) {
+                                              List<ClinicalConsent> consents, List<ClinicalTierConfiguration> tiers,
+                                              ClinicalReportConfiguration report) {
         this.status = status;
         this.interpretation = interpretation;
         this.priorities = priorities;
         this.flags = flags;
-        this.consent = consent;
+        this.consents = consents;
+        this.tiers = tiers;
+        this.report = report;
     }
 
     public static ClinicalAnalysisStudyConfiguration defaultConfiguration() {
-        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(4);
-        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
+        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(8);
+        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(6);
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
         List<ClinicalConsent> clinicalConsentList = new ArrayList<>();
+        List<ClinicalTierConfiguration> clinicalTierConfigurationList = new ArrayList<>(3);
 
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("READY_FOR_INTERPRETATION", "The Clinical Analysis is ready for interpretations",
                         ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)
         );
         clinicalStatusValueList.add(
-                new ClinicalStatusValue("READY_FOR_REPORT", "The Interpretation is finished and it is to create the report",
+                new ClinicalStatusValue("IN_PROGRESS", "The Clinical Analysis is in progress",
+                        ClinicalStatusValue.ClinicalStatusType.ACTIVE)
+        );
+        clinicalStatusValueList.add(
+                new ClinicalStatusValue("QUALITY_CONTROL", "The Clinical Analysis is in quality control",
                         ClinicalStatusValue.ClinicalStatusType.ACTIVE)
         );
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("DONE", "The Clinical Analysis is done", ClinicalStatusValue.ClinicalStatusType.DONE)
         );
         clinicalStatusValueList.add(
+                new ClinicalStatusValue("UNDER_REVIEW", "The Clinical Analysis is under review",
+                        ClinicalStatusValue.ClinicalStatusType.DONE)
+        );
+        clinicalStatusValueList.add(
                 new ClinicalStatusValue("CLOSED", "The Clinical Analysis is closed", ClinicalStatusValue.ClinicalStatusType.CLOSED)
         );
         clinicalStatusValueList.add(
-                new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED)
+                new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.REJECTED)
+        );
+        clinicalStatusValueList.add(
+                new ClinicalStatusValue("INCONCLUSIVE", "No conclusions can be extracted from the Clinical Analysis",
+                        ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)
         );
 
         interpretationStatusList.add(new ClinicalStatusValue("NOT_STARTED", "Interpretation not started", ClinicalStatusValue.ClinicalStatusType.NOT_STARTED));
         interpretationStatusList.add(new ClinicalStatusValue("IN_PROGRESS", "Interpretation in progress", ClinicalStatusValue.ClinicalStatusType.ACTIVE));
         interpretationStatusList.add(new ClinicalStatusValue("DONE", "Interpretation done", ClinicalStatusValue.ClinicalStatusType.DONE));
         interpretationStatusList.add(new ClinicalStatusValue("READY", "Interpretation ready", ClinicalStatusValue.ClinicalStatusType.CLOSED));
-        interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        interpretationStatusList.add(new ClinicalStatusValue("INCONCLUSIVE", "Interpretation inconclusive", ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE));
+        interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.REJECTED));
 
         priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1, false));
         priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2, false));
@@ -79,9 +100,17 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", ""));
         clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_1", "The most relevant findings,"
+                + " usually related to the main clinical question", 1));
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_2", "Relevant findings, but not related to the main"
+                + " clinical question", 2));
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_3", "Findings that are not relevant for the clinical question"
+                + " and not related to the main clinical question", 3));
+
         return new ClinicalAnalysisStudyConfiguration(clinicalStatusValueList,
                 new InterpretationStudyConfiguration(interpretationStatusList, Collections.emptyList(), Collections.emptyMap(),
-                        Collections.emptyList()), priorities, flagValueList, new ClinicalConsentConfiguration(clinicalConsentList));
+                        Collections.emptyList()), priorities, flagValueList, clinicalConsentList, clinicalTierConfigurationList,
+                ClinicalReportConfiguration.defaultClinicalReportConfiguration());
     }
 
     @Override
@@ -91,7 +120,9 @@ public class ClinicalAnalysisStudyConfiguration {
         sb.append(", interpretation=").append(interpretation);
         sb.append(", priorities=").append(priorities);
         sb.append(", flags=").append(flags);
-        sb.append(", consent=").append(consent);
+        sb.append(", consents=").append(consents);
+        sb.append(", tiers=").append(tiers);
+        sb.append(", report=").append(report);
         sb.append('}');
         return sb.toString();
     }
@@ -132,12 +163,41 @@ public class ClinicalAnalysisStudyConfiguration {
         return this;
     }
 
+    @Deprecated
     public ClinicalConsentConfiguration getConsent() {
-        return consent;
+        return new ClinicalConsentConfiguration(consents);
     }
 
+    @Deprecated
     public ClinicalAnalysisStudyConfiguration setConsent(ClinicalConsentConfiguration consent) {
-        this.consent = consent;
+        this.consents = consent.getConsents();
+        return this;
+    }
+
+    public List<ClinicalConsent> getConsents() {
+        return consents;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setConsents(List<ClinicalConsent> consents) {
+        this.consents = consents;
+        return this;
+    }
+
+    public List<ClinicalTierConfiguration> getTiers() {
+        return tiers;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setTiers(List<ClinicalTierConfiguration> tiers) {
+        this.tiers = tiers;
+        return this;
+    }
+
+    public ClinicalReportConfiguration getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setReport(ClinicalReportConfiguration report) {
+        this.report = report;
         return this;
     }
 }

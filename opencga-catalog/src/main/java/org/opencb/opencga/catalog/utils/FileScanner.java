@@ -302,7 +302,7 @@ public class FileScanner {
 
                             InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(uri)));
                             file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                                    new File().setPath(filePath), overwrite, true, calculateChecksum, sessionId).first();
+                                    new File().setPath(filePath), overwrite, true, sessionId).first();
                             if (deleteSource) {
                                 ioManager.deleteFile(uri);
                             }
@@ -326,7 +326,7 @@ public class FileScanner {
 
                             InputStream inputStream = new FileInputStream(new java.io.File(uri));
                             file = catalogManager.getFileManager().upload(study.getFqn(), inputStream, file, overwrite,
-                                    true, calculateChecksum, sessionId).first();
+                                    true, sessionId).first();
 
                             long end = System.currentTimeMillis();
                             uploadFilesTime += end - start;

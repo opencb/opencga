@@ -41,6 +41,7 @@ import java.util.*;
 public class ToolFactory {
     private static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
     private static Map<String, Class<? extends OpenCgaTool>> toolsCache;
+    private static Set<String> toolsCachePackages;
     private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
     private static List<Class<? extends OpenCgaTool>> toolsList;
 
@@ -60,7 +61,7 @@ public class ToolFactory {
     }
 
     private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools(List<String> packages) {
-        if (toolsCache == null) {
+        if (isCacheOutdated(packages)) {
             Reflections reflections = new Reflections(new ConfigurationBuilder()
                     .setScanners(
                             new SubTypesScanner(),
@@ -104,9 +105,31 @@ public class ToolFactory {
             ToolFactory.toolsList = Collections.unmodifiableList(toolsList);
             ToolFactory.duplicatedTools = Collections.unmodifiableMap(duplicatedTools);
             ToolFactory.toolsCache = cache;
+            // And add packages to the cache
+            if (ToolFactory.toolsCachePackages == null) {
+                ToolFactory.toolsCachePackages = new HashSet<>();
+            }
+            ToolFactory.toolsCachePackages.addAll(packages);
         }
         return toolsCache;
     }
+
+    private static boolean isCacheOutdated(List<String> packages) {
+        if (toolsCache == null || toolsCachePackages == null) {
+            // Cache is empty
+            return true;
+        }
+
+        Set<String> packageSet = new HashSet<>(packages);
+        if (!toolsCachePackages.containsAll(packageSet)) {
+            // There is at least one package missing in the cache
+            return true;
+        }
+
+        // Cache is up to date
+        return false;
+    }
+
     static Collection<URL> getUrlsFromPackages(List<String> packages) {
         Collection<URL> urls = new LinkedList<>();
         for (String pack :packages){

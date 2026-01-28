@@ -52,7 +52,7 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
     @JsonIgnore
     public URI getURI() {
-        return UriUtils.createUriSafe(path);
+        return UriUtils.toUri(path);
     }
 
     public FileMetadata setPath(String path) {

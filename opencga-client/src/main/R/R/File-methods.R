@@ -39,6 +39,7 @@
 #' | unlink | /{apiVersion}/files/{files}/unlink | study, files[*] |
 #' | update | /{apiVersion}/files/{files}/update | include, exclude, files[*], study, sampleIdsAction, annotationSetsAction, relatedFilesAction, tagsAction, body[*] |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update | file[*], study, annotationSet[*], action, body |
+#' | updateContent | /{apiVersion}/files/{file}/content/update | study, file[*], body[*] |
 #' | download | /{apiVersion}/files/{file}/download | file[*], study |
 #' | grep | /{apiVersion}/files/{file}/grep | file[*], study, pattern, ignoreCase, maxCount |
 #' | head | /{apiVersion}/files/{file}/head | file[*], study, offset, lines |
@@ -259,10 +260,10 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param file File to upload.
         #' @param name File name to overwrite the input fileName.
         #' @param fileName [DEPRECATED] File name to overwrite the input fileName.
-        #' @param format File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
-        #' @param fileFormat [DEPRECATED] File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
+        #' @param format File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN']
+        #' @param fileFormat [DEPRECATED] File format. Allowed values: ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN']
         #' @param bioformat File bioformat. Allowed values: ['MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 CVDB VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN']
-        #' @param checksum Expected MD5 file checksum.
+        #' @param checksum Expected SHA-256 file checksum.
         #' @param resource Boolean field indicating whether the file is a resource or not.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param relativeFilePath Path within catalog (directory) where the file will be located (default: root folder).
@@ -337,6 +338,14 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         updateAnnotationSetsAnnotations=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file,
                 subcategory="annotationSets", subcategoryId=annotationSet, action="annotations/update", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/files/{file}/content/update:
+        #' Overwrite the content of a file.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param file File id or name.
+        #' @param data File parameters.
+        updateContent=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file, subcategory="content",
+                subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/files/{file}/download:
         #' Download file.

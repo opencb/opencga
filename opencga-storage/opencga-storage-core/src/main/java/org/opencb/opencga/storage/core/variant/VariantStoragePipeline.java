@@ -71,7 +71,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -170,19 +169,27 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
                 return existingStudyMetadata;
             });
-            if (options.getBoolean(FORCE.key())) {
-                Integer fileId = getMetadataManager().getFileId(studyMetadata.getId(), fileName, true);
-                if (fileId != null) {
-                    // File is indexed. Mark as non indexed.
-                    FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId);
-                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
-                        throw StorageEngineException.invalidFileStatus(fileId, fileName);
-                    } else if (fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE) {
+
+            Integer fileId = getMetadataManager().getFileId(studyMetadata.getId(), input, false);
+            if (fileId != null) {
+                // File already registered. Check status
+                FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId);
+                TaskMetadata.Status indexStatus = fileMetadata.getIndexStatus();
+                if (indexStatus == TaskMetadata.Status.INVALID) {
+                    throw StorageEngineException.invalidFileStatus(fileId, fileName);
+                }
+                if (options.getBoolean(FORCE.key())) {
+                    // File already exists indexed. Mark as non indexed.
+                    if (indexStatus != TaskMetadata.Status.NONE) {
                         getMetadataManager().updateFileMetadata(studyMetadata.getId(), fileId, fm -> {
                             fm.setIndexStatus(TaskMetadata.Status.NONE);
                         });
+                        logger.info("File '{}' already loaded (indexStatus : {}). Force reload!", fileName, indexStatus);
                     }
-                    logger.info("File '{}' already loaded. Force reload!", fileName);
+                } else {
+                    if (fileMetadata.isIndexed()) {
+                        throw StorageEngineException.alreadyLoaded(fileId, fileName);
+                    }
                 }
             }
             if (VariantStorageEngine.SplitData.isPartialSplit(options)
@@ -586,8 +593,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (splitData != null) {
                 logger.info("Loading split data");
             } else {
-                String fileName = Paths.get(variantFileMetadata.getPath()).getFileName().toString();
-                throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
+                throw StorageEngineException.alreadyLoadedSamples(fileMetadata.getName(), new ArrayList<>(alreadyIndexedSamples));
             }
             for (Integer sampleId : processedSamples) {
                 getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {

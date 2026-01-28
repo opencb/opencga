@@ -272,7 +272,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     private void catalogUploadFile(String path) throws IOException, CatalogException {
         try (InputStream inputStream = getClass().getResource(path).openStream()) {
             catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(path).getFileName().toString()), false, true, false, token);
+                    new File().setPath(Paths.get(path).getFileName().toString()), false, true, token);
         }
     }
 
@@ -309,6 +309,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     private Individual getMamuel() {
         return new Individual().setId(PROBAND_ID2)
                 .setPhenotypes(getPhenotypes())
+                .setDisorders(Collections.singletonList(getDisorder()))
                 .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID2.split("_")[0])));
     }
@@ -418,8 +419,8 @@ public class AbstractClinicalManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, ca, INCLUDE_RESULT, token).first();
 
         try (InputStream inputStream = Files.newInputStream(vcfPath)) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream, new File().setPath(vcfPath.getFileName().toString()),
-                    false, true, false, token);
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(vcfPath.getFileName().toString()), false, true, token);
         }
     }
 }

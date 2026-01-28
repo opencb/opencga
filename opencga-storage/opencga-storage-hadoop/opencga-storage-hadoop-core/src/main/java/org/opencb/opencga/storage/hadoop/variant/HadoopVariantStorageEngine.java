@@ -231,7 +231,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         // Get latest study metadata from DB, might have been changed since
                         StudyMetadata studyMetadata = storageETL.getStudyMetadata();
                         // Get file ID for the provided file name
-                        Integer fileId = storageETL.getMetadataManager().getFileId(studyMetadata.getId(), fileName);
+                        Integer fileId = storageETL.getMetadataManager().getFileId(studyMetadata.getId(), filePath);
                         indexedFiles.add(fileId);
                     }
                     return storagePipelineResult;
@@ -1154,6 +1154,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             service.awaitTermination(10, TimeUnit.DAYS);
             if (!samplesToRebuildIndex.isEmpty()) {
                 logger.info("Rebuild sample index for samples " + samplesToRebuildIndex);
+                List<Trio> samplesToRebuildFamilyIndex = new ArrayList<>();
                 for (String sample : samplesToRebuildIndex) {
                     int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
                     getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
@@ -1161,15 +1162,33 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                             sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, v);
                         }
                         for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
-                            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                            if (sampleMetadata.getSampleIndexAnnotationStatus(v) == TaskMetadata.Status.READY) {
+                                sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                            }
                         }
+                        boolean hasReadyFamilyIndex = false;
                         for (int v : sampleMetadata.getFamilyIndexVersions()) {
-                            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                            if (sampleMetadata.getFamilyIndexStatus(v) == TaskMetadata.Status.READY) {
+                                hasReadyFamilyIndex = true;
+                                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                            }
+                        }
+                        if (hasReadyFamilyIndex) {
+                            String fatherName = sampleMetadata.getFather() != null
+                                    ? getMetadataManager().getSampleName(studyId, sampleMetadata.getFather())
+                                    : null;
+                            String motherName = sampleMetadata.getMother() != null
+                                    ? getMetadataManager().getSampleName(studyId, sampleMetadata.getMother())
+                                    : null;
+                            samplesToRebuildFamilyIndex.add(new Trio(fatherName, motherName, sampleMetadata.getName()));
                         }
                     });
                 }
                 sampleIndex(study, samplesToRebuildIndex, options);
                 sampleIndexAnnotate(study, samplesToRebuildIndex, options);
+                if (!samplesToRebuildFamilyIndex.isEmpty()) {
+                    familyIndex(study, samplesToRebuildFamilyIndex, options);
+                }
             }
 
             logger.info("------------------------------------------------------");

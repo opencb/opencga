@@ -5,6 +5,8 @@ import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
+import java.util.List;
+
 public class SampleIndexVariantAnnotation {
 
     private boolean hasSummaryIndex;
@@ -251,5 +253,16 @@ public class SampleIndexVariantAnnotation {
                                 getCtIndex(),
                                 getBtIndex(),
                                 getTfIndex()));
+        sb.append(separator).append("clinical: ");
+        if (hasClinical()) {
+            sb.append(getClinicalIndex());
+            List<String> sources = schema.getClinicalIndexSchema().getSourceField().readAndDecode(getClinicalIndex());
+            sb.append(" : ").append(sources);
+            List<String> clinicalSignificances
+                    = schema.getClinicalIndexSchema().getClinicalSignificanceField().readAndDecode(getClinicalIndex());
+            sb.append(separator).append("clinicalSignificance: ").append(clinicalSignificances);
+        } else {
+            sb.append("null");
+        }
     }
 }

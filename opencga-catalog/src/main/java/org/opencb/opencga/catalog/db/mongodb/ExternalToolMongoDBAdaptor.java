@@ -486,8 +486,8 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                 andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.EXTERNAL_TOOL, user,
                         simplifyPermissions));
             } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ExternalToolPermissions.VIEW.name(),
-                            Enums.Resource.EXTERNAL_TOOL, simplifyPermissions));
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ExternalToolPermissions.VIEW.name(),
+                        Enums.Resource.EXTERNAL_TOOL, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);

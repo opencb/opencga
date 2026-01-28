@@ -507,6 +507,9 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 QueryParams.EXECUTION_EVENTS.key(), QueryParams.EXECUTION_ATTRIBUTES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
+        String[] acceptedDateParams = {QueryParams.EXECUTION_START.key(), QueryParams.EXECUTION_END.key()};
+        filterLongParams(parameters, document.getSet(), acceptedDateParams);
+
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {
             List<String> studyFqns = new LinkedList<>();
             studyFqns.add(parameters.getString(QueryParams.STUDY_ID.key()));

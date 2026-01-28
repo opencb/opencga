@@ -2293,7 +2293,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             }
         } else {
-            getFileIdOrDuplicated(studyId, filePath);
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
                 logger.info("Register new file '{}' with id {}", fileName, fileId);

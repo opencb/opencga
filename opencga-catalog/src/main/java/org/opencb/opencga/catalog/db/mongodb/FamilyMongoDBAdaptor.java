@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -54,7 +53,6 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.family.FamilyStatus;
-import org.opencb.opencga.core.models.family.PedigreeGraph;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -62,8 +60,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -205,14 +201,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Map<String, Map<String, Family.FamiliarRelationship>> roles = calculateRoles(clientSession, studyUid, family);
         family.setRoles(roles);
 
-        // Pedigree graph
-        try {
-            PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, Paths.get(configuration.getWorkspace()).getParent(),
-                    Paths.get(configuration.getAnalysis().getScratchDir()));
-            family.setPedigreeGraph(pedigreeGraph);
-        } catch (IOException e) {
-            throw new CatalogDBException("Error computing pedigree graph for family " + family.getId(), e);
-        }
+        // Pedigree graph should already be calculated by FamilyManager before calling this method
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -320,6 +309,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public OpenCGAResult update(long familyUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return update(familyUid, parameters, variableSetList, queryOptions, true);
+    }
+
+    @Override
+    public OpenCGAResult<Family> update(long familyUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions,
+                                        boolean incrementVersion)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
                         QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
@@ -330,8 +326,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         try {
-            return runTransaction(clientSession
-                    -> transactionalUpdate(clientSession, familyDataResult.first(), parameters, variableSetList, queryOptions));
+            return runTransaction(clientSession -> transactionalUpdate(clientSession, familyDataResult.first(), parameters,
+                    variableSetList, queryOptions, incrementVersion));
         } catch (CatalogException e) {
             logger.error("Could not update family {}: {}", familyDataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update family " + familyDataResult.first().getId() + ": " + e.getMessage(),
@@ -404,7 +400,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     variableSetList, queryOptions, true);
             List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
             boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
-            boolean updatePedigree = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM);
             if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
                 List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
                 Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID
@@ -452,10 +447,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 }
             }
 
-            if (updatePedigree && !updateRoles && !parameters.containsKey(QueryParams.DISORDERS.key())) {
-                PedigreeGraph pedigreeGraph = computePedigreeGraph(clientSession, family);
-                parameters.put(QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraph);
-            }
+            // Pedigree graph should already be calculated by FamilyManager and included in parameters if needed
 
             Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
 
@@ -473,16 +465,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 logger.debug("Family update: query : {}, update: {}", finalQuery.toBsonDocument(), familyUpdate.toBsonDocument());
                 result = familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
 
-                // Compute pedigree graph
-                if (updateRoles || parameters.containsKey(QueryParams.DISORDERS.key())) {
-                    PedigreeGraph pedigreeGraph = computePedigreeGraph(clientSession, family);
-                    Document pedigreeGraphDoc = getMongoDBDocument(pedigreeGraph, "PedigreeGraph");
-
-                    UpdateDocument updateDocument = new UpdateDocument()
-                            .setSet(new Document(QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraphDoc));
-                    familyUpdate = updateDocument.toFinalUpdateDocument();
-                    familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
-                }
+                // Pedigree graph is now calculated in FamilyManager before calling update
 
                 if (parameters.containsKey(QueryParams.ID.key())) {
                     String newFamilyId = parameters.getString(QueryParams.ID.key());
@@ -554,23 +537,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
     }
 
-    private PedigreeGraph computePedigreeGraph(ClientSession clientSession, Family family)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query()
-                .append(QueryParams.UID.key(), family.getUid())
-                .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
-        Family tmpFamily = get(clientSession, query, QueryOptions.empty()).first();
-
-        try {
-            return PedigreeGraphUtils.getPedigreeGraph(tmpFamily,
-                    Paths.get(configuration.getWorkspace()).getParent(),
-                    Paths.get(configuration.getAnalysis().getScratchDir()));
-        } catch (IOException e) {
-            String msg = "Error computing/updating the pedigree graph for the family " + family.getId();
-            logger.error(msg);
-            throw new CatalogDBException(msg, e);
-        }
-    }
 
     private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, DBIterator<Family> iterator)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {

@@ -20,6 +20,8 @@ make_env
 *.so.*
 *.out
 *.log
+*.error
+*.errors
 *.zip
 # Maven
 target/

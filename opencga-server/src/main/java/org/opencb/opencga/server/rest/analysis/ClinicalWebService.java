@@ -34,6 +34,9 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.rga.RgaQueryParams;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy.AffyClinicalPipelineWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.GenomicsClinicalPipelineWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.PrepareClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
@@ -47,6 +50,9 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -244,6 +250,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("analystsAction") ParamUtils.BasicUpdateAction analystsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
+            @ApiParam(value = "Action to be performed if the array of reported files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("reportedFilesAction") ParamUtils.BasicUpdateAction reportedFilesAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
@@ -263,6 +271,9 @@ public class ClinicalWebService extends AnalysisWebService {
             if (filesAction == null) {
                 filesAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (reportedFilesAction == null) {
+                reportedFilesAction = ParamUtils.BasicUpdateAction.ADD;
+            }
             if (panelsAction == null) {
                 panelsAction = ParamUtils.BasicUpdateAction.ADD;
             }
@@ -275,6 +286,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), flagsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), filesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.REPORTED_FILES.key(), reportedFilesAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.ANALYSTS.key(), analystsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
@@ -290,37 +302,37 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update clinical analysis report", response = ClinicalReport.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query")
     })
     public Response updateReport(
             @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD")
             @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
-            @ApiParam(value = "Action to be performed if the array of supporting evidences is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("supportingEvidencesAction") ParamUtils.BasicUpdateAction supportingEvidencesAction,
-            @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "Action to be performed if the array of signatures is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("signaturesAction") ParamUtils.BasicUpdateAction signaturesAction,
+            @ApiParam(value = "Action to be performed if the array of references is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("referencesAction") ParamUtils.BasicUpdateAction referencesAction,
+            @ApiParam(value = INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical report information", required = true) ClinicalReport params) {
         try {
             if (commentsAction == null) {
                 commentsAction = ParamUtils.AddRemoveReplaceAction.ADD;
             }
-            if (supportingEvidencesAction == null) {
-                supportingEvidencesAction = ParamUtils.BasicUpdateAction.ADD;
+            if (referencesAction == null) {
+                referencesAction = ParamUtils.BasicUpdateAction.ADD;
             }
-            if (filesAction == null) {
-                filesAction = ParamUtils.BasicUpdateAction.ADD;
+            if (signaturesAction == null) {
+                signaturesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.COMMENTS.key(), commentsAction);
-            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), supportingEvidencesAction);
-            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), filesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.REFERENCES.key(), referencesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SIGNATURES.key(), signaturesAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(clinicalManager.updateReport(studyStr, clinicalAnalysisStr, params, queryOptions, token));
@@ -1462,6 +1474,8 @@ public class ClinicalWebService extends AnalysisWebService {
         return submitJob(study, JobType.NATIVE_TOOL, CancerTieringInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
+    //-------------------------------------------------------------------------
+
     @POST
     @Path("/interpreter/rd/run")
     @ApiOperation(value = RdInterpretationAnalysisTool.DESCRIPTION, response = Job.class)
@@ -1519,5 +1533,61 @@ public class ClinicalWebService extends AnalysisWebService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    // P I P E L I N E : prepare, genomics and affy
+    //-------------------------------------------------------------------------
+
+    @POST
+    @Path("/pipeline/prepare/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = PrepareClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response pipelinePrepareRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + PrepareClinicalPipelineWrapperAnalysis.ID, required = true) PrepareClinicalPipelineWrapperParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, PrepareClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
+                jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/pipeline/genomics/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response pipelineGenomicsRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + GenomicsClinicalPipelineWrapperAnalysis.ID, required = true) GenomicsClinicalPipelineWrapperParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, GenomicsClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/pipeline/affy/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response pipelineAffyRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + AffyClinicalPipelineWrapperAnalysis.ID, required = true) AffyClinicalPipelineWrapperParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, AffyClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

@@ -222,7 +222,7 @@ public abstract class VariantAnnotationManager {
     }
 
     /**
-     * Check if two DataRelease are equal.
+     * Check if two data releases are equal.
      *
      * Fields to compare:
      * - release
@@ -234,9 +234,9 @@ public abstract class VariantAnnotationManager {
      * - active
      * - activeByDefaultIn
      *
-     * @param current Current DataRelease
-     * @param other Other DataRelease
-     * @return true if both DataRelease are equal
+     * @param current Current data release
+     * @param other Other data release
+     * @return true if both data release are equal
      */
     public static boolean dataReleaseEquals(DataRelease current, DataRelease other) {
         return current.getRelease() == other.getRelease()

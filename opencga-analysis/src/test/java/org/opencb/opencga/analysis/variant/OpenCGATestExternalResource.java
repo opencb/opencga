@@ -297,6 +297,11 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // NGS pipeline analysis
+        Path srcPath = Paths.get("../opencga-app/app/analysis/ngs-pipeline/").toAbsolutePath();
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline")).toAbsolutePath();
+        installAppFiles(srcPath, analysisPath);
+
         // Tiering analysis
         String filename = "tiering-configuration.yml";
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/tiering")).toAbsolutePath();
@@ -312,6 +317,21 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         return opencgaHome;
+    }
+
+    private void installAppFiles(Path srcPath, Path destPath) throws IOException {
+        if (!Files.exists(destPath)) {
+            Files.createDirectory(destPath);
+        }
+
+        for (java.io.File file: srcPath.toFile().listFiles()) {
+            Path dest = destPath.resolve(file.getName());
+            if (Files.isDirectory(file.toPath())) {
+                installAppFiles(file.toPath(), dest);
+            } else {
+                Files.copy(file.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
     }
 
     public File createFile(String studyId, String resourceName, String sessionId) throws IOException, CatalogException {
