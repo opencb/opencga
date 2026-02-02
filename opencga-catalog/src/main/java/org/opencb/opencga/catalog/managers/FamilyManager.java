@@ -1108,8 +1108,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())
                 || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key());
 
-        OpenCGAResult<Family> update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(),
-                options);
+        OpenCGAResult<Family> update;
+        if (!parameters.isEmpty()) {
+             update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(), options);
+        } else if (needsPedigreeRecalculation) {
+            update = OpenCGAResult.empty(Family.class);
+        } else {
+            throw new CatalogException("Nothing to update.");
+        }
 
         // Asynchronously calculate pedigree graph if needed after successful update
         // This avoids transaction timeout issues and ensures pedigree is calculated with complete persisted data
