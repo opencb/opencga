@@ -1416,8 +1416,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED
                 || updateParamsClone.getLocked() != null
                 || updateParams.getPanelLocked() != null
-                || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
-                || doneStatus.contains(updateParams.getStatus().getId())))) {
+                || (updateParams.getStatus() != null
+                && (closedStatus.contains(updateParams.getStatus().getId())
+                || doneStatus.contains(updateParams.getStatus().getId())
+                || inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId())))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
 
