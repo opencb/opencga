@@ -114,6 +114,14 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
     protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
+
+    // Final status types that require ADMIN permissions and trigger auto-locking
+    private static final Set<ClinicalStatusValue.ClinicalStatusType> FINAL_STATUS_TYPES = EnumSet.of(
+            ClinicalStatusValue.ClinicalStatusType.CLOSED,
+            ClinicalStatusValue.ClinicalStatusType.REJECTED,
+            ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+    );
+
     private UserManager userManager;
     private StudyManager studyManager;
 
@@ -615,27 +623,31 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (clinicalAnalysis.getStatus().getId().equals(clinicalStatusValue.getId())) {
-                        if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
-                            String msg = "Case '" + clinicalAnalysis.getId() + "' created with status '"
-                                    + clinicalAnalysis.getStatus().getId() + "', which is of type "
-                                    + ClinicalStatusValue.ClinicalStatusType.CLOSED + ". Automatically locking ClinicalAnalysis and"
-                                    + " setting CVDB index status to PENDING.";
-                            logger.info(msg);
-                            clinicalAnalysis.setLocked(true);
-
-                            CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
-                                    + "' created case with status '" + clinicalAnalysis.getStatus().getId() + "', which is of type"
-                                    + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING);
-                            clinicalAnalysis.getInternal().setCvdbIndex(cvdbIndexStatus);
-
-                            events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
-                        } else if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                                || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
+                        if (FINAL_STATUS_TYPES.contains(clinicalStatusValue.getType())) {
                             String msg = "Case '" + clinicalAnalysis.getId() + "' created with status '"
                                     + clinicalAnalysis.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
-                                    + ". Automatically locking ClinicalAnalysis.";
+                                    + ". Automatically locking ClinicalAnalysis and all Interpretations.";
                             logger.info(msg);
                             clinicalAnalysis.setLocked(true);
+
+                            // Lock primary interpretation if exists
+                            if (clinicalAnalysis.getInterpretation() != null) {
+                                clinicalAnalysis.getInterpretation().setLocked(true);
+                            }
+                            // Lock secondary interpretations if exist
+                            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                                for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                                    interpretation.setLocked(true);
+                                }
+                            }
+
+                            // Only set CVDB index status for CLOSED type
+                            if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                                        + "' created case with status '" + clinicalAnalysis.getStatus().getId() + "', which is of type"
+                                        + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING);
+                                clinicalAnalysis.getInternal().setCvdbIndex(cvdbIndexStatus);
+                            }
 
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
                         }
@@ -1389,55 +1401,37 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
-        // Get the clinical status that are CLOSED, INCONCLUSIVE and DONE
-        Set<String> closedStatus = new HashSet<>();
-        Set<String> inconclusiveOrRejectedStatus = new HashSet<>();
-        Set<String> doneStatus = new HashSet<>();
+        // Get the clinical status that are final (CLOSED, REJECTED, INCONCLUSIVE)
+        Set<String> finalStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : clinicalConfiguration.getStatus()) {
-            if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
-                closedStatus.add(clinicalStatusValue.getId());
-            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
-                doneStatus.add(clinicalStatusValue.getId());
-            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)
-                    || clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
-                inconclusiveOrRejectedStatus.add(clinicalStatusValue.getId());
+            if (FINAL_STATUS_TYPES.contains(clinicalStatusValue.getType())) {
+                finalStatus.add(clinicalStatusValue.getId());
             }
         }
 
         // If the current clinical analysis:
         // - is locked or panelLocked
         // - the user wants to update the locked or panelLocked status
-        // - the user wants to update the status to/from a done|closed status
+        // - the user wants to update the status to/from a final status (CLOSED, REJECTED, INCONCLUSIVE) - requires ADMIN
+        // Note: DONE status only requires WRITE permissions, not ADMIN
         boolean adminPermissionsChecked = false;
         if (clinicalAnalysis.isLocked() || clinicalAnalysis.isPanelLocked()
-                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
-                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED
+                || FINAL_STATUS_TYPES.contains(clinicalAnalysis.getStatus().getType())
                 || updateParamsClone.getLocked() != null
                 || updateParams.getPanelLocked() != null
-                || (updateParams.getStatus() != null
-                && (closedStatus.contains(updateParams.getStatus().getId())
-                || doneStatus.contains(updateParams.getStatus().getId())
-                || inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId())))) {
+                || (updateParams.getStatus() != null && finalStatus.contains(updateParams.getStatus().getId()))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
 
-            // Current status is of type CLOSED OR INCONCLUSIVE
-            if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                    || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                    || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
-                // The only allowed action is to remove the INCONCLUSIVE or CLOSED status
+            // Current status is of type CLOSED, REJECTED or INCONCLUSIVE (final status)
+            if (FINAL_STATUS_TYPES.contains(clinicalAnalysis.getStatus().getType())) {
+                // The only allowed action is to remove the final status
                 if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
                     throw new CatalogException("Cannot update a ClinicalAnalysis with a " + clinicalAnalysis.getStatus().getType()
                             + " status. You need to remove the " + clinicalAnalysis.getStatus().getType() + " status to be able "
                             + "to perform further updates on the ClinicalAnalysis.");
-                } else if ((clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                        && closedStatus.contains(updateParams.getStatus().getId()))
-                        || ((clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                        || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)
-                        && inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId()))) {
-                    // Users should be able to change from one CLOSED|INCONCLUSIVE|REJECTED status to a different one but we should
+                } else if (finalStatus.contains(updateParams.getStatus().getId())) {
+                    // Users should be able to change from one final status to a different one but we should
                     // still control that no further modifications are made
                     if (parameters.size() > 1) {
                         throw new CatalogException("Cannot update a ClinicalAnalysis with a "
@@ -1742,30 +1736,34 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 List<ClinicalStatusValue> clinicalStatusValues = clinicalConfiguration.getStatus();
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (updateParamsClone.getStatus().getId().equals(clinicalStatusValue.getId())) {
-                        if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                        if (FINAL_STATUS_TYPES.contains(clinicalStatusValue.getType())) {
                             String msg = "User '" + userId + "' changed case '" + clinicalAnalysis.getId() + "' to status '"
-                                    + updateParamsClone.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
-                                    + "ClinicalAnalysis and changing CVDB index status to be indexed";
+                                    + updateParamsClone.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
+                                    + ". Automatically locking ClinicalAnalysis and all Interpretations.";
                             logger.info(msg);
                             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
 
-                            if (StringUtils.isEmpty(clinicalAnalysis.getInternal().getCvdbIndex().getId())
-                                    || clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.NONE)) {
-                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
-                                        + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
-                                        + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING);
-                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
-                            } else if (clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.PENDING_REMOVE)) {
-                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_OVERWRITE, "User '" + userId
-                                        + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
-                                        + " CLOSED. CVDB index was already in " + CvdbIndexStatus.PENDING_REMOVE + ", so automatically"
-                                        + " changing CVDB index status to " + CvdbIndexStatus.PENDING_OVERWRITE);
-                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
-                            } else {
-                                logger.warn("CVDB index status is unexpectedly set to '{}'. Although the user is closing the case, OpenCGA"
-                                                + " cannot automatically infer which should be the new CVDB index status.",
-                                        clinicalAnalysis.getInternal().getCvdbIndex().getId());
+
+                            // Only handle CVDB index for CLOSED status
+                            if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
+                                if (StringUtils.isEmpty(clinicalAnalysis.getInternal().getCvdbIndex().getId())
+                                        || clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.NONE)) {
+                                    CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                                            + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
+                                            + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING);
+                                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                                } else if (clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.PENDING_REMOVE)) {
+                                    CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_OVERWRITE, "User '"
+                                            + userId + "' changed case to status '" + updateParamsClone.getStatus().getId()
+                                            + "', which is of type CLOSED. CVDB index was already in " + CvdbIndexStatus.PENDING_REMOVE
+                                            + ", so automatically changing CVDB index status to " + CvdbIndexStatus.PENDING_OVERWRITE);
+                                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                                } else {
+                                    logger.warn("CVDB index status is unexpectedly set to '{}'. Although the user is closing the case, "
+                                                    + "OpenCGA cannot automatically infer which should be the new CVDB index status.",
+                                            clinicalAnalysis.getInternal().getCvdbIndex().getId());
+                                }
                             }
                         }
                     }
@@ -1788,6 +1786,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
         return update;
     }
+
 
     public OpenCGAResult<ClinicalReport> updateReport(String studyStr, String clinicalAnalysisId, ClinicalReport report,
                                                       QueryOptions options, String token) throws CatalogException {
