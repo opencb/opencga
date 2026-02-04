@@ -83,7 +83,10 @@ public enum VariantField {
     ANNOTATION_REPEAT(ANNOTATION, "annotation.repeat"),
     ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes"),
-    ANNOTATION_GENOMIC_SEQUENCE_CONTEXT(ANNOTATION, "annotation.genomicSequenceContext");
+    ANNOTATION_GENOMIC_SEQUENCE_CONTEXT(ANNOTATION, "annotation.genomicSequenceContext"),
+    ANNOTATION_GENE_IMPRINTING(ANNOTATION, "annotation.geneImprinting"),
+    ANNOTATION_GENE_FUSIONS(ANNOTATION, "annotation.geneFusions"),
+    ANNOTATION_POLYGENIC_SCORES(ANNOTATION, "annotation.polygenicScores");
 
     private static final Set<VariantField> ALL_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(values())));
 

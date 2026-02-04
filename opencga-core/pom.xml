@@ -168,6 +168,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>configuration.yml</include>
+                    <include>org/opencb/opencga/core/dependencies.properties</include>
                 </includes>
             </resource>
             <resource>
