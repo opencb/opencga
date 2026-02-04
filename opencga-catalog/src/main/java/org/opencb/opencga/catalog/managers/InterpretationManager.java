@@ -953,26 +953,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         InterpretationStudyConfiguration interpretationStudyConfiguration = study.getInternal().getConfiguration().getClinical()
                 .getInterpretation();
-        // Get the interpretation status that are final (CLOSED, REJECTED, INCONCLUSIVE) and DONE
-        Set<String> closedStatus = new HashSet<>();
+        // Get the interpretation status that are final (CLOSED, REJECTED, INCONCLUSIVE)
         Set<String> finalStatus = new HashSet<>();
-        Set<String> doneStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : interpretationStudyConfiguration.getStatus()) {
-            switch (clinicalStatusValue.getType()) {
-                case CLOSED:
-                    closedStatus.add(clinicalStatusValue.getId());
-                    finalStatus.add(clinicalStatusValue.getId());
-                    break;
-                case REJECTED:
-                case INCONCLUSIVE:
-                    finalStatus.add(clinicalStatusValue.getId());
-                    break;
-                case DONE:
-                    doneStatus.add(clinicalStatusValue.getId());
-                    break;
-                default:
-                    // Do nothing
-                    break;
+            if (FINAL_STATUS_TYPES.contains(clinicalStatusValue.getType())) {
+                finalStatus.add(clinicalStatusValue.getId());
             }
         }
 
