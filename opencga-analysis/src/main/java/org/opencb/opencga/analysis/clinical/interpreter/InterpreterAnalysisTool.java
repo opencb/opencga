@@ -122,11 +122,11 @@ public class InterpreterAnalysisTool extends InterpretationAnalysisTool {
         if (!Files.exists(configPath)) {
             throw new ToolException("Tiering configuration file not found: " + configPath);
         }
-        tieringConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)),
-                TieringConfiguration.class);
+//        tieringConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)),
+//                TieringConfiguration.class);
 
         // Finally, update tiering configuration with the parameters provided by the user and set default values if needed
-        updateTieringConfiguration();
+//        updateTieringConfiguration();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class InterpreterAnalysisTool extends InterpretationAnalysisTool {
             TieringInterpretationAnalysisExecutor executor = getToolExecutor(TieringInterpretationAnalysisExecutor.class);
             executor.setStudy(study)
                     .setClinicalAnalysis(clinicalAnalysis)
-                    .setTieringConfiguration(tieringConfiguration)
+//                    .setTieringConfiguration(tieringConfiguration)
                     .execute();
 
             saveInterpretation(study, clinicalAnalysis, null);

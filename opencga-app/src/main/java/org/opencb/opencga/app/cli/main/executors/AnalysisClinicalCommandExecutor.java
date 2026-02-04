@@ -136,6 +136,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "interpretation-info":
                 queryResponse = infoInterpretation();
                 break;
+            case "interpreter":
+                queryResponse = interpreter();
+                break;
             case "interpreter-exomiser-run":
                 queryResponse = runInterpreterExomiser();
                 break;
@@ -144,6 +147,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "interpreter-rd-run":
                 queryResponse = runInterpreterRd();
+                break;
+            case "interpreter-run":
+                queryResponse = runInterpreter();
                 break;
             case "load":
                 queryResponse = load();
@@ -602,6 +608,25 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().infoInterpretation(commandOptions.interpretations, queryParams);
     }
 
+    private RestResponse<Interpretation> interpreter() throws Exception {
+        logger.debug("Executing interpreter in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.InterpreterCommandOptions commandOptions = analysisClinicalCommandOptions.interpreterCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
+        queryParams.putIfNotEmpty("probandId", commandOptions.probandId);
+        queryParams.putIfNotEmpty("familyId", commandOptions.familyId);
+        queryParams.putIfNotEmpty("disorderId", commandOptions.disorderId);
+        queryParams.putIfNotEmpty("panelIds", commandOptions.panelIds);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getClinicalAnalysisClient().interpreter(commandOptions.configFile, queryParams);
+    }
+
     private RestResponse<Job> runInterpreterExomiser() throws Exception {
         logger.debug("Executing runInterpreterExomiser in Analysis - Clinical command line");
 
@@ -704,6 +729,50 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), RdInterpretationAnalysisToolParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterRd(rdInterpretationAnalysisToolParams, queryParams);
+    }
+
+    private RestResponse<Job> runInterpreter() throws Exception {
+        logger.debug("Executing runInterpreter in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunInterpreterCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        RdInterpretationAnalysisToolParams rdInterpretationAnalysisToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            rdInterpretationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RdInterpretationAnalysisToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysisId", commandOptions.clinicalAnalysisId, true);
+            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
+            putNestedIfNotEmpty(beanParams, "configFile", commandOptions.configFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            rdInterpretationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), RdInterpretationAnalysisToolParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runInterpreter(rdInterpretationAnalysisToolParams, queryParams);
     }
 
     private RestResponse<Job> load() throws Exception {
