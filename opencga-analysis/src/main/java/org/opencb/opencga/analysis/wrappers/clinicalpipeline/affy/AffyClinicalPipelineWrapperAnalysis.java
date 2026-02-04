@@ -2,7 +2,6 @@ package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -83,7 +82,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         }
     }
 
-    private void runAffyPipeline() throws  ToolException {
+    private void runAffyPipeline() throws ToolException {
         // Get executor
         AffyClinicalPipelineWrapperAnalysisExecutor executor = getToolExecutor(AffyClinicalPipelineWrapperAnalysisExecutor.class);
 
@@ -92,25 +91,18 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIRNAME))
                 .setPipelineConfig(updatedPipelineConfig)
                 .execute();
+
+        // Check generated VCF
+        checkGeneratedVcf();
     }
 
 
     private void runVariantIndex() throws CatalogException, StorageEngineException, ToolException, IOException {
-        // Find the .sorted.<variant calling tool ID>.vcf.gz file within the genotype/variant-calling folder
-        Path vcfPath;
-        try (Stream<Path> stream = Files.list(getOutDir())) {
-            vcfPath = stream
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".vcf") || path.getFileName().toString().endsWith(".vcf.gz"))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (vcfPath == null || !Files.exists(vcfPath)) {
-            throw new ToolException("Could not find the generated VCF: " + vcfPath + " from Affymetrix pipeline execution.");
-        }
-        File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
-                "", "", "", null, null, null, null, null), false, token).first();
+        Path vcfPath = checkGeneratedVcf();
+        File vcfFile = catalogManager.getFileManager()
+                .link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(), getJobId() + "_" + vcfPath.toFile().getName() , "", "",
+                        null, null, null, null, null), false, token)
+                .first();
 
         VariantIndexParams variantIndexParams = analysisParams.getPipelineParams().getVariantIndexParams();
 
@@ -167,5 +159,29 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
             Path path = getPhysicalDirPath(analysisParams.getPipelineParams().getIndexDir(), study, catalogManager, token);
             updatedPipelineConfig.getInput().setIndexDir(path.toString());
         }
+    }
+
+    private Path checkGeneratedVcf() throws ToolException {
+        Path vcfPath;
+
+        // Find the first .vcf or vcf.gz file in the output folder
+        try (Stream<Path> stream = Files.list(getOutDir())) {
+            vcfPath = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".vcf") || path.getFileName().toString().endsWith(".vcf.gz"))
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            throw new ToolException("Could not find the generated VCF from Affymetrix pipeline execution. Please, check log files for more"
+                    + " information.", e);
+        }
+
+        if (vcfPath == null || !Files.exists(vcfPath)) {
+            throw new ToolException("Could not find the generated VCF (" + vcfPath + ") from Affymetrix pipeline execution. Please, check"
+                    + " log files for more information.");
+        }
+
+        logger.info("Generated VCF from Affymetrix pipeline found:  {}", vcfPath.toAbsolutePath());
+        return vcfPath;
     }
 }

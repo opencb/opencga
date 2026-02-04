@@ -258,6 +258,9 @@ public class SampleIndexVariantAnnotation {
             sb.append(getClinicalIndex());
             List<String> sources = schema.getClinicalIndexSchema().getSourceField().readAndDecode(getClinicalIndex());
             sb.append(" : ").append(sources);
+            List<String> clinicalSignificances
+                    = schema.getClinicalIndexSchema().getClinicalSignificanceField().readAndDecode(getClinicalIndex());
+            sb.append(separator).append("clinicalSignificance: ").append(clinicalSignificances);
         } else {
             sb.append("null");
         }

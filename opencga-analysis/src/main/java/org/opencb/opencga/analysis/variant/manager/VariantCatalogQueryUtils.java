@@ -199,6 +199,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
+    private final FileDataValidator fileDataValidator;
     private final SampleFilterValidator sampleFilterValidator;
     private final CohortFilterValidator cohortFilterValidator;
     //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
@@ -208,6 +209,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         super(catalogManager);
         studyFilterValidator = new StudyFilterValidator();
         fileFilterValidator = new FileFilterValidator();
+        fileDataValidator = new FileDataValidator();
         sampleFilterValidator = new SampleFilterValidator();
         cohortFilterValidator = new CohortFilterValidator();
     }
@@ -279,7 +281,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         sampleFilterValidator.processFilter(query, VariantQueryParam.GENOTYPE, release, token, defaultStudyStr);
         fileFilterValidator.processFilter(query, VariantQueryParam.FILE, release, token, defaultStudyStr);
         fileFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, token, defaultStudyStr);
-        fileFilterValidator.processFilter(query, VariantQueryParam.FILE_DATA, release, token, defaultStudyStr);
+        fileDataValidator.processFilter(query, VariantQueryParam.FILE_DATA, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.COHORT, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_ALT, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_REF, release, token, defaultStudyStr);
@@ -950,7 +952,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     private Region processSampleFilter(Query query, String defaultStudyStr, CellBaseUtils cellBaseUtils,
-                                     ParsedVariantQuery.VariantQueryXref xrefs, String token) throws CatalogException {
+                                       ParsedVariantQuery.VariantQueryXref xrefs, String token) throws CatalogException {
         Region segregationChromosome = null;
         String sampleFilterValue = query.getString(SAMPLE.key());
         if (sampleFilterValue.contains(IS)) {
@@ -1392,10 +1394,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     public static String toStorageFilePath(File file) {
-        return file.getUri().getPath();
+        switch (file.getType()) {
+            case FILE:
+                return file.getUri().getPath();
+            case VIRTUAL:
+                return file.getPath();
+            case DIRECTORY:
+            default:
+                throw new IllegalArgumentException("Unexpected file type: " + file.getType());
+        }
     }
 
-    public abstract class FilterValidator {
+    public abstract static class FilterValidator {
         protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(),
@@ -1555,6 +1565,35 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
         }
 
+    }
+
+    public class FileDataValidator extends FileFilterValidator {
+        @Override
+        protected void processFilter(Query query, VariantQueryParam param, Integer release, String sessionId, String defaultStudy)
+                throws CatalogException {
+            if (param != VariantQueryParam.FILE_DATA) {
+                throw new IllegalStateException("Unexpected param '" + param + "' in FileDataValidator");
+            }
+            if (VariantQueryUtils.isValidParam(query, param)) {
+                String value = query.getString(FILE_DATA.key());
+                if (!value.contains(IS)) {
+                    // File data does not contain key-value pairs.
+                    // Validation only applies to keys (ie file identifiers)
+                    return;
+                }
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
+
+                List<String> valuesToValidate = fileData.mapValues(KeyValues::getKey);
+                List<String> validatedValues = validate(defaultStudy, valuesToValidate, release, param, sessionId);
+
+                for (int i = 0; i < fileData.getValues().size(); i++) {
+                    fileData.getValues().get(i).setKey(validatedValues.get(i));
+                }
+
+                String newValue = fileData.toQuery();
+                query.put(param.key(), newValue);
+            }
+        }
     }
 
     public class SampleFilterValidator extends FilterValidator {

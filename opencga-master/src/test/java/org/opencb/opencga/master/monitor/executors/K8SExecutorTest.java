@@ -20,9 +20,13 @@ import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.exec.Command;
+import org.opencb.commons.exec.RunnableProcess;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.ExecutionRequirements;
 import org.opencb.opencga.core.config.ExecutionRequirementsFactor;
 import org.opencb.opencga.core.models.job.Job;
@@ -31,9 +35,15 @@ import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -181,6 +191,163 @@ public class K8SExecutorTest {
         assertEquals(new BigDecimal("2.0"), reqCpu.getNumericalAmount());
         assertEquals(new BigDecimal("1610612736.0"), reqMem.getNumericalAmount()); // 512Mi \* 3
         assertEquals("1536.0Mi", reqMem.getAmount()+reqMem.getFormat()); // 512Mi \* 3
+    }
+
+    @Test
+    public void testContainerSync() throws Exception {
+
+        Path outDir = getOutDir();
+
+        int sleep = 2;
+        Future<RunnableProcess.Status> runMain = runMainCommand(sleep, outDir);
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+
+        assertEquals(RunnableProcess.Status.DONE, runDind.get());
+        assertEquals(RunnableProcess.Status.DONE, runMain.get());
+    }
+
+    @Test
+    public void testContainerInterrupt() throws Exception {
+
+        Path outDir = getOutDir();
+
+        int sleep = 10;
+        Future<RunnableProcess.Status> runMain = runMainCommand(sleep, outDir);
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+
+        Thread.sleep(2000);
+
+        // Read PID and kill -15
+        kill(outDir, "PID", "-15");
+
+        assertEquals(RunnableProcess.Status.DONE, runDind.get());
+        assertEquals(RunnableProcess.Status.ERROR, runMain.get());
+
+        assertEquals(true, Files.exists(outDir.resolve("done")));
+        assertEquals(false, Files.exists(outDir.resolve("INTERRUPTED")));
+    }
+
+    @Test
+    public void testContainerKilled() throws Exception {
+
+        Path outDir = getOutDir();
+
+        int sleep = 10;
+        Future<RunnableProcess.Status> runMain = runMainCommand(sleep, outDir);
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+
+        Thread.sleep(2000);
+
+        // Read PID and kill -9
+        kill(outDir, "PID", "-9");
+
+
+        assertEquals(RunnableProcess.Status.DONE, runDind.get());
+        assertEquals(RunnableProcess.Status.ERROR, runMain.get());
+
+        assertEquals(true, Files.exists(outDir.resolve("done")));
+        assertEquals(false, Files.exists(outDir.resolve("INTERRUPTED")));
+    }
+
+    @Test
+    public void testContainerKilledParent() throws Exception {
+        Path outDir = getOutDir();
+
+        int sleep = 10;
+        Command mainCommand = mainCommand(sleep, outDir);
+        Future<RunnableProcess.Status> runMain = mainCommand.run(true);
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+
+        Thread.sleep(2000);
+
+        // Read PID and kill -9
+        kill(outDir, "PID_MAIN", "-9");
+
+        // Heartbeat should detect that the parent is dead and exit
+        assertEquals(RunnableProcess.Status.ERROR, runDind.get());
+        assertEquals(RunnableProcess.Status.ERROR, runMain.get());
+
+        // Ensure no "done" file is created
+        assertEquals(false, Files.exists(outDir.resolve("done")));
+        // Ensure INTERRUPTED file is not created, as the dind process was killed
+        assertEquals(false, Files.exists(outDir.resolve("INTERRUPTED")));
+    }
+
+
+    @Test
+    public void testContainerTermParent() throws Exception {
+        Path outDir = getOutDir();
+
+        int sleep = 10;
+        Command mainCommand = mainCommand(sleep, outDir);
+        Future<RunnableProcess.Status> runMain = mainCommand.run(true);
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+
+        Thread.sleep(2000);
+
+        // Read PID and kill -15
+        kill(outDir, "PID_MAIN", "-15");
+
+        // Main process should terminate gracefully, dind should detect the "done" file and exit gracefully
+        assertEquals(RunnableProcess.Status.DONE, runDind.get());
+        assertEquals(RunnableProcess.Status.ERROR, runMain.get());
+
+        assertEquals(true, Files.exists(outDir.resolve("done")));
+        // Ensure INTERRUPTED file is created as the dind process detected the termination
+        assertEquals(true, Files.exists(outDir.resolve("INTERRUPTED")));
+    }
+
+    @Test
+    public void testContainerMainNotStarted() throws Exception {
+        Path outDir = getOutDir();
+
+        Future<RunnableProcess.Status> runDind = runDind(outDir);
+        assertEquals(RunnableProcess.Status.ERROR, runDind.get());
+    }
+
+    private static void kill(Path outDir, String pidFile, String signal) throws IOException {
+        Path pid = outDir.resolve(pidFile);
+        List<String> pidLines = Files.readAllLines(pid);
+        String pidStr = pidLines.get(0).trim();
+        System.out.println("Killing PID " + pidStr);
+        String[] killArgs = {"/bin/bash", "-c", "kill " + signal + " " + pidStr};
+        Command killCommand = new Command(killArgs, Collections.emptyList());
+        killCommand.run();
+    }
+
+
+    private static Future<RunnableProcess.Status> runDind(Path outDir) {
+        return dindCommand(10, outDir).run(true);
+    }
+
+    private static Command dindCommand(int sleep, Path outDir) {
+        String dind = K8SExecutor.getDindCommandline("sleep " + sleep * 10 + " &", true, 4, 2);
+        dind =  "cd " + outDir + ";\n" + dind.replace("/usr/share/pod/", outDir.toAbsolutePath() + "/");
+        String[] commandDindArgs = {"/bin/bash", "-c", ""};
+        Command commandDind = new Command(commandDindArgs, Collections.emptyList());
+        commandDindArgs[2] = dind;
+        return commandDind;
+    }
+
+    private static Future<RunnableProcess.Status> runMainCommand(int sleep, Path outDir) {
+        return mainCommand(sleep, outDir).run(true);
+    }
+
+    private static Command mainCommand(int sleep, Path outDir) {
+        String commandLine = K8SExecutor.getCommandLine("bash -c 'for i in {1.."+ sleep +"} ; do echo $i ; sleep 1; done ; echo END '",
+                outDir.resolve("stdout.txt"), outDir.resolve("stderr.txt"), true, true);
+        commandLine =  "cd " + outDir + ";\n" + commandLine.replace("/usr/share/pod/", outDir.toAbsolutePath() + "/");
+//        System.out.println("commandLine = " + commandLine);
+        String[] commandMainArgs = {"/bin/bash", "-c", ""};
+        Command commandMain = new Command(commandMainArgs, Collections.emptyList());
+        commandMainArgs[2] =  commandLine;
+        return commandMain;
+    }
+
+    private static Path getOutDir() throws IOException {
+        Path outDir = Paths.get("target/test-data").resolve("junit_k8sexecutor_" + TimeUtils.getTimeMillis() + RandomStringUtils.randomAlphabetic(10));
+        Files.createDirectories(outDir);
+        return outDir;
     }
 
 }

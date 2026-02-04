@@ -309,6 +309,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     private Individual getMamuel() {
         return new Individual().setId(PROBAND_ID2)
                 .setPhenotypes(getPhenotypes())
+                .setDisorders(Collections.singletonList(getDisorder()))
                 .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID2.split("_")[0])));
     }

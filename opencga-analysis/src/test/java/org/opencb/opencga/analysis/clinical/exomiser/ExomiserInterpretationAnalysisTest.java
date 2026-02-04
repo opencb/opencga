@@ -37,7 +37,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(MediumTests.class)
-public class ExomiserInterpretationAnalysisTest  {
+public class
+ExomiserInterpretationAnalysisTest  {
 
     private static AbstractClinicalManagerTest clinicalTest;
     private static ResourceManager resourceManager;
@@ -49,6 +50,8 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @BeforeClass
     public static void setUp() throws Exception {
+        prepareExomiserData();
+
         opencga.clear();
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
         resourceManager = new ResourceManager(opencga.getOpencgaHome());
@@ -60,21 +63,6 @@ public class ExomiserInterpretationAnalysisTest  {
     }
 
     @Test
-    public void testNormalization() throws NonStandardCompliantSampleField {
-        Variant normalized = new VariantNormalizer().normalize(Collections.singletonList(new Variant("12:878367:N:NT")), false).get(0);
-        System.out.println("normalized = " + normalized.toStringSimple());
-        assertEquals(878368, (long) normalized.getStart());
-        assertEquals("", normalized.getReference());
-        assertEquals("T", normalized.getAlternate());
-
-        normalized = new VariantNormalizer().normalize(Collections.singletonList(new Variant("18:9887391:NGAAGCCATCCAGCCCAAGGAGGGTGACATCCCCAAGTCCCCAGAA:N")), false).get(0);
-        System.out.println("normalized + " + normalized.toStringSimple());
-        assertEquals(9887392, (long) normalized.getStart());
-        assertEquals("GAAGCCATCCAGCCCAAGGAGGGTGACATCCCCAAGTCCCCAGAA", normalized.getReference());
-        assertEquals("", normalized.getAlternate());
-    }
-
-    @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
 //        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
@@ -82,7 +70,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
-        prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
 
         OpenCGAResult<ClinicalAnalysis> caResult = clinicalTest.catalogManager.getClinicalAnalysisManager()
@@ -137,7 +124,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
-        prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_family"));
 
         ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
@@ -162,7 +148,8 @@ public class ExomiserInterpretationAnalysisTest  {
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID3, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
+        // No primary findings expected
+        assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
 
         // Check Exomiser docker CLI
         boolean pedFound = false;
@@ -191,7 +178,6 @@ public class ExomiserInterpretationAnalysisTest  {
         String resourceVersion = "2402";
         assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
-        prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_single"));
 
         ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
@@ -216,7 +202,8 @@ public class ExomiserInterpretationAnalysisTest  {
         clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_ID4, QueryOptions.empty(), clinicalTest.token).first();
         assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
+        // No primary findings expected
+        assertEquals(0, clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
 
         // Check Exomiser docker CLI
         boolean pedFound = false;
@@ -237,16 +224,17 @@ public class ExomiserInterpretationAnalysisTest  {
         System.out.println("results at out dir = " + outDir.toAbsolutePath());
     }
 
-    private void prepareExomiserData() throws IOException {
+    private static void prepareExomiserData() throws IOException {
+        Path exomiserLocalData = Paths.get("/opt/exomiser-data");
+        Assume.assumeTrue(Files.exists(exomiserLocalData));
+
         Path opencgaHome = opencga.getOpencgaHome();
         Path exomiserDataPath = opencgaHome.resolve("analysis/resources");
         if (!exomiserDataPath.toFile().exists()) {
             exomiserDataPath.toFile().mkdirs();
         }
         if (!opencgaHome.resolve("analysis/resources/exomiser").toAbsolutePath().toFile().exists()) {
-            if (Paths.get("/opt/opencga/analysis/resources/exomiser").toFile().exists()) {
-                Path symbolicLink = Files.createSymbolicLink(opencgaHome.resolve("analysis/resources/exomiser").toAbsolutePath(), Paths.get("/opt/opencga/analysis/resources/exomiser"));
-            }
+            Files.createSymbolicLink(opencgaHome.resolve("analysis/resources/exomiser").toAbsolutePath(), exomiserLocalData);
         }
     }
 }

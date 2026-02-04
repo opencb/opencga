@@ -90,6 +90,7 @@ public class K8SExecutor implements BatchExecutor {
             .withName("tmp-pod")
             .withMountPath("/usr/share/pod")
             .build();
+    private static final String HB_FILE = "/usr/share/pod/heartbeat";
     private static final String DIND_DONE_FILE = "/usr/share/pod/done";
     public static final String JOB_NAME = "job-name";
 
@@ -278,17 +279,13 @@ public class K8SExecutor implements BatchExecutor {
                     + " --add-runtime=nvidia=/usr/bin/nvidia-container-runtime --default-runtime=nvidia &\n"
                     + "else\n"
                     + "  dockerd --host=tcp://0.0.0.0:2375 --host=unix:///var/run/docker.sock &\n"
-                    + "fi\n"
-                    + "trap 'echo \"GPU Docker daemon terminated!\"; touch " + DIND_DONE_FILE + "' TERM;\n"
-                    + "while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0";
+                    + "fi\n";
         } else {
-            args = "dockerd-entrypoint.sh & "
-                    // Add trap to capture TERM signal and finish main process
-                    + "trap '"
-                    + "echo \"Container terminated! ;\n"
-                    + "touch " + DIND_DONE_FILE + " ' TERM ;"
-                    + "while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0";
+            args = "dockerd-entrypoint.sh & \n";
         }
+
+        args = getDindCommandline(args);
+
 
         return new ContainerBuilder()
                 .withName("dind-daemon")
@@ -302,6 +299,56 @@ public class K8SExecutor implements BatchExecutor {
                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
                 .addAllToVolumeMounts(volumeMounts)
                 .build();
+    }
+
+    protected static String getDindCommandline(String entryPoint) {
+        return getDindCommandline(entryPoint, false, 60, 120);
+    }
+
+    protected static String getDindCommandline(String entryPoint, boolean debug, int hbTimeout, int hbFileExistsTimeout) {
+        String trap = "\n"
+                + "trap 'echo \"Docker daemon container terminated!\"; "
+                + "touch " + DIND_DONE_FILE + "' TERM;\n";
+
+        String heartbeatCheck = "\n"
+                + "HB_FILE=" + HB_FILE + "\n"
+                + "HB_TIMEOUT=" + hbTimeout + " ;\n"
+                + "HB_FILE_EXISTS=0 ;\n"
+                + "HB_FILE_EXISTS_TIMEOUT=" + hbFileExistsTimeout + " ;\n"
+                + "while true; do\n"
+                // Main container finished
+                + "  if [ -f \"" + DIND_DONE_FILE + "\" ]; then\n"
+                + "    echo \"Main container finished. Exiting sidecar.\" ;\n"
+                + "    jobs -p | xargs kill -9 2>/dev/null || true ;\n"
+                + "    exit 0 ;\n"
+                + "  fi ;\n"
+                // Heartbeat file not found
+                //  - allow some time for the main container to create it
+                //  - fail after some time
+                + "  if [ ! -f \"$HB_FILE\" ]; then\n"
+                + "    sleep 1 ;\n"
+                + "    HB_FILE_EXISTS=$((HB_FILE_EXISTS + 2)) ;\n"
+                + "    if [ \"$HB_FILE_EXISTS\" -gt $HB_FILE_EXISTS_TIMEOUT ]; then\n"
+                + "      echo \"Main container heartbeat file not found after ${HB_FILE_EXISTS_TIMEOUT}s. Exiting sidecar.\" >&2 ;\n"
+                + "      jobs -p | xargs kill -9 2>/dev/null || true ;\n"
+                + "      exit 1 ;\n"
+                + "    fi ;\n"
+                + "    continue ;\n"
+                + "  fi ;\n"
+                // Check heartbeat age
+                + "  NOW=$(date +%s) ;\n"
+                + "  MTIME=$(date -r \"$HB_FILE\" +%s 2>/dev/null || echo 0) ;\n"
+                + "  AGE=$((NOW - MTIME)) ;\n"
+                + (debug ? "  echo \"Heartbeat age: ${AGE}s\" ;\n" : "")
+                + "  if [ \"$AGE\" -gt \"$HB_TIMEOUT\" ]; then\n"
+                + "    echo \"Main container heartbeat stale (${AGE}s). Exiting sidecar.\" >&2 ;\n"
+                + "    jobs -p | xargs kill -9 2>/dev/null || true ;\n"
+                + "    exit 1 ;\n"
+                + "  fi ;\n"
+                + "  sleep 1 ;\n"
+                + "done";
+
+        return entryPoint + trap + heartbeatCheck;
     }
 
     @Override
@@ -373,6 +420,13 @@ public class K8SExecutor implements BatchExecutor {
                 ).build();
 
         jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
+        logger.info("Creating K8S job '{}/{}' for OpenCGA job '{}'", namespace, jobName, job.getId());
+        logger.info(" - Image: {}", imageName);
+        logger.info(" - Request Memory: {} (limit {})", resources.getRequests().get("memory"), resources.getLimits().get("memory"));
+        logger.info(" - Java Heap Env Vars: {}", javaHeapEnvVars.stream()
+                .map(envVar -> envVar.getName() + "=" + envVar.getValue())
+                .reduce((a, b) -> a + ", " + b).orElse("None"));
+
         getKubernetesClient().batch().v1().jobs().inNamespace(namespace).resource(k8sJob).create();
     }
 
@@ -415,9 +469,8 @@ public class K8SExecutor implements BatchExecutor {
                                                     ObjectMap options) {
         String javaHeap = options.getString(K8S_JAVA_HEAP);
         String javaOffheap = options.getString(K8S_JAVA_OFFHEAP, "5%");
-        String overhead = options.getString(K8S_MEMORY_OVERHEAD, "300Mi");
+        String overhead = options.getString(K8S_MEMORY_OVERHEAD, "10%");
         Quantity memory = requirements.getRequests().get("memory");
-        List<EnvVar> envVars = new ArrayList<>(2);
         long memoryBytes = memory.getNumericalAmount().longValue();
         long overHeadBytes;
         long javaOffheapBytes;
@@ -478,6 +531,7 @@ public class K8SExecutor implements BatchExecutor {
             javaHeap = IOUtils.javaStyleByteCount(heapBytes);
         }
 
+        List<EnvVar> envVars = new ArrayList<>(2);
         envVars.add(new EnvVar("JAVA_OFF_HEAP", javaOffheap, null));
         if (javaHeap != null) {
             envVars.add(new EnvVar("JAVA_HEAP", javaHeap, null));
@@ -631,6 +685,10 @@ public class K8SExecutor implements BatchExecutor {
      */
     @Override
     public String getCommandLine(String commandLine, Path stdout, Path stderr) {
+        return getCommandLine(commandLine, stdout, stderr, logToStdout, false);
+    }
+
+    protected static String getCommandLine(String commandLine, Path stdout, Path stderr, boolean logToStdout, boolean debug) {
         // Do "exec" the main command to keep the PID 1 on the main process to allow grace kills.
         commandLine = "exec " + commandLine;
         // https://stackoverflow.com/questions/692000/how-do-i-write-standard-error-to-a-file-while-using-tee-with-a-pipe
@@ -649,6 +707,9 @@ public class K8SExecutor implements BatchExecutor {
             }
         }
 
+        String createPidFile = "\n"
+                + "echo $$ > PID_MAIN ;\n";
+
         // Add trap to capture TERM signal and kill the main process
         String trapTerm = "trap '"
                 + "echo \"Job terminated! Run time : ${SECONDS}s\" ;\n"
@@ -658,34 +719,46 @@ public class K8SExecutor implements BatchExecutor {
                 + "fi' TERM ;";
 
         // Launch the main process in background.
-        String mainProcess = commandLine + " &";
+        String mainProcess = commandLine + " & \n";
 
-        // Wait for the main process to finish and capture its PID.
+        // Wait for the main process to finish.
         // Active wait instead of `wait` to allow trap to kill -15 the job
         // We will use this PID to kill the main process if the job is interrupted.
-        String wait = "PID=$! ; \n"
+        // The loop contains a heartbeat touch to inform the dind sidecar that the job is still alive.
+        String wait = "\n"
+                + "PID=$! ; \n"
                 + "echo $PID > PID ; \n"
-                + "while ps -p \"$PID\" >/dev/null; do \n"
+                + "HB_FILE='" + HB_FILE + "' ;\n"
+                + "touch \"$HB_FILE\" ;\n"
+                + "while ps -p \"$PID\" >/dev/null 2>&1; do \n"
+                + "    touch \"$HB_FILE\" ;\n"
+                + (debug ? "    echo \"Heartbeat sent from PID $PID\" ; \n" : "")
                 + "    sleep 1 ; \n"
                 + "done \n";
 
-        // Create a file to indicate that the dind sidecar container should finish
-        String dindDone = "touch '" + DIND_DONE_FILE + "' \n";
+        String touchDoneFile = "\n"
+                + (debug ? "echo \"Main process $PID finished. Touching done file.\" ; \n" : "")
+                + "touch " + DIND_DONE_FILE + " ; \n";
 
         // If the job was interrupted, exit with error
-        String exitIfInterrupted = "if [ -f INTERRUPTED ]; then\n"
+        String exitIfInterrupted =  "\n"
+                + "if [ -f INTERRUPTED ]; then\n"
+                + (debug ? "  echo \"Job was interrupted. Exiting with code 1.\" ; \n" : "")
                 + "  exit 1\n"
                 + "fi \n";
 
         // Capture error code and forward it
-        String captureErrorCode = "wait $PID\n"
+        String captureErrorCode =  "\n"
+                + "wait $PID\n"
                 + "ERRCODE=$? \n"
+                + (debug ? "echo \"Main process $PID exited with code $ERRCODE\" ; \n" : "")
                 + "exit $ERRCODE";
 
-        return trapTerm + " "
+        return createPidFile + " "
+                + trapTerm + " "
                 + mainProcess + " "
                 + wait + " "
-                + dindDone + " "
+                + touchDoneFile + " "
                 + exitIfInterrupted + " "
                 + captureErrorCode;
     }

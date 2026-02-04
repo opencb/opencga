@@ -315,8 +315,8 @@ analysis:
       k8s.javaOffHeap: # undefined
       # Job non-jvm memory. Overhead for non-jvm processes like OS processes, native libraries, docker runs, etc.
       # Can be defined as an absolute value (e.g., "1024M") or as a percentage of requirements.memory (e.g., "10%").
-      # If undefined, will use 300MiB
-      k8s.memoryOverhead: "300MiB"
+      # If undefined, will use 10% of requirements.memory
+      k8s.memoryOverhead: "10%"
 #      k8s.envs:
 #        KEY: value
       # FOR ACI:
