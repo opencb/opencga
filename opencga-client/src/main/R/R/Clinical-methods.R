@@ -35,6 +35,7 @@
 #' | runInterpreterRd | /{apiVersion}/analysis/clinical/interpreter/rd/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runInterpreter | /{apiVersion}/analysis/clinical/interpreter/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | alleleTyperPharmacogenomics | /{apiVersion}/analysis/clinical/pharmacogenomics/alleleTyper | study, body[*] |
 #' | runPipelineAffy | /{apiVersion}/analysis/clinical/pipeline/affy/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runPipelineGenomics | /{apiVersion}/analysis/clinical/pipeline/genomics/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | runPipelinePrepare | /{apiVersion}/analysis/clinical/pipeline/prepare/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
@@ -346,6 +347,14 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param data Parameters to load clinical analysis in OpenCGA catalog from a file.
         load=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="load", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/pharmacogenomics/alleleTyper:
+        #' Perform pharmacogenomics allele typing and store results in sample attributes.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data JSON containing genotyping and translation file contents.
+        alleleTyperPharmacogenomics=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/pharmacogenomics", subcategoryId=NULL, action="alleleTyper", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/pipeline/affy/run:
         #' Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.

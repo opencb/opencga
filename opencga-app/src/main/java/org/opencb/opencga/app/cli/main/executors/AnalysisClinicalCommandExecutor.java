@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSumm
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
@@ -47,6 +48,7 @@ import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperParams;
 import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
@@ -153,6 +155,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "load":
                 queryResponse = load();
+                break;
+            case "pharmacogenomics-allele-typer":
+                queryResponse = alleleTyperPharmacogenomics();
                 break;
             case "pipeline-affy-run":
                 queryResponse = runPipelineAffy();
@@ -812,6 +817,39 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), ClinicalAnalysisLoadParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().load(clinicalAnalysisLoadParams, queryParams);
+    }
+
+    private RestResponse<AlleleTyperResult> alleleTyperPharmacogenomics() throws Exception {
+        logger.debug("Executing alleleTyperPharmacogenomics in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.AlleleTyperPharmacogenomicsCommandOptions commandOptions = analysisClinicalCommandOptions.alleleTyperPharmacogenomicsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        PharmacogenomicsAlleleTyperParams pharmacogenomicsAlleleTyperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<AlleleTyperResult> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pharmacogenomics/alleleTyper"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            pharmacogenomicsAlleleTyperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PharmacogenomicsAlleleTyperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "genotypingContent", commandOptions.genotypingContent, true);
+            putNestedIfNotEmpty(beanParams, "translationContent", commandOptions.translationContent, true);
+
+            pharmacogenomicsAlleleTyperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), PharmacogenomicsAlleleTyperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().alleleTyperPharmacogenomics(pharmacogenomicsAlleleTyperParams, queryParams);
     }
 
     private RestResponse<Job> runPipelineAffy() throws Exception {

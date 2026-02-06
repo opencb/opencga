@@ -489,6 +489,20 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._post(category='analysis', resource='load', subcategory='clinical', data=data, **options)
 
+    def allele_typer_pharmacogenomics(self, data=None, **options):
+        """
+        Perform pharmacogenomics allele typing and store results in sample
+            attributes.
+        PATH: /{apiVersion}/analysis/clinical/pharmacogenomics/alleleTyper
+
+        :param dict data: JSON containing genotyping and translation file
+            contents. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='analysis', resource='alleleTyper', subcategory='clinical/pharmacogenomics', data=data, **options)
+
     def run_pipeline_affy(self, data=None, **options):
         """
         Execute the clinical genomics pipeline that performs QC (FastQC,...),

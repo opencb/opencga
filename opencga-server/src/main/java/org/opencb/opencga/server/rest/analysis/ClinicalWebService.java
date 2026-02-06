@@ -25,6 +25,8 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.interpreter.InterpreterAnalysisTool;
+import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsManager;
+import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
@@ -62,6 +64,7 @@ import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -1651,5 +1654,28 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "JSON with parameters to execute the command " + AffyClinicalPipelineWrapperAnalysis.ID, required = true) AffyClinicalPipelineWrapperParams params) {
         return submitJob(study, JobType.NATIVE_TOOL, AffyClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/pharmacogenomics/alleleTyper")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Perform pharmacogenomics allele typing and store results in sample attributes", response = AlleleTyperResult.class)
+    public Response pharmacogenomicsAlleleTyper(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(name = "body", value = "JSON containing genotyping and translation file contents", required = true)
+            PharmacogenomicsAlleleTyperParams params) {
+        try {
+            // Create PharmacogenomicsManager
+            PharmacogenomicsManager manager = new PharmacogenomicsManager(catalogManager);
+
+            // Execute allele typing
+            List<AlleleTyperResult> results = manager.alleleTyper(study, params.getGenotypingContent(),
+                    params.getTranslationContent(), token);
+
+            // Return results
+            return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), results.size(), results, results.size()));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 }

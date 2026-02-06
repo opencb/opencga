@@ -49,6 +49,7 @@ public class AnalysisClinicalCommandOptions {
         public RunInterpreterRdCommandOptions runInterpreterRdCommandOptions;
         public RunInterpreterCommandOptions runInterpreterCommandOptions;
         public LoadCommandOptions loadCommandOptions;
+        public AlleleTyperPharmacogenomicsCommandOptions alleleTyperPharmacogenomicsCommandOptions;
         public RunPipelineAffyCommandOptions runPipelineAffyCommandOptions;
         public RunPipelineGenomicsCommandOptions runPipelineGenomicsCommandOptions;
         public RunPipelinePrepareCommandOptions runPipelinePrepareCommandOptions;
@@ -95,6 +96,7 @@ public class AnalysisClinicalCommandOptions {
         this.runInterpreterRdCommandOptions = new RunInterpreterRdCommandOptions();
         this.runInterpreterCommandOptions = new RunInterpreterCommandOptions();
         this.loadCommandOptions = new LoadCommandOptions();
+        this.alleleTyperPharmacogenomicsCommandOptions = new AlleleTyperPharmacogenomicsCommandOptions();
         this.runPipelineAffyCommandOptions = new RunPipelineAffyCommandOptions();
         this.runPipelineGenomicsCommandOptions = new RunPipelineGenomicsCommandOptions();
         this.runPipelinePrepareCommandOptions = new RunPipelinePrepareCommandOptions();
@@ -1024,6 +1026,29 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
+    
+    }
+
+    @Parameters(commandNames = {"pharmacogenomics-allele-typer"}, commandDescription ="Perform pharmacogenomics allele typing and store results in sample attributes")
+    public class AlleleTyperPharmacogenomicsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--genotyping-content"}, description = "The body web service genotypingContent parameter", required = false, arity = 1)
+        public String genotypingContent;
+    
+        @Parameter(names = {"--translation-content"}, description = "The body web service translationContent parameter", required = false, arity = 1)
+        public String translationContent;
     
     }
 

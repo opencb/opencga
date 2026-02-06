@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSumm
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
@@ -40,6 +41,7 @@ import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisPar
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperParams;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
@@ -469,6 +471,21 @@ public class ClinicalAnalysisClient extends ParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "clinical", null, "load", params, POST, Job.class);
+    }
+
+    /**
+     * Perform pharmacogenomics allele typing and store results in sample attributes.
+     * @param data JSON containing genotyping and translation file contents.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<AlleleTyperResult> alleleTyperPharmacogenomics(PharmacogenomicsAlleleTyperParams data, ObjectMap params)
+            throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis", null, "clinical/pharmacogenomics", null, "alleleTyper", params, POST, AlleleTyperResult.class);
     }
 
     /**

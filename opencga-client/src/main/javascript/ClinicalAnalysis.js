@@ -379,6 +379,16 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._post("analysis", null, "clinical", null, "load", data, params);
     }
 
+    /** Perform pharmacogenomics allele typing and store results in sample attributes
+    * @param {Object} data - JSON containing genotyping and translation file contents.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    alleleTyperPharmacogenomics(data, params) {
+        return this._post("analysis", null, "clinical/pharmacogenomics", null, "alleleTyper", data, params);
+    }
+
     /** Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
     * variant indexing in OpenCGA storage.
     * @param {Object} data - JSON with parameters to execute the command affy-pipeline.
