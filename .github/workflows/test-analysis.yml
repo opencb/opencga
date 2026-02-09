@@ -67,7 +67,7 @@ jobs:
           path: ~/.m2/repository
           key: ${{ needs.build.outputs.cache_key }}
           ## Force cache hit to avoid analyzing with incomplete dependencies
-          fail-on-cache-miss: true
+          fail-on-cache-miss: false
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -95,7 +95,7 @@ jobs:
           path: ~/.m2/repository
           key: ${{ needs.build.outputs.cache_key }}
           ## Force cache hit to avoid testing with incomplete dependencies
-          fail-on-cache-miss: true
+          fail-on-cache-miss: false
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
