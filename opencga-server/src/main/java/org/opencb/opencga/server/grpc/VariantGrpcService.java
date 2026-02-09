@@ -118,10 +118,8 @@ public class VariantGrpcService extends VariantServiceImplBase {
                         .setStackTrace(ExceptionUtils.prettyExceptionStackTrace(e))
                         .build();
                 responseObserver.onNext(response);
-                responseObserver.onError(e);
                 throw e;
             }
-            responseObserver.onCompleted();
             return i;
         });
     }

@@ -192,8 +192,12 @@ public class GenericGrpcService {
             streamObserver.onError(ex);
         } finally {
             stopWatch.stop();
+            logEnd(e, stopWatch, numResults, requestDescription);
         }
 
+    }
+
+    private void logEnd(Exception e, StopWatch stopWatch, int numResults, String requestDescription) {
         StringBuilder sb = new StringBuilder();
         boolean ok;
         if (e == null) {
