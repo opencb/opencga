@@ -136,6 +136,14 @@
 
             <!-- OpenCB dependencies -->
             <dependency>
+                <!-- Imports the OpenCGA BOM (Bill of Materials) to inherit its dependencyManagement versions -->
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga</artifactId>
+                <version>${opencga.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
                 <version>${opencga.version}</version>
