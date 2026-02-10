@@ -1,5 +1,5 @@
 name: Build and test the project
-run-name: "Build and test the project. Hadoop flavour: ${{ inputs.hadoop }}. Test profile: ${{ inputs.test_profile }}. Test module: ${{ inputs.module }}"
+run-name: "Build and test the project. Variant Storage flavour: ${{ inputs.variant_storage }}. Test profile: ${{ inputs.test_profile }}. Test module: ${{ inputs.module }}"
 
 on:
   workflow_call:
@@ -8,7 +8,7 @@ on:
         description: 'Maven test profile. Any combination of : [runShortTests, runMediumTests, runLongTests]'
         type: string
         required: true
-      hadoop:
+      variant_storage:
         type: string
         required: false
         default: "hdi5.1"
@@ -39,9 +39,9 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      needs_hadoop_preparation: true
-      hadoop_flavour: ${{ inputs.hadoop }}
-      maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: ${{ inputs.variant_storage == 'mongodb' && 'false' || 'true' }}
+      hadoop_flavour: ${{ inputs.variant_storage == 'mongodb' && 'none' || inputs.variant_storage }}
+      maven_opts: -P${{ inputs.variant_storage }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       upload_artifact: ${{ inputs.upload_artifact }}
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
@@ -72,7 +72,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -T 2 clean install -P storage-hadoop,${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: |
+          STORAGE_FLAG=""
+          # Set flag only if variant_storage is NOT 'mongodb'
+          if [ "${{ inputs.variant_storage }}" != "mongodb" ]; then
+            STORAGE_FLAG="-Dhadoop=${{ inputs.variant_storage }}"
+          fi
+      
+          # Execute Maven command
+          mvn -T 2 clean install \
+              $STORAGE_FLAG \
+              -P"${{ inputs.test_profile }}" \
+              -DskipTests \
+              -Dcheckstyle.skip \
+              org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+              -Dsonar.projectKey=opencb_opencga
 
 
   test:
@@ -115,7 +129,20 @@ jobs:
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
           echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
+        run: |
+          STORAGE_FLAG=""
+          # Set flag only if variant_storage is NOT 'mongodb'
+          if [ "${{ inputs.variant_storage }}" != "mongodb" ]; then
+            STORAGE_FLAG="-Dhadoop=${{ inputs.variant_storage }}"
+          fi
+          
+          mvn -B verify surefire-report:report --fail-never \
+              -Dsurefire.testFailureIgnore=true \
+              -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} \
+              $STORAGE_FLAG \
+              -P$"{{ inputs.test_profile }}" \
+              -Dcheckstyle.skip \
+              ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
       - name: Upload Junit test logs
         if: success() || failure()
         uses: actions/upload-artifact@v4

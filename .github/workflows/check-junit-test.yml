@@ -4,13 +4,14 @@ run-name: "Check Junit. Hadoop ${{ inputs.hadoop }} ${{ inputs.module == 'all' &
 on:
   workflow_dispatch:
     inputs:
-      hadoop:
+      variant_storage:
         type: choice
-        description: 'Hadoop flavour.'
+        description: 'Variant Storage Engine flavour.'
         required: false
         default: "hdi5.1"
         options:
           - "all"
+          - "mongodb"
           - "hbase2.0"
           - "hdi5.1"
           - "emr6.1"
@@ -62,7 +63,7 @@ jobs:
     outputs:
       profiles: ${{ steps.validate.outputs.profiles }}
       modules: ${{ steps.validate.outputs.modules }}
-      hadoop: ${{ steps.validate.outputs.hadoop }}
+      variant_storage: ${{ steps.validate.outputs.variant_storage }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,12 +75,12 @@ jobs:
             chmod +x ./.github/workflows/scripts/get_profiles.sh
             profiles=$(./.github/workflows/scripts/get_profiles.sh ${{ inputs.short_tests }} ${{ inputs.medium_tests }} ${{ inputs.long_tests }})
             modules='["${{ inputs.module }}"]'
-            hadoop='["${{ inputs.hadoop }}"]'
+            variant_storage='["${{ inputs.variant_storage }}"]'
           
-            if [ "${{ inputs.hadoop }}" == "all" ]; then
-              hadoop='["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]'
+            if [ "${{ inputs.variant_storage }}" == "all" ]; then
+              variant_storage='["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0", "mongodb"]'
           
-              # When testing all hadoop profiles, split matrix by profile
+              # When testing all variant_storage profiles, split matrix by profile
               IFS=',' read -r -a profile_array <<< "$profiles"
               profiles=""
               for profile in "${profile_array[@]}"; do
@@ -93,30 +94,30 @@ jobs:
             else
               profiles='["'"$profiles"'"]'
               if [ "${{ inputs.module }}" == "all" ]; then
-                # Only execute modules with matrix strategy if we are testing one single hadoop profile
+                # Only execute modules with matrix strategy if we are testing one single variant_storage profile
                 modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
               fi
             fi
             echo "profiles=$profiles" >> $GITHUB_OUTPUT
             echo "modules=$modules" >> $GITHUB_OUTPUT
-            echo "hadoop=$hadoop" >> $GITHUB_OUTPUT
+            echo "variant_storage=$variant_storage" >> $GITHUB_OUTPUT
             echo "Executing testing profiles -> $profiles" >> $GITHUB_STEP_SUMMARY
             echo "Modules -> $modules" >> $GITHUB_STEP_SUMMARY
-            echo "Hadoop -> $hadoop" >> $GITHUB_STEP_SUMMARY
-            #echo "matrix={\"hadoop\": $hadoop, \"modules\": $modules}" >> $GITHUB_OUTPUT
+            echo "VariantStorageEngine -> $variant_storage" >> $GITHUB_STEP_SUMMARY
+            #echo "matrix={\"variant_storage\": $variant_storage, \"modules\": $modules}" >> $GITHUB_OUTPUT
           fi
   test:
     strategy:
       fail-fast: false
       matrix:
-        hadoop: ${{ fromJson(needs.get_profiles.outputs.hadoop) }}
+        variant_storage: ${{ fromJson(needs.get_profiles.outputs.variant_storage) }}
         module: ${{ fromJson(needs.get_profiles.outputs.modules) }}
         profile: ${{ fromJson(needs.get_profiles.outputs.profiles) }}
     needs: [ get_profiles ]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ matrix.profile }}
-      hadoop: ${{ matrix.hadoop }}
+      variant_storage: ${{ matrix.variant_storage }}
       module: ${{ matrix.module }}
       mvn_opts: ${{ inputs.mvn_opts }}
       sonar: false
