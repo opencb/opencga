@@ -407,7 +407,7 @@ public class ParsedVariantQuery {
 
         private List<List<String>> clinicalCombination;
         private List<String> clinicalCombinationList;
-        private GeneCombinations geneCombinations;
+        private ConsequenceTypeCombinations consequenceTypeCombinations;
 
         public VariantAnnotationQuery() {
         }
@@ -415,7 +415,7 @@ public class ParsedVariantQuery {
         public VariantAnnotationQuery(VariantAnnotationQuery other) {
             this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
             this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
-            this.geneCombinations = new GeneCombinations(other.geneCombinations);
+            this.consequenceTypeCombinations = new ConsequenceTypeCombinations(other.consequenceTypeCombinations);
         }
 
         public List<List<String>> getClinicalCombination() {
@@ -436,12 +436,12 @@ public class ParsedVariantQuery {
             return this;
         }
 
-        public GeneCombinations getGeneCombinations() {
-            return geneCombinations;
+        public ConsequenceTypeCombinations getGeneCombinations() {
+            return consequenceTypeCombinations;
         }
 
-        public VariantAnnotationQuery setGeneCombinations(GeneCombinations geneCombinations) {
-            this.geneCombinations = geneCombinations;
+        public VariantAnnotationQuery setGeneCombinations(ConsequenceTypeCombinations consequenceTypeCombinations) {
+            this.consequenceTypeCombinations = consequenceTypeCombinations;
             return this;
         }
     }
@@ -507,26 +507,26 @@ public class ParsedVariantQuery {
         }
     }
 
-    public static class GeneCombinations {
-        private final List<GeneCombination> combinations;
+    public static class ConsequenceTypeCombinations {
+        private final List<ConsequenceTypeCombination> combinations;
         private final Type type;
 
-        public GeneCombinations(List<GeneCombination> combinations, Type type) {
+        public ConsequenceTypeCombinations(List<ConsequenceTypeCombination> combinations, Type type) {
             this.combinations = combinations;
             this.type = type;
         }
 
-        public GeneCombinations(List<GeneCombination> combinations) {
+        public ConsequenceTypeCombinations(List<ConsequenceTypeCombination> combinations) {
             this.combinations = combinations;
             this.type = getType(combinations.get(0));
         }
 
-        public GeneCombinations(GeneCombinations other) {
+        public ConsequenceTypeCombinations(ConsequenceTypeCombinations other) {
             this.combinations = new ArrayList<>(other.combinations);
             this.type = other.type;
         }
 
-        public List<GeneCombination> getCombinations() {
+        public List<ConsequenceTypeCombination> getCombinations() {
             return combinations;
         }
 
@@ -534,7 +534,7 @@ public class ParsedVariantQuery {
             return type;
         }
 
-        public static Type getType(GeneCombination c) {
+        public static Type getType(ConsequenceTypeCombination c) {
             String type = "";
             if (c.gene != null) {
                 type += "GENE";
@@ -548,7 +548,7 @@ public class ParsedVariantQuery {
             if (c.flag != null) {
                 type += (type.isEmpty() ? "" : "_") + "FLAG";
             }
-            return GeneCombinations.Type.valueOf(type);
+            return ConsequenceTypeCombinations.Type.valueOf(type);
         }
 
         public enum Type {
@@ -570,14 +570,14 @@ public class ParsedVariantQuery {
         }
     }
 
-    public static class GeneCombination {
+    public static class ConsequenceTypeCombination {
 
         private final String gene;
         private final String biotype;
         private final String so;
         private final String flag;
 
-        public GeneCombination(String gene, String biotype, String so, String flag) {
+        public ConsequenceTypeCombination(String gene, String biotype, String so, String flag) {
             this.gene = gene;
             this.biotype = biotype;
             this.so = so;

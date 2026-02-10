@@ -228,10 +228,10 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         if (addDefaultId) {
             variant.setId(variant.toString());
         }
-        if (object.containsKey(IDS_FIELD)) {
-            LinkedList<String> names = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
-            variant.setNames(names);
-        }
+//        if (object.containsKey(IDS_FIELD)) {
+//            LinkedList<String> names = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
+//            variant.setNames(names);
+//        }
         if (object.containsKey(TYPE_FIELD)) {
             variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));
         }
@@ -287,6 +287,20 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                     }
                 }
             }
+
+            Set<String> names = new HashSet<>();
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                List<FileEntry> files = studyEntry.getFiles();
+                if (files != null) {
+                    for (FileEntry fileEntry : files) {
+                        String id = fileEntry.getData().get(StudyEntry.VCF_ID);
+                        if (id != null) {
+                            names.add(id);
+                        }
+                    }
+                }
+            }
+            variant.setNames(new ArrayList<>(names));
         }
 
         // Annotations

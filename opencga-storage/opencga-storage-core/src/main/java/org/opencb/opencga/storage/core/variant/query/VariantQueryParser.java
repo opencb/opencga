@@ -151,8 +151,8 @@ public class VariantQueryParser {
         return clinicalCombinations;
     }
 
-    public static ParsedVariantQuery.GeneCombinations parseGeneBtSoFlagCombination(List<String> genes, Query query) {
-        List<ParsedVariantQuery.GeneCombination> combinations = new ArrayList<>();
+    public static ParsedVariantQuery.ConsequenceTypeCombinations parseGeneBtSoFlagCombination(List<String> genes, Query query) {
+        List<ParsedVariantQuery.ConsequenceTypeCombination> combinations = new ArrayList<>();
 
         List<String> bt = VariantQueryUtils.splitValues(query.getString(ANNOT_BIOTYPE.key())).getValues();
         List<String> ct = VariantQueryUtils.splitValues(query.getString(ANNOT_CONSEQUENCE_TYPE.key())).getValues();
@@ -183,12 +183,12 @@ public class VariantQueryParser {
             for (String biotype : bt) {
                 for (String consequenceType : ct) {
                     for (String flag : flags) {
-                        combinations.add(new ParsedVariantQuery.GeneCombination(gene, biotype, consequenceType, flag));
+                        combinations.add(new ParsedVariantQuery.ConsequenceTypeCombination(gene, biotype, consequenceType, flag));
                     }
                 }
             }
         }
-        return new ParsedVariantQuery.GeneCombinations(combinations);
+        return new ParsedVariantQuery.ConsequenceTypeCombinations(combinations);
     }
 
     public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {

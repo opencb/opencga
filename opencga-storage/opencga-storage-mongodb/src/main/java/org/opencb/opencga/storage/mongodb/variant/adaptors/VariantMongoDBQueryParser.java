@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
-import com.google.common.collect.Iterables;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import htsjdk.variant.vcf.VCFConstants;
@@ -99,7 +98,6 @@ public class VariantMongoDBQueryParser {
             ParsedVariantQuery.VariantQueryXref variantQueryXref = parsedVariantQuery.getXrefs();
 
             boolean pureGeneRegionFilter = !variantQueryXref.getGenes().isEmpty();
-            boolean ctBtFlagApplied;
             /* VARIANT PARAMS */
 
             if (isValidParam(query, REGION)) {
@@ -110,12 +108,11 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
-
             if (!variantQueryXref.getIds().isEmpty()) {
                 pureGeneRegionFilter = false;
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
                         variantQueryXref.getIds(), regionFilters);
-                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), regionFilters);
+//                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), regionFilters);
             }
 
             if (!variantQueryXref.getOtherXrefs().isEmpty()) {
@@ -123,13 +120,21 @@ public class VariantMongoDBQueryParser {
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
                         variantQueryXref.getOtherXrefs(), regionFilters);
             }
+            if (!variantQueryXref.getVariants().isEmpty()) {
+                pureGeneRegionFilter = false;
+                List<String> mongoIds = variantQueryXref.getVariants().stream().map(STRING_ID_CONVERTER::buildId).collect(Collectors.toList());
+                Bson variantXrefIntersect;
+                if (mongoIds.size() == 1) {
+                    variantXrefIntersect = eq("_id", mongoIds.get(0));
+                } else {
+                    variantXrefIntersect = in("_id", mongoIds);
+                }
+                regionFilters.add(variantXrefIntersect);
+            }
 
             List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
-            if (!variantQueryXref.getVariants().isEmpty() || !idIntersect.isEmpty()) {
-                List<String> mongoIds = new ArrayList<>(variantQueryXref.getVariants().size() + idIntersect.size());
-                for (Variant variant : Iterables.concat(idIntersect, variantQueryXref.getVariants())) {
-                    mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
-                }
+            if (!idIntersect.isEmpty()) {
+                List<String> mongoIds = idIntersect.stream().map(STRING_ID_CONVERTER::buildId).collect(Collectors.toList());
                 if (mongoIds.size() == 1) {
                     idIntersectBson = eq("_id", mongoIds.get(0));
                 } else {
@@ -137,7 +142,7 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
-            ctBtFlagApplied = addGeneCombinationFilter(parsedVariantQuery, filters, regionFilters,
+            boolean ctBtFlagApplied = addGeneCombinationFilter(parsedVariantQuery, filters, regionFilters,
                     pureGeneRegionFilter, !variantQueryXref.getGenes().isEmpty());
             if (!variantQueryXref.getGenes().isEmpty()) {
                 if (parsedVariantQuery.getAnnotationQuery().getGeneCombinations() == null) {
@@ -182,22 +187,45 @@ public class VariantMongoDBQueryParser {
             parseStatsQueryParams(parsedVariantQuery, query, filters);
         }
 
-        // Combine region filters
-        Bson regionFilterBson = null;
-        if (!regionFilters.isEmpty()) {
-            regionFilterBson = or(regionFilters);
-        }
-        // Combine region with idIntersect.
+        return combine(parsedVariantQuery, regionFilters, idIntersectBson, filters);
+    }
+
+    /**
+     * Combine region filters, idIntersect filter and other filters.
+     *
+     *  AND
+     * ├─ ID_INTERSECT_FILTER
+     * ├─ FILTER_1
+     * ├─ FILTER_2
+     * ├─ ...
+     * └─ OR
+     *    ├─ REGION_FILTER_1
+     *    ├─ REGION_FILTER_2
+     *    └─ ...
+     *
+     * @param parsedVariantQuery
+     * @param regionFilters
+     * @param idIntersectBson
+     * @param otherFilters
+     * @return
+     */
+    private static Bson combine(ParsedVariantQuery parsedVariantQuery, List<Bson> regionFilters, Bson idIntersectBson, List<Bson> otherFilters) {
+        List<Bson> filters = new ArrayList<>();
+
         if (idIntersectBson != null) {
-            if (regionFilterBson == null) {
-                regionFilterBson = idIntersectBson;
-            } else {
-                regionFilterBson = and(idIntersectBson, regionFilterBson);
-            }
+            filters.add(idIntersectBson);
         }
-        if (regionFilterBson != null) {
+        // Combine region filters
+        if (!regionFilters.isEmpty()) {
+            Bson regionFilterBson;
+            if (regionFilters.size() == 1) {
+                regionFilterBson = regionFilters.get(0);
+            } else {
+                regionFilterBson = or(regionFilters);
+            }
             filters.add(regionFilterBson);
         }
+        filters.addAll(otherFilters);
 
         Bson filter;
         if (filters.isEmpty()) {
@@ -214,6 +242,22 @@ public class VariantMongoDBQueryParser {
             logger.debug("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         }
         logger.info("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        logger.info("MongoDB Query (all off):");
+        if (idIntersectBson != null) {
+            logger.info("  IdIntersect = {}", idIntersectBson.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        }
+        if (regionFilters.size() > 1) {
+            logger.info("  Region filters (any of):");
+            for (Bson regionFilter : regionFilters) {
+                logger.info("    {}", regionFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+            }
+        }
+        if (!otherFilters.isEmpty()) {
+            logger.info("  Other filters (all off):");
+            for (Bson otherFilter : otherFilters) {
+                logger.info("    {}", otherFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+            }
+        }
         return filter;
     }
 
@@ -243,9 +287,12 @@ public class VariantMongoDBQueryParser {
     private static boolean addGeneCombinationFilter(ParsedVariantQuery parsedVariantQuery, List<Bson> filters, List<Bson> regionFilters,
                                                     boolean pureGeneFilter, boolean hasGeneFilter) {
         boolean ctBtFlagApplied = false;
+        if (parsedVariantQuery.getAnnotationQuery().getGeneCombinations() == null) {
+            return ctBtFlagApplied;
+        }
         if (hasGeneFilter && !pureGeneFilter) {
             // Gene filter is applied, but not as pure gene region filter, so we need to apply the combination filter for non-gene variants as well
-            ParsedVariantQuery.GeneCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(Collections.emptyList(), parsedVariantQuery.getInputQuery());
+            ParsedVariantQuery.ConsequenceTypeCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(Collections.emptyList(), parsedVariantQuery.getInputQuery());
             if (combination != null) {
                 addGeneCombinationFilter(combination, filters, regionFilters, false);
                 ctBtFlagApplied = true;
@@ -258,13 +305,13 @@ public class VariantMongoDBQueryParser {
         return ctBtFlagApplied;
     }
 
-    private static void addGeneCombinationFilter(ParsedVariantQuery.GeneCombinations combinations, List<Bson> filters,
+    private static void addGeneCombinationFilter(ParsedVariantQuery.ConsequenceTypeCombinations combinations, List<Bson> filters,
                                                  List<Bson> regionFilters, boolean hasGeneFilter) {
         if (combinations != null) {
             List<Bson> combinationFilters = new ArrayList<>();
             String ctCombinedField = DocumentToVariantAnnotationConverter.CT_COMBINED;
 
-            for (ParsedVariantQuery.GeneCombination combination : combinations.getCombinations()) {
+            for (ParsedVariantQuery.ConsequenceTypeCombination combination : combinations.getCombinations()) {
                 String gene = combination.getGene();
                 String bt = combination.getBiotype() != null
                         ? DocumentToVariantAnnotationConverter.biotypeToStorage(combination.getBiotype()) : null;
