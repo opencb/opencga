@@ -39,9 +39,9 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      needs_hadoop_preparation: ${{ inputs.variant_storage == 'mongodb' && 'false' || 'true' }}
+      needs_hadoop_preparation: ${{ inputs.variant_storage != 'mongodb' }}
       hadoop_flavour: ${{ inputs.variant_storage == 'mongodb' && 'none' || inputs.variant_storage }}
-      maven_opts: -P${{ inputs.variant_storage }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: ${{ inputs.variant_storage != 'mongodb' && format('-Dhadoop={0}', inputs.variant_storage) || '' }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       upload_artifact: ${{ inputs.upload_artifact }}
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
@@ -124,10 +124,10 @@ jobs:
           if [[ -z "$MODULE" ]]; then
             MODULE="opencga"
           fi
-          // Module name is a path to a module, get only the last part for the log file name
+          # Module name is a path to a module, get only the last part for the log file name
           MODULE=$(basename $MODULE )
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
-          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
+          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.variant_storage }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests
         run: |
           STORAGE_FLAG=""
@@ -140,7 +140,7 @@ jobs:
               -Dsurefire.testFailureIgnore=true \
               -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} \
               $STORAGE_FLAG \
-              -P$"{{ inputs.test_profile }}" \
+              -P"${{ inputs.test_profile }}" \
               -Dcheckstyle.skip \
               ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
       - name: Upload Junit test logs
@@ -157,7 +157,7 @@ jobs:
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()
         with:
-          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.module }} ${{ inputs.test_profile }}"
+          check_name: "Surefire tests report ${{ inputs.variant_storage }} ${{ inputs.module }} ${{ inputs.test_profile }}"
           report_paths: './**/surefire-reports/TEST-*.xml'
           commit: '${{ github.sha }}'
           fail_on_test_failures: true

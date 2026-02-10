@@ -1,5 +1,5 @@
 name: Check junits
-run-name: "Check Junit. Hadoop ${{ inputs.hadoop }} ${{ inputs.module == 'all' && ' ' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
+run-name: "Check Junit. Variant Storage ${{ inputs.variant_storage }} ${{ inputs.module == 'all' && ' ' || format(':{0}. ', inputs.module ) }}${{ inputs.short_tests && 'Short ' || '' }}${{ inputs.medium_tests && 'Medium ' || '' }}${{ inputs.long_tests && 'Long ' || '' }}${{ ! ( inputs.short_tests || inputs.medium_tests || inputs.long_tests ) && 'Short Medium Long ' || '' }}tests."
 
 on:
   workflow_dispatch:
