@@ -80,6 +80,7 @@
         <guava.version>28.0-jre</guava.version>
 <!--        <commons-lang.version>2.6</commons-lang.version>-->
         <bson.version>4.8.2</bson.version>
+        <netty.version>4.1.131.Final</netty.version>
     </properties>
 
     <repositories>
@@ -135,14 +136,6 @@
             </dependency>
 
             <!-- OpenCB dependencies -->
-            <dependency>
-                <!-- Imports the OpenCGA BOM (Bill of Materials) to inherit its dependencyManagement versions -->
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga</artifactId>
-                <version>${opencga.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
@@ -533,6 +526,15 @@
                 <groupId>org.jasig.cas.client</groupId>
                 <artifactId>cas-client-support-saml</artifactId>
                 <version>${cas.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <!-- Use netty-bom to align all netty modules version -->
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- Test dependencies -->
             <dependency>
