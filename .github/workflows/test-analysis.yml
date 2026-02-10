@@ -95,7 +95,7 @@ jobs:
           path: ~/.m2/repository
           key: ${{ needs.build.outputs.cache_key }}
           ## Force cache hit to avoid testing with incomplete dependencies
-          fail-on-cache-miss: false
+          fail-on-cache-miss: true
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
