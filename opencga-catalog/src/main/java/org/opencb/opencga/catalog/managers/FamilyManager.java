@@ -317,7 +317,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             // Asynchronously calculate pedigree graph after successful insert
             // This avoids transaction timeout issues and ensures pedigree is calculated with complete persisted data
-            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId());
+            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId(), false);
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated family
@@ -1120,7 +1120,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Asynchronously calculate pedigree graph if needed after successful update
         // This avoids transaction timeout issues and ensures pedigree is calculated with complete persisted data
         if (needsPedigreeRecalculation) {
-            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId());
+            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId(), parameters.isEmpty());
         }
 
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
@@ -1139,12 +1139,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * This ensures that the pedigree is calculated with the most up-to-date persisted data including
      * all member relationships, and avoids transaction timeout issues from Docker/R execution.
      *
-     * @param organizationId Organization ID
-     * @param studyUid Study UID
-     * @param familyUid Family UID
-     * @param familyId Family ID (for logging)
+     * @param organizationId  Organization ID
+     * @param studyUid        Study UID
+     * @param familyUid       Family UID
+     * @param familyId        Family ID (for logging)
+     * @param increaseVersion Force family version increase.
      */
-    private void asyncUpdatePedigreeGraph(String organizationId, long studyUid, long familyUid, String familyId) {
+    private void asyncUpdatePedigreeGraph(String organizationId, long studyUid, long familyUid, String familyId, boolean increaseVersion) {
         pedigreeGraphExecutor.submit(() -> {
             try {
                 // Fetch the complete family with all members and relationships from database
@@ -1178,7 +1179,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Update only the pedigree graph field
                 ObjectMap updateParams = new ObjectMap(FamilyDBAdaptor.QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraph);
 
-                getFamilyDBAdaptor(organizationId).update(familyUid, updateParams, Collections.emptyList(), QueryOptions.empty(), false);
+                getFamilyDBAdaptor(organizationId).update(familyUid, updateParams, Collections.emptyList(), QueryOptions.empty(),
+                        increaseVersion);
 
                 logger.info("Successfully calculated and updated pedigree graph for family {}", familyId);
 
