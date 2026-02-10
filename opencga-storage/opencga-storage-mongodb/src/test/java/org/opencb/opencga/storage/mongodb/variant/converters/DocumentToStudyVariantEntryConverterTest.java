@@ -24,6 +24,7 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -95,7 +96,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyId);
 
         Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId);
-        String dot = DocumentToStudyConfigurationConverter.TO_REPLACE_DOTS;
+        String dot = GenericDocumentComplexConverter.TO_REPLACE_DOTS;
         mongoFile.append(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
                 new Document("QUAL", 0.01)
                         .append("AN", 2.0)

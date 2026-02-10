@@ -242,20 +242,22 @@ public class VariantMongoDBQueryParser {
             logger.debug("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         }
         logger.info("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
-        logger.info("MongoDB Query (all off):");
-        if (idIntersectBson != null) {
-            logger.info("  IdIntersect = {}", idIntersectBson.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
-        }
-        if (regionFilters.size() > 1) {
-            logger.info("  Region filters (any of):");
-            for (Bson regionFilter : regionFilters) {
-                logger.info("    {}", regionFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        if (!filters.isEmpty()) {
+            logger.info("MongoDB Query (all of):");
+            if (idIntersectBson != null) {
+                logger.info("  IdIntersect = {}", idIntersectBson.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
             }
-        }
-        if (!otherFilters.isEmpty()) {
-            logger.info("  Other filters (all off):");
-            for (Bson otherFilter : otherFilters) {
-                logger.info("    {}", otherFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+            if (regionFilters.size() > 1) {
+                logger.info("  Region filters (any of):");
+                for (Bson regionFilter : regionFilters) {
+                    logger.info("    {}", regionFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                }
+            }
+            if (!otherFilters.isEmpty()) {
+                logger.info("  Other filters (all of):");
+                for (Bson otherFilter : otherFilters) {
+                    logger.info("    {}", otherFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                }
             }
         }
         return filter;
