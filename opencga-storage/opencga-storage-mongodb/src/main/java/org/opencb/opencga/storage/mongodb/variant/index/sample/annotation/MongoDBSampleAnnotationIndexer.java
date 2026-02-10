@@ -76,7 +76,7 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
 
         VariantDBReader reader = new VariantDBReader(engine.getDBAdaptor(), variantQueryProcessed, variantOptions);
         SampleAnnotationIndexerTask task = new SampleAnnotationIndexerTask(sampleIds, schema);
-        DataWriter<SampleIndexEntry> writer = new MongoDBSampleIndexEntryWriter(sampleIndexDBAdaptor,studyId, schema);
+        DataWriter<SampleIndexEntry> writer = new MongoDBSampleIndexEntryWriter(sampleIndexDBAdaptor, studyId, schema);
 
         // Note: Using a single task
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()

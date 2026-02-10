@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
@@ -32,6 +31,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -51,6 +51,7 @@ public class DocumentToVariantAnnotationConverter
 
     private static final String ANNOT_ID_FIELD = "id";
     private static final String GENE_SO_FIELD = "_gn_so";
+    private static final String CT_COMBINED_FIELD = "_ct_combined";
     private static final String CONSEQUENCE_TYPE_FIELD = "ct";
     private static final String CT_GENE_NAME_FIELD = "gn";
     private static final String CT_ENSEMBL_GENE_ID_FIELD = "ensg";
@@ -95,6 +96,12 @@ public class DocumentToVariantAnnotationConverter
     private static final String FUNCTIONAL_CADD_SCALED_FIELD = "fn_cadd_s";
 
     public static final Map<String, String> SCORE_FIELD_MAP;
+    protected static final Map<String, String> FLAG_TO_STORAGE_MAP = new HashMap<>();
+    protected static final Map<String, String> FLAG_FROM_STORAGE_MAP = new HashMap<>();
+    protected static final Map<String, String> BT_TO_STORAGE_MAP = new HashMap<>();
+    protected static final Map<String, String> BT_FROM_STORAGE_MAP = new HashMap<>();
+
+    public static final String SEPARATOR = "#";
 
     private final ObjectWriter writer;
     private final ObjectReader reader;
@@ -116,6 +123,7 @@ public class DocumentToVariantAnnotationConverter
 
     public static final String ANNOT_ID = ANNOTATION_FIELD + '.' + ANNOT_ID_FIELD;
     public static final String GENE_SO = ANNOTATION_FIELD + '.' + GENE_SO_FIELD;
+    public static final String CT_COMBINED = ANNOTATION_FIELD + '.' + CT_COMBINED_FIELD;
     public static final String CONSEQUENCE_TYPE = ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD;
     public static final String CT_ENSEMBL_GENE_ID = CONSEQUENCE_TYPE + '.' + CT_ENSEMBL_GENE_ID_FIELD;
     public static final String CT_ENSEMBL_TRANSCRIPT_ID = CONSEQUENCE_TYPE + '.' + CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
@@ -161,6 +169,51 @@ public class DocumentToVariantAnnotationConverter
         scoreFieldMap.put(CADD_SCALED, ANNOTATION_FIELD + "." + FUNCTIONAL_CADD_SCALED_FIELD);
         scoreFieldMap.put(CADD_RAW, ANNOTATION_FIELD + "." + FUNCTIONAL_CADD_RAW_FIELD);
         SCORE_FIELD_MAP = Collections.unmodifiableMap(scoreFieldMap);
+
+
+        FLAG_TO_STORAGE_MAP.put("basic", "b");
+        FLAG_TO_STORAGE_MAP.put("canonical", "c");
+        FLAG_TO_STORAGE_MAP.put("MANE Select", "m");
+        FLAG_TO_STORAGE_MAP.put("MANE Plus Clinical", "p");
+        FLAG_TO_STORAGE_MAP.put("CCDS", "C");
+        FLAG_TO_STORAGE_MAP.put("LRG", "L");
+        FLAG_TO_STORAGE_MAP.put("EGLH_HaemOnc", "E");
+        FLAG_TO_STORAGE_MAP.put("TSO500", "T");
+
+
+        for (Map.Entry<String, String> entry : FLAG_TO_STORAGE_MAP.entrySet()) {
+            FLAG_FROM_STORAGE_MAP.put(entry.getValue(), entry.getKey());
+        }
+
+        // Biotype short names (unique, non-empty)
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.PROTEIN_CODING, "pc");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.LINCRNA, "linc");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.PROCESSED_TRANSCRIPT, "pt");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.NONSENSE_MEDIATED_DECAY, "nmd");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.RETAINED_INTRON, "ri");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.PROCESSED_PSEUDOGENE, "ppg");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.UNPROCESSED_PSEUDOGENE, "upg");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.TRANSCRIBED_UNPROCESSED_PSEUDGENE, "tupg");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.MISC_RNA, "misc");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.SNRNA, "snr");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.SNORNA, "snor");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.MIRNA, "mir");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.PSEUDOGENE, "pg");
+        BT_TO_STORAGE_MAP.put(VariantAnnotationConstants.RRNA, "rrna");
+
+        for (Map.Entry<String, String> entry : BT_TO_STORAGE_MAP.entrySet()) {
+            BT_FROM_STORAGE_MAP.put(entry.getValue(), entry.getKey());
+        }
+
+//        DEBUG VALUES
+//        for (String k : new ArrayList<>(FLAG_TO_STORAGE_MAP.keySet())) {
+//            FLAG_TO_STORAGE_MAP.put(k, k);
+//            FLAG_FROM_STORAGE_MAP.put(k, k);
+//        }
+//        for (String k : new ArrayList<>(BT_TO_STORAGE_MAP.keySet())) {
+//            BT_TO_STORAGE_MAP.put(k, k);
+//            BT_FROM_STORAGE_MAP.put(k, k);
+//        }
     }
 
     private Integer annotationId = null;
@@ -294,9 +347,30 @@ public class DocumentToVariantAnnotationConverter
 
         //ConsequenceType
         if (variantAnnotation.getConsequenceTypes() != null) {
-            Set<String> gnSo = new HashSet<>();
+
+            // Combination of Gene, Biotype, SO and Flag
+            // Required combinations to cover all query patterns (with prefix filtering):
+            //   - GENE + BIOTYPE + SO + FLAG (covers GENE, GENE+BIOTYPE, GENE+BIOTYPE+SO, GENE+BIOTYPE+SO+FLAG)
+            //   - GENE + SO + FLAG (covers GENE+SO, GENE+SO+FLAG)
+            //   - BIOTYPE + SO + FLAG
+            //   - SO + FLAG
+            // These combinations ensure all query combinations are efficiently supported without redundancy.
+            //
+            Set<String> ctCombined = new HashSet<>();
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             for (ConsequenceType consequenceType : consequenceTypes) {
+                List<String> genes = new ArrayList<>();
+                if (consequenceType.getGeneName() != null) {
+                    genes.add(consequenceType.getGeneName());
+                }
+                if (consequenceType.getGeneId() != null) {
+                    genes.add(consequenceType.getGeneId());
+                }
+                if (consequenceType.getTranscriptId() != null) {
+                    genes.add(consequenceType.getTranscriptId());
+                }
+//                String gene = genes.isEmpty() ? null : genes.get(0);
+
                 Document ct = new Document();
 
                 putNotNull(ct, CT_GENE_NAME_FIELD, consequenceType.getGeneName());
@@ -312,26 +386,8 @@ public class DocumentToVariantAnnotationConverter
                         soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getName()));
                     }
                     putNotNull(ct, CT_SO_ACCESSION_FIELD, soAccession);
-
-                    for (Integer so : soAccession) {
-                        if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
-                            gnSo.add(buildGeneSO(consequenceType.getGeneName(), so));
-                        }
-                        if (StringUtils.isNotEmpty(consequenceType.getGeneId())) {
-                            gnSo.add(buildGeneSO(consequenceType.getGeneId(), so));
-                        }
-                        if (StringUtils.isNotEmpty(consequenceType.getTranscriptId())) {
-                            gnSo.add(buildGeneSO(consequenceType.getTranscriptId(), so));
-                        }
-                        if (proteinVariantAnnotation != null) {
-                            if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
-                                gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotAccession(), so));
-                            }
-                            if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
-                                gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotName(), so));
-                            }
-                        }
-                    }
+                    buildAllCombinations(genes, consequenceType.getBiotype(), soAccession,
+                            consequenceType.getTranscriptFlags(), ctCombined);
                 }
                 //Protein annotation
                 if (proteinVariantAnnotation != null) {
@@ -360,7 +416,7 @@ public class DocumentToVariantAnnotationConverter
 
 
             }
-            putNotNull(document, GENE_SO_FIELD, gnSo);
+            putNotNull(document, CT_COMBINED_FIELD, ctCombined);
             putNotNull(document, CONSEQUENCE_TYPE_FIELD, cts);
         }
 
@@ -450,9 +506,86 @@ public class DocumentToVariantAnnotationConverter
     }
 
     public static String buildGeneSO(String gene, Integer so) {
-        return gene == null ? null : gene + '_' + so;
+        return gene == null ? null : gene + SEPARATOR + so;
     }
 
+    /**
+     * Build all combinations of gene, biotype, SO, and flag, handling null/empty values.
+     *
+     *  - GENE + BIOTYPE + SO + FLAG (covers GENE, GENE+BIOTYPE, GENE+BIOTYPE+SO, GENE+BIOTYPE+SO+FLAG)
+     *  - BIOTYPE + SO + FLAG (covers BIOTYPE, BIOTYPE+SO, BIOTYPE+SO+FLAG, partially BIOTYPE+FLAG)
+     *  Not included:
+     *  - GENE + SO + FLAG (covers GENE+SO, GENE+SO+FLAG, partially GENE+FLAG)
+     *  - SO + FLAG (covers SO, SO+FLAG)
+     *
+     * @param genes List of gene names/IDs
+     * @param biotype Biotype string (may be null)
+     * @param soList List of SO accessions
+     * @param flags List of transcript flags
+     * @param combinations  Set to store the generated combinations
+     * @return Set of all non-null, non-empty combinations
+     */
+    public static void buildAllCombinations(List<String> genes, String biotype, List<Integer> soList, List<String> flags,
+                                                   Set<String> combinations) {
+        if (biotype != null && biotype.isEmpty()) {
+            biotype = null;
+        }
+
+        if (genes == null || genes.isEmpty()) {
+            genes = Collections.singletonList(null);
+        }
+        if (soList == null || soList.isEmpty()) {
+            soList = Collections.singletonList(null);
+        }
+        if (flags == null || flags.isEmpty()) {
+            flags = Collections.singletonList(null);
+        }
+
+        // GENE + BIOTYPE + SO + FLAG
+        for (String gene : genes) {
+            for (Integer so : soList) {
+                for (String flag : flags) {
+                    combine(gene, biotype, so, flag, combinations);
+                }
+            }
+        }
+    }
+
+    public static void combine(String gene, String biotype, int so, String flag, Collection<String> combinations) {
+        biotype = biotypeToStorage(biotype);
+        if (gene == null) {
+            gene = "N";
+        }
+        flag = flagToStorage(flag);
+
+
+        // GENE + BIOTYPE + SO + FLAG
+        combinations.add(gene + SEPARATOR + biotype + SEPARATOR + so + SEPARATOR + flag);
+        // BIOTYPE + SO + FLAG
+        combinations.add(biotype + SEPARATOR + so + SEPARATOR + flag);
+    }
+
+    public static String flagToStorage(String flag) {
+        return FLAG_TO_STORAGE_MAP.getOrDefault(flag, "N");
+    }
+
+    /**
+     * Returns all possible flag storage values (mapped codes + "N" for null).
+     */
+    public static List<String> allFlagStorageValues() {
+        List<String> values = new ArrayList<>(FLAG_TO_STORAGE_MAP.size() + 1);
+        values.add("N");
+        values.addAll(FLAG_TO_STORAGE_MAP.values());
+        return values;
+    }
+
+    public static String biotypeToStorage(String biotype) {
+        if (biotype == null) {
+            return "N";
+        } else {
+            return BT_TO_STORAGE_MAP.getOrDefault(biotype, biotype);
+        }
+    }
 
     public Document convertScoreToStorageNoSource(Score score) {
         return convertScoreToStorage(score.getScore(), null, score.getDescription());

@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
@@ -56,6 +57,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.SEPARATOR;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
 /**
@@ -87,69 +89,61 @@ public class VariantMongoDBQueryParser {
     protected Bson parseQuery(ParsedVariantQuery parsedVariantQuery) {
 
         // Region filters that intersect with other filters, but create a union between them
+        Bson idIntersectBson = null;
         List<Bson> regionFilters = new ArrayList<>();
         List<Bson> filters = new ArrayList<>();
         if (parsedVariantQuery != null) {
             // Copy given query. It may be modified
             Query query = new Query(parsedVariantQuery.getInputQuery());
-            boolean nonGeneRegionFilter = false;
+            // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
+            ParsedVariantQuery.VariantQueryXref variantQueryXref = parsedVariantQuery.getXrefs();
+
+            boolean pureGeneRegionFilter = !variantQueryXref.getGenes().isEmpty();
+            boolean ctBtFlagApplied;
             /* VARIANT PARAMS */
 
             if (isValidParam(query, REGION)) {
-                nonGeneRegionFilter = true;
+                pureGeneRegionFilter = false;
                 List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
                 if (!regions.isEmpty()) {
                     getRegionFilter(regions, regionFilters);
                 }
             }
 
-            // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
             if (!variantQueryXref.getIds().isEmpty()) {
+                pureGeneRegionFilter = false;
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
                         variantQueryXref.getIds(), regionFilters);
                 addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), regionFilters);
             }
 
             if (!variantQueryXref.getOtherXrefs().isEmpty()) {
-                nonGeneRegionFilter = true;
+                pureGeneRegionFilter = false;
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
                         variantQueryXref.getOtherXrefs(), regionFilters);
             }
 
             List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
             if (!variantQueryXref.getVariants().isEmpty() || !idIntersect.isEmpty()) {
-                nonGeneRegionFilter = true;
                 List<String> mongoIds = new ArrayList<>(variantQueryXref.getVariants().size() + idIntersect.size());
                 for (Variant variant : Iterables.concat(idIntersect, variantQueryXref.getVariants())) {
                     mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                 }
                 if (mongoIds.size() == 1) {
-                    regionFilters.add(eq("_id", mongoIds.get(0)));
+                    idIntersectBson = eq("_id", mongoIds.get(0));
                 } else {
-                    regionFilters.add(in("_id", mongoIds));
+                    idIntersectBson = in("_id", mongoIds);
                 }
             }
 
+            ctBtFlagApplied = addGeneCombinationFilter(parsedVariantQuery, filters, regionFilters,
+                    pureGeneRegionFilter, !variantQueryXref.getGenes().isEmpty());
             if (!variantQueryXref.getGenes().isEmpty()) {
-                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-                    List<String> soList = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
-                    Set<String> gnSo = new HashSet<>(variantQueryXref.getGenes().size() * soList.size());
-                    for (String gene : variantQueryXref.getGenes()) {
-                        for (String so : soList) {
-                            int soNumber = parseConsequenceType(so);
-                            gnSo.add(DocumentToVariantAnnotationConverter.buildGeneSO(gene, soNumber));
-                        }
-                    }
-                    regionFilters.add(in(DocumentToVariantAnnotationConverter.GENE_SO, gnSo));
-                    if (!nonGeneRegionFilter) {
-                        // Filter already present in the GENE_SO_FIELD
-                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
-                    }
-                } else {
-                    addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
-                            variantQueryXref.getGenes(), regionFilters);
+                if (parsedVariantQuery.getAnnotationQuery().getGeneCombinations() == null) {
+                    // If gene combination is present, the gene filter will be applied as part of the combination filter
+                    // Combination not present, so we can apply the gene filter directly
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID, variantQueryXref.getGenes(), regionFilters);
                 }
             }
 
@@ -179,7 +173,7 @@ public class VariantMongoDBQueryParser {
             }
 
             /* ANNOTATION PARAMS */
-            filters.addAll(parseAnnotationQueryParams(parsedVariantQuery, query));
+            filters.addAll(parseAnnotationQueryParams(parsedVariantQuery, query, ctBtFlagApplied));
 
             /* STUDIES */
             filters.addAll(parseStudyQueryParams(parsedVariantQuery, query));
@@ -189,8 +183,20 @@ public class VariantMongoDBQueryParser {
         }
 
         // Combine region filters
+        Bson regionFilterBson = null;
         if (!regionFilters.isEmpty()) {
-            filters.add(or(regionFilters));
+            regionFilterBson = or(regionFilters);
+        }
+        // Combine region with idIntersect.
+        if (idIntersectBson != null) {
+            if (regionFilterBson == null) {
+                regionFilterBson = idIntersectBson;
+            } else {
+                regionFilterBson = and(idIntersectBson, regionFilterBson);
+            }
+        }
+        if (regionFilterBson != null) {
+            filters.add(regionFilterBson);
         }
 
         Bson filter;
@@ -211,7 +217,139 @@ public class VariantMongoDBQueryParser {
         return filter;
     }
 
-    private List<Bson> parseAnnotationQueryParams(ParsedVariantQuery parsedVariantQuery, Query query) {
+    /**
+     * Add gene combination filters.
+     * Depending on the type of combination, the filter will be applied directly to the main filter list, or as part of the region filters.
+     *
+     * Scenarios:
+     *  - No region nor gene filter:
+     *     - Combination filter can be applied directly to the main filter list
+     *     - ct, bt and flag filters do not need to be applied separately
+     *  - Gene filter, but no other region filter:
+     *     - Combination filter can be applied as region filter, together with the gene filter.
+     *     - ct, bt and flag filters do not need to be applied separately
+     *  - Gene filter, and other region filters (e.g. region, id, xref):
+     *     - We need to apply the combination (ct+bt+flag) for gene and non-gene variants
+     *     - Combination filter is applied as region filter, together with the gene filter
+     *     - Combination filter (without gene) is applied as filter, to be applied for non-gene variants
+     *
+     * @param parsedVariantQuery    Parsed variant query with the gene combination to be applied
+     * @param filters               Filters
+     * @param regionFilters         Region filters
+     * @param pureGeneFilter        Is pure gene filter (no other region filters, and gene filter is applied as region filter)
+     * @param hasGeneFilter         Has gene filter, either pure or not
+     * @return  ctBtFlagApplied     ct+bt+flag filter fully applied as combination filter, no need to apply ct, bt and flag filters separately
+     */
+    private static boolean addGeneCombinationFilter(ParsedVariantQuery parsedVariantQuery, List<Bson> filters, List<Bson> regionFilters,
+                                                    boolean pureGeneFilter, boolean hasGeneFilter) {
+        boolean ctBtFlagApplied = false;
+        if (hasGeneFilter && !pureGeneFilter) {
+            // Gene filter is applied, but not as pure gene region filter, so we need to apply the combination filter for non-gene variants as well
+            ParsedVariantQuery.GeneCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(Collections.emptyList(), parsedVariantQuery.getInputQuery());
+            if (combination != null) {
+                addGeneCombinationFilter(combination, filters, regionFilters, false);
+                ctBtFlagApplied = true;
+            }
+        } else {
+            // No gene filter, or pure gene filter, so we can apply the combination filter directly
+             ctBtFlagApplied = true;
+        }
+        addGeneCombinationFilter(parsedVariantQuery.getAnnotationQuery().getGeneCombinations(), filters, regionFilters, hasGeneFilter);
+        return ctBtFlagApplied;
+    }
+
+    private static void addGeneCombinationFilter(ParsedVariantQuery.GeneCombinations combinations, List<Bson> filters,
+                                                 List<Bson> regionFilters, boolean hasGeneFilter) {
+        if (combinations != null) {
+            List<Bson> combinationFilters = new ArrayList<>();
+            String ctCombinedField = DocumentToVariantAnnotationConverter.CT_COMBINED;
+
+            for (ParsedVariantQuery.GeneCombination combination : combinations.getCombinations()) {
+                String gene = combination.getGene();
+                String bt = combination.getBiotype() != null
+                        ? DocumentToVariantAnnotationConverter.biotypeToStorage(combination.getBiotype()) : null;
+                String so = combination.getSo() != null
+                        ? String.valueOf(parseConsequenceType(combination.getSo())) : null;
+                String flag = combination.getFlag() != null
+                        ? DocumentToVariantAnnotationConverter.flagToStorage(combination.getFlag()) : null;
+
+                String any = "[^" + SEPARATOR + "]+";
+                String anySo = "\\d+";
+                switch (combinations.getType()) {
+                    case GENE_BIOTYPE_SO_FLAG:
+                        // Exact match on 4-part: gene_biotype_so_flag
+                        combinationFilters.add(eq(ctCombinedField,
+                                gene + SEPARATOR + bt + SEPARATOR + so + SEPARATOR + flag));
+                        break;
+                    case GENE_BIOTYPE_SO:
+                        // Expand all flag values → $in on 4-part
+                        combinationFilters.add(in(ctCombinedField,
+                                allCtCombinedValues(gene + SEPARATOR + bt + SEPARATOR + so + SEPARATOR)));
+                        break;
+                    case GENE_BIOTYPE:
+                        // Prefix match on 4-part: gene_biotype_*_*
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene + SEPARATOR + bt) + SEPARATOR));
+                        break;
+                    case GENE_BIOTYPE_FLAG:
+                        // Prefix gene_biotype_, any so, specific flag on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene + SEPARATOR + bt) + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case GENE_SO_FLAG:
+                        // Skip biotype, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + so + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case GENE_SO:
+                        // Skip biotype+flag, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + so + SEPARATOR));
+                        break;
+                    case GENE_FLAG:
+                        // Skip biotype+so, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case BIOTYPE_SO_FLAG:
+                        // Exact match on 3-part: biotype_so_flag
+                        combinationFilters.add(eq(ctCombinedField,
+                                bt + SEPARATOR + so + SEPARATOR + flag));
+                        break;
+                    case BIOTYPE_SO:
+                        // Expand all flag values → $in on 3-part
+                        combinationFilters.add(in(ctCombinedField,
+                                allCtCombinedValues(bt + SEPARATOR + so + SEPARATOR)));
+                        break;
+                    case BIOTYPE_FLAG:
+                        // Prefix biotype_, any so, specific flag on 3-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(bt) + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case SO_FLAG:
+                        // Any biotype, specific so+flag on 3-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + any + SEPARATOR + so + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + combinations.getType());
+                }
+            }
+            if (!combinationFilters.isEmpty()) {
+                if (hasGeneFilter) {
+                    // Apply as part of the Region Filter
+                    regionFilters.add(or(combinationFilters));
+                } else {
+                    // No gene filter, so we can apply the combination filter directly
+                    filters.add(combinationFilters.size() == 1
+                            ? combinationFilters.get(0)
+                            : or(combinationFilters));
+                }
+            }
+        }
+    }
+
+    private List<Bson> parseAnnotationQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, boolean ctBtFlagApplied) {
         List<Bson> filters = new ArrayList<>();
 
         if (query != null) {
@@ -225,15 +363,23 @@ public class VariantMongoDBQueryParser {
                 // else , should be combined with an or, and it would not speed up the filtering. This scenario is not so common
             }
 
-            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-                String value = query.getString(ANNOT_CONSEQUENCE_TYPE.key());
-                addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, value, filters,
-                        VariantQueryUtils::parseConsequenceType);
-            }
+            if (!ctBtFlagApplied) {
+                // If the combination of ct, bt and flag is not applied as region filter, we need to apply them separately
+                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+                    String value = query.getString(ANNOT_CONSEQUENCE_TYPE.key());
+                    addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, value, filters,
+                            VariantQueryUtils::parseConsequenceType);
+                }
 
-            if (isValidParam(query, ANNOT_BIOTYPE)) {
-                String biotypes = query.getString(ANNOT_BIOTYPE.key());
-                addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_BIOTYPE, biotypes, filters);
+                if (isValidParam(query, ANNOT_BIOTYPE)) {
+                    String biotypes = query.getString(ANNOT_BIOTYPE.key());
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_BIOTYPE, biotypes, filters);
+                }
+
+                if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                    String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, filters);
+                }
             }
 
             if (isValidParam(query, ANNOT_POLYPHEN)) {
@@ -265,10 +411,6 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, filters, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
-                String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
-                addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, filters);
-            }
             /* FIXME: TASK-8038
             if (isValidParam(query, ANNOT_GENE_TRAIT_ID)) {
                 String value = query.getString(ANNOT_GENE_TRAIT_ID.key());
@@ -1759,6 +1901,19 @@ public class VariantMongoDBQueryParser {
 
     protected int getChunkEnd(int id, int chunksize) {
         return (id * chunksize) + chunksize - 1;
+    }
+
+    /**
+     * Given a prefix (e.g. "BRCA1_pc_1583_"), returns all possible complete values
+     * by appending each known flag storage code and "N" (null flag).
+     */
+    private static List<String> allCtCombinedValues(String prefix) {
+        List<String> flagValues = DocumentToVariantAnnotationConverter.allFlagStorageValues();
+        List<String> values = new ArrayList<>(flagValues.size());
+        for (String flagCode : flagValues) {
+            values.add(prefix + flagCode);
+        }
+        return values;
     }
 
 }

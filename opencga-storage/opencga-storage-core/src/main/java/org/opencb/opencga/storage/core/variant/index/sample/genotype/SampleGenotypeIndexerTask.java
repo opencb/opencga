@@ -242,14 +242,7 @@ public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry
     @Override
     public List<SampleIndexEntry> drain() {
         // Drain buffer
-        System.out.println("DRAIN HERE");
-        List<SampleIndexEntry> r = convert(0);
-        for (SampleIndexEntry sampleIndexEntry : r) {
-            System.out.println("DRAIN ENTRY: " + sampleIndexEntry.getSampleId() + " - " + sampleIndexEntry.getChromosome()
-                    + ":" + sampleIndexEntry.getBatchStart() + " - " + sampleIndexEntry.getGts().keySet());
-        }
-        System.out.println("DRAIN DONE : " + r.size());
-        return r;
+        return convert(0);
     }
 
     private List<SampleIndexEntry> convert(int remain) {

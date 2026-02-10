@@ -1192,9 +1192,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, 1),
                 onBackground);
-        // _gn_so : SPARSE
+        // CT_COMBINED : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantAnnotationConverter.GENE_SO, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_COMBINED, 1),
                 onBackgroundSparse);
         // Population frequency : SPARSE
         variantsCollection.createIndex(new Document()

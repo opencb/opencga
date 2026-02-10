@@ -40,6 +40,7 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -95,6 +96,18 @@ public class DocumentToVariantAnnotationConverterTest {
 //        assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(2).getProteinVariantAnnotation().getReference(), "CYS");
 ////        assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
 //    }
+
+    @Test
+    public void testTranscriptFlagConversion() {
+        assertEquals(VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.size(), DocumentToVariantAnnotationConverter.FLAG_TO_STORAGE_MAP.size());
+        assertEquals(VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS, DocumentToVariantAnnotationConverter.FLAG_TO_STORAGE_MAP.keySet());
+        assertEquals(VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.size(), DocumentToVariantAnnotationConverter.FLAG_FROM_STORAGE_MAP.size());
+    }
+
+    @Test
+    public void testBiotypeConversion() {
+        assertEquals(DocumentToVariantAnnotationConverter.BT_TO_STORAGE_MAP.size(), DocumentToVariantAnnotationConverter.BT_FROM_STORAGE_MAP.size());
+    }
 
     @Test
     public void testConvertBothWaysType() throws Exception {

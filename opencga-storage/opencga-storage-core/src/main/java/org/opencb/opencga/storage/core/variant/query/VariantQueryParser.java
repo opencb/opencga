@@ -89,6 +89,7 @@ public class VariantQueryParser {
         }
     }
 
+
     protected static List<String> parseClinicalCombinationsList(Query query) {
         return parseClinicalCombinationsList(query, false);
     }
@@ -150,6 +151,46 @@ public class VariantQueryParser {
         return clinicalCombinations;
     }
 
+    public static ParsedVariantQuery.GeneCombinations parseGeneBtSoFlagCombination(List<String> genes, Query query) {
+        List<ParsedVariantQuery.GeneCombination> combinations = new ArrayList<>();
+
+        List<String> bt = VariantQueryUtils.splitValues(query.getString(ANNOT_BIOTYPE.key())).getValues();
+        List<String> ct = VariantQueryUtils.splitValues(query.getString(ANNOT_CONSEQUENCE_TYPE.key())).getValues();
+        List<String> flags = VariantQueryUtils.splitValues(query.getString(ANNOT_TRANSCRIPT_FLAG.key())).getValues();
+        int nullCount = 0;
+        if (genes == null || genes.isEmpty()) {
+            genes = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (bt == null || bt.isEmpty()) {
+            bt = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (ct == null || ct.isEmpty()) {
+            ct = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (flags == null || flags.isEmpty()) {
+            flags = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (nullCount >= 3) {
+            // No combination possible if 3 or more parameters are not defined
+            return null;
+        }
+
+        for (String gene : genes) {
+            for (String biotype : bt) {
+                for (String consequenceType : ct) {
+                    for (String flag : flags) {
+                        combinations.add(new ParsedVariantQuery.GeneCombination(gene, biotype, consequenceType, flag));
+                    }
+                }
+            }
+        }
+        return new ParsedVariantQuery.GeneCombinations(combinations);
+    }
+
     public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {
         return parseQuery(query, options, false);
     }
@@ -203,8 +244,12 @@ public class VariantQueryParser {
             variantQuery.setType(types);
         }
 
-        variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
-        variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
+        variantQuery.getAnnotationQuery()
+                .setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
+        variantQuery.getAnnotationQuery()
+                .setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
+        variantQuery.getAnnotationQuery()
+                .setGeneCombinations(VariantQueryParser.parseGeneBtSoFlagCombination(variantQuery.getXrefs().getGenes(), query));
 
         ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
