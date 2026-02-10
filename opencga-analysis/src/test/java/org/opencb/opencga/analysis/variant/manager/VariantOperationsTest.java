@@ -83,6 +83,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.rocksdb.RocksDB;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -151,6 +152,14 @@ public class VariantOperationsTest {
     private static String token;
     private static File file;
 
+    @BeforeClass
+    public static void beforeClass() throws Throwable {
+        // Pre-load RocksDB native library before HBase mini-cluster modifies java.io.tmpdir,
+        // as File.TempDirectory caches the path and won't pick up later restorations.
+        // Only need to do this if the test resets the HadoopExternalResource between executions (same jvm fork)
+        RocksDB.loadLibrary();
+    }
+
     @Before
     public void setUp() throws Throwable {
 //        System.setProperty("opencga.log.level", "INFO");
@@ -185,10 +194,6 @@ public class VariantOperationsTest {
             hadoopExternalResource.after();
             hadoopExternalResource = null;
         }
-    }
-
-    @BeforeClass
-    public static void beforeClass() throws Exception {
     }
 
     @AfterClass
