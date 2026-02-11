@@ -159,6 +159,7 @@
         <rocksdbjni.version>10.2.1</rocksdbjni.version>
 
         <snakeyaml.version>1.33</snakeyaml.version>
+        <netty.version>4.1.131.Final</netty.version>
     </properties>
 
     <scm>
@@ -1248,6 +1249,14 @@
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <!-- Use netty-bom to align all netty modules version -->
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

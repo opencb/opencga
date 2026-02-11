@@ -328,8 +328,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     private void initRockDB(boolean forceCreate) throws ToolException {
         boolean indexingNeeded = forceCreate || !Files.exists(dbLocation);
-        // a static method that loads the RocksDB C++ library.
-        RocksDB.loadLibrary();
+        initRocksDBLibrary();
         // the Options class contains a set of configurable DB options
         // that determines the behavior of a database.
         dbOption = new Options().setCreateIfMissing(true);
@@ -345,6 +344,11 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         } catch (RocksDBException e) {
             throw new ToolException("Error initializing RocksDB", e);
         }
+    }
+
+    public static void initRocksDBLibrary() {
+        // a static method that loads the RocksDB C++ library.
+        RocksDB.loadLibrary();
     }
 
     protected void decompressTarBall(Path file, Path outputPath) throws IOException {
