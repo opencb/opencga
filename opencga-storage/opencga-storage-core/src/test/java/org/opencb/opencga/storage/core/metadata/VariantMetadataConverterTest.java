@@ -86,7 +86,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryProjection(studyMetadata, Collections.emptyList(), Collections.emptyList()));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryProjection(metadataManager, studyMetadata, Collections.emptyList(), Collections.emptyList()));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

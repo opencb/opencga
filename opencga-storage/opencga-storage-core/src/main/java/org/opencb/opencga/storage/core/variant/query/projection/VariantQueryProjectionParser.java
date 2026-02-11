@@ -67,7 +67,7 @@ public class VariantQueryProjectionParser {
             studies.get(studyId).setStudyMetadata(sm);
         }
 
-        Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
+        Map<Integer, List<ResourceId>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
         int numTotalSamples;
         if (isValidParam(query, NUM_TOTAL_SAMPLES)) {
             // NUM_TOTAL_SAMPLES might have been defined in the PreProcess step.
@@ -80,16 +80,11 @@ public class VariantQueryProjectionParser {
         int numSamples = sampleIdsMap.values().stream().mapToInt(List::size).sum();
 
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
-            List<Integer> sampleIds = sampleIdsMap.get(study.getId());
+            List<ResourceId> sampleIds = sampleIdsMap.get(study.getId());
             study.setSamples(sampleIds);
-            List<String> sampleNames = new ArrayList<>(sampleIds.size());
-            for (Integer sampleId : sampleIds) {
-                sampleNames.add(metadataManager.getSampleName(study.getId(), sampleId));
-            }
-            study.setSampleNames(sampleNames);
         }
 
-        Map<Integer, List<Integer>> fileIdsMap = getIncludeFiles(query, includeStudies, includeFields,
+        Map<Integer, List<ResourceId>> fileIdsMap = getIncludeFiles(query, includeStudies, includeFields,
                 metadataManager, sampleIdsMap);
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
             study.setFiles(fileIdsMap.get(study.getId()));
@@ -97,13 +92,13 @@ public class VariantQueryProjectionParser {
 
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
             int studyId = study.getId();
-            List<Integer> filesInStudy = study.getFiles();
+            List<Integer> filesInStudy = study.getFileIds();
             Map<Integer, List<Integer>> multiMap = new HashMap<>();
             Set<Integer> multiSet = new HashSet<>();
             study.setMultiFileSampleFiles(multiMap);
             study.setMultiFileSamples(multiSet);
 
-            for (Integer sampleId : study.getSamples()) {
+            for (Integer sampleId : study.getSampleIds()) {
                 Set<Integer> filesFromSample = new HashSet<>(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 multiMap.put(sampleId, new ArrayList<>(filesFromSample.size()));
                 if (filesFromSample.size() > 1) {
@@ -125,12 +120,12 @@ public class VariantQueryProjectionParser {
             }
         }
 
-        if (studies.values().stream().allMatch(s -> s.getFiles().isEmpty())) {
+        if (studies.values().stream().allMatch(s -> s.getFileIds().isEmpty())) {
             includeFields.remove(VariantField.STUDIES_FILES);
             includeFields.removeAll(VariantField.STUDIES_FILES.getChildren());
         }
 
-        if (studies.values().stream().allMatch(s -> s.getSamples().isEmpty())) {
+        if (studies.values().stream().allMatch(s -> s.getSampleIds().isEmpty())) {
             includeFields.remove(VariantField.STUDIES_SAMPLES);
             includeFields.removeAll(VariantField.STUDIES_SAMPLES.getChildren());
         }
@@ -167,11 +162,11 @@ public class VariantQueryProjectionParser {
                 .setEvents(events);
     }
 
-    private <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {
+    private <T, R> void skipAndLimitSamples(Query query, Map<T, List<R>> sampleIds) {
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.SAMPLE_SKIP)) {
             int skip = query.getInt(VariantQueryParam.SAMPLE_SKIP.key());
             if (skip > 0) {
-                for (List<T> value : sampleIds.values()) {
+                for (List<R> value : sampleIds.values()) {
                     if (value.size() < skip) {
                         // Skip all samples from study
                         skip -= value.size();
@@ -188,7 +183,7 @@ public class VariantQueryProjectionParser {
             int limit = query.getInt(VariantQueryParam.SAMPLE_LIMIT.key());
             if (limit > 0) {
 //                numSamples = limit;
-                for (List<T> value : sampleIds.values()) {
+                for (List<R> value : sampleIds.values()) {
                     if (limit >= value.size()) {
                         // include all samples from study
                         limit -= value.size();
@@ -223,7 +218,7 @@ public class VariantQueryProjectionParser {
         if (studiesList == null) {
             studyIds = metadataManager.getStudyIds();
             if (studyIds.size() > 1) {
-                Map<Integer, List<Integer>> map = null;
+                Map<Integer, List<ResourceId>> map = null;
                 if (isIncludeSomeSamples(query, fields)) {
                     map = getIncludeSampleIds(query, options, studyIds, metadataManager);
                 } else if (getIncludeFileStatus(query, fields) == IncludeStatus.SOME) {
@@ -231,7 +226,7 @@ public class VariantQueryProjectionParser {
                 }
                 if (map != null) {
                     List<Integer> studyIdsFromSubFields = new ArrayList<>();
-                    for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+                    for (Map.Entry<Integer, List<ResourceId>> entry : map.entrySet()) {
                         if (!entry.getValue().isEmpty()) {
                             studyIdsFromSubFields.add(entry.getKey());
                         }
@@ -314,9 +309,9 @@ public class VariantQueryProjectionParser {
      * @param fields                    Returned fields
      * @return List of fileIds to return.
      */
-    private static Map<Integer, List<Integer>> getIncludeFiles(Query query, Collection<Integer> studyIds, Set<VariantField> fields,
+    private static Map<Integer, List<ResourceId>> getIncludeFiles(Query query, Collection<Integer> studyIds, Set<VariantField> fields,
                                                                VariantStorageMetadataManager metadataManager,
-                                                               Map<Integer, List<Integer>> includeSamples) {
+                                                               Map<Integer, List<ResourceId>> includeSamples) {
         // Ignore includeSamples map if totally empty
         if (includeSamples.values().stream().allMatch(Collection::isEmpty)) {
             includeSamples = null;
@@ -325,7 +320,7 @@ public class VariantQueryProjectionParser {
         List<String> includeFilesList = getIncludeFilesList(query, fields);
         IncludeStatus includeFileStatus = getIncludeFileStatus(query, fields);
 
-        Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
+        Map<Integer, List<ResourceId>> files = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
             StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
             if (sm == null) {
@@ -352,7 +347,7 @@ public class VariantQueryProjectionParser {
                             }
                         }
                     } else if (includeSamples != null) {
-                        List<Integer> sampleIds = includeSamples.get(studyId);
+                        List<Integer> sampleIds = includeSamples.get(studyId).stream().map(ResourceId::getId).collect(Collectors.toList());
                         Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
                         fileIds = new ArrayList<>(fileSet);
                     } else {
@@ -372,7 +367,11 @@ public class VariantQueryProjectionParser {
                 default:
                     throw new IllegalArgumentException("Unknown IncludeStats='" + includeFileStatus + "'");
             }
-            files.put(studyId, fileIds);
+            List<ResourceId> fileResourceIds = new ArrayList<>(fileIds.size());
+            for (Integer fileId : fileIds) {
+                fileResourceIds.add(new ResourceId(ResourceId.Type.FILE, fileId, metadataManager.getFileName(studyId, fileId)));
+            }
+            files.put(studyId, fileResourceIds);
         }
 
         return files;
@@ -517,16 +516,16 @@ public class VariantQueryProjectionParser {
     public static Map<String, List<String>> getIncludeSampleNames(Query query, QueryOptions options,
                                                                   VariantStorageMetadataManager metadataManager) {
         if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-            Map<Integer, List<Integer>> includeSamples = getIncludeSampleIds(query, options, metadataManager);
+            Map<Integer, List<ResourceId>> includeSamples = getIncludeSampleIds(query, options, metadataManager);
             Map<String, List<String>> sampleMetadata = new HashMap<>(includeSamples.size());
 
-            for (Map.Entry<Integer, List<Integer>> entry : includeSamples.entrySet()) {
+            for (Map.Entry<Integer, List<ResourceId>> entry : includeSamples.entrySet()) {
                 Integer studyId = entry.getKey();
-                List<Integer> sampleIds = entry.getValue();
+                List<ResourceId> sampleIds = entry.getValue();
                 String studyName = metadataManager.getStudyName(studyId);
                 ArrayList<String> sampleNames = new ArrayList<>(sampleIds.size());
-                for (Integer sampleId : sampleIds) {
-                    sampleNames.add(metadataManager.getSampleName(studyId, sampleId));
+                for (ResourceId sampleId : sampleIds) {
+                    sampleNames.add(sampleId.getName());
                 }
                 sampleMetadata.put(studyName, sampleNames);
             }
@@ -537,13 +536,13 @@ public class VariantQueryProjectionParser {
         }
     }
 
-    public static Map<Integer, List<Integer>> getIncludeSampleIds(Query query, QueryOptions options,
+    public static Map<Integer, List<ResourceId>> getIncludeSampleIds(Query query, QueryOptions options,
                                                                   VariantStorageMetadataManager variantStorageMetadataManager) {
         List<Integer> includeStudies = getIncludeStudies(query, options, variantStorageMetadataManager);
         return getIncludeSampleIds(query, options, includeStudies, variantStorageMetadataManager);
     }
 
-    private static Map<Integer, List<Integer>> getIncludeSampleIds(
+    private static Map<Integer, List<ResourceId>> getIncludeSampleIds(
             Query query, QueryOptions options, Collection<Integer> studyIds,
             VariantStorageMetadataManager metadataManager) {
 
@@ -552,21 +551,25 @@ public class VariantQueryProjectionParser {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         IncludeStatus includeSampleStatus = getIncludeSampleStatus(query, includeFields);
 
-        Map<Integer, List<Integer>> samples = new LinkedHashMap<>(studyIds.size());
+        Map<Integer, List<ResourceId>> samples = new LinkedHashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
             StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
             if (sm == null) {
                 continue;
             }
 
-            List<Integer> sampleIds;
+            List<ResourceId> sampleIds;
             if (includeSampleStatus.equals(IncludeStatus.NONE)) {
                 sampleIds = Collections.emptyList();
             } else if (includeSampleStatus.equals(IncludeStatus.ALL)) {
-                sampleIds = metadataManager.getIndexedSamples(sm.getId());
+                List<Integer> indexedSamples = metadataManager.getIndexedSamples(sm.getId());
+                sampleIds = new ArrayList<>(indexedSamples.size());
+                for (Integer sampleId : indexedSamples) {
+                    sampleIds.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId, metadataManager.getSampleName(sm.getId(), sampleId)));
+                }
             } else if (includeSamplesList == null && CollectionUtils.isNotEmpty(includeFilesList)) {
                 // Include from files
-                Set<Integer> sampleSet = new LinkedHashSet<>();
+                Set<ResourceId> sampleSet = new LinkedHashSet<>();
                 for (String file : includeFilesList) {
                     Integer fileId = metadataManager.getFileId(sm.getId(), file, true);
                     if (fileId == null) {
@@ -574,7 +577,10 @@ public class VariantQueryProjectionParser {
                     }
                     FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
                     if (CollectionUtils.isNotEmpty(fileMetadata.getSamples())) {
-                        sampleSet.addAll(fileMetadata.getSamples());
+                        for (Integer sampleId : fileMetadata.getSamples()) {
+                            String sampleName = metadataManager.getSampleName(sm.getId(), sampleId);
+                            sampleSet.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId, sampleName));
+                        }
                     }
                 }
                 sampleIds = new ArrayList<>(sampleSet);
@@ -583,13 +589,16 @@ public class VariantQueryProjectionParser {
                 if (includeSampleRaw instanceof Collection
                         && !((Collection) includeSampleRaw).isEmpty()
                         && ((Collection) includeSampleRaw).iterator().next() instanceof Integer) {
-                    sampleIds = new ArrayList<>((Collection<Integer>) includeSampleRaw);
+                    sampleIds = new ArrayList<>(((Collection) includeSampleRaw).size());
+                    for (Integer sampleId : new ArrayList<>((Collection<Integer>) includeSampleRaw)) {
+                        sampleIds.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId, metadataManager.getSampleName(sm.getId(), sampleId)));
+                    }
                 } else {
                     sampleIds = new ArrayList<>(includeSamplesList.size());
                     for (String sample : includeSamplesList) {
                         Integer sampleId = metadataManager.getSampleId(studyId, sample);
                         if (sampleId != null) {
-                            sampleIds.add(sampleId);
+                            sampleIds.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId, sample));
                         }
                     }
                     /*
@@ -605,7 +614,7 @@ public class VariantQueryProjectionParser {
                     }
                      */
                 }
-                sampleIds.removeIf(id -> !metadataManager.isSampleIndexed(studyId, id));
+                sampleIds.removeIf(id -> !metadataManager.isSampleIndexed(studyId, id.getId()));
             }
             samples.put(studyId, sampleIds);
         }

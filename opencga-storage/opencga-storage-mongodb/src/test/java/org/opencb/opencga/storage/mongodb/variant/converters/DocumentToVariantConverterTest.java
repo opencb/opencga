@@ -84,7 +84,7 @@ public class DocumentToVariantConverterTest {
 
 
         studyMetadata = metadataManager.getStudyMetadata(studyId);
-        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(na001, na002), Arrays.asList(fileId));
+        variantQueryProjection = new VariantQueryProjection(metadataManager, studyMetadata, Arrays.asList(na001, na002), Arrays.asList(fileId));
 
 
         //Setup variant

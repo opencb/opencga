@@ -252,7 +252,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             String sampleName = sampleIndexQuery.getSamplesMap().keySet().iterator().next();
             Integer sampleId = metadataManager.getSampleId(study.getId(), sampleName);
 
-            if (!study.getSamples().contains(sampleId)) {
+            if (!study.getSampleIds().contains(sampleId)) {
                 // Sample query does not include the sample to be returned
                 return false;
             }
@@ -268,9 +268,9 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 return false;
             }
 
-            if (study.getSamples().size() > 1) {
+            if (study.getSampleIds().size() > 1) {
                 // Ensure that all includedSamples are members of the same family
-                LinkedList<Integer> samplesAux = new LinkedList<>(study.getSamples());
+                LinkedList<Integer> samplesAux = new LinkedList<>(study.getSampleIds());
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(study.getId(), sampleId);
                 samplesAux.remove(sampleId);
                 samplesAux.remove(sampleMetadata.getMother());
@@ -325,7 +325,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
             if (includeStudy) {
                 int studyId = projection.getStudyIds().get(0); // only one study
                 // force includeFiles if "includeAll"
-                includeFiles = includeAll || !projection.getStudy(studyId).getFiles().isEmpty();
+                includeFiles = includeAll || !projection.getStudy(studyId).getFileIds().isEmpty();
                 VariantQueryProjection.StudyVariantQueryProjection projectionStudy = projection.getStudy(studyId);
                 studyName = projectionStudy.getStudyMetadata().getName();
 
@@ -340,7 +340,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 familyRoleOrder = new ArrayList<>();
                 samplesPosition = new LinkedHashMap<>();
                 SampleMetadata sampleMetadata = null; // lazy init
-                List<Integer> includeSamples = projectionStudy.getSamples();
+                List<Integer> includeSamples = projectionStudy.getSampleIds();
                 for (Integer includeSampleId : includeSamples) {
                     if (includeSampleId.equals(sampleId)) {
                         familyRoleOrder.add(FamilyRole.SAMPLE);
@@ -533,11 +533,11 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 throw new IllegalStateException("Unexpected number of samples. Expected one, found "
                         + sampleIndexQuery.getSamplesMap().keySet());
             }
-            includeSamples = new ArrayList<>(projectionStudy.getSamples().size());
-            for (Integer sample : projectionStudy.getSamples()) {
+            includeSamples = new ArrayList<>(projectionStudy.getSampleIds().size());
+            for (Integer sample : projectionStudy.getSampleIds()) {
                 includeSamples.add(metadataManager.getSampleName(studyId, sample));
             }
-            Set<Integer> allFileIds = metadataManager.getFileIdsFromSampleIds(studyId, projectionStudy.getSamples(), true);
+            Set<Integer> allFileIds = metadataManager.getFileIdsFromSampleIds(studyId, projectionStudy.getSampleIds(), true);
             allFiles = new ArrayList<>(allFileIds.size());
             for (Integer fileId : allFileIds) {
                 allFiles.add(metadataManager.getFileName(studyId, fileId));

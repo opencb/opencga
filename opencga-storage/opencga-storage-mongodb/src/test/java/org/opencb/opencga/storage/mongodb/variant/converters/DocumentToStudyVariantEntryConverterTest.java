@@ -80,7 +80,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         for (String sampleName : sampleNames) {
             sampleIdsMap.put(sampleName, metadataManager.getSampleId(studyId, sampleName));
         }
-        variantQueryProjection = new VariantQueryProjection(studyMetadata, sampleIds, Arrays.asList(fileId));
+        variantQueryProjection = new VariantQueryProjection(metadataManager, studyMetadata, sampleIds, Arrays.asList(fileId));
 
         studyEntry = new StudyEntry(studyId.toString());
         FileEntry fileEntry = new FileEntry(fileId.toString(), null, new HashMap<>());

@@ -277,11 +277,11 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             emptyQuery.putIfNotNull(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), query.get(VariantQueryParam.INCLUDE_SAMPLE_DATA.key()));
             for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
                 studyNames.add(study.getStudyMetadata().getName());
-                for (Integer file : study.getFiles()) {
+                for (Integer file : study.getFileIds()) {
                     String fileName = metadataManager.getFileName(study.getStudyMetadata().getId(), file);
                     fileNames.add(fileName);
                 }
-                for (Integer sample : study.getSamples()) {
+                for (Integer sample : study.getSampleIds()) {
                     String sampleName = metadataManager.getSampleName(study.getStudyMetadata().getId(), sample);
                     sampleNames.add(sampleName);
                 }

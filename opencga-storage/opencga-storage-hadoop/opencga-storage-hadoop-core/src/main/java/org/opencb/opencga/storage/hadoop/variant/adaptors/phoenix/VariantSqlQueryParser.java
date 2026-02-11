@@ -231,7 +231,7 @@ public class VariantSqlQueryParser {
                 }
 
                 if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                    for (Integer fileId : study.getFiles()) {
+                    for (Integer fileId : study.getFileIds()) {
                         sb.append(",\"");
                         buildFileColumnKey(studyId, fileId, sb);
                         sb.append('"');
@@ -239,7 +239,7 @@ public class VariantSqlQueryParser {
                 }
 
                 if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
-                    for (Integer sampleId : study.getSamples()) {
+                    for (Integer sampleId : study.getSampleIds()) {
                         if (study.getMultiFileSamples().contains(sampleId)) {
                             // Files to be included
                             List<Integer> fileIds = study.getMultiFileSampleFiles().get(sampleId);
@@ -271,8 +271,8 @@ public class VariantSqlQueryParser {
 
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples(), true);
-                    List<Integer> includeFiles = projection.getStudy(studyId).getFiles();
+                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds(), true);
+                    List<Integer> includeFiles = projection.getStudy(studyId).getFileIds();
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
                             sb.append(",\"");

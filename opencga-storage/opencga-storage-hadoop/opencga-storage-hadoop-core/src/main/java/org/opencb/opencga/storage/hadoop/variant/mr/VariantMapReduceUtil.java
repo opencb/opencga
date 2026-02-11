@@ -167,7 +167,7 @@ public class VariantMapReduceUtil {
             // These might be needed even if they don't belong to the query
             for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
                 int studyId = study.getId();
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds())) {
                     metadataManager.getFileMetadata(studyId, fileId);
                 }
             }

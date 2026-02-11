@@ -399,11 +399,11 @@ public class VariantHBaseQueryParser {
 
                 scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
 
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds())) {
                     scan.addColumn(family, buildFileColumnKey(studyId, fileId));
                 }
 
-                for (Integer sampleId : study.getSamples()) {
+                for (Integer sampleId : study.getSampleIds()) {
                     Collection<Integer> requiredFilesFromSample = study.getMultiFileSampleFiles().get(sampleId);
                     List<Integer> allFilesFromSample = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
                     if (requiredFilesFromSample == null || requiredFilesFromSample.isEmpty()) {
@@ -422,7 +422,7 @@ public class VariantHBaseQueryParser {
                 }
 
                 scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
-                for (Integer fileId : study.getFiles()) {
+                for (Integer fileId : study.getFileIds()) {
                     scan.addColumn(family, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
                 }
             }

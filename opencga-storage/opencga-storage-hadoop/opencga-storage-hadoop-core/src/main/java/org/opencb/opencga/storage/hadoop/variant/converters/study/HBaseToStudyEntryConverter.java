@@ -422,7 +422,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
 
         if (configuration.getProjection() != null
-                && !configuration.getProjection().getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
+                && !configuration.getProjection().getStudy(studyMetadata.getId()).getFileIds().contains(fileId)) {
             if (call != null && !call.isEmpty()) {
                 OriginalCall originalCall = parseOriginalCall(call);
                 filesOnlyCall.add(new FileEntry(fileName, originalCall, Collections.emptyMap()));
@@ -1011,7 +1011,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 return metadataManager.getSamplesPosition(studyMetadata);
             } else {
-                List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSamples();
+                List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSampleIds();
                 return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds), false);
             }
         });
@@ -1026,7 +1026,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 return new HashSet<>(metadataManager.getIndexedSamples(id));
             } else {
-                return new HashSet<>(configuration.getProjection().getStudy(id).getSamples());
+                return new HashSet<>(configuration.getProjection().getStudy(id).getSampleIds());
             }
         });
     }
@@ -1058,7 +1058,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 samplesSet = null;
             } else {
-                samplesSet = new HashSet<>(configuration.getProjection().getStudy(studyId).getSamples());
+                samplesSet = new HashSet<>(configuration.getProjection().getStudy(studyId).getSampleIds());
             }
             for (Integer sample : sampleIds) {
                 if (samplesSet == null || samplesSet.contains(sample)) {

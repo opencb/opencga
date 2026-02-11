@@ -76,7 +76,7 @@ public class HBaseToStudyEntryConverterTest {
         return new HBaseToStudyEntryConverter(mm, null)
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setIncludeSampleId(false)
-                        .setProjection(new VariantQueryProjection(mm.getStudyMetadata(sm.getId()),
+                        .setProjection(new VariantQueryProjection(mm, mm.getStudyMetadata(sm.getId()),
                                 Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4, sampleId5, sampleId6), Collections.emptyList()))
                         .build());
     }

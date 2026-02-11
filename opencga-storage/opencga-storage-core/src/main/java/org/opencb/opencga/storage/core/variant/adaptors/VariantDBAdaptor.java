@@ -166,17 +166,6 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     @Deprecated
     DataResult groupBy(Query query, List<String> fields, QueryOptions options);
 
-    /**
-     * Returns all the possible samples to be returned by an specific query.
-     *
-     * @param query     Query to execute
-     * @param options   Query Options
-     * @return  Map key: StudyId, value: list of sampleIds
-     */
-    default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryProjectionParser.getIncludeSampleIds(query, options, getMetadataManager());
-    }
-
     @Deprecated
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);

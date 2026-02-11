@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -29,6 +27,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.query.ResourceId;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.zip.DataFormatException;
 
@@ -53,18 +51,18 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     public static final String UNKNOWN_FIELD = ".";
 
     private final Map<Integer, StudyMetadata> studyMetadatas;
-    private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null
+    private final Map<Integer, Map<String, Integer>> studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null
     // . Use "getIndexedIdSamplesMap()"
-    private final Map<Integer, LinkedHashMap<String, Integer>> __samplesPosition;
-    private final Map<Integer, String> __sampleNames;
-    private final Map<String, Integer> __sampleIds;
+    private final Map<Integer, LinkedHashMap<String, Integer>> samplesPosition;
+    private final Map<Integer, Map<Integer, String>> studySampleNames;
     private final Map<Integer, List<Integer>> __samplesInFile;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
+    private final VariantStorageMetadataManager metadataManager;
     private Map<Integer, LinkedHashSet<Integer>> includeSamples;
     private Map<Integer, List<Integer>> includeFiles;
     private final Map<Integer, List<String>> sampleDataKeysPerStudy;
+    private final VariantQueryProjection variantQueryProjection;
 
-    private VariantStorageMetadataManager metadataManager;
     private String unknownGenotype;
     private List<String> expectedExtraFields;
     private boolean includeSampleId = false;
@@ -112,49 +110,59 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
     };
 
-
-    /**
-     * Create a converter from a Map of samples to Document entities.
-     **/
-    DocumentToSamplesConverter() {
-        studyMetadatas = new ConcurrentHashMap<>();
-        __studySamplesId = new ConcurrentHashMap<>();
-        __samplesPosition = new ConcurrentHashMap<>();
-        __sampleNames = new ConcurrentHashMap<>();
-        __sampleIds = new ConcurrentHashMap<>();
-        __samplesInFile = new ConcurrentHashMap<>();
-        studyDefaultGenotypeSet = new ConcurrentHashMap<>();
-        sampleDataKeysPerStudy = new ConcurrentHashMap<>();
-        includeSamples = Collections.emptyMap();
-        metadataManager = null;
-        unknownGenotype = UNKNOWN_GENOTYPE;
-    }
-
-    public DocumentToSamplesConverter(VariantStorageMetadataManager metadataManager) {
-        this();
-        this.metadataManager = metadataManager;
-    }
-
-    public DocumentToSamplesConverter(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata) {
-        this();
-        this.metadataManager = metadataManager;
-        addStudyMetadata(studyMetadata);
-    }
-
     public DocumentToSamplesConverter(VariantStorageMetadataManager metadataManager, VariantQueryProjection variantQueryProjection) {
-        this();
         this.metadataManager = metadataManager;
-        setIncludeSamples(variantQueryProjection.getSamples());
-        includeFiles = variantQueryProjection.getFiles();
-        for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas()) {
-            addStudyMetadata(studyMetadata);
-        }
-    }
+        this.variantQueryProjection = variantQueryProjection;
+        includeSamples = new HashMap<>();
 
-    @Deprecated
-    public DocumentToSamplesConverter(List<? extends StudyMetadata> list) {
-        this();
-        list.forEach(this::addStudyMetadata);
+
+        includeSamples.forEach((studyId, sampleIds) -> this.includeSamples.put(studyId, new LinkedHashSet<>(sampleIds)));
+
+        includeFiles = variantQueryProjection.getFiles();
+        studyMetadatas = new HashMap<>();
+        studyDefaultGenotypeSet = new HashMap<>();
+        samplesPosition = new HashMap<>();
+        studySampleNames = new HashMap<>();
+        studySamplesId = new HashMap<>();
+        this.includeSamples = new HashMap<>();
+
+        for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : variantQueryProjection.getStudies().values()) {
+            StudyMetadata studyMetadata = studyProjection.getStudyMetadata();
+            int studyId = studyMetadata.getId();
+            studyMetadatas.put(studyId, studyMetadata);
+            LinkedHashMap<String, Integer> samplesPosition = new LinkedHashMap<>();
+
+            Set<String> defGenotypeSet;
+            List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+            if (defGenotype.size() == 0) {
+                defGenotypeSet = Collections.emptySet();
+            } else if (defGenotype.size() == 1) {
+                defGenotypeSet = Collections.singleton(defGenotype.get(0));
+            } else {
+                defGenotypeSet = new LinkedHashSet<>(defGenotype);
+            }
+            this.studyDefaultGenotypeSet.put(studyMetadata.getId(), defGenotypeSet);
+
+            Map<String, Integer> samplesMap = new HashMap<>();
+            Map<Integer, String> samplesIdMap = new HashMap<>();
+            LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>();
+            for (ResourceId sample : studyProjection.getSamples()) {
+                samplesPosition.put(sample.getName(), samplesPosition.size());
+                samplesMap.put(sample.getName(), sample.getId());
+                samplesIdMap.put(sample.getId(), sample.getName());
+                sampleIds.add(sample.getId());
+            }
+            includeSamples.put(studyId, sampleIds);
+            studySampleNames.put(studyId, samplesIdMap);
+            studySamplesId.put(studyId, samplesMap);
+            this.samplesPosition.put(studyId, samplesPosition);
+        }
+
+
+
+        __samplesInFile = new HashMap<>();
+        sampleDataKeysPerStudy = new HashMap<>();
+        unknownGenotype = UNKNOWN_GENOTYPE;
     }
 
     public List<SampleEntry> convertToDataModelType(Document object, int studyId) {
@@ -173,8 +181,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             return Collections.emptyList();
         }
 
-        BiMap<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
-        final LinkedHashMap<String, Integer> samplesPositionToReturn = getSamplesPosition(studyMetadata);
+        final LinkedHashMap<String, Integer> samplesPositionToReturn = getSamplesPosition(studyMetadata.getId());
+        Map<String, Integer> sampleIds = studySamplesId.get(studyId);
+        Map<Integer, String> sampleNames = studySampleNames.get(studyId);
 
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
                 || studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
@@ -182,7 +191,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         boolean compressExtraParams = studyMetadata.getAttributes()
                 .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
-        if (sampleIds == null || sampleIds.isEmpty()) {
+        if (samplesPositionToReturn == null || samplesPositionToReturn.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, Collections.emptyList(), Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
         }
@@ -226,7 +235,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
         extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
         sampleDataKeys = getSampleDataKeys(excludeGenotypes, extraFields);
-        List<SampleEntry> sampleEntries = new ArrayList<>(sampleIds.size());
+        List<SampleEntry> sampleEntries = new ArrayList<>(samplesPositionToReturn.size());
 
 
         // An array of genotypes is initialized with the most common one
@@ -261,7 +270,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         // in the position specified in the array, such as:
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
-        Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
+//        Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
         if (!excludeGenotypes) {
             Document mongoGenotypes = (Document) object.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD);
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
@@ -273,8 +282,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     genotype = genotypeToDataModelType(dbo.getKey());
                 }
                 for (Integer sampleId : (List<Integer>) dbo.getValue()) {
-                    if (idSamples.containsKey(sampleId)) {
-                        sampleEntries.get(samplesPositionToReturn.get(idSamples.get(sampleId))).getData().set(0, genotype);
+                    if (sampleNames.containsKey(sampleId)) {
+                        sampleEntries.get(samplesPositionToReturn.get(sampleNames.get(sampleId))).getData().set(0, genotype);
                     }
                 }
             }
@@ -452,36 +461,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
     }
 
-    public void setIncludeSamples(Map<Integer, List<Integer>> includeSamples) {
-        this.includeSamples = includeSamples == null ? null : new HashMap<>(includeSamples.size());
-        if (includeSamples != null) {
-            this.includeSamples = new HashMap<>();
-            includeSamples.forEach((studyId, sampleIds) -> this.includeSamples.put(studyId, new LinkedHashSet<>(sampleIds)));
-        } else {
-            this.includeSamples = null;
-        }
-        __studySamplesId.clear();
-        __samplesPosition.clear();
-    }
-
-    public void addStudyMetadata(StudyMetadata studyMetadata) {
-        this.studyMetadatas.put(studyMetadata.getId(), studyMetadata);
-        this.__studySamplesId.remove(studyMetadata.getId());
-
-        Set defGenotypeSet = studyMetadata.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
-        if (defGenotypeSet == null) {
-            List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-            if (defGenotype.size() == 0) {
-                defGenotypeSet = Collections.<String>emptySet();
-            } else if (defGenotype.size() == 1) {
-                defGenotypeSet = Collections.singleton(defGenotype.get(0));
-            } else {
-                defGenotypeSet = new LinkedHashSet<>(defGenotype);
-            }
-        }
-        this.studyDefaultGenotypeSet.put(studyMetadata.getId(), defGenotypeSet);
-    }
-
     public String getUnknownGenotype() {
         return unknownGenotype;
     }
@@ -533,52 +512,38 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     }
 
     private StudyMetadata getStudyMetadata(int studyId) {
-        return studyMetadatas.computeIfAbsent(studyId, s -> {
-            if (metadataManager != null) {
-                StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-                addStudyMetadata(studyMetadata);
-                return studyMetadata;
-            } else {
-                return null;
-            }
-        });
+        return studyMetadatas.get(studyId);
     }
 
-    /**
-     * Lazy usage of loaded samplesIdMap.
-     **/
-    private BiMap<String, Integer> getIndexedSamplesIdMap(int studyId) {
-        BiMap<String, Integer> sampleIds;
-        if (this.__studySamplesId.get(studyId) == null) {
-            sampleIds = metadataManager.getIndexedSamplesMap(studyId);
-            if (includeSamples != null && includeSamples.containsKey(studyId)) {
-                BiMap<String, Integer> includeSampleIds = HashBiMap.create();
-                sampleIds.entrySet().stream()
-                        //ReturnedSamples could be sampleNames or sampleIds as a string
-                        .filter(e -> includeSamples.get(studyId).contains(e.getValue()))
-                        .forEach(stringIntegerEntry -> includeSampleIds.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
-                sampleIds = includeSampleIds;
-            }
-            this.__studySamplesId.put(studyId, sampleIds);
-        } else {
-            sampleIds = this.__studySamplesId.get(studyId);
-        }
+//    /**
+//     * Lazy usage of loaded samplesIdMap.
+//     **/
+//    private BiMap<String, Integer> getIndexedSamplesIdMap(int studyId) {
+//        BiMap<String, Integer> sampleIds;
+//        if (this.__studySamplesId.get(studyId) == null) {
+//            sampleIds = metadataManager.getIndexedSamplesMap(studyId);
+//            if (includeSamples != null && includeSamples.containsKey(studyId)) {
+//                BiMap<String, Integer> includeSampleIds = HashBiMap.create();
+//                sampleIds.entrySet().stream()
+//                        //ReturnedSamples could be sampleNames or sampleIds as a string
+//                        .filter(e -> includeSamples.get(studyId).contains(e.getValue()))
+//                        .forEach(stringIntegerEntry -> includeSampleIds.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+//                sampleIds = includeSampleIds;
+//            }
+//            this.__studySamplesId.put(studyId, sampleIds);
+//        } else {
+//            sampleIds = this.__s tudySamplesId.get(studyId);
+//        }
+//
+//        return sampleIds;
+//    }
 
-        return sampleIds;
-    }
-
-    private LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata studyMetadata) {
-        int studyId = studyMetadata.getId();
-        return __samplesPosition.computeIfAbsent(studyId,
-                s -> metadataManager.getSamplesPosition(studyMetadata, this.includeSamples.get(studyId)));
+    private LinkedHashMap<String, Integer> getSamplesPosition(int studyId) {
+        return samplesPosition.get(studyId);
     }
 
     private String getSampleName(int studyId, int sampleId) {
-        return __sampleNames.computeIfAbsent(sampleId, s -> metadataManager.getSampleName(studyId, sampleId));
-    }
-
-    private int getSampleId(int studyId, String sampleName) {
-        return __sampleIds.computeIfAbsent(sampleName, s -> metadataManager.getSampleId(studyId, sampleName));
+        return studySampleNames.get(studyId).get(sampleId);
     }
 
     private List<Integer> getSamplesInFile(int studyId, int fid) {

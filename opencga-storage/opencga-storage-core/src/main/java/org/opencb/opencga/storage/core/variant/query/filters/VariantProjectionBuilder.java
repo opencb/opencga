@@ -90,7 +90,7 @@ public class VariantProjectionBuilder {
 
                         // 4. Sample Projection
                         if (fields.contains(VariantField.STUDIES_SAMPLES)) {
-                             if (studyProjection.getSamples().isEmpty()) {
+                             if (studyProjection.getSampleIds().isEmpty()) {
                                  studyEntry.setSamples(Collections.emptyList());
                                  studyEntry.setSamplesPosition(Collections.emptyMap());
                                  // Also clear sample data keys if no samples? Usually keys remain.
@@ -111,7 +111,7 @@ public class VariantProjectionBuilder {
     }
 
     private void filterFiles(StudyEntry studyEntry, VariantQueryProjection.StudyVariantQueryProjection studyProjection) {
-        if (studyProjection.getFiles() == null || studyProjection.getFiles().isEmpty()) {
+        if (studyProjection.getFileIds() == null || studyProjection.getFileIds().isEmpty()) {
              // If projection says no files? Or all files?
              // Usually if list is empty, it means no files (if exclude/include logic was applied)
              // But VariantQueryProjection semantics might be distinct.

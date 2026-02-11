@@ -145,7 +145,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             }
 
             configure(HBaseVariantConverterConfiguration.builder()
-                    .setProjection(new VariantQueryProjection(sm, sampleIds, Collections.emptyList()))
+                    .setProjection(new VariantQueryProjection(metadataManager, sm, sampleIds, Collections.emptyList()))
                     .setUnknownGenotype(unknownGenotype)
                     .build());
             defaultGenotype = getDefaultGenotype(sm);
