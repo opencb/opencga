@@ -168,7 +168,7 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     @Test
-    public void updateTest() throws CatalogException, InterruptedException {
+    public void updateTest() throws Exception {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
         Family prevFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
@@ -177,8 +177,8 @@ public class FamilyAnalysisTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions()
                 .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
         catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser);
-        // wait for 2 seconds so the pedigree is fully updated
-        Thread.sleep(2000);
+        // Wait for the async pedigree graph generation to finish before fetching the family again
+        catalogManager.getFamilyManager().asyncPedigreeWait();
         Family updatedFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
 
         assertEquals(prevFamily.getPedigreeGraph().getBase64(), updatedFamily.getPedigreeGraph().getBase64());

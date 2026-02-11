@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
@@ -63,8 +64,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,6 +91,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     // ExecutorService for async pedigree graph calculation
     private final ExecutorService pedigreeGraphExecutor;
+    private final Map<Integer, AtomicReference<Future<?>>> pedigreeGraphFutures = new ConcurrentHashMap<>();
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -1146,7 +1148,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @param increaseVersion Force family version increase.
      */
     private void asyncUpdatePedigreeGraph(String organizationId, long studyUid, long familyUid, String familyId, boolean increaseVersion) {
-        pedigreeGraphExecutor.submit(() -> {
+        Integer key = RandomUtils.nextInt();
+        AtomicReference<Future<?>> ref = new AtomicReference<>();
+        pedigreeGraphFutures.put(key, ref); // Placeholder to indicate pedigree graph calculation is in progress
+        Future<?> pending = pedigreeGraphExecutor.submit(() -> {
             try {
                 // Fetch the complete family with all members and relationships from database
 //                QueryOptions fetchOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -1188,8 +1193,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Log the error but don't fail the family creation/update
                 logger.error("Error calculating pedigree graph for family {}. Family was created/updated successfully, "
                         + "but pedigree graph could not be generated: {}", familyId, e.getMessage(), e);
+            } finally {
+                // Remove the future from the map to indicate completion
+                pedigreeGraphFutures.remove(key);
             }
         });
+        ref.set(pending);
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
@@ -1750,6 +1759,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Set<String> familyDisorders = family.getDisorders().stream().map(Disorder::getId).collect(Collectors.toSet());
             if (!familyDisorders.containsAll(memberDisorders)) {
                 throw new CatalogException("Some of the disorders are not present in any member of the family");
+            }
+        }
+    }
+
+    public void asyncPedigreeWait() throws InterruptedException, ExecutionException {
+        for (AtomicReference<Future<?>> ref : new ArrayList<>(pedigreeGraphFutures.values())) {
+            Future<?> future = ref.get();
+            if (future != null) {
+                future.get();
             }
         }
     }
