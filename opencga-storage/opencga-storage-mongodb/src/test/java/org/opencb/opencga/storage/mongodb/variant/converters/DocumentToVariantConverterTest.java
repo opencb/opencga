@@ -55,8 +55,10 @@ public class DocumentToVariantConverterTest {
     private VariantStorageMetadataManager metadataManager;
     private VariantQueryProjection variantQueryProjection;
     private List<String> sampleNames;
+    private Map<String, Integer> sampleIdsMap;
     private Integer na001;
     private Integer na002;
+    private StudyMetadata studyMetadata;
 
     @Before
     public void setUp() throws StorageEngineException {
@@ -75,16 +77,20 @@ public class DocumentToVariantConverterTest {
         metadataManager.addIndexedFiles(studyId, Collections.singletonList(fileId));
         na001 = metadataManager.getSampleId(studyId, "NA001");
         na002 = metadataManager.getSampleId(studyId, "NA002");
+        sampleIdsMap = new HashMap<>();
+        for (String sampleName : sampleNames) {
+            sampleIdsMap.put(sampleName, metadataManager.getSampleId(studyId, sampleName));
+        }
 
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        studyMetadata = metadataManager.getStudyMetadata(studyId);
         variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(na001, na002), Arrays.asList(fileId));
 
 
         //Setup variant
         variant = new Variant("1", 1000, 1000, "A", "C");
 //        variant.setId(variant.toString());
-        variant.setNames(Arrays.asList("rs666"));
+//        variant.setNames(Arrays.asList("rs666"));
 
         //Setup variantSourceEntry
         studyEntry = new StudyEntry(fileId.toString(), studyId.toString());
@@ -107,6 +113,7 @@ public class DocumentToVariantConverterTest {
 
         //Setup mongoVariant
         mongoVariant = new Document("_id", " 1:      1000:A:C")
+                .append(DocumentToVariantConverter.ID_FIELD, variant.toString())
                 .append(DocumentToVariantConverter.CHROMOSOME_FIELD, variant.getChromosome())
                 .append(DocumentToVariantConverter.START_FIELD, variant.getStart())
                 .append(DocumentToVariantConverter.END_FIELD, variant.getStart())
@@ -115,11 +122,12 @@ public class DocumentToVariantConverterTest {
                 .append(DocumentToVariantConverter.ALTERNATE_FIELD, variant.getAlternate())
                 .append(DocumentToVariantConverter.TYPE_FIELD, variant.getType().name())
                 .append(DocumentToVariantConverter.IDS_FIELD, variant.getIds())
-                .append(DocumentToVariantConverter.ANNOTATION_FIELD, Collections.emptyList());
+                .append(DocumentToVariantConverter.ANNOTATION_FIELD, null);
 
         LinkedList chunkIds = new LinkedList();
         chunkIds.add("1_1_1k");
         chunkIds.add("1_0_10k");
+        chunkIds.add("1_0_1000k");
         mongoVariant.append(DocumentToVariantConverter.AT_FIELD, new Document("chunkIds", chunkIds));
 
 //        LinkedList hgvs = new LinkedList();
@@ -191,11 +199,11 @@ public class DocumentToVariantConverterTest {
         studies.add(mongoStudy);
         mongoVariant.append(DocumentToVariantConverter.STUDIES_FIELD, studies);
 
-        DocumentToVariantConverter converter = new DocumentToVariantConverter(
-                new DocumentToStudyVariantEntryConverter(
-                        true,
-                        new DocumentToSamplesConverter(metadataManager, variantQueryProjection)),
-                new DocumentToVariantStatsConverter());
+        VariantToDocumentConverter converter = new VariantToDocumentConverter(
+                new StudyEntryToDocumentConverter(
+                        new SampleToDocumentConverter(studyMetadata, sampleIdsMap),
+                        true),
+                new DocumentToVariantStatsConverter(), null);
         Document converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsKey(DocumentToVariantConverter.IDS_FIELD)); //IDs must be added manually.
         converted.put(DocumentToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs
@@ -214,7 +222,7 @@ public class DocumentToVariantConverterTest {
 
     @Test
     public void testConvertToStorageTypeWithoutFiles() {
-        DocumentToVariantConverter converter = new DocumentToVariantConverter();
+        VariantToDocumentConverter converter = new VariantToDocumentConverter(null, null, null);
         Document converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsKey(DocumentToVariantConverter.IDS_FIELD)); //IDs must be added manually.
         converted.put(DocumentToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs

@@ -500,7 +500,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
-        DataResult<Variant> result = variantsCollection.find(mongoQuery, projection, converter, options);
+        DataResult<Variant> result = variantsCollection.find(mongoQuery, projection, converter.asComplexTypeConverter(), options);
         return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
 
     }
@@ -575,7 +575,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
-        DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
+        DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter.asComplexTypeConverter(), options);
 
         List<VariantAnnotation> annotations = result.getResults()
                 .stream()

@@ -30,9 +30,9 @@ import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -42,9 +42,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
@@ -236,8 +234,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * Only needed when loading more than one file at the same time, or there were other loaded files in the same region
      **/
     private boolean checkOverlappings;
-    private final DocumentToVariantConverter variantConverter;
-    private final DocumentToStudyVariantEntryConverter studyConverter;
+    private final VariantToDocumentConverter variantConverter;
+    private final StudyEntryToDocumentConverter studyConverter;
     private final StudyMetadata studyMetadata;
     private final boolean excludeGenotypes;
 
@@ -267,12 +265,18 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         format = buildFormat(studyMetadata);
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds, dbAdaptor.getMetadataManager()));
         this.release = release;
+        Map<String, Integer> sampleIdsMap = new HashMap<>();
+        for (Integer fileId : fileIds) {
+            for (Integer sampleId : dbAdaptor.getMetadataManager().getSampleIdsFromFileId(studyId, fileId)) {
+                sampleIdsMap.put(dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId), sampleId);
+            }
+        }
 
         indexedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
-        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(dbAdaptor.getMetadataManager(), this.studyMetadata);
-        studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
-        variantConverter = new DocumentToVariantConverter(studyConverter, null);
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(this.studyMetadata, sampleIdsMap);
+        studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
+        variantConverter = new VariantToDocumentConverter(studyConverter, null, null);
         samplesPositionMap = new HashMap<>();
         sampleNamesInFile = new HashMap<>();
         fileIdsMap = new HashMap<>();

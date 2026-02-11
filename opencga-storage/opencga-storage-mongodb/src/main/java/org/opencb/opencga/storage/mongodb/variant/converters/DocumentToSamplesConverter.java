@@ -62,6 +62,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private Map<Integer, LinkedHashSet<Integer>> includeSamples;
     private Map<Integer, List<Integer>> includeFiles;
+    private final Map<Integer, List<String>> sampleDataKeysPerStudy;
+
     private VariantStorageMetadataManager metadataManager;
     private String unknownGenotype;
     private List<String> expectedExtraFields;
@@ -122,6 +124,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         __sampleIds = new ConcurrentHashMap<>();
         __samplesInFile = new ConcurrentHashMap<>();
         studyDefaultGenotypeSet = new ConcurrentHashMap<>();
+        sampleDataKeysPerStudy = new ConcurrentHashMap<>();
         includeSamples = Collections.emptyMap();
         metadataManager = null;
         unknownGenotype = UNKNOWN_GENOTYPE;
@@ -449,142 +452,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
     }
 
-    public Document convertToStorageType(StudyEntry studyEntry, int studyId, Document otherFields, LinkedHashSet<String> samplesInFile) {
-        Map<String, List<Integer>> genotypeCodes = new HashMap<>();
-
-        final StudyMetadata studyMetadata = getStudyMetadata(studyId);
-        boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
-        boolean compressExtraParams = studyMetadata.getAttributes()
-                .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
-
-        Set<String> defaultGenotype = new HashSet<>(studyDefaultGenotypeSet.get(studyId));
-
-        // Classify samples by genotype
-        int sampleIdx = 0;
-        Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
-        List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
-        for (SampleEntry sampleEntry : studyEntry.getSamples()) {
-            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
-            sampleIdx++;
-            if (!samplesInFile.contains(sampleName)) {
-                continue;
-            }
-            String genotype;
-            if (gtIdx == null) {
-                genotype = ".";
-            } else {
-                genotype = sampleEntry.getData().get(gtIdx);
-            }
-            if (genotype == null) {
-                genotype = ".";
-            }
-//                Genotype g = new Genotype(genotype);
-            List<Integer> samplesWithGenotype = genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>());
-            samplesWithGenotype.add(getSampleId(studyId, sampleName));
-        }
-
-        // In Mongo, samples are stored in a map, classified by their genotype.
-        // The most common genotype will be marked as "default" and the specific
-        // positions where it is shown will not be stored. Example from 1000G:
-        // "def" : 0|0,
-        // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
-        // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
-        Document mongoSamples = new Document();
-        Document mongoGenotypes = new Document();
-        for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
-            String genotypeStr = genotypeToStorageType(entry.getKey());
-            if (!defaultGenotype.contains(entry.getKey())) {
-                mongoGenotypes.append(genotypeStr, entry.getValue());
-            }
-        }
-
-        if (!excludeGenotypes) {
-            mongoSamples.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, mongoGenotypes);
-        }
-
-
-        //Position for samples in this file
-        HashBiMap<String, Integer> samplesPosition = HashBiMap.create();
-        int position = 0;
-        for (String sample : samplesInFile) {
-            samplesPosition.put(sample, position++);
-        }
-
-        List<String> extraFields = studyMetadata.getAttributes()
-                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
-        List<String> extraFieldsType = studyMetadata.getAttributes()
-                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key());
-
-        for (int i = 0; i < extraFields.size(); i++) {
-            String extraField = extraFields.get(i);
-            String extraFieldType = i < extraFieldsType.size() ? extraFieldsType.get(i) : "String";
-
-
-            VariantMongoDBProto.OtherFields.Builder builder = VariantMongoDBProto.OtherFields.newBuilder();
-//            List<Object> values = new ArrayList<>(samplesPosition.size());
-//            for (int size = samplesPosition.size(); size > 0; size--) {
-//                values.add(UNKNOWN_FIELD);
-//            }
-            sampleIdx = 0;
-            if (studyEntry.getSampleDataKeySet().contains(extraField)) {
-                Integer formatIdx = studyEntry.getSampleDataKeyPosition(extraField);
-                for (SampleEntry sample : studyEntry.getSamples()) {
-                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
-                    sampleIdx++;
-                    if (!samplesInFile.contains(sampleName)) {
-                        continue;
-                    }
-//                    Integer index = samplesPosition.get(sampleName);
-                    String stringValue = sample.getData().get(formatIdx);
-//                    Object value;
-//                    if (NumberUtils.isNumber(stringValue)) {
-//                        try {
-//                            value = Integer.parseInt(stringValue);
-//                        } catch (NumberFormatException e) {
-//                            try {
-//                                value = Double.parseDouble(stringValue);
-//                            } catch (NumberFormatException e2) {
-//                                value = stringValue;
-//                            }
-//                        }
-//                    } else {
-//                        value = stringValue;
-//                    }
-                    switch (extraFieldType) {
-                        case "Integer": {
-                            builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
-                            break;
-                        }
-                        case "Float": {
-                            builder.addFloatValues(FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
-                            break;
-                        }
-                        case "String":
-                        default:
-                            builder.addStringValues(stringValue);
-                            break;
-                    }
-                }
-
-                byte[] byteArray = builder.build().toByteArray();
-                if (compressExtraParams) {
-                    if (byteArray.length > 50) {
-                        try {
-                            byteArray = CompressionUtils.compress(byteArray);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    }
-                }
-                otherFields.append(extraField.toLowerCase(), byteArray);
-            } // else { Don't set this field }
-        }
-
-        return mongoSamples;
-    }
-
     public void setIncludeSamples(Map<Integer, List<Integer>> includeSamples) {
         this.includeSamples = includeSamples == null ? null : new HashMap<>(includeSamples.size());
         if (includeSamples != null) {
@@ -621,6 +488,17 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public void setUnknownGenotype(String unknownGenotype) {
         this.unknownGenotype = unknownGenotype;
+    }
+
+    private List<String> getSampleDataKeys(int studyId, boolean excludeGenotypes, List<String> extraFields) {
+        return sampleDataKeysPerStudy.computeIfAbsent(studyId, s -> {
+            List<String> sampleDataKeys = getSampleDataKeys(excludeGenotypes, extraFields);
+            if (sampleDataKeys.isEmpty()) {
+                return Collections.emptyList();
+            } else {
+                return sampleDataKeys;
+            }
+        });
     }
 
     private List<String> getSampleDataKeys(boolean excludeGenotypes, List<String> extraFields) {

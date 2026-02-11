@@ -16,14 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 
 import java.util.*;
 
@@ -31,12 +29,13 @@ import static java.util.Collections.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.JSON_RAW;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.newVariantAnnotation;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToVariantConverter extends AbstractDocumentConverter implements ComplexTypeConverter<Variant, Document> {
+public class DocumentToVariantConverter extends AbstractDocumentConverter {
 
     public static final String ID_FIELD = "id";
     public static final String CHROMOSOME_FIELD = "chromosome";
@@ -99,6 +98,8 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
 
         Map<VariantField, List<String>> map = new EnumMap<>(VariantField.class);
         map.put(VariantField.ID, singletonList(IDS_FIELD));
+        map.put(VariantField.NAMES, singletonList(IDS_FIELD));
+        map.put(VariantField.STRAND, emptyList());
         map.put(VariantField.CHROMOSOME, singletonList(CHROMOSOME_FIELD));
         map.put(VariantField.START, singletonList(START_FIELD));
         map.put(VariantField.END, singletonList(END_FIELD));
@@ -113,6 +114,9 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD
         ));
+        map.put(VariantField.STUDIES_SAMPLE_DATA_KEYS, Arrays.asList());
+        map.put(VariantField.STUDIES_SCORES, emptyList());
+        map.put(VariantField.STUDIES_ISSUES, emptyList());
         map.put(VariantField.STUDIES_FILES, Arrays.asList(
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
                 STUDIES_FIELD + '.' + FILES_FIELD + '.' + ATTRIBUTES_FIELD,
@@ -123,7 +127,11 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(
                 STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        map.put(VariantField.ANNOTATION, Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD));
+        List<String> annotationFields = Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD);
+        map.put(VariantField.ANNOTATION, annotationFields);
+        for (VariantField child : VariantField.ANNOTATION.getChildren()) {
+            map.put(child, annotationFields);
+        }
 //        map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
 //        map.put(VariantField.ANNOTATION_ID, emptyList());
 //        map.put(VariantField.ANNOTATION_CHROMOSOME, emptyList());
@@ -160,11 +168,10 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
 
     }
 
-    private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
+    private final DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
     private Set<Integer> returnStudies;
-    private DocumentToVariantAnnotationConverter variantAnnotationConverter;
-    private DocumentToVariantStatsConverter statsConverter;
-    private final VariantStringIdConverter idConverter = new VariantStringIdConverter();
+    private final DocumentToVariantAnnotationConverter variantAnnotationConverter;
+    private final DocumentToVariantStatsConverter statsConverter;
 
     // Add default variant ID if it is missing. Use CHR:POS:REF:ALT
     private boolean addDefaultId;
@@ -216,8 +223,20 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         }
     }
 
+    public ComplexTypeConverter<Variant, Document> asComplexTypeConverter() {
+        return new ComplexTypeConverter<Variant, Document>() {
+            @Override
+            public Document convertToStorageType(Variant object) {
+                throw new UnsupportedOperationException("Not implemented yet");
+            }
 
-    @Override
+            @Override
+            public Variant convertToDataModelType(Document object) {
+                return DocumentToVariantConverter.this.convertToDataModelType(object);
+            }
+        };
+    }
+
     public Variant convertToDataModelType(Document object) {
         String chromosome = (String) object.get(CHROMOSOME_FIELD);
         int start = (int) object.get(START_FIELD);
@@ -361,130 +380,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
             statsConverter.convertCohortsToDataModelType(stats, variant);
         }
         return variant;
-    }
-
-    @Override
-    public Document convertToStorageType(Variant variant) {
-        // Attributes easily calculated
-        Document mongoVariant = new Document("_id", buildStorageId(variant))
-                .append(ID_FIELD, variant.toString())    //Do not include IDs.
-                .append(CHROMOSOME_FIELD, variant.getChromosome())
-                .append(START_FIELD, variant.getStart())
-                .append(END_FIELD, variant.getEnd())
-                .append(LENGTH_FIELD, variant.getLength())
-                .append(REFERENCE_FIELD, variant.getReference())
-                .append(ALTERNATE_FIELD, variant.getAlternate())
-                .append(TYPE_FIELD, variant.getType().name());
-
-        // SV
-        if (variant.getSv() != null) {
-            StructuralVariation sv = variant.getSv();
-            Document mongoSv = new Document();
-            mongoSv.put(SV_CISTART_FIELD, Arrays.asList(sv.getCiStartLeft(), sv.getCiStartRight()));
-            mongoSv.put(SV_CIEND_FIELD, Arrays.asList(sv.getCiEndLeft(), sv.getCiEndRight()));
-            if (sv.getCopyNumber() != null) {
-                mongoSv.put(SV_CN_FIELD, sv.getCopyNumber());
-            }
-            if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
-                mongoSv.put(SV_INS_SEQ, Arrays.asList(sv.getLeftSvInsSeq(), sv.getRightSvInsSeq()));
-            }
-            if (sv.getType() != null) {
-                mongoSv.put(SV_TYPE, sv.getType().toString());
-            }
-            if (sv.getBreakend() != null) {
-                Document mongoBnd = new Document();
-                putNotNull(mongoBnd, SV_BND_ORIENTATION, sv.getBreakend().getOrientation().toString());
-                putNotNull(mongoBnd, SV_BND_INS_SEQ, sv.getBreakend().getInsSeq());
-                if (sv.getBreakend().getMate() != null) {
-                    Document mongoBndMate = new Document();
-                    putNotNull(mongoBndMate, SV_BND_MATE_CHR, sv.getBreakend().getMate().getChromosome());
-                    putNotNull(mongoBndMate, SV_BND_MATE_POS, sv.getBreakend().getMate().getPosition());
-                    putNotNull(mongoBndMate, SV_BND_MATE_CI_POS_L, sv.getBreakend().getMate().getCiPositionLeft());
-                    putNotNull(mongoBndMate, SV_BND_MATE_CI_POS_R, sv.getBreakend().getMate().getCiPositionRight());
-                    mongoBnd.append(SV_BND_MATE, mongoBndMate);
-                }
-                mongoSv.append(SV_BND, mongoBnd);
-            }
-            mongoVariant.put(SV_FIELD, mongoSv);
-        }
-
-        // Internal fields used for query optimization (dictionary named "_at")
-        Document at = new Document();
-        mongoVariant.append(AT_FIELD, at);
-
-        // Two different chunk sizes are calculated for different resolution levels: 1k and 10k
-        List<String> chunkIds = new LinkedList<>();
-        String chunkSmall = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_SMALL + "_"
-                + VariantMongoDBAdaptor.CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_BIG + "_"
-                + VariantMongoDBAdaptor.CHUNK_SIZE_BIG / 1000 + "k";
-        String chunkLarge = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBAdaptor.CHUNK_SIZE_LARGE + "_"
-                + VariantMongoDBAdaptor.CHUNK_SIZE_LARGE / 1000 + "k";
-        chunkIds.add(chunkSmall);
-        chunkIds.add(chunkBig);
-        chunkIds.add(chunkLarge);
-        at.append(CHUNK_IDS_FIELD, chunkIds);
-
-        // Files
-        if (variantStudyEntryConverter != null) {
-            List<Document> mongoFiles = new LinkedList<>();
-            for (StudyEntry archiveFile : variant.getStudies()) {
-                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(variant, archiveFile));
-            }
-            mongoVariant.append(STUDIES_FIELD, mongoFiles);
-        }
-
-//        // Annotations
-        mongoVariant.append(ANNOTATION_FIELD, null);
-        if (variantAnnotationConverter != null) {
-            if (variant.getAnnotation() != null
-                    && variant.getAnnotation().getConsequenceTypes() != null
-                    && !variant.getAnnotation().getConsequenceTypes().isEmpty()) {
-                Document annotation = variantAnnotationConverter.convertToStorageType(variant.getAnnotation());
-                mongoVariant.append(ANNOTATION_FIELD, annotation);
-            }
-        }
-
-        // Statistics
-        if (statsConverter != null) {
-            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getStudiesMap());
-            mongoVariant.put(STATS_FIELD, mongoStats);
-        }
-
-        return mongoVariant;
-    }
-
-    public String buildStorageId(Variant v) {
-        return idConverter.buildId(v);
-//        return buildStorageId(v.getChromosome(), v.getStart(), v.getReference(), v.getAlternate());
-    }
-
-    public String buildStorageId(String chromosome, int start, String reference, String alternate) {
-        return idConverter.buildId(chromosome, start, reference, alternate);
-//
-//        StringBuilder builder = new StringBuilder(chromosome);
-//        builder.append("_");
-//        builder.append(start);
-//        builder.append("_");
-//        if (reference.equals("-")) {
-//            System.out.println("Empty block");
-//        } else if (reference.length() < Variant.SV_THRESHOLD) {
-//            builder.append(reference);
-//        } else {
-//            builder.append(new String(CryptoUtils.encryptSha1(reference)));
-//        }
-//
-//        builder.append("_");
-//
-//        if (alternate.equals("-")) {
-//            System.out.println("Empty block");
-//        } else if (alternate.length() < Variant.SV_THRESHOLD) {
-//            builder.append(alternate);
-//        } else {
-//            builder.append(new String(CryptoUtils.encryptSha1(alternate)));
-//        }
-//
-//        return builder.toString();
     }
 
     public static List<String> toShortFieldName(VariantField field) {

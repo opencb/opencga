@@ -82,7 +82,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<Integer, LinkedHashSet<Integer>> indexedFiles = new ConcurrentHashMap<>();
     private final Map<Integer, Set<Integer>> filesFromReturnedSamples = new ConcurrentHashMap<>();
     private final Map<Integer, List<String>> fixedFormatsMap = new ConcurrentHashMap<>();
-    private Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
+    private final Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
 
     private final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private HBaseVariantConverterConfiguration configuration;

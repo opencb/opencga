@@ -50,10 +50,12 @@ public class DocumentToStudyVariantEntryConverterTest {
     private Document mongoFileWithIds;
 
     private List<String> sampleNames;
+    private Map<String, Integer> sampleIdsMap;
     private Integer fileId;
     private Integer studyId;
     private VariantStorageMetadataManager metadataManager;
     private VariantQueryProjection variantQueryProjection;
+    private StudyMetadata studyMetadata;
 
     @Before
     public void setUp() throws StorageEngineException {
@@ -72,8 +74,12 @@ public class DocumentToStudyVariantEntryConverterTest {
 //        metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY));
 
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        studyMetadata = metadataManager.getStudyMetadata(studyId);
         List<Integer> sampleIds = metadataManager.getSampleIds(studyId, sampleNames);
+        sampleIdsMap = new LinkedHashMap<>();
+        for (String sampleName : sampleNames) {
+            sampleIdsMap.put(sampleName, metadataManager.getSampleId(studyId, sampleName));
+        }
         variantQueryProjection = new VariantQueryProjection(studyMetadata, sampleIds, Arrays.asList(fileId));
 
         studyEntry = new StudyEntry(studyId.toString());
@@ -215,8 +221,7 @@ public class DocumentToStudyVariantEntryConverterTest {
     @Test
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true,
-                studyId, fileId, new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
+        StudyEntryToDocumentConverter converter = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
         Document converted = converter.convertToStorageType(variant, studyEntry);
         assertEquals(mongoStudy, converted);
     }
@@ -229,12 +234,14 @@ public class DocumentToStudyVariantEntryConverterTest {
 
 
         // Test with no stats converter provided
+        StudyEntryToDocumentConverter toDocument = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
         converter = new DocumentToStudyVariantEntryConverter(
                 true,
                 studyId, fileId,
                 samplesConverter);
-        convertedMongo = converter.convertToStorageType(variant, studyEntry);
+
+        convertedMongo = toDocument.convertToStorageType(variant, studyEntry);
         assertEquals(mongoFileWithIds, convertedMongo);
         convertedFile = converter.convertToDataModelType(convertedMongo);
         assertEquals(studyEntry, convertedFile);
@@ -255,8 +262,10 @@ public class DocumentToStudyVariantEntryConverterTest {
                 true,
                 studyId, fileId,
                 samplesConverter);
+        StudyEntryToDocumentConverter toDocument = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
+
         convertedFile = converter.convertToDataModelType(mongoFileWithIds);
-        convertedMongo = converter.convertToStorageType(variant, convertedFile);
+        convertedMongo = toDocument.convertToStorageType(variant, convertedFile);
         assertEquals(studyEntry, convertedFile);
         assertEquals(mongoFileWithIds, convertedMongo);
 
