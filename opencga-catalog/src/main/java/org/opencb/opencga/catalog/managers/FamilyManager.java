@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
@@ -91,7 +91,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     // ExecutorService for async pedigree graph calculation
     private final ExecutorService pedigreeGraphExecutor;
-    private final Map<Integer, AtomicReference<Future<?>>> pedigreeGraphFutures = new ConcurrentHashMap<>();
+    private final Map<String, AtomicReference<Future<?>>> pedigreeGraphFutures = new ConcurrentHashMap<>();
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -1148,7 +1148,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * @param increaseVersion Force family version increase.
      */
     private void asyncUpdatePedigreeGraph(String organizationId, long studyUid, long familyUid, String familyId, boolean increaseVersion) {
-        Integer key = RandomUtils.nextInt();
+        String key = RandomStringUtils.randomAlphanumeric(5);
         AtomicReference<Future<?>> ref = new AtomicReference<>();
         pedigreeGraphFutures.put(key, ref); // Placeholder to indicate pedigree graph calculation is in progress
         Future<?> pending = pedigreeGraphExecutor.submit(() -> {
