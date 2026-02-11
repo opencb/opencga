@@ -122,7 +122,8 @@ public class VariantMongoDBQueryParser {
             }
             if (!variantQueryXref.getVariants().isEmpty()) {
                 pureGeneRegionFilter = false;
-                List<String> mongoIds = variantQueryXref.getVariants().stream().map(STRING_ID_CONVERTER::buildId).collect(Collectors.toList());
+                List<String> mongoIds = variantQueryXref.getVariants().stream().map(STRING_ID_CONVERTER::buildId)
+                        .collect(Collectors.toList());
                 Bson variantXrefIntersect;
                 if (mongoIds.size() == 1) {
                     variantXrefIntersect = eq("_id", mongoIds.get(0));
@@ -209,7 +210,8 @@ public class VariantMongoDBQueryParser {
      * @param otherFilters
      * @return
      */
-    private static Bson combine(ParsedVariantQuery parsedVariantQuery, List<Bson> regionFilters, Bson idIntersectBson, List<Bson> otherFilters) {
+    private static Bson combine(ParsedVariantQuery parsedVariantQuery, List<Bson> regionFilters, Bson idIntersectBson,
+                                List<Bson> otherFilters) {
         List<Bson> filters = new ArrayList<>();
 
         if (idIntersectBson != null) {
@@ -279,12 +281,12 @@ public class VariantMongoDBQueryParser {
      *     - Combination filter is applied as region filter, together with the gene filter
      *     - Combination filter (without gene) is applied as filter, to be applied for non-gene variants
      *
-     * @param parsedVariantQuery    Parsed variant query with the gene combination to be applied
-     * @param filters               Filters
-     * @param regionFilters         Region filters
-     * @param pureGeneFilter        Is pure gene filter (no other region filters, and gene filter is applied as region filter)
-     * @param hasGeneFilter         Has gene filter, either pure or not
-     * @return  ctBtFlagApplied     ct+bt+flag filter fully applied as combination filter, no need to apply ct, bt and flag filters separately
+     * @param parsedVariantQuery  Parsed variant query with the gene combination to be applied
+     * @param filters             Filters
+     * @param regionFilters       Region filters
+     * @param pureGeneFilter      Is pure gene filter (no other region filters, and gene filter is applied as region filter)
+     * @param hasGeneFilter       Has gene filter, either pure or not
+     * @return  ctBtFlagApplied   ct+bt+flag filter fully applied as combination filter, no need to apply ct, bt and flag filters separately
      */
     private static boolean addGeneCombinationFilter(ParsedVariantQuery parsedVariantQuery, List<Bson> filters, List<Bson> regionFilters,
                                                     boolean pureGeneFilter, boolean hasGeneFilter) {
@@ -293,8 +295,10 @@ public class VariantMongoDBQueryParser {
             return ctBtFlagApplied;
         }
         if (hasGeneFilter && !pureGeneFilter) {
-            // Gene filter is applied, but not as pure gene region filter, so we need to apply the combination filter for non-gene variants as well
-            ParsedVariantQuery.ConsequenceTypeCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(Collections.emptyList(), parsedVariantQuery.getInputQuery());
+            // Gene filter is applied, but not as pure gene region filter, so we need to apply the
+            // combination filter for non-gene variants as well
+            ParsedVariantQuery.ConsequenceTypeCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(
+                    Collections.emptyList(), parsedVariantQuery.getInputQuery());
             if (combination != null) {
                 addGeneCombinationFilter(combination, filters, regionFilters, false);
                 ctBtFlagApplied = true;

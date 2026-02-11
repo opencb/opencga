@@ -15,6 +15,8 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER;
 
 public class SampleToDocumentConverter {
 
@@ -135,11 +137,11 @@ public class SampleToDocumentConverter {
 //                    }
                     switch (extraFieldType) {
                         case "Integer": {
-                            builder.addIntValues(DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
                             break;
                         }
                         case "Float": {
-                            builder.addFloatValues(DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            builder.addFloatValues(FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
                             break;
                         }
                         case "String":

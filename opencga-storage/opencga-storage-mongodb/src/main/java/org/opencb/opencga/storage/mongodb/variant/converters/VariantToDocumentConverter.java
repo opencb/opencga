@@ -5,10 +5,11 @@ import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 
@@ -19,7 +20,8 @@ public class VariantToDocumentConverter extends AbstractDocumentConverter {
     private final DocumentToVariantStatsConverter statsConverter;
 
     public VariantToDocumentConverter(StudyEntryToDocumentConverter variantStudyEntryConverter,
-                                      DocumentToVariantStatsConverter statsConverter, DocumentToVariantAnnotationConverter variantAnnotationConverter) {
+                                      DocumentToVariantStatsConverter statsConverter,
+                                      DocumentToVariantAnnotationConverter variantAnnotationConverter) {
         this.variantStudyEntryConverter = variantStudyEntryConverter;
         this.variantAnnotationConverter = variantAnnotationConverter;
         this.statsConverter = statsConverter;

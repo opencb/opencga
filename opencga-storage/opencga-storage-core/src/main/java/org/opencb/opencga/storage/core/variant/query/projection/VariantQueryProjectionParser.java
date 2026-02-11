@@ -591,7 +591,8 @@ public class VariantQueryProjectionParser {
                         && ((Collection) includeSampleRaw).iterator().next() instanceof Integer) {
                     sampleIds = new ArrayList<>(((Collection) includeSampleRaw).size());
                     for (Integer sampleId : new ArrayList<>((Collection<Integer>) includeSampleRaw)) {
-                        sampleIds.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId, metadataManager.getSampleName(sm.getId(), sampleId)));
+                        sampleIds.add(new ResourceId(ResourceId.Type.SAMPLE, sampleId,
+                                metadataManager.getSampleName(sm.getId(), sampleId)));
                     }
                 } else {
                     sampleIds = new ArrayList<>(includeSamplesList.size());

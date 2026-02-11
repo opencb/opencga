@@ -523,7 +523,6 @@ public class DocumentToVariantAnnotationConverter
      * @param soList List of SO accessions
      * @param flags List of transcript flags
      * @param combinations  Set to store the generated combinations
-     * @return Set of all non-null, non-empty combinations
      */
     public static void buildAllCombinations(List<String> genes, String biotype, List<Integer> soList, List<String> flags,
                                                    Set<String> combinations) {
@@ -571,6 +570,7 @@ public class DocumentToVariantAnnotationConverter
 
     /**
      * Returns all possible flag storage values (mapped codes + "N" for null).
+     * @return List of all flag storage values.
      */
     public static List<String> allFlagStorageValues() {
         List<String> values = new ArrayList<>(FLAG_TO_STORAGE_MAP.size() + 1);
