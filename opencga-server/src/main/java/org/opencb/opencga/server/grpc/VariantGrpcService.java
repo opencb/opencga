@@ -91,7 +91,7 @@ public class VariantGrpcService extends VariantServiceImplBase {
                         events.add(eventB.build());
                     }
                 }
-                while (iterator.hasNext()) {
+                while (iterator.hasNext() && !genericGrpcService.isCancelled(responseObserver)) {
                     Variant variant = iterator.next();
                     VariantProto.Variant variantProto = converter.convert(variant);
                     VariantResponse.Builder responseBuilder = VariantResponse.newBuilder();
