@@ -150,7 +150,7 @@ public class DocumentToStudyEntryConverter {
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
-                FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), null, attributes);
+                FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, attributes);
                 files.add(fileEntry);
 
                 fileObject = fileDocument;

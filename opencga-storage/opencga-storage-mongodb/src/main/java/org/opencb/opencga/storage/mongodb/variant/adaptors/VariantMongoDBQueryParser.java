@@ -1263,8 +1263,14 @@ public class VariantMongoDBQueryParser {
         // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
         List<Integer> studiesIds = selectVariantElements.getStudyIds();
-        // Use elemMatch only if there is one study to return.
-        if (studiesIds.size() == 1) {
+        // Use elemMatch only if there is one study to return and the query contains samples or files to return.
+        boolean shouldApplyElemMatch = studiesIds.size() == 1;
+        if (shouldApplyElemMatch) {
+            // If the query contains samples or files to return, we need to apply the $elemMatch
+            // to avoid returning all samples and files of the study.
+            shouldApplyElemMatch = fields.contains(VariantField.STUDIES_SAMPLES) || fields.contains(VariantField.STUDIES_FILES);
+        }
+        if (shouldApplyElemMatch) {
             studyElemMatch = Projections.elemMatch(
                     DocumentToVariantConverter.STUDIES_FIELD,
                     eq(

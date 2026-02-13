@@ -547,6 +547,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         List<Variant> result = query(new Query(ID.key(), variants), new QueryOptions()).getResults();
 
         assertTrue(variants.size() > 0);
+        assertTrue(normalizedVariants.size() > 0);
         List<String> expectedList = variants.stream().map(Object::toString).sorted().collect(Collectors.toList());
         List<String> actualList = result.stream().map(Object::toString).sorted().collect(Collectors.toList());
         for (String expected : expectedList) {
