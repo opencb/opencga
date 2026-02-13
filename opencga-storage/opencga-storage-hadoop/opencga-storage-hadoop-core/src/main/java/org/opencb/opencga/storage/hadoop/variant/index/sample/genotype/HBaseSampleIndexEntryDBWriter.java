@@ -94,6 +94,7 @@ public class HBaseSampleIndexEntryDBWriter extends SampleIndexEntryWriter {
                 }
             }
         }
+        hbaseWriter.write(mutations);
         return true;
     }
 

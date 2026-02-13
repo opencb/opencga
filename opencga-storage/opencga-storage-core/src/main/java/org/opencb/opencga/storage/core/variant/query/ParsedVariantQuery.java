@@ -415,7 +415,9 @@ public class ParsedVariantQuery {
         public VariantAnnotationQuery(VariantAnnotationQuery other) {
             this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
             this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
-            this.consequenceTypeCombinations = new ConsequenceTypeCombinations(other.consequenceTypeCombinations);
+            this.consequenceTypeCombinations = other.consequenceTypeCombinations == null
+                    ? null
+                    : new ConsequenceTypeCombinations(other.consequenceTypeCombinations);
         }
 
         public List<List<String>> getClinicalCombination() {
