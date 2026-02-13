@@ -46,6 +46,24 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     AtomicReference<MongoDBVariantStorageEngine> manager = new AtomicReference<>(null);
     List<MongoDBVariantStorageEngine> managers = Collections.synchronizedList(new ArrayList<>());
 
+    default StorageConfiguration loadStorageConfiguration() throws Exception {
+        InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+
+        EmbeddedMongoDBManager embeddedMongo = EmbeddedMongoDBManager.getInstance();
+        if (embeddedMongo.isEnabled()) {
+            if (!embeddedMongo.isRunning()) {
+                embeddedMongo.start();
+            }
+            storageConfiguration.getVariant().getEngines().stream()
+                    .filter(e -> e.getId().equals(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID))
+                    .forEach(e -> e.getDatabase().setHosts(
+                            Collections.singletonList(embeddedMongo.getConnectionString())
+                    ));
+        }
+        return storageConfiguration;
+    }
+
     default MongoDBVariantStorageEngine getVariantStorageEngine() throws Exception {
         synchronized (manager) {
             MongoDBVariantStorageEngine storageManager = manager.get();
@@ -53,11 +71,11 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
                 storageManager = new MongoDBVariantStorageEngine();
                 manager.set(storageManager);
             }
-            InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+            StorageConfiguration storageConfiguration = loadStorageConfiguration();
             storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
             storageManager.getOptions().put(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
-            storageManager.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), VariantAnnotatorTest.TestCachedCellBaseRestVariantAnnotator.class.getName());
+            storageManager.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(),
+                    VariantAnnotatorTest.TestCachedCellBaseRestVariantAnnotator.class.getName());
             storageManager.getOptions().put(VariantStorageOptions.SPECIES.key(), "hsapiens");
             storageManager.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "GRCh37");
             storageManager.getConfiguration().getCellbase().setDataRelease("1");
@@ -69,8 +87,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     default MongoDBVariantStorageEngine newVariantStorageEngine() throws Exception {
         synchronized (managers) {
             MongoDBVariantStorageEngine storageManager = new MongoDBVariantStorageEngine();
-            InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+            StorageConfiguration storageConfiguration = loadStorageConfiguration();
             storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
             managers.add(storageManager);
             return storageManager;
