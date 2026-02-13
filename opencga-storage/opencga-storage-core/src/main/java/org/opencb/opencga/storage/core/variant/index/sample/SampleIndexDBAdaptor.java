@@ -400,8 +400,11 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
         boolean allSamplesWithThisVersion = isAllSamplesWithThisVersion(studyId, version);
         if (allSamplesWithThisVersion) {
             metadataManager.updateStudyMetadata(studyId, sm -> {
-                sm.getSampleIndexConfiguration(version)
-                        .setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
+                StudyMetadata.SampleIndexConfigurationVersioned versioned = sm.getSampleIndexConfiguration(version);
+                if (versioned.getStatus() != StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE) {
+                    logger.info("Activate sample index version {} for study '{}'", version, sm.getName());
+                }
+                versioned.setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
             });
         } else {
             logger.info("Not all samples from study {} have the sample index version {} on GENOTYPES and ANNOTATION",
@@ -456,11 +459,18 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
 
     private boolean isAllSamplesWithThisVersion(int studyId, int version) {
         boolean allSamplesWithThisVersion = true;
+        int nonReadySamples = 0;
         for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
             // Only check indexed samples
             if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
-                allSamplesWithThisVersion = sampleWithThisVersion(sampleMetadata, version);
-                if (!allSamplesWithThisVersion) {
+                boolean thisSampleWithThisVersion = sampleWithThisVersion(sampleMetadata, version);
+                allSamplesWithThisVersion &= thisSampleWithThisVersion;
+                if (!thisSampleWithThisVersion) {
+//                    logger.info("Sample '{}' does not have sample index version {} on GENOTYPES and ANNOTATION",
+//                            sampleMetadata.getName(), version);
+                    nonReadySamples++;
+                }
+                if (nonReadySamples > 0) {
                     break;
                 }
             }

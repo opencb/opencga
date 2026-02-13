@@ -4,6 +4,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexerTask;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryChunk;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
@@ -29,6 +30,9 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
     @Override
     public List<SampleIndexEntry> apply(List<Variant> variants) throws Exception {
         for (Variant variant : variants) {
+            if (!SampleGenotypeIndexerTask.validVariant(variant)) {
+                continue;
+            }
             SampleIndexVariantAnnotation annotation = annotationConverter.convert(variant.getAnnotation());
             Chunk chunk = chunks.computeIfAbsent(new SampleIndexEntryChunk(variant), Chunk::new);
             for (int i = 0; i < sampleIds.size(); i++) {

@@ -17,6 +17,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -47,7 +48,6 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -70,10 +70,13 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
     protected VariantDBAdaptor dbAdaptor;
     protected SampleIndexDBAdaptor sampleIndexDBAdaptor;
     protected static boolean loaded = false;
+    public static final String STUDY_NAME_1 = "study_1";
+    public static final String STUDY_NAME_2 = "study_2";
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";
     public static final String STUDY_NAME_5 = "study_5"; // large SV
     public static final String STUDY_NAME_6 = "study_6"; // multiallelic
+    public static final String STUDY_NAME = STUDY_NAME_1;
     protected static final List<String> studies = Arrays.asList(
             STUDY_NAME,
             STUDY_NAME_2,
@@ -104,6 +107,21 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
     protected static List<Trio> triosPlatinum = Arrays.asList(
             new Trio("NA12877", null, "NA12878")
     );
+
+    protected int getSampleIndexVersion(int studyId) {
+        return sampleIndexDBAdaptor.getSchemaFactory()
+                .getSchema(studyId, metadataManager.getIndexedSamplesMap(studyId).keySet(), true, false)
+                .getVersion();
+    }
+
+    protected List<Trio> getTriosForStudy(String study) {
+        if (sampleNames.get(study).containsAll(trios.get(0).toList())) {
+            return trios;
+        } else if (study.equals(STUDY_NAME_3)) {
+            return triosPlatinum;
+        }
+        return Collections.emptyList();
+    }
 
     @Before
     public void before() throws Exception {
@@ -749,17 +767,17 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
                     long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query)));
 
                     System.out.println("---");
-                    System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count indexTable " + TimeUtils.durationToString(stopWatch));
                     System.out.println("Count = " + actualCount);
 
                     stopWatch = StopWatch.createStarted();
                     long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toList().size();
                     System.out.println("---");
-                    System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count indexTable iterator " + TimeUtils.durationToString(stopWatch));
                     System.out.println("Count = " + actualCountIterator);
                     stopWatch = StopWatch.createStarted();
                     long expectedCount = dbAdaptor.count(query).first();
-                    System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+                    System.out.println("Count variants   " + TimeUtils.durationToString(stopWatch));
                     System.out.println("Count = " + expectedCount);
                     System.out.println("-----------------------------------");
                     assertEquals(expectedCount, actualCount);

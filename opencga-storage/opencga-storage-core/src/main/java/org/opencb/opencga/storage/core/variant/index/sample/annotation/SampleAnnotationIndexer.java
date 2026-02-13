@@ -58,7 +58,11 @@ public abstract class SampleAnnotationIndexer {
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
             throws StorageEngineException {
-        int sampleIndexVersion = sampleIndexDBAdaptor.getSchemaLatest(studyId).getVersion();
+        updateSampleAnnotation(studyId, samples, options, overwrite, sampleIndexDBAdaptor.getSchemaLatest(studyId).getVersion());
+    }
+
+    public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite, int sampleIndexVersion)
+            throws StorageEngineException {
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> finalSamplesNameList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();

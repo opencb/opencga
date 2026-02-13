@@ -30,8 +30,9 @@ public class MongoDBSampleIndexEntryWriter extends SampleIndexEntryWriter {
 
     @Override
     public boolean post() {
-        logger.info("Written {} sample index entries for study '{}' ({}), schema version {}",
-                writtenEntries, dbAdaptor.getMetadataManager().getStudyName(studyId), studyId, schema.getVersion());
+        String collectionName = dbAdaptor.getSampleIndexCollectionName(studyId, schema.getVersion());
+        logger.info("Written {} sample index entries for study '{}' ({}), schema version {} into collection '{}'",
+                writtenEntries, dbAdaptor.getMetadataManager().getStudyName(studyId), studyId, schema.getVersion(), collectionName);
         return super.post();
     }
 

@@ -31,12 +31,12 @@ public abstract class SampleGenotypeIndexer {
 
     public void buildSampleIndex(String study, List<String> samples, ObjectMap options)
             throws StorageEngineException {
-        buildSampleIndex(study, samples, options, options.getBoolean(OVERWRITE, false));
+        buildSampleIndex(study, samples, options, options.getBoolean(OVERWRITE, false),
+                sampleIndexDBAdaptor.getSchemaLatest(study));
     }
 
-    public void buildSampleIndex(String study, List<String> samples, ObjectMap options, boolean overwrite)
+    public void buildSampleIndex(String study, List<String> samples, ObjectMap options, boolean overwrite, SampleIndexSchema schema)
             throws StorageEngineException {
-        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(study);
         int studyId = metadataManager.getStudyId(study);
         List<Integer> sampleIds;
         if (samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {

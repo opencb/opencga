@@ -150,6 +150,14 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         return collection;
     }
 
+    public void dropCollection(int studyId, int version) {
+        dropCollection(getSampleIndexCollectionName(studyId, version));
+    }
+
+    public void dropCollection(String sampleIndexCollectionName) {
+        dataStore.dropCollection(sampleIndexCollectionName);
+    }
+
     public String getSampleIndexCollectionName(int studyId, int version) {
         return "sample_index_" + studyId + "_v" + version;
     }
