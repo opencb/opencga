@@ -9,14 +9,13 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.List;
 
 import static org.junit.Assert.assertFalse;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.GENOTYPES_FIELD;
 
 /**
  * Created on 27/10/17.

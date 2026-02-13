@@ -139,20 +139,20 @@ public class DocumentToVariantConverterTest {
     public void testConvertToDataModelTypeWithFiles() {
         // MongoDB object
 
-        Document mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry
+        Document mongoStudy = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry
                 .getStudyId()));
 
 //        mongoStudy.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document("0/1", Collections.singletonList(na002)));
+        mongoStudy.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, new Document("0/1", Collections.singletonList(na002)));
 
-        Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry
+        Document mongoFile = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry
                 .getFiles().get(0).getFileId()))
-                .append(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, new Document("QUAL", 0.01).append("AN", 2))
-                .append(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, new Document("dp", new Binary(VariantMongoDBProto.OtherFields.newBuilder()
+                .append(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, new Document("QUAL", 0.01).append("AN", 2))
+                .append(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, new Document("dp", new Binary(VariantMongoDBProto.OtherFields.newBuilder()
                         .addIntValues(DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType("4"))
                         .addIntValues(DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType("5")).build().toByteArray())));
 
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
+        mongoStudy.append(DocumentToStudyEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
 
         mongoVariant.append(DocumentToVariantConverter.STUDIES_FIELD, Collections.singletonList(mongoStudy));
 
@@ -166,7 +166,7 @@ public class DocumentToVariantConverterTest {
 //        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), Collections.singletonList("DP"));
 
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
-                new DocumentToStudyVariantEntryConverter(
+                new DocumentToStudyEntryConverter(
                         true,
                         new DocumentToSamplesConverter(metadataManager, variantQueryProjection)),
                 new DocumentToVariantStatsConverter());
@@ -181,19 +181,19 @@ public class DocumentToVariantConverterTest {
         variant.addStudyEntry(studyEntry);
 
         // MongoDB object
-        Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId);
+        Document mongoFile = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, fileId);
 
-        mongoFile.append(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
+        mongoFile.append(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD,
                 new Document("QUAL", 0.01).append("AN", 2))
-                .append(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, new Document());
+                .append(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, new Document());
 //        mongoFile.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
 
-        Document mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyId)
-                .append(DocumentToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
+        Document mongoStudy = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, studyId)
+                .append(DocumentToStudyEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
         Document genotypeCodes = new Document();
 //        genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Collections.singletonList(na002));
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
+        mongoStudy.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
         List<Document> studies = new LinkedList<>();
         studies.add(mongoStudy);

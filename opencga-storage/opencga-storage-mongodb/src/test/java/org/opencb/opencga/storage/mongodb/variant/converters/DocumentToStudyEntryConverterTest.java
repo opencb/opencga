@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 @Category(ShortTests.class)
-public class DocumentToStudyVariantEntryConverterTest {
+public class DocumentToStudyEntryConverterTest {
 
     private final Variant variant = new Variant();
     private StudyEntry studyEntry;
@@ -99,31 +99,31 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyEntry.getSamples().forEach(s -> s.setFileIndex(0));
 
         // MongoDB object
-        mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyId);
+        mongoStudy = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, studyId);
 
-        Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId);
+        Document mongoFile = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, fileId);
         String dot = GenericDocumentComplexConverter.TO_REPLACE_DOTS;
-        mongoFile.append(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
+        mongoFile.append(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD,
                 new Document("QUAL", 0.01)
                         .append("AN", 2.0)
                         .append("do" + dot + "we" + dot + "accept" + dot + "attribute" + dot + "with" + dot + "dots?", "yes")
-        ).append(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, new Document());
+        ).append(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, new Document());
 //        mongoFile.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
+        mongoStudy.append(DocumentToStudyEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
 
         Document genotypeCodes = new Document();
 //        genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Collections.singletonList(sampleIds.get(1)));
         genotypeCodes.append("1/1", Collections.singletonList(sampleIds.get(2)));
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
+        mongoStudy.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
 
 
         mongoFileWithIds = new Document((this.mongoStudy));
-        mongoFileWithIds.put(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document());
+        mongoFileWithIds.put(DocumentToStudyEntryConverter.GENOTYPES_FIELD, new Document());
 //        ((Document) mongoFileWithIds.get("samp")).put("def", "0/0");
-        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(sampleIds.get(1)));
-        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(sampleIds.get(2)));
+        ((Document) mongoFileWithIds.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(sampleIds.get(1)));
+        ((Document) mongoFileWithIds.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(sampleIds.get(2)));
     }
 
     /* TODO move to variant converter: sourceEntry does not have stats anymore
@@ -202,7 +202,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         List<String> sampleNames = null;
 
         // Test with no stats converter provided
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId,
+        DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId,
                 new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
@@ -212,7 +212,7 @@ public class DocumentToStudyVariantEntryConverterTest {
     public void testConvertToDataModelTypeWithoutStatsWithStatsConverter() {
         List<String> sampleNames = null;
         // Test with a stats converter provided but no stats object
-        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, studyId, fileId, new
+        DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId, new
                 DocumentToSamplesConverter(metadataManager, variantQueryProjection));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
@@ -228,7 +228,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
     @Test
     public void testConvertToStorageTypeWithoutStatsWithSampleIds() {
-        DocumentToStudyVariantEntryConverter converter;
+        DocumentToStudyEntryConverter converter;
         Document convertedMongo;
         StudyEntry convertedFile;
 
@@ -236,7 +236,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Test with no stats converter provided
         StudyEntryToDocumentConverter toDocument = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
-        converter = new DocumentToStudyVariantEntryConverter(
+        converter = new DocumentToStudyEntryConverter(
                 true,
                 studyId, fileId,
                 samplesConverter);
@@ -250,7 +250,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
     @Test
     public void testConvertToDataTypeWithoutStatsWithSampleIds() {
-        DocumentToStudyVariantEntryConverter converter;
+        DocumentToStudyEntryConverter converter;
         Document convertedMongo;
         StudyEntry convertedFile;
 
@@ -258,7 +258,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Test with no stats converter provided
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
         samplesConverter.setIncludeSampleId(false);
-        converter = new DocumentToStudyVariantEntryConverter(
+        converter = new DocumentToStudyEntryConverter(
                 true,
                 studyId, fileId,
                 samplesConverter);

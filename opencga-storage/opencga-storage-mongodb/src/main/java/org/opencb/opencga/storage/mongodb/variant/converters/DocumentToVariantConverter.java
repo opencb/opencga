@@ -28,7 +28,7 @@ import java.util.*;
 import static java.util.Collections.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.JSON_RAW;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.newVariantAnnotation;
 
@@ -168,7 +168,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
 
     }
 
-    private final DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
+    private final DocumentToStudyEntryConverter variantStudyEntryConverter;
     private Set<Integer> returnStudies;
     private final DocumentToVariantAnnotationConverter variantAnnotationConverter;
     private final DocumentToVariantStatsConverter statsConverter;
@@ -192,7 +192,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
      * @param variantStudyEntryConverter The object used to convert the files
      * @param statsConverter Stats converter
      */
-    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
+    public DocumentToVariantConverter(DocumentToStudyEntryConverter variantStudyEntryConverter,
                                       DocumentToVariantStatsConverter statsConverter) {
         this(variantStudyEntryConverter, statsConverter, null, null);
     }
@@ -207,7 +207,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
      * @param returnStudies List of studies to return
      * @param annotationIds Map of annotationIds
      */
-    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
+    public DocumentToVariantConverter(DocumentToStudyEntryConverter variantStudyEntryConverter,
                                       DocumentToVariantStatsConverter statsConverter, Collection<Integer> returnStudies,
                                       Map<Integer, String> annotationIds) {
         this.variantStudyEntryConverter = variantStudyEntryConverter;

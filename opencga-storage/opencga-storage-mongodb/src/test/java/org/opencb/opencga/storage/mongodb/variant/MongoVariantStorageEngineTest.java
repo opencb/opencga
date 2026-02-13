@@ -38,7 +38,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
-import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -52,7 +51,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -77,7 +76,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 
 
 /**
@@ -874,8 +873,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                         List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                         studies.sort(Comparator.comparing(o -> o.getInteger(STUDYID_FIELD)));
                         studies.forEach(study ->
-                                ((List<Document>) study.get(DocumentToStudyVariantEntryConverter.FILES_FIELD, List.class))
-                                .forEach(file -> file.remove(DocumentToStudyVariantEntryConverter.FILEID_FIELD)));
+                                ((List<Document>) study.get(DocumentToStudyEntryConverter.FILES_FIELD, List.class))
+                                .forEach(file -> file.remove(DocumentToStudyEntryConverter.FILEID_FIELD)));
                     }
                     return document;
                 });

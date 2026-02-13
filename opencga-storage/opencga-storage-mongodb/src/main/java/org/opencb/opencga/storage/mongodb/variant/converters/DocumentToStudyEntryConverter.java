@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToStudyVariantEntryConverter {
+public class DocumentToStudyEntryConverter {
 
     public static final String STUDYID_FIELD = "sid";
     //    public static final String FORMAT_FIELD = "fm";
@@ -69,7 +69,7 @@ public class DocumentToStudyVariantEntryConverter {
      *
      * @param includeSrc If true, will include and gzip the "src" attribute in the Document
      */
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc) {
+    public DocumentToStudyEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
         this.returnedFiles = null;
@@ -84,7 +84,7 @@ public class DocumentToStudyVariantEntryConverter {
      * @param includeSrc       If true, will include and gzip the "src" attribute in the Document
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, DocumentToSamplesConverter samplesConverter) {
+    public DocumentToStudyEntryConverter(boolean includeSrc, DocumentToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
     }
@@ -98,8 +98,8 @@ public class DocumentToStudyVariantEntryConverter {
      * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, Map<Integer, List<Integer>> returnedFiles,
-                                                DocumentToSamplesConverter samplesConverter) {
+    public DocumentToStudyEntryConverter(boolean includeSrc, Map<Integer, List<Integer>> returnedFiles,
+                                         DocumentToSamplesConverter samplesConverter) {
 
         this(includeSrc);
         this.returnedFiles = returnedFiles;
@@ -107,8 +107,8 @@ public class DocumentToStudyVariantEntryConverter {
     }
 
 
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, int studyId, int fileId,
-                                                DocumentToSamplesConverter samplesConverter) {
+    public DocumentToStudyEntryConverter(boolean includeSrc, int studyId, int fileId,
+                                         DocumentToSamplesConverter samplesConverter) {
         this(includeSrc, Collections.singletonMap(studyId, Collections.singletonList(fileId)), samplesConverter);
     }
 
@@ -135,7 +135,18 @@ public class DocumentToStudyVariantEntryConverter {
                 if (fid < 0) {
                     fid = -fid;
                 }
+
+                OriginalCall call = null;
+                if (fileDocument.containsKey(ORI_FIELD)) {
+                    Document ori = (Document) fileDocument.get(ORI_FIELD);
+                    call = new OriginalCall(ori.getString("s"), ori.getInteger("i"));
+                }
                 if (returnedFiles != null && !returnedFiles.getOrDefault(studyId, Collections.emptyList()).contains(fid)) {
+                    // Always return originalCall when context allele is missing
+                    if (call != null) {
+                        FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, Collections.emptyMap());
+                        files.add(fileEntry);
+                    }
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
@@ -154,7 +165,7 @@ public class DocumentToStudyVariantEntryConverter {
                                 try {
                                     attributes.put(entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
                                 } catch (IOException ex) {
-                                    Logger.getLogger(DocumentToStudyVariantEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(DocumentToStudyEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         } else {
@@ -162,10 +173,6 @@ public class DocumentToStudyVariantEntryConverter {
                                     entry.getValue().toString());
                         }
                     }
-                }
-                if (fileObject.containsKey(ORI_FIELD)) {
-                    Document ori = (Document) fileObject.get(ORI_FIELD);
-                    fileEntry.setCall(new OriginalCall(ori.getString("s"), ori.getInteger("i")));
                 }
             }
             study.setFiles(files);

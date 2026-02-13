@@ -72,7 +72,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
 
 /**
@@ -1084,9 +1084,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        DocumentToStudyVariantEntryConverter studyEntryConverter;
+        DocumentToStudyEntryConverter studyEntryConverter;
 
-        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
+        studyEntryConverter = new DocumentToStudyEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setMetadataManager(metadataManager);
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         Map<Integer, String> annotationIds;

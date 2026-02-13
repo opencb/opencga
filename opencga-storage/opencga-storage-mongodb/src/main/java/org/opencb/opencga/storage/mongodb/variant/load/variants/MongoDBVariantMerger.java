@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.SECONDARY_ALTERNATES_FIELD;
@@ -1186,7 +1186,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             List<Document> alternatesDocuments = getListFromDocument(study, SECONDARY_ALTERNATES_FIELD);
             alternates = alternatesDocuments
                     .stream()
-                    .map(DocumentToStudyVariantEntryConverter::convertToAlternateCoordinate)
+                    .map(DocumentToStudyEntryConverter::convertToAlternateCoordinate)
                     .collect(Collectors.toList());
         } else {
             alternates = Collections.emptyList();

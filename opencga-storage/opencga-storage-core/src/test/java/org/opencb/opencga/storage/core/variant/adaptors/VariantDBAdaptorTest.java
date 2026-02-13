@@ -2321,6 +2321,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
         for (Variant variant : queryResult.getResults()) {
             if (variant.getLengthReference() == 0 || variant.getLengthAlternate() == 0) {
+                // Always return originalCall when context allele is missing
                 assertThat(variant.getStudies().get(0).getFiles(), is(not(Collections.emptyList())));
                 assertThat(variant.getStudies().get(0).getFiles().get(0).getCall(), is(not(nullValue())));
             } else {

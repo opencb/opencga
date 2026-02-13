@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.converters.AbstractDocumentConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.*;
@@ -92,7 +92,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
         List<Document> studies = getList(document, DocumentToVariantConverter.STUDIES_FIELD);
         for (Document study : studies) {
-            Integer sid = study.getInteger(DocumentToStudyVariantEntryConverter.STUDYID_FIELD);
+            Integer sid = study.getInteger(DocumentToStudyEntryConverter.STUDYID_FIELD);
             if (studyMetadata.getId() == sid) {
                 statsWrapper = calculateStats(variant, study);
                 break;
@@ -104,8 +104,8 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
     public VariantStatsWrapper calculateStats(Variant variant, Document study) {
         VariantStatsWrapper statsWrapper = new VariantStatsWrapper(variant, new ArrayList<>(cohorts.size()));
 
-        List<Document> files = study.getList(DocumentToStudyVariantEntryConverter.FILES_FIELD, Document.class);
-        Document gt = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
+        List<Document> files = study.getList(DocumentToStudyEntryConverter.FILES_FIELD, Document.class);
+        Document gt = study.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD, Document.class);
 
         // Make a Set from the lists of genotypes for fast indexOf
         Map<String, Set<Integer>> gtsMap = new HashMap<>(gt.size());
@@ -147,9 +147,9 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             int numQualFiles = 0;
             double qualitySum = 0;
             for (Document file : files) {
-                Integer fileId = file.getInteger(DocumentToStudyVariantEntryConverter.FILEID_FIELD);
+                Integer fileId = file.getInteger(DocumentToStudyEntryConverter.FILEID_FIELD);
                 if (filesInCohort.contains(fileId)) {
-                    Document attributes = file.get(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, Document.class);
+                    Document attributes = file.get(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, Document.class);
                     String filter = attributes.getString(StudyEntry.FILTER);
                     // Ensure missing filters are counted
                     if (StringUtils.isEmpty(filter)) {

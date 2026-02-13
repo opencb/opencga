@@ -84,7 +84,7 @@ public class SampleToDocumentConverter {
         }
 
         if (!excludeGenotypes) {
-            mongoSamples.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, mongoGenotypes);
+            mongoSamples.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, mongoGenotypes);
         }
 
 

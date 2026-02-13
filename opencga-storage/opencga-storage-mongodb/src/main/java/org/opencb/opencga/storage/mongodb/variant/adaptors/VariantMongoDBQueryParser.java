@@ -675,7 +675,7 @@ public class VariantMongoDBQueryParser {
         if (parsedVariantQuery.getStudyQuery().getStudies() != null) {
             ParsedQuery<NegatableValue<ResourceId>> studies = parsedVariantQuery.getStudyQuery().getStudies();
 
-            filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
+            filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyEntryConverter.STUDYID_FIELD,
                     studies.getValues(),
                     study -> study.getValue().getId()));
         }
@@ -716,8 +716,8 @@ public class VariantMongoDBQueryParser {
 //                List<String> qualValues = splitValue(values, qualOperation);
             if (!useFileElemMatch) {
                 String key = studyQueryPrefix
-                        + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                        + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+                        + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                        + DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
 
                 if (isValidParam(query, FILTER)) {
                     getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, filters);
@@ -727,12 +727,12 @@ public class VariantMongoDBQueryParser {
                 }
             } else {
                 List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
-                String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+                String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
 
                 for (Integer fileId : fileIds) {
                     List<Bson> fileFilters = new ArrayList<>();
 
-                    fileFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
+                    fileFilters.add(eq(DocumentToStudyEntryConverter.FILEID_FIELD, fileId));
                     if (isValidParam(query, FILTER)) {
                         getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileFilters);
                     }
@@ -757,11 +757,11 @@ public class VariantMongoDBQueryParser {
                                 List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
                                 extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
                             }
-                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
+                            addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
                                     true, extraFilterFilters);
                         }
                     }
-                    fileElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(fileFilters)));
+                    fileElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD, and(fileFilters)));
                 }
                 addAll(filters, filesOperation, fileElemMatch);
 
@@ -775,22 +775,22 @@ public class VariantMongoDBQueryParser {
                     }
                     List<Bson> infoFilters = new ArrayList<>();
                     Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
-                    infoFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
+                    infoFilters.add(eq(DocumentToStudyEntryConverter.FILEID_FIELD, fileId));
                     if (fileDataValue.getValues() != null) {
                         KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
                         Values<Bson> extraFilterFilters = null;
                         if (filterKeyOp != null) {
                             fileDataValue.getValues().remove(filterKeyOp);
                             Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
-                            String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + ".";
+                            String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + ".";
                             List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
                             extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
                         }
 
-                        addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
+                        addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
                                 true, extraFilterFilters);
                     }
-                    infoElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(infoFilters)));
+                    infoElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD, and(infoFilters)));
                 }
                 addAll(filters, fileDataOperation, infoElemMatch);
             }
@@ -883,8 +883,8 @@ public class VariantMongoDBQueryParser {
                     // Extra filter by FILE IDs associated to the sample
                     List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(defaultStudy.getId(), sampleId, true);
 
-                    String key = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                            + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
+                    String key = studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+                            + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
                     if (defaultGenotypeNegated) {
                         Bson negatedFile;
                         if (fileIdsFromSample.size() == 1) {
@@ -924,7 +924,7 @@ public class VariantMongoDBQueryParser {
                                     continue;
                                 }
                                 String key = studyQueryPrefix
-                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD
                                         + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                 genotypesFiltersOr.add(eq(key, sampleId));
                             }
@@ -935,7 +935,7 @@ public class VariantMongoDBQueryParser {
                                     continue;
                                 }
                                 String key = studyQueryPrefix
-                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD
                                         + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                 defaultGenotypeFilter.add(ne(key, sampleId));
                             }
@@ -943,7 +943,7 @@ public class VariantMongoDBQueryParser {
                         }
                     } else {
                         String key = studyQueryPrefix
-                                + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                + DocumentToStudyEntryConverter.GENOTYPES_FIELD
                                 + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
                         if (negated) {
                             //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
@@ -983,8 +983,8 @@ public class VariantMongoDBQueryParser {
             }
         } else {
             if (fileIdGroupsFromSamples.isEmpty()) {
-                filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
+                filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+                                + '.' + DocumentToStudyEntryConverter.FILEID_FIELD,
                         fileQuery.getValues(), filesOperation,
                         value -> {
                             int fileId = value.getValue().getId();
@@ -1058,8 +1058,8 @@ public class VariantMongoDBQueryParser {
             fileIdGroups = Collections.singleton(new ArrayList<>(fileIds));
         }
 
-        String fileIdField = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
+        String fileIdField = studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+                + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
         List<Bson> fileQueries = new ArrayList<>(fileIdGroups.size());
         List<Integer> singleElementGroups = new ArrayList<>();
         for (List<Integer> group : fileIdGroups) {
@@ -1268,7 +1268,7 @@ public class VariantMongoDBQueryParser {
             studyElemMatch = Projections.elemMatch(
                     DocumentToVariantConverter.STUDIES_FIELD,
                     eq(
-                            DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
+                            DocumentToStudyEntryConverter.STUDYID_FIELD,
                             studiesIds.get(0)
                     )
             );
@@ -1280,27 +1280,27 @@ public class VariantMongoDBQueryParser {
                     fields.remove(VariantField.STUDIES_SAMPLES);
                     if (formats.contains(VariantQueryUtils.ALL)) {
                         projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD);
+                                + DocumentToStudyEntryConverter.GENOTYPES_FIELD);
                         projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                                + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
                         projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILEID_FIELD
+                                + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILEID_FIELD
                         );
                     } else {
                         for (String format : formats) {
                             if (format.equals(GT)) {
                                 projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD);
+                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD);
                             } else {
                                 projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                        + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                        + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
+                                        + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                                        + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
                             }
                             projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                    + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                    + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
+                                    + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.FILEID_FIELD);
                         }
                     }
                 }
@@ -1339,8 +1339,8 @@ public class VariantMongoDBQueryParser {
         }
 
 
-        logger.debug("QueryOptions: = {}", options.toJson());
-        logger.debug("Projection:   = {}", projection.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        logger.info("QueryOptions: = {}", options.toJson());
+        logger.info("Projection:   = {}", projection.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         return projection;
     }
 

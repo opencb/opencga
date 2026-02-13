@@ -185,7 +185,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         Map<String, Integer> sampleIds = studySamplesId.get(studyId);
         Map<Integer, String> sampleNames = studySampleNames.get(studyId);
 
-        boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
+        boolean excludeGenotypes = !object.containsKey(DocumentToStudyEntryConverter.GENOTYPES_FIELD)
                 || studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
@@ -202,14 +202,14 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         final Set<Integer> loadedSamples;
         final List<String> extraFields;
         final List<String> sampleDataKeys;
-        if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
-            List<Document> fileObjects = getList(object, DocumentToStudyVariantEntryConverter.FILES_FIELD);
+        if (object.containsKey(DocumentToStudyEntryConverter.FILES_FIELD)) {
+            List<Document> fileObjects = getList(object, DocumentToStudyEntryConverter.FILES_FIELD);
             includeFileIds = new ArrayList<>(fileObjects.size());
             files = new HashMap<>(fileObjects.size());
             loadedSamples = new HashSet<>();
             filesWithSamplesData = new HashSet<>();
             for (Document fileObject : fileObjects) {
-                int fileId = fileObject.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue();
+                int fileId = fileObject.get(DocumentToStudyEntryConverter.FILEID_FIELD, Number.class).intValue();
                 if (fileId < 0) {
                     fileId = -fileId;
                 }
@@ -272,7 +272,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
 //        Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
         if (!excludeGenotypes) {
-            Document mongoGenotypes = (Document) object.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD);
+            Document mongoGenotypes = (Document) object.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD);
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 final String genotype;
                 if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
@@ -303,9 +303,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         if (!extraFields.isEmpty()) {
             for (Integer fid : filesWithSamplesData) {
                 Document samplesDataDocument = null;
-                if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
+                if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD)) {
                     samplesDataDocument = files.get(fid)
-                            .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
+                            .get(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, Document.class);
                 }
                 if (samplesDataDocument != null) {
                     int extraFieldPosition;
@@ -427,7 +427,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             Set<String> extraFieldsSet = new HashSet<>();
             for (Integer fid : filesWithSamplesData) {
                 if (files.containsKey(fid)) {
-                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
                     if (sampleData != null) {
                         extraFieldsSet.addAll(sampleData.keySet());
                     }

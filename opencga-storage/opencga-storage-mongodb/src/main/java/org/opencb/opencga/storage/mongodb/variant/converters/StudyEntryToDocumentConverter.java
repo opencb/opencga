@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 
 public class StudyEntryToDocumentConverter {
 
@@ -98,7 +98,7 @@ public class StudyEntryToDocumentConverter {
                         try {
                             value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
                         } catch (IOException ex) {
-                            Logger.getLogger(DocumentToStudyVariantEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(DocumentToStudyEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         continue;
