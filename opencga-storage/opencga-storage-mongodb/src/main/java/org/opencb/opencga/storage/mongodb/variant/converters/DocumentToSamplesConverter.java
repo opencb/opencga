@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CompressionUtils;
@@ -40,6 +42,7 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.zip.DataFormatException;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.MAIN_ALT;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 
@@ -402,6 +405,103 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 //            }
 //            extraFieldPosition++;
 //        }
+
+        // For multi-file samples: use per-file mgt to assign the most significant GT as primary and
+        // create IssueEntry(DISCREPANCY) entries for the remaining files.
+        if (study != null && !excludeGenotypes) {
+            VariantQueryProjection.StudyVariantQueryProjection studyProjection = variantQueryProjection.getStudy(studyId);
+            if (studyProjection != null && !studyProjection.getMultiFileSamples().isEmpty()) {
+                Set<Integer> multiFileSamples = studyProjection.getMultiFileSamples();
+                // sampleId -> { fileIndex -> genotype }
+                Map<Integer, Map<Integer, String>> sampleFileGts = new HashMap<>();
+
+                // First pass: fill sampleFileGts with the mgt data available on the file documents of included
+                // files (loaded with LOAD_SPLIT_DATA=MULTI)
+                for (int i = 0; i < includeFileIds.size(); i++) {
+                    Integer fileId = includeFileIds.get(i);
+                    Document fileDoc = files.get(fileId);
+                    if (fileDoc == null) {
+                        continue;
+                    }
+                    Document mgt = fileDoc.get(DocumentToStudyEntryConverter.MULTI_FILE_GENOTYPE_FIELD, Document.class);
+                    if (mgt == null) {
+                        continue;
+                    }
+                    for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
+                        String genotype = genotypeToDataModelType(mgtEntry.getKey());
+                        for (Integer sampleId : (List<Integer>) mgtEntry.getValue()) {
+                            if (multiFileSamples.contains(sampleId)) {
+                                sampleFileGts.computeIfAbsent(sampleId, k -> new LinkedHashMap<>()).put(i, genotype);
+                            }
+                        }
+                    }
+                }
+                // Second pass: for multi-file samples that appear in included files which have no mgt
+                // (loaded before LOAD_SPLIT_DATA=MULTI was set), infer the GT from the study-level gt
+                // already resolved in sampleEntries so that MAIN_ALT selection and IssueEntry creation work.
+                for (Map.Entry<Integer, Map<Integer, String>> sampleEntry : sampleFileGts.entrySet()) {
+                    Integer sampleId = sampleEntry.getKey();
+                    Map<Integer, String> fileGts = sampleEntry.getValue();
+                    String sampleName = getSampleName(studyId, sampleId);
+                    Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                    if (samplePosition == null) {
+                        continue;
+                    }
+                    String studyLevelGt = sampleEntries.get(samplePosition).getData().get(0);
+                    for (int i = 0; i < includeFileIds.size(); i++) {
+                        if (fileGts.containsKey(i)) {
+                            continue; // Already has mgt for this file index
+                        }
+                        if (getSamplesInFile(studyId, includeFileIds.get(i)).contains(sampleId)) {
+                            // File contains this sample but has no mgt: was loaded without LOAD_SPLIT_DATA=MULTI.
+                            // Its GT is the study-level gt (recorded from the first file load).
+                            fileGts.put(i, studyLevelGt);
+                        }
+                    }
+                }
+
+                for (Map.Entry<Integer, Map<Integer, String>> sampleEntry : sampleFileGts.entrySet()) {
+                    Integer sampleId = sampleEntry.getKey();
+                    Map<Integer, String> fileGts = sampleEntry.getValue();
+                    if (fileGts.size() <= 1) {
+                        continue; // Only one included file has data for this sample; no issue
+                    }
+                    String sampleName = getSampleName(studyId, sampleId);
+                    Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                    if (samplePosition == null) {
+                        continue;
+                    }
+                    // Select the primary file: the one with MAIN_ALT genotype; ties resolved by first
+                    Map.Entry<Integer, String> primaryEntry = null;
+                    for (Map.Entry<Integer, String> fg : fileGts.entrySet()) {
+                        if (primaryEntry == null || (MAIN_ALT.test(fg.getValue()) && !MAIN_ALT.test(primaryEntry.getValue()))) {
+                            primaryEntry = fg;
+                        }
+                    }
+                    // Update the primary SampleEntry with the winner GT and its fileIndex
+                    sampleEntries.get(samplePosition).getData().set(0, primaryEntry.getValue());
+                    sampleEntries.get(samplePosition).setFileIndex(primaryEntry.getKey());
+                    // Create IssueEntries for the remaining files
+                    List<IssueEntry> issues = study.getIssues();
+                    if (issues == null) {
+                        issues = new ArrayList<>();
+                        study.setIssues(issues);
+                    }
+                    for (Map.Entry<Integer, String> fg : fileGts.entrySet()) {
+                        if (fg == primaryEntry) {
+                            continue;
+                        }
+                        List<String> issueData = new ArrayList<>(sampleDataKeys.size());
+                        issueData.add(fg.getValue()); // GT
+                        for (int j = 1; j < sampleDataKeys.size(); j++) {
+                            issueData.add(UNKNOWN_FIELD);
+                        }
+                        SampleEntry issueEntry = new SampleEntry(sampleName, fg.getKey(), issueData);
+                        issues.add(new IssueEntry(IssueType.DISCREPANCY, issueEntry, Collections.emptyMap()));
+                    }
+                }
+            }
+        }
 
         fillStudyEntryFields(study, samplesPositionToReturn, extraFields, sampleEntries, excludeGenotypes);
         return sampleEntries;

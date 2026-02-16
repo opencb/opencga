@@ -43,6 +43,8 @@ public class DocumentToStudyEntryConverter {
     public static final String FILES_FIELD = "files";
     public static final String FILEID_FIELD = "fid";
     public static final String SAMPLE_DATA_FIELD = "sampleData";
+    /** Per-file genotype map for multi-file samples. Same shape as {@link #GENOTYPES_FIELD}: {@code {gt: [sampleId, ...]}}. */
+    public static final String MULTI_FILE_GENOTYPE_FIELD = "mgt";
     public static final String ATTRIBUTES_FIELD = "attrs";
     public static final String ORI_FIELD = "_ori";
 

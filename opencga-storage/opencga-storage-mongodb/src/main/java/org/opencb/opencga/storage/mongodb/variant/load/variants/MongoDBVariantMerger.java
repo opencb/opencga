@@ -37,6 +37,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -244,6 +246,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final Map<Integer, LinkedHashSet<String>> sampleNamesInFile;
     private final Map<String, Integer> fileIdsMap;
     private final List<Integer> indexedSamples;
+    /** Sample IDs with {@code SplitData.MULTI}, whose GT must not be re-added to study-level {@code gt} on subsequent file loads. */
+    private final Set<Integer> multiFileSampleIds;
 
 
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
@@ -274,7 +278,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         indexedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(this.studyMetadata, sampleIdsMap);
+        multiFileSampleIds = buildMultiFileSampleIds(fileIds, dbAdaptor.getMetadataManager());
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(this.studyMetadata, sampleIdsMap, multiFileSampleIds);
         studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
         variantConverter = new VariantToDocumentConverter(studyConverter, null, null);
         samplesPositionMap = new HashMap<>();
@@ -541,6 +546,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         addCleanStageOperations(document, mongoDBOps, newStudy, missing, skipped, duplicated);
 
+        if (!newStudy && !multiFileSampleIds.isEmpty()) {
+            filterMultiFileSamplesFromGts(gts);
+        }
         updateMongoDBOperations(emptyVar, new ArrayList<>(ids), fileDocuments, alternatesFromStage, alternateDocuments, gts,
                 newStudy, newVariant, mongoDBOps);
     }
@@ -693,6 +701,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
                 }
             }
+        }
+        if (!newStudy && !multiFileSampleIds.isEmpty()) {
+            filterMultiFileSamplesFromGts(gts);
         }
         updateMongoDBOperations(mainVariant, variant.getIds(), fileDocuments, alternatesFromStage, alternateDocuments, gts, newStudy,
                 newVariant, mongoDBOps);
@@ -1278,6 +1289,30 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         }
         indexedSamples.sort(Integer::compareTo);
         return indexedSamples;
+    }
+
+    private Set<Integer> buildMultiFileSampleIds(List<Integer> fileIds, VariantStorageMetadataManager metadataManager) {
+        Set<Integer> multiFileSampleIds = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            for (Integer sampleId : metadataManager.getFileMetadata(studyId, fileId).getSamples()) {
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                if (sampleMetadata.getSplitData() == VariantStorageEngine.SplitData.MULTI) {
+                    multiFileSampleIds.add(sampleId);
+                }
+            }
+        }
+        return multiFileSampleIds;
+    }
+
+    /**
+     * When loading a subsequent file for a multi-file sample (newStudy=false), the sample already exists in the
+     * study-level {@code gt} map from the first file load. Remove those sample IDs from {@code gts} to avoid
+     * duplicating them in a different genotype bucket.
+     */
+    private void filterMultiFileSamplesFromGts(Document gts) {
+        for (Object value : gts.values()) {
+            ((List<Integer>) value).removeAll(multiFileSampleIds);
+        }
     }
 
     private void populateInternalCaches(List<Integer> fileIds, VariantStorageMetadataManager metadataManager) {

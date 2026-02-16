@@ -65,7 +65,13 @@ public class StudyEntryToDocumentConverter {
                 if (samplesConverter != null) {
                     Document otherFields = new Document();
                     fileObject.append(SAMPLE_DATA_FIELD, otherFields);
-                    studyObject.putAll(samplesConverter.convertToStorageType(studyEntry, otherFields, sampleNames));
+                    Document sampleDoc = samplesConverter.convertToStorageType(studyEntry, otherFields, sampleNames);
+                    // Extract per-file mgt (multi-file genotype map) before merging into study document.
+                    Document mgt = (Document) sampleDoc.remove(MULTI_FILE_GENOTYPE_FIELD);
+                    if (mgt != null && !mgt.isEmpty()) {
+                        fileObject.append(MULTI_FILE_GENOTYPE_FIELD, mgt);
+                    }
+                    studyObject.putAll(sampleDoc);
                 }
             }
 

@@ -23,10 +23,18 @@ public class SampleToDocumentConverter {
     private final StudyMetadata studyMetadata;
     private final Set<String> defaultGenotype;
     private final Map<String, Integer> sampleIdsMap;
+    /** Sample IDs that are loaded with {@code SplitData.MULTI}. May be empty. */
+    private final Set<Integer> multiFileSampleIds;
 
     public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap) {
+        this(studyMetadata, sampleIdsMap, Collections.emptySet());
+    }
+
+    public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap,
+                                     Set<Integer> multiFileSampleIds) {
         this.studyMetadata = studyMetadata;
         this.sampleIdsMap = sampleIdsMap;
+        this.multiFileSampleIds = multiFileSampleIds;
         List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
         this.defaultGenotype = new HashSet<>(defGenotype);
     }
@@ -37,6 +45,7 @@ public class SampleToDocumentConverter {
 
     public Document convertToStorageType(StudyEntry studyEntry, Document otherFields, LinkedHashSet<String> samplesInFile) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
+        Map<String, List<Integer>> multiFileGenotypeCodes = new HashMap<>();
 
         boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
@@ -63,9 +72,12 @@ public class SampleToDocumentConverter {
             if (genotype == null) {
                 genotype = ".";
             }
-//                Genotype g = new Genotype(genotype);
-            List<Integer> samplesWithGenotype = genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>());
-            samplesWithGenotype.add(getSampleId(sampleName));
+            int id = getSampleId(sampleName);
+            genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>()).add(id);
+            // For multi-file samples, also track the per-file genotype (stored in "mgt" on the file document).
+            if (multiFileSampleIds.contains(id)) {
+                multiFileGenotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>()).add(id);
+            }
         }
 
         // In Mongo, samples are stored in a map, classified by their genotype.
@@ -85,6 +97,16 @@ public class SampleToDocumentConverter {
 
         if (!excludeGenotypes) {
             mongoSamples.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, mongoGenotypes);
+        }
+
+        // Build the per-file mgt map for multi-file samples (same shape as the study-level gt map).
+        // This is extracted by StudyEntryToDocumentConverter and stored on the file document directly.
+        if (!multiFileGenotypeCodes.isEmpty()) {
+            Document mgt = new Document();
+            for (Map.Entry<String, List<Integer>> entry : multiFileGenotypeCodes.entrySet()) {
+                mgt.append(DocumentToSamplesConverter.genotypeToStorageType(entry.getKey()), entry.getValue());
+            }
+            mongoSamples.append(DocumentToStudyEntryConverter.MULTI_FILE_GENOTYPE_FIELD, mgt);
         }
 
 
