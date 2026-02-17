@@ -177,12 +177,10 @@ public class VariantSampleDataManager {
                                 }
                                 throw new VariantQueryException("No file found for sample '" + sample + "', expected any of " + fileNames);
                             }
-                            Integer fileIdx = filesIdx.get(partialFileEntry.getFileId());
-                            if (fileIdx == null) {
-                                fileIdx = files.size();
-                                filesIdx.put(partialFileEntry.getFileId(), fileIdx);
+                            Integer fileIdx = filesIdx.computeIfAbsent(partialFileEntry.getFileId(), k -> {
                                 files.add(partialFileEntry);
-                            }
+                                return files.size() - 1;
+                            });
                             sampleEntries.add(new SampleEntry(sample, fileIdx, partialSampleData));
                             samplesPosition.put(sample, samplesPosition.size());
                             if (partialStudy.getIssues() != null) {
@@ -191,12 +189,10 @@ public class VariantSampleDataManager {
                                         issues.add(issue);
                                         // Add file to the list of files, if not already there
                                         FileEntry issueFileEntry = partialStudy.getFile(issue.getSample().getFileIndex());
-                                        fileIdx = filesIdx.get(issueFileEntry.getFileId());
-                                        if (fileIdx == null) {
-                                            fileIdx = files.size();
-                                            filesIdx.put(partialFileEntry.getFileId(), fileIdx);
-                                            files.add(partialFileEntry);
-                                        }
+                                        fileIdx = filesIdx.computeIfAbsent(issueFileEntry.getFileId(), k -> {
+                                            files.add(issueFileEntry);
+                                            return files.size() - 1;
+                                        });
                                         issue.getSample().setFileIndex(fileIdx);
                                     }
                                 }

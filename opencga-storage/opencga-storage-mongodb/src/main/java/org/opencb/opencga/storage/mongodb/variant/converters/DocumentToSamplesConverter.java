@@ -303,6 +303,19 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         }
 
+        // For multi-file samples, track extra field values per file so we can populate IssueEntries
+        // and ensure the primary entry's extra fields match the primary file.
+        // Map: sampleId -> fileId -> extraFieldValues (indexed by extraField position)
+        Set<Integer> multiFileSampleIds = Collections.emptySet();
+        Map<Integer, Map<Integer, String[]>> multiFileExtraValues = Collections.emptyMap();
+        if (study != null && !excludeGenotypes && !extraFields.isEmpty()) {
+            VariantQueryProjection.StudyVariantQueryProjection studyProjection = variantQueryProjection.getStudy(studyId);
+            if (studyProjection != null && !studyProjection.getMultiFileSamples().isEmpty()) {
+                multiFileSampleIds = studyProjection.getMultiFileSamples();
+                multiFileExtraValues = new HashMap<>();
+            }
+        }
+
         if (!extraFields.isEmpty()) {
             for (Integer fid : filesWithSamplesData) {
                 Document samplesDataDocument = null;
@@ -317,8 +330,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     } else {
                         extraFieldPosition = 0; //Skip GT
                     }
+                    int extraFieldIndex = -1;
                     for (String extraField : extraFields) {
                         extraFieldPosition++;
+                        extraFieldIndex++;
                         extraField = extraField.toLowerCase();
                         byte[] byteArray = !samplesDataDocument.containsKey(extraField)
                                 ? null
@@ -363,7 +378,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                                 // The sample on this position is not returned. Skip this value.
                                 supplier.get();
                             } else {
-                                sampleEntries.get(samplePosition).getData().set(extraFieldPosition, supplier.get());
+                                String value = supplier.get();
+                                sampleEntries.get(samplePosition).getData().set(extraFieldPosition, value);
+                                // Track per-file extra field values for multi-file samples
+                                if (multiFileSampleIds.contains(sampleId)) {
+                                    multiFileExtraValues
+                                            .computeIfAbsent(sampleId, k -> new HashMap<>())
+                                            .computeIfAbsent(fid, k -> new String[extraFields.size()])
+                                            [extraFieldIndex] = value;
+                                }
                             }
                         }
 
@@ -481,6 +504,17 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     // Update the primary SampleEntry with the winner GT and its fileIndex
                     sampleEntries.get(samplePosition).getData().set(0, primaryEntry.getValue());
                     sampleEntries.get(samplePosition).setFileIndex(primaryEntry.getKey());
+                    // Update the primary entry's extra FORMAT fields from the primary file
+                    int primaryFileId = includeFileIds.get(primaryEntry.getKey());
+                    String[] primaryExtraValues = multiFileExtraValues
+                            .getOrDefault(sampleId, Collections.emptyMap()).get(primaryFileId);
+                    if (primaryExtraValues != null) {
+                        for (int j = 0; j < primaryExtraValues.length; j++) {
+                            int pos = excludeGenotypes ? j : j + 1;
+                            sampleEntries.get(samplePosition).getData()
+                                    .set(pos, primaryExtraValues[j] != null ? primaryExtraValues[j] : UNKNOWN_FIELD);
+                        }
+                    }
                     // Create IssueEntries for the remaining files
                     List<IssueEntry> issues = study.getIssues();
                     if (issues == null) {
@@ -493,8 +527,16 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                         }
                         List<String> issueData = new ArrayList<>(sampleDataKeys.size());
                         issueData.add(fg.getValue()); // GT
-                        for (int j = 1; j < sampleDataKeys.size(); j++) {
-                            issueData.add(UNKNOWN_FIELD);
+                        // Populate extra FORMAT fields from the secondary file's sampleData
+                        int secondaryFileId = includeFileIds.get(fg.getKey());
+                        String[] secondaryExtraValues = multiFileExtraValues
+                                .getOrDefault(sampleId, Collections.emptyMap()).get(secondaryFileId);
+                        for (int j = 0; j < extraFields.size(); j++) {
+                            if (secondaryExtraValues != null && secondaryExtraValues[j] != null) {
+                                issueData.add(secondaryExtraValues[j]);
+                            } else {
+                                issueData.add(UNKNOWN_FIELD);
+                            }
                         }
                         SampleEntry issueEntry = new SampleEntry(sampleName, fg.getKey(), issueData);
                         issues.add(new IssueEntry(IssueType.DISCREPANCY, issueEntry, Collections.emptyMap()));

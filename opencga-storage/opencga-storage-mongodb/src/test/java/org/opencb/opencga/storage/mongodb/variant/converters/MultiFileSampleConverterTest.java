@@ -218,6 +218,72 @@ public class MultiFileSampleConverterTest {
     }
 
     /**
+     * Verify that IssueEntry for a secondary file carries the extra FORMAT fields (e.g. DP)
+     * from the secondary file's sampleData, and that the primary entry's extra fields come
+     * from the primary file.
+     */
+    @Test
+    public void testReadPath_issueEntryExtraFormatFields() throws Exception {
+        // Register DP as an extra format field
+        metadataManager.updateStudyMetadata(STUDY_ID, sm -> {
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP");
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), "String");
+        });
+        studyMetadata = metadataManager.getStudyMetadata(STUDY_ID);
+
+        Variant variant = new Variant("1:100:A:T");
+
+        // file1: sampleA DP=10, sampleC DP=20
+        Binary dpFile1 = new Binary(VariantMongoDBProto.OtherFields.newBuilder()
+                .addStringValues("10").addStringValues("20").build().toByteArray());
+        // file2: sampleB DP=30, sampleC DP=40
+        Binary dpFile2 = new Binary(VariantMongoDBProto.OtherFields.newBuilder()
+                .addStringValues("30").addStringValues("40").build().toByteArray());
+
+        Document file1Doc = new Document(FILEID_FIELD, fileId1)
+                .append(SAMPLE_DATA_FIELD, new Document("dp", dpFile1));
+        Document file2Doc = new Document(FILEID_FIELD, fileId2)
+                .append(SAMPLE_DATA_FIELD, new Document("dp", dpFile2));
+
+        // Study-level gt: sampleC=0/1 (from file1), sampleB=1/1 (from file2)
+        // mgt on file1: sampleC=0/1; mgt on file2: sampleC=0/0
+        Document mgt1 = new Document(DocumentToSamplesConverter.genotypeToStorageType("0/1"),
+                Collections.singletonList(sampleIdC));
+        file1Doc.append(MULTI_FILE_GENOTYPE_FIELD, mgt1);
+        Document mgt2 = new Document(DocumentToSamplesConverter.genotypeToStorageType("0/0"),
+                Collections.singletonList(sampleIdC));
+        file2Doc.append(MULTI_FILE_GENOTYPE_FIELD, mgt2);
+
+        Document gts = new Document()
+                .append(DocumentToSamplesConverter.genotypeToStorageType("0/1"), Collections.singletonList(sampleIdC))
+                .append(DocumentToSamplesConverter.genotypeToStorageType("1/1"), Collections.singletonList(sampleIdB));
+        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
+                .append(FILES_FIELD, Arrays.asList(file1Doc, file2Doc))
+                .append(GENOTYPES_FIELD, gts);
+
+        VariantQueryProjection projection = buildProjection(
+                Arrays.asList(sampleIdA, sampleIdB, sampleIdC),
+                Arrays.asList(fileId1, fileId2),
+                Collections.singleton(sampleIdC));
+
+        DocumentToSamplesConverter readConverter = new DocumentToSamplesConverter(metadataManager, projection);
+        StudyEntry result = new StudyEntry(STUDY_NAME);
+        readConverter.convertToDataModelType(studyDoc, result, STUDY_ID);
+
+        // sampleC primary: GT=0/1 (MAIN_ALT from file1), DP=20 (from file1)
+        SampleEntry sampleCEntry = result.getSamples().get(result.getSamplesPosition().get(SAMPLE_C));
+        assertEquals("0/1", sampleCEntry.getData().get(0));
+        assertEquals("sampleC primary DP should come from file1", "20", sampleCEntry.getData().get(1));
+
+        // IssueEntry: GT=0/0 (from file2), DP=40 (from file2's sampleData)
+        List<IssueEntry> issues = result.getIssues();
+        assertEquals(1, issues.size());
+        IssueEntry issue = issues.get(0);
+        assertEquals("0/0", issue.getSample().getData().get(0));
+        assertEquals("IssueEntry DP should come from file2", "40", issue.getSample().getData().get(1));
+    }
+
+    /**
      * Verify that when a variant appears in only one file for a multi-file sample,
      * no IssueEntry is created.
      */
