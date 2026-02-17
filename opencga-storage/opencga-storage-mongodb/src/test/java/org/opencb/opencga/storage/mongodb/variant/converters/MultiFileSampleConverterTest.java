@@ -18,9 +18,12 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.query.ResourceId;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
+import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
+import org.bson.types.Binary;
 
 import java.util.*;
 
@@ -310,13 +313,15 @@ public class MultiFileSampleConverterTest {
     }
 
     /**
-     * Two files for the same variant carry different secondary alternates:
+     * Two files for the same variant carry different secondary alternates and per-allele AC values:
      * <ul>
-     *   <li>file3: 1:1000:A:T,C — sample1 GT=1/2 (T/C)</li>
-     *   <li>file4: 1:1000:A:T,G — sample2 GT=1/2 (T/G)</li>
+     *   <li>file3: 1:1000:A:T,C — sample1 GT=1/2, AC=1,2 (T/C)</li>
+     *   <li>file4: 1:1000:A:T,G — sample2 GT=1/2, AC=3,4 (T/G)</li>
      * </ul>
-     * Expected merged result: secondary alternates=[C, G]; sample1 GT=1/2 (unchanged);
-     * sample2 GT=1/3 (G remapped from index 2 to 3 in the merged allele list [A,T,C,G]).
+     * Expected merged result: secondary alternates=[C, G];
+     * sample1 GT=1/2 (unchanged), AC=1,2,0 (pad 0 for absent alt G);
+     * sample2 GT=1/3 (G remapped from index 2 to 3 in the merged allele list [A,T,C,G]),
+     * AC=3,0,4 (pad 0 for absent alt C, remap G value to position 3).
      */
     @Test
     public void testReadPath_secondaryAlternatesMerge() throws Exception {
@@ -328,20 +333,32 @@ public class MultiFileSampleConverterTest {
         metadataManager.addIndexedFiles(STUDY_ID, Arrays.asList(fid3, fid4));
         int sid1 = metadataManager.getSampleId(STUDY_ID, s1);
         int sid2 = metadataManager.getSampleId(STUDY_ID, s2);
-        // Refresh studyMetadata after adding new files
+
+        // Register AC as an extra format field (String type for comma-separated per-allele values)
+        metadataManager.updateStudyMetadata(STUDY_ID, sm -> {
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AC");
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), "String");
+        });
+        // Refresh studyMetadata after adding new files and attributes
         studyMetadata = metadataManager.getStudyMetadata(STUDY_ID);
 
         Variant variant = new Variant("1:1000:A:T");
 
+        // Encode AC values as protobuf sampleData blobs (one sample per file)
+        Binary acFile3 = new Binary(VariantMongoDBProto.OtherFields.newBuilder().addStringValues("1,2").build().toByteArray());
+        Binary acFile4 = new Binary(VariantMongoDBProto.OtherFields.newBuilder().addStringValues("3,4").build().toByteArray());
+
         // file3 document: secondary alt = C (alleles: A=0, T=1, C=2 → sample1 GT 1/2 = T/C)
         Document altC = new Document(ALTERNATES_ALT, "C").append(ALTERNATES_TYPE, "SNV");
         Document file3Doc = new Document(FILEID_FIELD, fid3)
-                .append(ALTERNATES_FIELD, Collections.singletonList(altC));
+                .append(ALTERNATES_FIELD, Collections.singletonList(altC))
+                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile3));
 
         // file4 document: secondary alt = G (alleles: A=0, T=1, G=2 → sample2 GT 1/2 = T/G)
         Document altG = new Document(ALTERNATES_ALT, "G").append(ALTERNATES_TYPE, "SNV");
         Document file4Doc = new Document(FILEID_FIELD, fid4)
-                .append(ALTERNATES_FIELD, Collections.singletonList(altG));
+                .append(ALTERNATES_FIELD, Collections.singletonList(altG))
+                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile4));
 
         // Study-level gt: both samples have GT "1/2" (each relative to their own file's allele list)
         Document gts = new Document()
@@ -372,11 +389,15 @@ public class MultiFileSampleConverterTest {
         SampleEntry s1Entry = result.getSamples().get(result.getSamplesPosition().get(s1));
         assertNotNull("sample1 should have a SampleEntry", s1Entry);
         assertEquals("sample1 GT should be 1/2 (T/C, unchanged)", "1/2", s1Entry.getData().get(0));
+        // sample1 AC: 1 for T, 2 for C, 0 for absent G → "1,2,0"
+        assertEquals("sample1 AC should be 1,2,0", "1,2,0", s1Entry.getData().get(1));
 
         // sample2 GT = 1/3: G moved from index 2 (in file4's list) to index 3 (in merged list)
         SampleEntry s2Entry = result.getSamples().get(result.getSamplesPosition().get(s2));
         assertNotNull("sample2 should have a SampleEntry", s2Entry);
         assertEquals("sample2 GT should be 1/3 (T/G, remapped)", "1/3", s2Entry.getData().get(0));
+        // sample2 AC: 3 for T, 0 for absent C, 4 for G → "3,0,4"
+        assertEquals("sample2 AC should be 3,0,4", "3,0,4", s2Entry.getData().get(1));
     }
 
     // ---------------------- Helpers ----------------------
