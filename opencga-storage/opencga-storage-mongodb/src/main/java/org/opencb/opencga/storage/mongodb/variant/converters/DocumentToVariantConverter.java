@@ -302,7 +302,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                 for (Object o : mongoFiles) {
                     Document dbo = (Document) o;
                     if (returnStudies == null || returnStudies.contains(((Number) dbo.get(STUDYID_FIELD)).intValue())) {
-                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo));
+                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo, variant));
                     }
                 }
             }

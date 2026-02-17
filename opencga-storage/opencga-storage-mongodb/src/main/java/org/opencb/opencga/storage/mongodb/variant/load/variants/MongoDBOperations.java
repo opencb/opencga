@@ -41,7 +41,6 @@ public class MongoDBOperations {
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
     private final List<String> documentsToCleanStudies = new ArrayList<>();
     private final List<String> documentsToCleanFiles = new ArrayList<>();
-    private final StageSecondaryAlternates secondaryAlternates = new StageSecondaryAlternates();
 
     private int skipped = 0;
     private int nonInserted = 0;
@@ -121,10 +120,6 @@ public class MongoDBOperations {
         return genotypes;
     }
 
-    StageSecondaryAlternates getSecondaryAlternates() {
-        return secondaryAlternates;
-    }
-
     // Document may exist, study does not exist
     public class NewStudy {
         private final List<String> ids = new LinkedList<>();
@@ -170,22 +165,4 @@ public class MongoDBOperations {
         }
     }
 
-    // Secondary alternates to be updated in the stage collection
-    class StageSecondaryAlternates {
-        private final List<String> ids = new LinkedList<>();
-        private final List<Bson> queries = new LinkedList<>();
-        private final List<Bson> updates = new LinkedList<>();
-
-        List<String> getIds() {
-            return ids;
-        }
-
-        List<Bson> getQueries() {
-            return queries;
-        }
-
-        List<Bson> getUpdates() {
-            return updates;
-        }
-    }
 }

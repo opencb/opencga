@@ -204,7 +204,7 @@ public class DocumentToStudyEntryConverterTest {
         // Test with no stats converter provided
         DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId,
                 new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
-        StudyEntry converted = converter.convertToDataModelType(mongoStudy);
+        StudyEntry converted = converter.convertToDataModelType(mongoStudy, null);
         assertEquals(studyEntry, converted);
     }
 
@@ -214,7 +214,7 @@ public class DocumentToStudyEntryConverterTest {
         // Test with a stats converter provided but no stats object
         DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId, new
                 DocumentToSamplesConverter(metadataManager, variantQueryProjection));
-        StudyEntry converted = converter.convertToDataModelType(mongoStudy);
+        StudyEntry converted = converter.convertToDataModelType(mongoStudy, null);
         assertEquals(studyEntry, converted);
     }
 
@@ -243,7 +243,7 @@ public class DocumentToStudyEntryConverterTest {
 
         convertedMongo = toDocument.convertToStorageType(variant, studyEntry);
         assertEquals(mongoFileWithIds, convertedMongo);
-        convertedFile = converter.convertToDataModelType(convertedMongo);
+        convertedFile = converter.convertToDataModelType(convertedMongo, null);
         assertEquals(studyEntry, convertedFile);
 
     }
@@ -264,7 +264,7 @@ public class DocumentToStudyEntryConverterTest {
                 samplesConverter);
         StudyEntryToDocumentConverter toDocument = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
 
-        convertedFile = converter.convertToDataModelType(mongoFileWithIds);
+        convertedFile = converter.convertToDataModelType(mongoFileWithIds, null);
         convertedMongo = toDocument.convertToStorageType(variant, convertedFile);
         assertEquals(studyEntry, convertedFile);
         assertEquals(mongoFileWithIds, convertedMongo);

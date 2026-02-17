@@ -195,7 +195,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
         DataResult deleteResult = collection.update(Filters.eq("_id", id),
                 Updates.unset(VARIANT_METADATA_FIELD), new QueryOptions());
 
-        if (deleteResult.getNumDeleted() != 1) {
+        if (deleteResult.getNumMatches() != 1) {
             throw new IllegalArgumentException("Unable to delete VariantFileMetadata " + id);
         }
 

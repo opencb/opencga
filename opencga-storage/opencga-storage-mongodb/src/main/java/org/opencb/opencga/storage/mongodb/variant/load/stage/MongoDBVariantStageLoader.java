@@ -169,6 +169,7 @@ public class MongoDBVariantStageLoader implements DataWriter<StageWriteOperation
                     bsons.add(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList));
                 }
                 bsons.add(addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFileValue));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.VAR_ID_FIELD, id.get(StageDocumentToVariantConverter.VAR_ID_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD)));

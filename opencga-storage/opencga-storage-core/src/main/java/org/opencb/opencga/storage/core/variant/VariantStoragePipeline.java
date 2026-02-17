@@ -591,7 +591,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         if (!alreadyIndexedSamples.isEmpty()) {
             if (splitData != null) {
-                logger.info("Loading split data");
+                if (splitData == VariantStorageEngine.SplitData.MULTI) {
+                    logger.info("Loading multi-file-data samples (samples are present in multiple files). Already indexed samples: {}",
+                            alreadyIndexedSamples);
+                } else {
+                    logger.info("Loading split data: {}", splitData);
+                }
             } else {
                 throw StorageEngineException.alreadyLoadedSamples(fileMetadata.getName(), new ArrayList<>(alreadyIndexedSamples));
             }

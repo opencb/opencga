@@ -1706,6 +1706,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         while (it.hasNext()) {
             TaskMetadata t = it.next();
             if (t != null && t.getName().equals(taskName) && t.getFileIds().equals(fileIds)) {
+                if (task.currentStatus() == TaskMetadata.Status.READY) {
+                    continue;
+                }
                 task = t;
                 break;
             }

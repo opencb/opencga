@@ -194,20 +194,9 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
     }
 
     private void updateStage(MongoDBOperations mongoDBOps) {
-
-        MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
-        if (!alternates.getQueries().isEmpty()) {
-            DataResult update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
-            if (update.getNumMatches() != alternates.getQueries().size()) {
-                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
-            }
-        }
-
-        long cleanDocuments = 0;
         if (cleanWhileLoading) {
-            cleanDocuments = cleanStage(mongoDBOps);
+            cleanStage(mongoDBOps);
         }
-
     }
 
     private long cleanStage(MongoDBOperations mongoDBOps) {
@@ -324,7 +313,9 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         List<DataResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: {}", queryResults.size());
 
-        for (DataResult<Document> r : queryResults) {
+        for (int i = 0; i < queryResults.size(); i++) {
+            DataResult<Document> r = queryResults.get(i);
+            logger.info("query: '{}'", queries.get(i).toBsonDocument().toJson());
             logger.info("result: '{}'", r);
             if (!r.getResults().isEmpty()) {
                 String id = r.first().get("_id", String.class);

@@ -19,10 +19,9 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.OriginalCall;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
@@ -30,6 +29,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.NA_GT_VALUE;
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -122,16 +125,31 @@ public class DocumentToStudyEntryConverter {
         this.studyIds.put(studyId, studyName);
     }
 
-    public StudyEntry convertToDataModelType(Document document) {
+    /**
+     * Convert a study sub-document to a {@link StudyEntry}.
+     *
+     * <p>When {@code variant} is provided and the study's files carry different per-file secondary
+     * alternate lists, {@link VariantMerger} is used to unify the alternate lists and remap sample
+     * genotype allele indices accordingly (same approach as HBaseToStudyEntryConverter).
+     *
+     * @param document BSON study sub-document
+     * @param variant  The owning variant (used for VariantMerger construction); may be {@code null},
+     *                 in which case a simple union is used without GT remapping.
+     * @return Populated {@link StudyEntry}
+     */
+    public StudyEntry convertToDataModelType(Document document, Variant variant) {
         int studyId = ((Number) document.get(STUDYID_FIELD)).intValue();
-//        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
-//        String fileId = returnedFiles != null && returnedFiles.size() == 1? returnedFiles.iterator().next().toString() : null;
         StudyEntry study = new StudyEntry(getStudyName(studyId));
 
-//        String fileId = (String) object.get(FILEID_FIELD);
-        Document fileObject;
+        // Ordered map: fileId → per-file secondary alternates (only files that have any)
+        Map<Integer, List<AlternateCoordinate>> fileIndexToAlts = new LinkedHashMap<>();
+
         if (document.containsKey(FILES_FIELD)) {
             List<FileEntry> files = new ArrayList<>(((List) document.get(FILES_FIELD)).size());
+            // Files that are not in returnedFiles (e.g. because they were filtered out by the query) are collected here as "extra files"
+            // with no attributes and only originalCall if available, to be added to the study if no other file is returned.
+            List<FileEntry> extraFiles = new ArrayList<>();
+
             for (Document fileDocument : (List<Document>) document.get(FILES_FIELD)) {
                 Integer fid = ((Number) fileDocument.get(FILEID_FIELD)).intValue();
                 if (fid < 0) {
@@ -147,18 +165,28 @@ public class DocumentToStudyEntryConverter {
                     // Always return originalCall when context allele is missing
                     if (call != null) {
                         FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, Collections.emptyMap());
-                        files.add(fileEntry);
+                        extraFiles.add(fileEntry);
                     }
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
                 FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, attributes);
+                int fileIndex = files.size();
                 files.add(fileEntry);
 
-                fileObject = fileDocument;
+                // Collect per-file secondary alternates
+                List<Document> altDocs = (List<Document>) fileDocument.get(ALTERNATES_FIELD);
+                if (altDocs != null && !altDocs.isEmpty()) {
+                    List<AlternateCoordinate> alts = new ArrayList<>(altDocs.size());
+                    for (Document altDoc : altDocs) {
+                        alts.add(convertToAlternateCoordinate(altDoc));
+                    }
+                    fileIndexToAlts.put(fileIndex, alts);
+                }
+
                 // Attributes
-                if (fileObject.containsKey(ATTRIBUTES_FIELD)) {
-                    Map<String, Object> attrs = ((Document) fileObject.get(ATTRIBUTES_FIELD));
+                if (fileDocument.containsKey(ATTRIBUTES_FIELD)) {
+                    Map<String, Object> attrs = ((Document) fileDocument.get(ATTRIBUTES_FIELD));
                     for (Map.Entry<String, Object> entry : attrs.entrySet()) {
                         // Unzip the "src" field, if available
                         if (entry.getKey().equals("src")) {
@@ -177,43 +205,187 @@ public class DocumentToStudyEntryConverter {
                     }
                 }
             }
-            study.setFiles(files);
+            if (!files.isEmpty()) {
+                study.setFiles(files);
+            } else {
+                study.setFiles(extraFiles);
+            }
         }
 
-        // Alternate alleles
-//        if (fileObject != null && fileObject.containsKey(ALTERNATES_COORDINATES_FIELD)) {
-            List<Document> list = (List<Document>) document.get(ALTERNATES_FIELD);
-            if (list != null && !list.isEmpty()) {
-                for (Document alternateDocument : list) {
-                    AlternateCoordinate alternateCoordinate = convertToAlternateCoordinate(alternateDocument);
-                    if (study.getSecondaryAlternates() == null) {
-                        study.setSecondaryAlternates(new ArrayList<>(list.size()));
-                    }
-                    study.getSecondaryAlternates().add(alternateCoordinate);
-                }
-            }
-//            String[] alternatives = new String[list.size()];
-//            int i = 0;
-//            for (Object o : list) {
-//                alternatives[i] = o.toString();
-//                i++;
-//            }
-//            study.setSecondaryAlternates(list);
-//        }
-
-
-//        if (fileObject != null && fileObject.containsKey(FORMAT_FIELD)) {
-//            study.setFormat((String) fileObject.get(FORMAT_FIELD));
-//        } else {
-
-//        }
-
-        // Samples
+        // Populate samples BEFORE secondary alternates so that we have sample GTs to remap.
         if (samplesConverter != null) {
             samplesConverter.convertToDataModelType(document, study, studyId);
         }
 
+        // Merge per-file secondary alternates, remapping GT indices when files differ.
+        addSecondaryAlternates(study, studyId, fileIndexToAlts, variant);
+
         return study;
+    }
+
+    /**
+     * Set {@code study}'s secondary alternates, merging per-file alternate lists with
+     * {@link VariantMerger} when files carry different sets.
+     *
+     * <p>When all files share the same alternates (the common single-file case) the method simply
+     * calls {@code study.setSecondaryAlternates()} with no merger overhead. When files differ,
+     * one {@link Variant} per distinct alternate set is constructed from the already-populated
+     * sample data and {@link VariantMerger#merge} produces the unified list with remapped GT allele
+     * indices, which are written back to the study's sample entries.
+     *
+     * <p>If {@code variant} is {@code null} or {@code metadataManager} is not set a simple
+     * union-dedup fallback is used without GT remapping.
+     *
+     * @param studyEntry           The study to update with the merged secondary alternates
+     * @param studyId         The study ID (used to resolve file and sample names from metadataManager)
+     * @param fileIndexToAlts Map of file index to its list of secondary alternates (only for files that have any).
+     *                        File index is the position of the file in {@code study.getFiles()}.
+     * @param variant         The owning variant (used for VariantMerger construction);
+     *                        may be {@code null}, in which case a simple union is used without GT remapping
+     */
+    private void addSecondaryAlternates(StudyEntry studyEntry, int studyId,
+                                        Map<Integer, List<AlternateCoordinate>> fileIndexToAlts,
+                                        Variant variant) {
+        if (fileIndexToAlts.isEmpty()) {
+            return;
+        }
+
+        // Group files by their alternate set (keyed by a canonical string for equality checks).
+        LinkedHashMap<String, List<AlternateCoordinate>> altSetKeyToAlts = new LinkedHashMap<>();
+        Map<Integer, String> fileIndexToAltSetKey = new HashMap<>();
+        for (Map.Entry<Integer, List<AlternateCoordinate>> entry : fileIndexToAlts.entrySet()) {
+            int fileIndex = entry.getKey();
+            List<AlternateCoordinate> alts = entry.getValue();
+            String key = alts.stream()
+                    .map(a -> (a.getChromosome() == null ? "" : a.getChromosome()) + ":"
+                            + (a.getStart() == null ? "" : a.getStart()) + ":"
+                            + (a.getAlternate() == null ? "" : a.getAlternate()))
+                    .collect(Collectors.joining("|"));
+            altSetKeyToAlts.putIfAbsent(key, alts);
+            fileIndexToAltSetKey.put(fileIndex, key);
+        }
+
+        if (altSetKeyToAlts.size() == 1) {
+            // All files share the same secondary alternates — no merge needed.
+            studyEntry.setSecondaryAlternates(altSetKeyToAlts.values().iterator().next());
+            return;
+        }
+
+        // Multiple distinct alternate sets: merge or fallback.
+        if (variant == null || metadataManager == null) {
+            throw new IllegalStateException("Cannot merge secondary alternates: missing variant or metadata manager");
+        }
+
+        // Full merge with VariantMerger to remap genotype allele indices.
+        VariantMerger variantMerger = new VariantMerger(false);
+        variantMerger.setExpectedFormats(studyEntry.getSampleDataKeys());
+        variantMerger.setStudyId("0");
+
+        List<Variant> variants = new ArrayList<>(altSetKeyToAlts.size());
+        // Samples whose GT was unknown/NA: temporarily replaced with "0/0" for the merger and
+        // restored afterwards (same approach as HBaseToStudyEntryConverter).
+        Map<String, String> specialGenotypes = new HashMap<>();
+
+        for (Map.Entry<String, List<AlternateCoordinate>> entry : altSetKeyToAlts.entrySet()) {
+            String altSetKey = entry.getKey();
+            List<AlternateCoordinate> alts = entry.getValue();
+
+            Variant perFileVariant = new Variant(
+                    variant.getChromosome(), variant.getStart(),
+                    variant.getEnd(), variant.getReference(), variant.getAlternate());
+            StudyEntry perFileStudy = new StudyEntry("0");
+            perFileStudy.setSecondaryAlternates(alts);
+            perFileStudy.setSampleDataKeys(studyEntry.getSampleDataKeys());
+            perFileStudy.setSamples(new ArrayList<>());
+
+            // Add samples from all files that carry this alternate set.
+            for (Map.Entry<Integer, String> fe : fileIndexToAltSetKey.entrySet()) {
+                if (!fe.getValue().equals(altSetKey)) {
+                    continue;
+                }
+                int fileIndex = fe.getKey();
+                String fileName = studyEntry.getFiles().get(fileIndex).getFileId();
+                int fileId = metadataManager.getFileIdOrFail(studyId, fileName);
+                for (Integer sampleId : metadataManager.getSampleIdsFromFileId(studyId, fileId)) {
+                    String sampleName = metadataManager.getSampleName(studyId, sampleId);
+                    // Skip sampleEntries from other files
+                    boolean foundSampleInIssues = false;
+                    SampleEntry sampleEntry = studyEntry.getSample(sampleName);
+                    if (sampleEntry == null) {
+                        continue;
+                    }
+                    Integer thisFileIndex = sampleEntry.getFileIndex();
+                    if (thisFileIndex != fileIndex) {
+                        // This sample is not from this file. Search in issues.
+                        for (IssueEntry issue : studyEntry.getIssues()) {
+                            if (issue.getSample().getSampleId().equals(sampleName) && issue.getSample().getFileIndex().equals(fileIndex)) {
+                                sampleEntry = issue.getSample();
+                                foundSampleInIssues = true;
+                            }
+                        }
+                        if (!foundSampleInIssues) {
+                            // Sample not found. Skip this.
+                            continue;
+                        }
+                    }
+                    if (foundSampleInIssues) {
+                        sampleName = sampleName + "_ISSUE+" + fileIndex;
+                    }
+
+                    List<String> data = new ArrayList<>(sampleEntry.getData());
+                    // VariantMerger cannot handle unknown/NA GTs; use 0/0 as placeholder.
+                    if (!data.isEmpty() && isUnknownOrNaGenotype(data.get(0))) {
+                        specialGenotypes.put(sampleName, data.get(0));
+                        data.set(0, "0/0");
+                    }
+                    perFileStudy.addSampleData(sampleName, data);
+                }
+            }
+
+            perFileVariant.addStudyEntry(perFileStudy);
+            variants.add(perFileVariant);
+        }
+
+        // Merge: the first variant acts as template; remaining variants provide additional alts.
+        Variant mergedVariant = variantMerger.merge(variants.get(0), variants.subList(1, variants.size()));
+        StudyEntry mergedStudy = mergedVariant.getStudies().get(0);
+
+        // Apply remapped GTs back to the original study's sample entries.
+        for (String sampleName : mergedStudy.getOrderedSamplesName()) {
+            SampleEntry mergedSampleEntry = mergedStudy.getSample(sampleName);
+            if (mergedSampleEntry == null) {
+                continue;
+            }
+            if (specialGenotypes.containsKey(sampleName)) {
+                mergedSampleEntry.getData().set(0, specialGenotypes.get(sampleName));
+            }
+
+            if (sampleName.contains("_ISSUE+")) {
+                int idx1 = sampleName.lastIndexOf("_");
+                int idx2 = sampleName.lastIndexOf("+");
+                int fileIndex = Integer.parseInt(sampleName.substring(idx2 + 1));
+                sampleName = sampleName.substring(0, idx1);
+
+                for (IssueEntry issue : studyEntry.getIssues()) {
+                    if (issue.getSample().getFileIndex().equals(fileIndex) && issue.getSample().getSampleId().equals(sampleName)) {
+                        issue.getSample().setData(mergedSampleEntry.getData());
+                        break;
+                    }
+                }
+            } else {
+                SampleEntry sampleEntry = studyEntry.getSample(sampleName);
+                sampleEntry.setData(mergedSampleEntry.getData());
+            }
+        }
+        for (FileEntry mergedFileEntry : mergedStudy.getFiles()) {
+            studyEntry.getFile(mergedFileEntry.getFileId()).setData(mergedFileEntry.getData());
+        }
+
+        studyEntry.setSecondaryAlternates(mergedStudy.getSecondaryAlternates());
+    }
+
+    private static boolean isUnknownOrNaGenotype(String gt) {
+        return gt == null || gt.isEmpty() || gt.equals(UNKNOWN_GENOTYPE) || gt.equals(NA_GT_VALUE);
     }
 
     public static AlternateCoordinate convertToAlternateCoordinate(Document alternateDocument) {

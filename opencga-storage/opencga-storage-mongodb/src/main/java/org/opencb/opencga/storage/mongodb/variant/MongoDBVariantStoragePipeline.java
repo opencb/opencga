@@ -371,11 +371,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
 
             // Run
-            Thread hook = getMetadataManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, fileId);
+            Thread hook = getMetadataManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, currentTask.getId());
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
                 ptr.run();
-                getMetadataManager().atomicSetStatus(studyId, TaskMetadata.Status.DONE, DIRECT_LOAD.key(), fileIds);
+                getMetadataManager()
+                        .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.DONE);
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
@@ -400,8 +401,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             dbAdaptor.getMetadataManager().updateVariantFileMetadata(String.valueOf(studyId), fileMetadata);
         } catch (ExecutionException e) {
             try {
-                getMetadataManager().atomicSetStatus(studyId, TaskMetadata.Status.ERROR, DIRECT_LOAD.key(),
-                        fileIds);
+                getMetadataManager()
+                        .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.ERROR);
             } catch (Exception e2) {
                 // Do not propagate this exception!
                 logger.error("Error reporting direct load error!", e2);

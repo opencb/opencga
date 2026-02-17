@@ -38,10 +38,9 @@ public class StudyEntryToDocumentConverter {
         int studyId = Integer.parseInt(studyEntry.getStudyId());
         Document studyObject = new Document(STUDYID_FIELD, studyId);
 
-        // Alternate alleles
+        // Alternate alleles — stored per-file (not at study level)
         List<Document> alternates = new LinkedList<>();
         if (studyEntry.getSecondaryAlternates().size() > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
-//            fileObject.append(ALTERNATES_FIELD, studyEntry.getSecondaryAlternatesAlleles());
             for (AlternateCoordinate coordinate : studyEntry.getSecondaryAlternates()) {
                 Document alt = new Document();
                 alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
@@ -62,6 +61,11 @@ public class StudyEntryToDocumentConverter {
                 Document fileObject = convertFileDocument(studyEntry, file);
                 fileDocuments.add(fileObject);
 
+                // Store secondary alternates inside the file document, not at study level.
+                if (!alternates.isEmpty()) {
+                    fileObject.append(ALTERNATES_FIELD, alternates);
+                }
+
                 if (samplesConverter != null) {
                     Document otherFields = new Document();
                     fileObject.append(SAMPLE_DATA_FIELD, otherFields);
@@ -80,11 +84,6 @@ public class StudyEntryToDocumentConverter {
         }
 
         studyObject.append(FILES_FIELD, fileDocuments);
-        if (alternates != null && !alternates.isEmpty()) {
-            studyObject.append(ALTERNATES_FIELD, alternates);
-        }
-
-
 
         return studyObject;
     }

@@ -180,7 +180,10 @@ public class SampleIndexEntryBuilder {
         public SampleIndexEntry.SampleIndexGtEntry build() {
             Collection<SampleIndexVariant> variantEntries = getEntries();
 
-            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * variantEntries.size());
+            // A SampleIndexVariant read from an existing multi-file index entry may carry multiple
+            // file-index slots (filesIndex.size() > 1).  Allocate one slot per actual file index.
+            int totalSlots = variantEntries.stream().mapToInt(e -> e.getFilesIndex().size()).sum();
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndexSchema.getBitsLength() * totalSlots);
             ByteBuffer fileDataIndexBuffer = ByteBuffer.allocate(variantEntries.stream()
                     .mapToInt(SampleIndexVariant::getFileDataIndexBytes)
                     .map(i -> i + 4)
@@ -194,10 +197,25 @@ public class SampleIndexEntryBuilder {
                 if (prev == null || !prev.getVariant().sameGenomicVariant(variant)) {
                     variants.add(variant);
                 } else {
-                    // Mark previous variant as MultiFile
+                    // Mark the last slot of prev as MultiFile (another file for the same genomic variant follows)
                     fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
                 }
-                offset = fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
+                if (gtEntry.getFilesIndex().size() == 1) {
+                    // Write the single file-index slot carried by this SampleIndexVariant.
+                    offset = fileIndexBuffer.setBitBuffer(gtEntry.getFilesIndex().get(0), offset);
+                } else {
+                    // Write ALL file-index slots carried by this SampleIndexVariant.
+                    // A variant re-read from an existing multi-file buffer may have >1 slots in filesIndex.
+                    for (int i = 0; i < gtEntry.getFilesIndex().size(); i++) {
+                        if (i > 0) {
+                            // Additional slot for the same variant: mark the previous slot as MultiFile
+                            fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength());
+                        }
+                        offset = fileIndexBuffer.setBitBuffer(gtEntry.getFilesIndex().get(i), offset);
+                        // Clear the multiFile bit copied from the source buffer; it is managed by build() logic above
+                        fileIndexSchema.setMultiFile(fileIndexBuffer, offset - fileIndexSchema.getBitsLength(), false);
+                    }
+                }
                 if (!gtEntry.getFileData().isEmpty()) {
                     fileDataSchema.writeDocument(fileDataIndexBuffer, gtEntry.getFileData().get(0));
                 }

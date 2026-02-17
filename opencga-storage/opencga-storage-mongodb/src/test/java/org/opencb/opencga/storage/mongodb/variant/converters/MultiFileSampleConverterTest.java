@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.biodata.models.variant.avro.IssueType;
@@ -306,6 +307,76 @@ public class MultiFileSampleConverterTest {
         assertEquals(IssueType.DISCREPANCY, issue.getType());
         assertEquals(SAMPLE_C, issue.getSample().getSampleId());
         assertEquals("0/0", issue.getSample().getData().get(0));
+    }
+
+    /**
+     * Two files for the same variant carry different secondary alternates:
+     * <ul>
+     *   <li>file3: 1:1000:A:T,C — sample1 GT=1/2 (T/C)</li>
+     *   <li>file4: 1:1000:A:T,G — sample2 GT=1/2 (T/G)</li>
+     * </ul>
+     * Expected merged result: secondary alternates=[C, G]; sample1 GT=1/2 (unchanged);
+     * sample2 GT=1/3 (G remapped from index 2 to 3 in the merged allele list [A,T,C,G]).
+     */
+    @Test
+    public void testReadPath_secondaryAlternatesMerge() throws Exception {
+        // Register two single-sample files with non-overlapping samples
+        String s1 = "alt_sample1";
+        String s2 = "alt_sample2";
+        int fid3 = metadataManager.registerFile(STUDY_ID, "file3.vcf", Collections.singletonList(s1));
+        int fid4 = metadataManager.registerFile(STUDY_ID, "file4.vcf", Collections.singletonList(s2));
+        metadataManager.addIndexedFiles(STUDY_ID, Arrays.asList(fid3, fid4));
+        int sid1 = metadataManager.getSampleId(STUDY_ID, s1);
+        int sid2 = metadataManager.getSampleId(STUDY_ID, s2);
+        // Refresh studyMetadata after adding new files
+        studyMetadata = metadataManager.getStudyMetadata(STUDY_ID);
+
+        Variant variant = new Variant("1:1000:A:T");
+
+        // file3 document: secondary alt = C (alleles: A=0, T=1, C=2 → sample1 GT 1/2 = T/C)
+        Document altC = new Document(ALTERNATES_ALT, "C").append(ALTERNATES_TYPE, "SNV");
+        Document file3Doc = new Document(FILEID_FIELD, fid3)
+                .append(ALTERNATES_FIELD, Collections.singletonList(altC));
+
+        // file4 document: secondary alt = G (alleles: A=0, T=1, G=2 → sample2 GT 1/2 = T/G)
+        Document altG = new Document(ALTERNATES_ALT, "G").append(ALTERNATES_TYPE, "SNV");
+        Document file4Doc = new Document(FILEID_FIELD, fid4)
+                .append(ALTERNATES_FIELD, Collections.singletonList(altG));
+
+        // Study-level gt: both samples have GT "1/2" (each relative to their own file's allele list)
+        Document gts = new Document()
+                .append(DocumentToSamplesConverter.genotypeToStorageType("1/2"), Arrays.asList(sid1, sid2));
+        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
+                .append(FILES_FIELD, Arrays.asList(file3Doc, file4Doc))
+                .append(GENOTYPES_FIELD, gts);
+
+        VariantQueryProjection projection = buildProjection(
+                Arrays.asList(sid1, sid2), Arrays.asList(fid3, fid4), Collections.emptySet());
+
+        DocumentToSamplesConverter samplesConv = new DocumentToSamplesConverter(metadataManager, projection);
+        DocumentToStudyEntryConverter studyConv = new DocumentToStudyEntryConverter(false,
+                Collections.singletonMap(STUDY_ID, Arrays.asList(fid3, fid4)), samplesConv);
+        studyConv.setMetadataManager(metadataManager);
+        studyConv.addStudyName(STUDY_ID, STUDY_NAME);
+
+        StudyEntry result = studyConv.convertToDataModelType(studyDoc, variant);
+
+        // Secondary alternates: [C, G] in that insertion order
+        List<AlternateCoordinate> alts = result.getSecondaryAlternates();
+        assertNotNull("Secondary alternates should not be null", alts);
+        assertEquals("Should have 2 secondary alternates", 2, alts.size());
+        assertEquals("First secondary alt should be C", "C", alts.get(0).getAlternate());
+        assertEquals("Second secondary alt should be G", "G", alts.get(1).getAlternate());
+
+        // sample1 GT = 1/2: C is still at allele index 2 in the merged list [A, T, C, G]
+        SampleEntry s1Entry = result.getSamples().get(result.getSamplesPosition().get(s1));
+        assertNotNull("sample1 should have a SampleEntry", s1Entry);
+        assertEquals("sample1 GT should be 1/2 (T/C, unchanged)", "1/2", s1Entry.getData().get(0));
+
+        // sample2 GT = 1/3: G moved from index 2 (in file4's list) to index 3 (in merged list)
+        SampleEntry s2Entry = result.getSamples().get(result.getSamplesPosition().get(s2));
+        assertNotNull("sample2 should have a SampleEntry", s2Entry);
+        assertEquals("sample2 GT should be 1/3 (T/G, remapped)", "1/3", s2Entry.getData().get(0));
     }
 
     // ---------------------- Helpers ----------------------
