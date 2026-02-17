@@ -190,6 +190,9 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
+                // It is actually not a multi-file-data sample, but we want to test that the sample index is build properly even if the
+                // same is marked as multi-file-data but only one file is loaded.
+                .append(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         runETL(engine, getPlatinumFile(0), outputUri, params, true, true, true);
         runETL(engine, getPlatinumFile(1), outputUri, params, true, true, true);

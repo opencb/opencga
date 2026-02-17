@@ -515,7 +515,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         addCleanStageOperations(document, mongoDBOps, newStudy, missing, skipped, duplicated);
 
-        if (!newStudy && !multiFileSampleIds.isEmpty()) {
+        if (!multiFileSampleIds.isEmpty()) {
             filterMultiFileSamplesFromGts(gts);
         }
         updateMongoDBOperations(emptyVar, new ArrayList<>(ids), fileDocuments, gts, newStudy, newVariant, mongoDBOps);
@@ -664,7 +664,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
             }
         }
-        if (!newStudy && !multiFileSampleIds.isEmpty()) {
+        if (!multiFileSampleIds.isEmpty()) {
             filterMultiFileSamplesFromGts(gts);
         }
         updateMongoDBOperations(mainVariant, variant.getIds(), fileDocuments, gts, newStudy, newVariant, mongoDBOps);
