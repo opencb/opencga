@@ -2661,7 +2661,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         TaskMetadata task;
         if (resumeTask == null) {
-            task = new TaskMetadata(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
+            task = new TaskMetadata(studyId, newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
             task.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
             unsecureUpdateTask(studyId, task);
         } else {

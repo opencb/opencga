@@ -86,7 +86,8 @@ public class TaskMetadata {
     public TaskMetadata() {
     }
 
-    public TaskMetadata(int id, String name, List<Integer> fileIds, long timestamp, Type type) {
+    public TaskMetadata(int studyId, int id, String name, List<Integer> fileIds, long timestamp, Type type) {
+        this.studyId = studyId;
         this.id = id;
         this.name = name;
         this.fileIds = fileIds;
@@ -96,6 +97,7 @@ public class TaskMetadata {
 
     public TaskMetadata(TaskMetadata batch) {
         this();
+        this.studyId = batch.studyId;
         this.id = batch.id;
         this.name = batch.name;
         this.fileIds = new ArrayList<>(batch.fileIds);
@@ -195,6 +197,7 @@ public class TaskMetadata {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("id", id)
+                .append("studyId", studyId)
                 .append("operationName", name)
                 .append("fileIds", fileIds)
                 .append("timestamp", timestamp)

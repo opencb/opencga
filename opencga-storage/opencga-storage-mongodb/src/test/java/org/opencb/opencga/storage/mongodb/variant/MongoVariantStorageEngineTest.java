@@ -297,7 +297,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(1, exception.getResults().size());
         assertTrue(exception.getResults().get(0).isLoadExecuted());
         assertNotNull(exception.getResults().get(0).getLoadError());
-        TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.LOAD);
+        int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
+        TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(), RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.LOAD);
         opInProgress.addStatus(TaskMetadata.Status.RUNNING);
         StorageEngineException expected = StorageEngineException.currentOperationInProgressException(opInProgress, metadataManager);
         assertEquals(expected.getClass(), exception.getResults().get(0).getLoadError().getClass());
@@ -369,7 +370,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thread.start();
             Thread.sleep(200);
 
-            TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
+            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
+            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(),
+                    RandomUtils.nextInt(1000, 2000),
+                    MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
             StorageEngineException expected = MongoVariantStorageEngineException
                     .otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId), metadataManager);
@@ -379,7 +383,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                     new ObjectMap(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false));
-        } finally {
+        } catch (StorageEngineException e) {
             System.out.println("Interrupt!");
             thread.interrupt();
             System.out.println("Join!");
@@ -390,6 +394,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             // Second file is not staged or merged
 //            int secondFileId = studyMetadata.getFileIds().get(UriUtils.fileName(smallInputUri));
             List<TaskMetadata> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            System.out.println("ops = " + ops);
             assertEquals(0, ops.size());
         }
     }
@@ -420,7 +425,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thread.start();
             Thread.sleep(200);
 
-            TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
+            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
+            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(), RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
             StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId), metadataManager);
             thrown.expect(StoragePipelineException.class);
@@ -432,7 +438,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                             .append(MongoDBVariantStorageOptions.MERGE.key(), true)
                             .append(MongoDBVariantStorageOptions.STAGE.key(), false)
                             .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false), false, true);
-        } finally {
+        } catch (StorageEngineException e) {
             System.out.println("Interrupt!");
             thread.interrupt();
             System.out.println("Join!");
@@ -441,7 +447,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             // Second file is not staged or merged
             TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
-            List<TaskMetadata> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            List<TaskMetadata> ops = Arrays.stream(tasks)
+                    .filter(op -> op.getFileIds().contains(secondFileId))
+                    .collect(Collectors.toList());
+            System.out.println("ops = " + ops);
             assertEquals(1, ops.size());
             assertEquals(MongoDBVariantStorageOptions.STAGE.key(), ops.get(0).getName());
             System.out.println("DONE");
