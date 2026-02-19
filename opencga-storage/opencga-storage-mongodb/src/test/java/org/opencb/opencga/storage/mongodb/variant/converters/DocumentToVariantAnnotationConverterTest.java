@@ -206,6 +206,15 @@ public class DocumentToVariantAnnotationConverterTest {
         if (expected instanceof Document && actual instanceof Document) {
             checkEqualObjects((Document) expected, (Document) actual, path);
         } else if (expected instanceof List && actual instanceof List) {
+            if (path.endsWith("$in")) {
+                // For $in operator, the order of the list is not important. Sort both lists and compare.
+                List<?> expectedList = new ArrayList<>((List<?>) expected);
+                List<?> actualList = new ArrayList<>((List<?>) actual);
+                expectedList.sort(Comparator.comparing(Object::toString));
+                actualList.sort(Comparator.comparing(Object::toString));
+                expected = expectedList;
+                actual = actualList;
+            }
             assertEquals(path + ".size", ((List) expected).size(), ((List) actual).size());
             for (int i = 0; i < ((List) expected).size(); i++) {
                 checkEqualObjects(((List) expected).get(i), ((List) actual).get(i), path + '[' + i + ']');
@@ -216,7 +225,7 @@ public class DocumentToVariantAnnotationConverterTest {
     }
 
     private static void checkEqualObjects(Document expected, Document actual, String path) {
-        assertEquals("Through " + path, expected.keySet(), actual.keySet());
+        assertEquals("Through " + path, new TreeSet<>(expected.keySet()), new TreeSet<>(actual.keySet()));
         for (String key : expected.keySet()) {
             Object e = expected.get(key);
             Object a = actual.get(key);

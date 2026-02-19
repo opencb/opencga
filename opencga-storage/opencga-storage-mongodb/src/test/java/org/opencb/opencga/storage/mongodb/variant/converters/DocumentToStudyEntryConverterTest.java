@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,7 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.genotypeToStorageType;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -47,7 +49,7 @@ public class DocumentToStudyEntryConverterTest {
     private final Variant variant = new Variant();
     private StudyEntry studyEntry;
     private Document mongoStudy;
-    private Document mongoFileWithIds;
+    private Document mongoFile;
 
     private List<String> sampleNames;
     private Map<String, Integer> sampleIdsMap;
@@ -98,32 +100,22 @@ public class DocumentToStudyEntryConverterTest {
 
         studyEntry.getSamples().forEach(s -> s.setFileIndex(0));
 
-        // MongoDB object
+        // MongoDB object — new format: GT stored in files[].mgt, no study-level gt field
         mongoStudy = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, studyId);
 
-        Document mongoFile = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, fileId);
+        mongoFile = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, fileId);
         String dot = GenericDocumentComplexConverter.TO_REPLACE_DOTS;
         mongoFile.append(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD,
                 new Document("QUAL", 0.01)
                         .append("AN", 2.0)
                         .append("do" + dot + "we" + dot + "accept" + dot + "attribute" + dot + "with" + dot + "dots?", "yes")
-        ).append(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, new Document());
-//        mongoFile.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
-        mongoStudy.append(DocumentToStudyEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
-
-        Document genotypeCodes = new Document();
-//        genotypeCodes.append("def", "0/0");
-        genotypeCodes.append("0/1", Collections.singletonList(sampleIds.get(1)));
-        genotypeCodes.append("1/1", Collections.singletonList(sampleIds.get(2)));
-        mongoStudy.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, genotypeCodes);
-
-
-
-        mongoFileWithIds = new Document((this.mongoStudy));
-        mongoFileWithIds.put(DocumentToStudyEntryConverter.GENOTYPES_FIELD, new Document());
-//        ((Document) mongoFileWithIds.get("samp")).put("def", "0/0");
-        ((Document) mongoFileWithIds.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(sampleIds.get(1)));
-        ((Document) mongoFileWithIds.get(DocumentToStudyEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(sampleIds.get(2)));
+        );
+        mongoFile.append(DocumentToStudyEntryConverter.STUDYID_FIELD, studyId);
+        mongoFile.append(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, new Document());
+        // Non-default GTs stored in mgt on the file document (NA001=0/0 is default, omitted)
+        Document mgt = new Document(genotypeToStorageType("0/1"), Collections.singletonList(sampleIds.get(1)))
+                .append(genotypeToStorageType("1/1"), Collections.singletonList(sampleIds.get(2)));
+        mongoFile.append(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, mgt);
     }
 
     /* TODO move to variant converter: sourceEntry does not have stats anymore
@@ -204,7 +196,7 @@ public class DocumentToStudyEntryConverterTest {
         // Test with no stats converter provided
         DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId,
                 new DocumentToSamplesConverter(metadataManager, variantQueryProjection));
-        StudyEntry converted = converter.convertToDataModelType(mongoStudy, null);
+        StudyEntry converted = converter.convertToDataModelType(mongoStudy, Collections.singletonList(mongoFile), null);
         assertEquals(studyEntry, converted);
     }
 
@@ -214,7 +206,7 @@ public class DocumentToStudyEntryConverterTest {
         // Test with a stats converter provided but no stats object
         DocumentToStudyEntryConverter converter = new DocumentToStudyEntryConverter(true, studyId, fileId, new
                 DocumentToSamplesConverter(metadataManager, variantQueryProjection));
-        StudyEntry converted = converter.convertToDataModelType(mongoStudy, null);
+        StudyEntry converted = converter.convertToDataModelType(mongoStudy, Collections.singletonList(mongoFile), null);
         assertEquals(studyEntry, converted);
     }
 
@@ -222,14 +214,14 @@ public class DocumentToStudyEntryConverterTest {
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
         StudyEntryToDocumentConverter converter = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
-        Document converted = converter.convertToStorageType(variant, studyEntry);
-        assertEquals(mongoStudy, converted);
+        Pair<Document, List<Document>> pair = converter.convertToStorageType(variant, studyEntry);
+        assertEquals(mongoStudy, pair.getKey());
+        assertEquals(mongoFile, pair.getValue().get(0));
     }
 
     @Test
     public void testConvertToStorageTypeWithoutStatsWithSampleIds() {
         DocumentToStudyEntryConverter converter;
-        Document convertedMongo;
         StudyEntry convertedFile;
 
 
@@ -241,9 +233,11 @@ public class DocumentToStudyEntryConverterTest {
                 studyId, fileId,
                 samplesConverter);
 
-        convertedMongo = toDocument.convertToStorageType(variant, studyEntry);
-        assertEquals(mongoFileWithIds, convertedMongo);
-        convertedFile = converter.convertToDataModelType(convertedMongo, null);
+        Pair<Document, List<Document>> pair = toDocument.convertToStorageType(variant, studyEntry);
+        assertEquals(mongoStudy, pair.getKey());
+        assertEquals(mongoFile, pair.getValue().get(0));
+
+        convertedFile = converter.convertToDataModelType(pair.getKey(), pair.getValue(), null);
         assertEquals(studyEntry, convertedFile);
 
     }
@@ -251,7 +245,6 @@ public class DocumentToStudyEntryConverterTest {
     @Test
     public void testConvertToDataTypeWithoutStatsWithSampleIds() {
         DocumentToStudyEntryConverter converter;
-        Document convertedMongo;
         StudyEntry convertedFile;
 
 
@@ -264,11 +257,11 @@ public class DocumentToStudyEntryConverterTest {
                 samplesConverter);
         StudyEntryToDocumentConverter toDocument = new StudyEntryToDocumentConverter(new SampleToDocumentConverter(studyMetadata, sampleIdsMap), true);
 
-        convertedFile = converter.convertToDataModelType(mongoFileWithIds, null);
-        convertedMongo = toDocument.convertToStorageType(variant, convertedFile);
+        convertedFile = converter.convertToDataModelType(mongoStudy, Collections.singletonList(mongoFile), null);
+        Pair<Document, List<Document>> pair = toDocument.convertToStorageType(variant, convertedFile);
         assertEquals(studyEntry, convertedFile);
-        assertEquals(mongoFileWithIds, convertedMongo);
-
+        assertEquals(mongoStudy, pair.getKey());
+        assertEquals(mongoFile, pair.getValue().get(0));
     }
 
 }

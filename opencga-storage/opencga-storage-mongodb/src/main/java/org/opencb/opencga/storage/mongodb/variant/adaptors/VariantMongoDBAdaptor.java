@@ -39,7 +39,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -66,7 +65,6 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -275,11 +273,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private DataResult removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
                                                                         List<Integer> fileIds, long timestamp) {
-        Set<Integer> sampleIds = new HashSet<>();
-        for (Integer fileId : fileIds) {
-            sampleIds.addAll(metadataManager.getFileMetadata(sm.getId(), fileId).getSamples());
-        }
-
         // Update and remove variants from variants collection
         int studyId = sm.getId();
         logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
@@ -289,30 +282,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
         fileIds.addAll(negatedFileIds);
 
-        Bson query;
-        // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
-        if (!sm.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-            query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
-        } else {
-            query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                    and(
-                            eq(STUDYID_FIELD, studyId),
-                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds)
-                    )
-            );
-        }
+        Bson query = in(DocumentToVariantConverter.FILES_FIELD + '.' + FILEID_FIELD, fileIds);
 
-        List<Bson> updates = new ArrayList<>();
-        updates.add(
-                pull(DocumentToVariantConverter.STUDIES_FIELD + ".$." + FILES_FIELD,
-                        in(FILEID_FIELD, fileIds)));
-        for (String gt : sm.getAttributes().getAsStringList(LOADED_GENOTYPES.key())) {
-            updates.add(
-                    pullByFilter(
-                            in(DocumentToVariantConverter.STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt, sampleIds)));
-        }
-
-        Bson update = combine(updates);
+        // Pull the file documents from root files[]; mgt is inside the file doc so GT is removed atomically.
+        Bson update = pull(DocumentToVariantConverter.FILES_FIELD, in(FILEID_FIELD, fileIds));
         logger.debug("removeFile: query = " + query.toBsonDocument());
         logger.debug("removeFile: update = " + update.toBsonDocument());
 
@@ -373,6 +346,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                pull(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, studyId)),
                 pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId)),
                 getSetIndexNotSynchronized(timestamp)
         );

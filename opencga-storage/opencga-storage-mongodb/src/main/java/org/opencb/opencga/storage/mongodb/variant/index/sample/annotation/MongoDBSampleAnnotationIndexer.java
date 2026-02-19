@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -24,9 +23,7 @@ import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBS
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
 
@@ -69,27 +66,7 @@ public class MongoDBSampleAnnotationIndexer extends SampleAnnotationIndexer {
         VariantQuery variantQuery = new VariantQuery()
                 .study(studyName);
 
-        // Detect multi-file samples (SplitData.MULTI) and collect all file names for all samples.
-        // For multi-file samples, the main `gt` map only holds the first file's GT; variants unique
-        // to later files store their GT in `mgt` only, so a SAMPLE filter would miss them.
-        // When any multi-file sample is present, use a FILE filter over all files of all samples
-        // so that every variant in the genotype index is returned.
-        boolean hasMultiFileSample = false;
-        Set<String> allFileNames = new LinkedHashSet<>();
-        for (Integer sampleId : sampleIds) {
-            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (sm.isMultiFileSample()) {
-                hasMultiFileSample = true;
-            }
-            for (Integer fileId : sm.getFiles()) {
-                allFileNames.add(metadataManager.getFileName(studyId, fileId));
-            }
-        }
-
-        if (hasMultiFileSample) {
-            // FIXME: sample filter doesn't work with multi-file samples. We need to include all samples and filter them in the reader
-            variantQuery.includeSample(sampleNames);
-        } else if (sampleIds.size() < 50) {
+        if (sampleIds.size() < 50) {
             variantQuery.put(VariantQueryParam.SAMPLE.key(), sampleNames);
         } else {
             variantQuery.includeSample(sampleNames);

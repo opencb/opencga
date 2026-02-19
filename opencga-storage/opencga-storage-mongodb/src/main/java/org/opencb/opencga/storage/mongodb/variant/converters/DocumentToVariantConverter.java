@@ -63,6 +63,8 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
     public static final String SV_BND_MATE_CI_POS_R = "ciPosR";
 
     public static final String STUDIES_FIELD = "studies";
+    /** Root-level files array (moved from studies[].files). */
+    public static final String FILES_FIELD = "files";
     public static final String ANNOTATION_FIELD = "annotation";
     public static final String CUSTOM_ANNOTATION_FIELD = "customAnnotation";
     public static final String STATS_FIELD = "stats";
@@ -76,7 +78,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
 //    public static final String INDEX_STUDIES_FIELD = "st";
 
 //    public static final String ID_FIELD = "id";
-//    public static final String FILES_FIELD = "files";
 //    public static final String EFFECTS_FIELD = "effs";
 //    public static final String SOTERM_FIELD = "so";
 //    public static final String GENE_FIELD = "gene";
@@ -108,24 +109,29 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         map.put(VariantField.LENGTH, singletonList(LENGTH_FIELD));
         map.put(VariantField.TYPE, singletonList(TYPE_FIELD));
         map.put(VariantField.SV, singletonList(SV_FIELD));
-        map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD));
+        // files[] is now at root level (not nested inside studies[]).
+        // studies[] only contains {sid} and stats.
+        map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD, FILES_FIELD));
         map.put(VariantField.STUDIES_SAMPLES, Arrays.asList(
-                STUDIES_FIELD + '.' + GENOTYPES_FIELD,
-                STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
-                STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD
+                FILES_FIELD + '.' + STUDYID_FIELD,
+                FILES_FIELD + '.' + FILEID_FIELD,
+                FILES_FIELD + '.' + FILE_GENOTYPE_FIELD,
+                FILES_FIELD + '.' + SAMPLE_DATA_FIELD,
+                FILES_FIELD + '.' + ALTERNATES_FIELD,
+                FILES_FIELD + '.' + ORI_FIELD
         ));
         map.put(VariantField.STUDIES_SAMPLE_DATA_KEYS, Arrays.asList());
         map.put(VariantField.STUDIES_SCORES, emptyList());
         map.put(VariantField.STUDIES_ISSUES, emptyList());
         map.put(VariantField.STUDIES_FILES, Arrays.asList(
-                STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
-                STUDIES_FIELD + '.' + FILES_FIELD + '.' + ATTRIBUTES_FIELD,
-                STUDIES_FIELD + '.' + FILES_FIELD + '.' + ORI_FIELD));
+                FILES_FIELD + '.' + STUDYID_FIELD,
+                FILES_FIELD + '.' + FILEID_FIELD,
+                FILES_FIELD + '.' + ATTRIBUTES_FIELD,
+                FILES_FIELD + '.' + ALTERNATES_FIELD,
+                FILES_FIELD + '.' + ORI_FIELD));
         map.put(VariantField.STUDIES_STATS, singletonList(STATS_FIELD));
-        map.put(VariantField.STUDIES_SECONDARY_ALTERNATES, singletonList(
-                STUDIES_FIELD + '.' + ALTERNATES_FIELD));
-        map.put(VariantField.STUDIES_STUDY_ID, singletonList(
-                STUDIES_FIELD + '.' + STUDYID_FIELD));
+        map.put(VariantField.STUDIES_SECONDARY_ALTERNATES, emptyList());
+        map.put(VariantField.STUDIES_STUDY_ID, singletonList(STUDIES_FIELD + '.' + STUDYID_FIELD));
 
         List<String> annotationFields = Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD);
         map.put(VariantField.ANNOTATION, annotationFields);
@@ -237,12 +243,12 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         };
     }
 
-    public Variant convertToDataModelType(Document object) {
-        String chromosome = (String) object.get(CHROMOSOME_FIELD);
-        int start = (int) object.get(START_FIELD);
-        int end = (int) object.get(END_FIELD);
-        String reference = (String) object.get(REFERENCE_FIELD);
-        String alternate = (String) object.get(ALTERNATE_FIELD);
+    public Variant convertToDataModelType(Document variantObject) {
+        String chromosome = (String) variantObject.get(CHROMOSOME_FIELD);
+        int start = (int) variantObject.get(START_FIELD);
+        int end = (int) variantObject.get(END_FIELD);
+        String reference = (String) variantObject.get(REFERENCE_FIELD);
+        String alternate = (String) variantObject.get(ALTERNATE_FIELD);
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
         if (addDefaultId) {
             variant.setId(variant.toString());
@@ -251,12 +257,12 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
 //            LinkedList<String> names = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
 //            variant.setNames(names);
 //        }
-        if (object.containsKey(TYPE_FIELD)) {
-            variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));
+        if (variantObject.containsKey(TYPE_FIELD)) {
+            variant.setType(VariantType.valueOf(variantObject.get(TYPE_FIELD).toString()));
         }
 
         // SV
-        Document mongoSv = object.get(SV_FIELD, Document.class);
+        Document mongoSv = variantObject.get(SV_FIELD, Document.class);
         if (mongoSv != null) {
             StructuralVariation sv = new StructuralVariation();
             List<Integer> ciStart = getDefault(mongoSv, SV_CISTART_FIELD, Arrays.asList(null, null));
@@ -297,12 +303,27 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
 
         // Files
         if (variantStudyEntryConverter != null) {
-            List mongoFiles = object.get(STUDIES_FIELD, List.class);
-            if (mongoFiles != null) {
-                for (Object o : mongoFiles) {
-                    Document dbo = (Document) o;
-                    if (returnStudies == null || returnStudies.contains(((Number) dbo.get(STUDYID_FIELD)).intValue())) {
-                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo, variant));
+            List<Document> studies = variantObject.get(STUDIES_FIELD, List.class);
+            // Root-level files (Stage 2 format). If absent, fall back to study-embedded files (Stage 1).
+            List<Document> rootFiles = variantObject.get(FILES_FIELD, List.class);
+
+            if (studies != null) {
+                for (Document studyDocument : studies) {
+                    int sid = ((Number) studyDocument.get(STUDYID_FIELD)).intValue();
+                    if (returnStudies == null || returnStudies.contains(sid)) {
+                        List<Document> studyFiles = new ArrayList<>();
+                        if (rootFiles != null) {
+                            for (Document rootFile : rootFiles) {
+                                if (rootFile == null || rootFile.get(STUDYID_FIELD) == null) {
+                                    System.out.println("WARNING: Found file without study ID. Skipping file " + rootFile.toJson());
+                                }
+                                int fileSid = rootFile.get(STUDYID_FIELD, Number.class).intValue();
+                                if (fileSid == sid) {
+                                    studyFiles.add(rootFile);
+                                }
+                            }
+                        }
+                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(studyDocument, studyFiles, variant));
                     }
                 }
             }
@@ -324,7 +345,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
 
         // Annotations
         Document mongoAnnotation;
-        Object o = object.get(ANNOTATION_FIELD);
+        Object o = variantObject.get(ANNOTATION_FIELD);
         if (o instanceof List) {
             if (!((List) o).isEmpty()) {
                 mongoAnnotation = (Document) ((List) o).get(0);
@@ -332,11 +353,11 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                 mongoAnnotation = null;
             }
         } else {
-            mongoAnnotation = (Document) object.get(ANNOTATION_FIELD);
+            mongoAnnotation = (Document) variantObject.get(ANNOTATION_FIELD);
         }
-        Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
-        boolean hasRelease = object.containsKey(RELEASE_FIELD);
-        boolean hasIndex = object.containsKey(INDEX_FIELD);
+        Document customAnnotation = variantObject.get(CUSTOM_ANNOTATION_FIELD, Document.class);
+        boolean hasRelease = variantObject.containsKey(RELEASE_FIELD);
+        boolean hasIndex = variantObject.containsKey(INDEX_FIELD);
         if (mongoAnnotation != null || customAnnotation != null || hasRelease) {
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
@@ -362,7 +383,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                 }
             }
             if (hasRelease) {
-                String release = this.<Number>getList(object, RELEASE_FIELD).stream()
+                String release = this.<Number>getList(variantObject, RELEASE_FIELD).stream()
                         .map(Number::intValue)
                         .min(Integer::compareTo)
                         .orElse(-1)
@@ -375,8 +396,8 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         }
 
         // Statistics
-        if (statsConverter != null && object.containsKey(STATS_FIELD)) {
-            List<Document> stats = object.get(STATS_FIELD, List.class);
+        if (statsConverter != null && variantObject.containsKey(STATS_FIELD)) {
+            List<Document> stats = variantObject.get(STATS_FIELD, List.class);
             statsConverter.convertCohortsToDataModelType(stats, variant);
         }
         return variant;

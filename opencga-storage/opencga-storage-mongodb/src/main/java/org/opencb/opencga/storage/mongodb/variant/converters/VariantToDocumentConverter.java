@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -90,11 +91,15 @@ public class VariantToDocumentConverter extends AbstractDocumentConverter {
 
         // Files
         if (variantStudyEntryConverter != null) {
-            List<Document> mongoFiles = new LinkedList<>();
-            for (StudyEntry archiveFile : variant.getStudies()) {
-                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(variant, archiveFile));
+            List<Document> studyDocuments = new LinkedList<>();
+            List<Document> fileDocuments = new LinkedList<>();
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                Pair<Document, List<Document>> pair = variantStudyEntryConverter.convertToStorageType(variant, studyEntry);
+                studyDocuments.add(pair.getKey());
+                fileDocuments.addAll(pair.getValue());
             }
-            mongoVariant.append(STUDIES_FIELD, mongoFiles);
+            mongoVariant.append(STUDIES_FIELD, studyDocuments);
+            mongoVariant.append(FILES_FIELD, fileDocuments);
         }
 
 //        // Annotations

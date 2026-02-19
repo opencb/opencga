@@ -668,14 +668,12 @@ public class VariantMongoDBQueryParser {
             return filters;
         }
 
-        String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
         final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
-
 
         if (parsedVariantQuery.getStudyQuery().getStudies() != null) {
             ParsedQuery<NegatableValue<ResourceId>> studies = parsedVariantQuery.getStudyQuery().getStudies();
 
-            filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyEntryConverter.STUDYID_FIELD,
+            filters.add(addQueryFilter(DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyEntryConverter.STUDYID_FIELD,
                     studies.getValues(),
                     study -> study.getValue().getId()));
         }
@@ -715,8 +713,8 @@ public class VariantMongoDBQueryParser {
 //                QueryOperation qualOperation = checkOperator(values);
 //                List<String> qualValues = splitValue(values, qualOperation);
             if (!useFileElemMatch) {
-                String key = studyQueryPrefix
-                        + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                // Files are now at root level, so no studyQueryPrefix needed.
+                String key = DocumentToStudyEntryConverter.FILES_FIELD + '.'
                         + DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
 
                 if (isValidParam(query, FILTER)) {
@@ -761,7 +759,7 @@ public class VariantMongoDBQueryParser {
                                     true, extraFilterFilters);
                         }
                     }
-                    fileElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD, and(fileFilters)));
+                    fileElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileFilters)));
                 }
                 addAll(filters, filesOperation, fileElemMatch);
 
@@ -790,7 +788,7 @@ public class VariantMongoDBQueryParser {
                         addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
                                 true, extraFilterFilters);
                     }
-                    infoElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD, and(infoFilters)));
+                    infoElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(infoFilters)));
                 }
                 addAll(filters, fileDataOperation, infoElemMatch);
             }
@@ -880,10 +878,11 @@ public class VariantMongoDBQueryParser {
                 }
 
                 if (canFilterSampleByFile) {
-                    // Extra filter by FILE IDs associated to the sample
+                    // Extra filter by FILE IDs associated to the sample.
+                    // Files are now at root level, so no studyQueryPrefix needed.
                     List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(defaultStudy.getId(), sampleId, true);
 
-                    String key = studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+                    String key = DocumentToVariantConverter.FILES_FIELD
                             + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
                     if (defaultGenotypeNegated) {
                         Bson negatedFile;
@@ -923,8 +922,9 @@ public class VariantMongoDBQueryParser {
                                 if (defaultGenotypes.contains(otherGenotype)) {
                                     continue;
                                 }
-                                String key = studyQueryPrefix
-                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD
+                                // GT is now in root-level files[].mgt.
+                                String key = DocumentToVariantConverter.FILES_FIELD
+                                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
                                         + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                 genotypesFiltersOr.add(eq(key, sampleId));
                             }
@@ -934,23 +934,26 @@ public class VariantMongoDBQueryParser {
                                 if (defaultGenotypes.contains(otherGenotype)) {
                                     continue;
                                 }
-                                String key = studyQueryPrefix
-                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD
+                                // GT is now in root-level files[].mgt.
+                                String key = DocumentToVariantConverter.FILES_FIELD
+                                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
                                         + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                 defaultGenotypeFilter.add(ne(key, sampleId));
                             }
                             genotypesFiltersOr.add(and(defaultGenotypeFilter));
                         }
                     } else {
-                        String key = studyQueryPrefix
-                                + DocumentToStudyEntryConverter.GENOTYPES_FIELD
+                        // GT is now in root-level files[].mgt (FILE_GENOTYPE_FIELD).
+                        // sampleIds are globally unique across studies, so no studyQueryPrefix needed.
+                        String mgtKey = DocumentToVariantConverter.FILES_FIELD
+                                + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
                                 + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
                         if (negated) {
-                            //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
-                            genotypesFiltersAnd.add(ne(key, sampleId));
+                            //and [ {"files.mgt.0|1" : { $ne : <sampleId> } } ]
+                            genotypesFiltersAnd.add(ne(mgtKey, sampleId));
                         } else {
-                            //or [ {"gt.0|1" : <sampleId> } ]
-                            genotypesFiltersOr.add(eq(key, sampleId));
+                            //or [ {"files.mgt.0|1" : <sampleId> } ]
+                            genotypesFiltersOr.add(eq(mgtKey, sampleId));
                         }
                     }
                 }
@@ -978,12 +981,12 @@ public class VariantMongoDBQueryParser {
                     // i.e. ANY file among ALL indexed files
                     logger.debug("Skip filter by all files");
                 } else {
-                    addFileGroupsFilter(filters, studyQueryPrefix, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
+                    addFileGroupsFilter(filters, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
                 }
             }
         } else {
             if (fileIdGroupsFromSamples.isEmpty()) {
-                filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+                filters.add(addQueryFilter(DocumentToVariantConverter.FILES_FIELD
                                 + '.' + DocumentToStudyEntryConverter.FILEID_FIELD,
                         fileQuery.getValues(), filesOperation,
                         value -> {
@@ -1020,7 +1023,7 @@ public class VariantMongoDBQueryParser {
                     for (Integer fileId : fileIds) {
                         fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
                     }
-                    addFileGroupsFilter(filters, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
+                    addFileGroupsFilter(filters, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
 
                 } else if (filesOperation == QueryOperation.OR) {
                     // samples = AND, files = OR
@@ -1028,7 +1031,7 @@ public class VariantMongoDBQueryParser {
                     // Put all files in a group
                     // the filesOperation==OR will be expressed with an "$in" of the new group
                     fileIdGroupsFromSamples.add(fileIds);
-                    addFileGroupsFilter(filters, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, null);
+                    addFileGroupsFilter(filters, QueryOperation.AND, fileIdGroupsFromSamples, null);
                 }
             }
 
@@ -1046,7 +1049,7 @@ public class VariantMongoDBQueryParser {
         }
     }
 
-    private void addFileGroupsFilter(List<Bson> filters, String studyQueryPrefix, QueryOperation operation,
+    private void addFileGroupsFilter(List<Bson> filters, QueryOperation operation,
                                      Set<List<Integer>> fileIdGroups, List<Integer> negatedFiles) {
 
         if (operation == QueryOperation.OR) {
@@ -1058,7 +1061,7 @@ public class VariantMongoDBQueryParser {
             fileIdGroups = Collections.singleton(new ArrayList<>(fileIds));
         }
 
-        String fileIdField = studyQueryPrefix + DocumentToStudyEntryConverter.FILES_FIELD
+        String fileIdField = DocumentToVariantConverter.FILES_FIELD
                 + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
         List<Bson> fileQueries = new ArrayList<>(fileIdGroups.size());
         List<Integer> singleElementGroups = new ArrayList<>();
@@ -1234,6 +1237,7 @@ public class VariantMongoDBQueryParser {
 
         Set<String> projections = new HashSet<>();
         Bson studyElemMatch = null;
+        Bson filesElemMatch = null;
 
         if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
             if (options.getBoolean(QueryOptions.SORT)) {
@@ -1264,13 +1268,34 @@ public class VariantMongoDBQueryParser {
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
         List<Integer> studiesIds = selectVariantElements.getStudyIds();
         // Use elemMatch only if there is one study to return and the query contains samples or files to return.
-        boolean shouldApplyElemMatch = studiesIds.size() == 1;
-        if (shouldApplyElemMatch) {
+        boolean shouldApplyStudyElemMatch = studiesIds.size() == 1;
+        if (shouldApplyStudyElemMatch) {
             // If the query contains samples or files to return, we need to apply the $elemMatch
             // to avoid returning all samples and files of the study.
-            shouldApplyElemMatch = fields.contains(VariantField.STUDIES_SAMPLES) || fields.contains(VariantField.STUDIES_FILES);
+            shouldApplyStudyElemMatch = fields.contains(VariantField.STUDIES_SAMPLES) || fields.contains(VariantField.STUDIES_FILES);
         }
-        if (shouldApplyElemMatch) {
+        // Use files elemMatch if the query contains files or samples to return, to avoid returning all files of the study.
+        boolean shouldApplyFilesElemMatch = fields.contains(VariantField.STUDIES_FILES) || fields.contains(VariantField.STUDIES_SAMPLES);
+
+        if (shouldApplyFilesElemMatch) {
+            Set<Integer> fileIds = new HashSet<>();
+            for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : selectVariantElements.getStudies().values()) {
+                fileIds.addAll(studyProjection.getFileIds());
+                studyProjection.getSampleIds().forEach(sampleId -> {
+                    fileIds.addAll(metadataManager.getFileIdsFromSampleId(studyProjection.getStudyMetadata().getId(), sampleId, true));
+                });
+            }
+            if (fileIds.size() == 1) {
+                filesElemMatch = Projections.elemMatch(
+                        DocumentToVariantConverter.FILES_FIELD,
+                        in(DocumentToStudyEntryConverter.FILEID_FIELD, fileIds));
+            }  else {
+                // Do not apply elemMatch if there are more than one file, to avoid returning incomplete files data.
+                shouldApplyFilesElemMatch = false;
+            }
+        }
+
+        if (shouldApplyStudyElemMatch) {
             studyElemMatch = Projections.elemMatch(
                     DocumentToVariantConverter.STUDIES_FIELD,
                     eq(
@@ -1285,28 +1310,31 @@ public class VariantMongoDBQueryParser {
                     // Special conversion
                     fields.remove(VariantField.STUDIES_SAMPLES);
                     if (formats.contains(VariantQueryUtils.ALL)) {
-                        projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyEntryConverter.GENOTYPES_FIELD);
-                        projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
                                 + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
-                        projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyEntryConverter.FILEID_FIELD
-                        );
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILEID_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.STUDYID_FIELD);
                     } else {
                         for (String format : formats) {
                             if (format.equals(GT)) {
-                                projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                        + DocumentToStudyEntryConverter.GENOTYPES_FIELD);
+                                projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                        + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
                             } else {
-                                projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                        + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                                projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
                                         + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
                             }
-                            projections.add(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                    + DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.ALTERNATES_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.ORI_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
                                     + DocumentToStudyEntryConverter.FILEID_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.STUDYID_FIELD);
                         }
                     }
                 }
@@ -1338,10 +1366,17 @@ public class VariantMongoDBQueryParser {
             // Avoid Path collision at studies
             projections.removeIf(key -> key.startsWith(DocumentToVariantConverter.STUDIES_FIELD));
         }
+        if (filesElemMatch != null) {
+            // Avoid Path collision at files
+            projections.removeIf(key -> key.startsWith(DocumentToVariantConverter.FILES_FIELD));
+        }
         Bson projection = Projections.include(new ArrayList<>(projections));
 
         if (studyElemMatch != null) {
             projection = Projections.fields(studyElemMatch, projection);
+        }
+        if (filesElemMatch != null) {
+            projection = Projections.fields(filesElemMatch, projection);
         }
 
 

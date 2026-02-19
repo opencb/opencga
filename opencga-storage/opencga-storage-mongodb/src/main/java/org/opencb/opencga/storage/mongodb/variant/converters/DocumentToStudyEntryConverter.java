@@ -41,13 +41,16 @@ public class DocumentToStudyEntryConverter {
 
     public static final String STUDYID_FIELD = "sid";
     //    public static final String FORMAT_FIELD = "fm";
+    @Deprecated
     public static final String GENOTYPES_FIELD = "gt";
 
     public static final String FILES_FIELD = "files";
     public static final String FILEID_FIELD = "fid";
     public static final String SAMPLE_DATA_FIELD = "sampleData";
-    /** Per-file genotype map for multi-file samples. Same shape as {@link #GENOTYPES_FIELD}: {@code {gt: [sampleId, ...]}}. */
-    public static final String MULTI_FILE_GENOTYPE_FIELD = "mgt";
+    /**
+     * Per-file genotype map.
+     */
+    public static final String FILE_GENOTYPE_FIELD = "mgt";
     public static final String ATTRIBUTES_FIELD = "attrs";
     public static final String ORI_FIELD = "_ori";
 
@@ -132,26 +135,31 @@ public class DocumentToStudyEntryConverter {
      * alternate lists, {@link VariantMerger} is used to unify the alternate lists and remap sample
      * genotype allele indices accordingly (same approach as HBaseToStudyEntryConverter).
      *
-     * @param document BSON study sub-document
-     * @param variant  The owning variant (used for VariantMerger construction); may be {@code null},
-     *                 in which case a simple union is used without GT remapping.
+     * @param studyDocument BSON study sub-document
+     * @param fileDocuments List of BSON file sub-documents for the study (may be {@code null} if no files are returned by the query);
+     * @param variant       The owning variant (used for VariantMerger construction); may be {@code null},
+     *                      in which case a simple union is used without GT remapping.
      * @return Populated {@link StudyEntry}
      */
-    public StudyEntry convertToDataModelType(Document document, Variant variant) {
-        int studyId = ((Number) document.get(STUDYID_FIELD)).intValue();
+    public StudyEntry convertToDataModelType(Document studyDocument, List<Document> fileDocuments, Variant variant) {
+        int studyId = ((Number) studyDocument.get(STUDYID_FIELD)).intValue();
         StudyEntry study = new StudyEntry(getStudyName(studyId));
 
         // Ordered map: fileId → per-file secondary alternates (only files that have any)
         Map<Integer, List<AlternateCoordinate>> fileIndexToAlts = new LinkedHashMap<>();
 
-        if (document.containsKey(FILES_FIELD)) {
-            List<FileEntry> files = new ArrayList<>(((List) document.get(FILES_FIELD)).size());
+        if (fileDocuments != null) {
+            List<FileEntry> files = new ArrayList<>(fileDocuments.size());
             // Files that are not in returnedFiles (e.g. because they were filtered out by the query) are collected here as "extra files"
             // with no attributes and only originalCall if available, to be added to the study if no other file is returned.
             List<FileEntry> extraFiles = new ArrayList<>();
 
-            for (Document fileDocument : (List<Document>) document.get(FILES_FIELD)) {
-                Integer fid = ((Number) fileDocument.get(FILEID_FIELD)).intValue();
+            for (Document fileDocument : fileDocuments) {
+                int fid = ((Number) fileDocument.get(FILEID_FIELD)).intValue();
+                int studyIdFromFile = ((Number) fileDocument.get(STUDYID_FIELD)).intValue();
+                if (studyId != studyIdFromFile) {
+                    continue;
+                }
                 if (fid < 0) {
                     fid = -fid;
                 }
@@ -214,7 +222,7 @@ public class DocumentToStudyEntryConverter {
 
         // Populate samples BEFORE secondary alternates so that we have sample GTs to remap.
         if (samplesConverter != null) {
-            samplesConverter.convertToDataModelType(document, study, studyId);
+            samplesConverter.convertToDataModelType(fileDocuments, study, studyId);
         }
 
         // Merge per-file secondary alternates, remapping GT indices when files differ.
@@ -315,6 +323,9 @@ public class DocumentToStudyEntryConverter {
                         continue;
                     }
                     Integer thisFileIndex = sampleEntry.getFileIndex();
+                    if (thisFileIndex == null) {
+                        System.out.println("Sample " + sampleName + " has no file index; skipping alternate merge for this sample");
+                    }
                     if (thisFileIndex != fileIndex) {
                         // This sample is not from this file. Search in issues.
                         for (IssueEntry issue : studyEntry.getIssues()) {

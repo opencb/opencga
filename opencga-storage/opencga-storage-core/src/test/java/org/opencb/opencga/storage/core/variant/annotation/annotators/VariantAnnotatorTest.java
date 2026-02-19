@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -256,7 +257,7 @@ public class VariantAnnotatorTest {
             if (!variantsToAnnotate.isEmpty()) {
                 List<CellBaseDataResult<VariantAnnotation>> queryResults = super.annotateFiltered(variantsToAnnotate);
                 for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
-                    if (!queryResult.getResults().isEmpty()) {
+                    if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
                         LAST_CACHE_UPDATE.set(System.currentTimeMillis());
                         ANNOTATION_CACHE.put(queryResult.getId(), queryResult.getResults().get(0));
                     }

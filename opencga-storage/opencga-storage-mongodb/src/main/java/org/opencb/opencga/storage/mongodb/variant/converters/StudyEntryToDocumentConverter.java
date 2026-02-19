@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -25,22 +26,24 @@ public class StudyEntryToDocumentConverter {
         this.includeSrc = includeSrc;
     }
 
-    public Document convertToStorageType(Variant variant, StudyEntry studyEntry) {
+    public Pair<Document, List<Document>> convertToStorageType(Variant variant, StudyEntry studyEntry) {
         return convertToStorageType(variant, studyEntry, studyEntry.getFiles(), new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
     }
 
-    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, LinkedHashSet<String> sampleNames) {
+    public Pair<Document, List<Document>> convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file,
+                                                               LinkedHashSet<String> sampleNames) {
         return convertToStorageType(variant, studyEntry, Collections.singletonList(file), sampleNames);
     }
 
-    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, List<FileEntry> files, LinkedHashSet<String> sampleNames) {
+    public Pair<Document, List<Document>> convertToStorageType(Variant variant, StudyEntry studyEntry, List<FileEntry> files,
+                                                               LinkedHashSet<String> sampleNames) {
 
         int studyId = Integer.parseInt(studyEntry.getStudyId());
         Document studyObject = new Document(STUDYID_FIELD, studyId);
 
         // Alternate alleles — stored per-file (not at study level)
         List<Document> alternates = new LinkedList<>();
-        if (studyEntry.getSecondaryAlternates().size() > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
+        if (!studyEntry.getSecondaryAlternates().isEmpty()) {   // assuming secondaryAlternates doesn't contain the primary alternate
             for (AlternateCoordinate coordinate : studyEntry.getSecondaryAlternates()) {
                 Document alt = new Document();
                 alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
@@ -58,7 +61,7 @@ public class StudyEntryToDocumentConverter {
             fileDocuments = new ArrayList<>(files.size());
 
             for (FileEntry file : files) {
-                Document fileObject = convertFileDocument(studyEntry, file);
+                Document fileObject = convertFileDocument(studyId, studyEntry, file);
                 fileDocuments.add(fileObject);
 
                 // Store secondary alternates inside the file document, not at study level.
@@ -67,15 +70,7 @@ public class StudyEntryToDocumentConverter {
                 }
 
                 if (samplesConverter != null) {
-                    Document otherFields = new Document();
-                    fileObject.append(SAMPLE_DATA_FIELD, otherFields);
-                    Document sampleDoc = samplesConverter.convertToStorageType(studyEntry, otherFields, sampleNames);
-                    // Extract per-file mgt (multi-file genotype map) before merging into study document.
-                    Document mgt = (Document) sampleDoc.remove(MULTI_FILE_GENOTYPE_FIELD);
-                    if (mgt != null && !mgt.isEmpty()) {
-                        fileObject.append(MULTI_FILE_GENOTYPE_FIELD, mgt);
-                    }
-                    studyObject.putAll(sampleDoc);
+                    samplesConverter.convertToStorageType(studyEntry, sampleNames, fileObject);
                 }
             }
 
@@ -83,14 +78,16 @@ public class StudyEntryToDocumentConverter {
             fileDocuments = Collections.emptyList();
         }
 
-        studyObject.append(FILES_FIELD, fileDocuments);
-
-        return studyObject;
+        // Files are stored at the root level of the variant document (not in the study subdocument).
+        return Pair.of(studyObject, fileDocuments);
     }
 
-    protected Document convertFileDocument(StudyEntry studyEntry, FileEntry file) {
+    protected Document convertFileDocument(int studyId, StudyEntry studyEntry, FileEntry file) {
         int fileId = Integer.parseInt(file.getFileId());
         Document fileObject = new Document(FILEID_FIELD, fileId);
+        // Store the study ID inside each file document so that root-level files[] can be
+        // filtered back to the originating study during reads.
+        fileObject.put(STUDYID_FIELD, studyId);
         // Attributes
         if (file.getData().size() > 0) {
             Document attrs = null;

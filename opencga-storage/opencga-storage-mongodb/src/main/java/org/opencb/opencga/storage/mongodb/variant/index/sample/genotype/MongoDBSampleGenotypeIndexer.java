@@ -7,7 +7,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -18,7 +17,9 @@ import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSc
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -59,21 +60,7 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
 
         VariantQuery variantQuery = new VariantQuery()
                 .study(studyName);
-        boolean hasMultiFileSample = false;
-        Set<String> allFileNames = new LinkedHashSet<>();
-        for (Integer sampleId : sampleIds) {
-            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (sm.isMultiFileSample()) {
-                hasMultiFileSample = true;
-            }
-            for (Integer fileId : sm.getFiles()) {
-                allFileNames.add(metadataManager.getFileName(studyId, fileId));
-            }
-        }
-        if (hasMultiFileSample) {
-            // FIXME: sample filter doesn't work with multi-file samples. We need to include all samples and filter them in the reader
-            variantQuery.includeSample(sampleNames);
-        } else if (sampleIds.size() < 50) {
+        if (sampleIds.size() < 50) {
             variantQuery.sample(sampleNames);
         } else {
             variantQuery.includeSample(sampleNames);

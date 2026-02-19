@@ -3,7 +3,9 @@ package org.opencb.opencga.storage.mongodb.variant.index.sample;
 import org.bson.Document;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -13,6 +15,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexTest;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
@@ -44,11 +47,33 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
         URI outdir = newOutputUri();
         for (String study : studies) {
             System.out.println("=== Study: " + study + " ===");
+            printVariantsContent(study, outdir);
             printSampleIndexContents(study, outdir);
         }
     }
 
 
+    public void printVariantsContent(String study, URI outdir) throws Exception {
+        VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) super.dbAdaptor;
+
+        Path output = Paths.get(outdir.resolve(study + ".variants.json"));
+        try (OutputStream os = Files.newOutputStream(output);
+             PrintStream out = new PrintStream(os)) {
+
+            try (VariantDBIterator it = dbAdaptor.iterator(new VariantQuery().study(study)
+                    .includeSampleAll()
+                    .includeSampleId(true)
+                    .includeFileAll(), new QueryOptions())) {
+                while (it.hasNext()) {
+                    Variant variant = it.next();
+                    out.println(variant.toJson());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
     public void printSampleIndexContents(String study, URI outdir) throws Exception {
         VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) super.dbAdaptor;
         int studyId = dbAdaptor.getMetadataManager().getStudyId(study);

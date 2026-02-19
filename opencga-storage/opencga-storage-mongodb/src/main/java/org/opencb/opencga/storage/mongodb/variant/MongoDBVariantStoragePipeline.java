@@ -105,7 +105,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private MongoDBVariantWriteResult writeResult;
     private List<Integer> fileIds;
     // current running task
-    private TaskMetadata currentTask;
+    private TaskMetadata stageTask;
+    private TaskMetadata mergeTask;
+    private TaskMetadata directLoadTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
                                          VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider, ObjectMap options,
@@ -218,13 +220,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         if (options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
             // TODO: Check if can execute direct load
-            currentTask = getMetadataManager().addRunningTask(
+            directLoadTask = getMetadataManager().addRunningTask(
                     studyMetadata.getId(),
                     DIRECT_LOAD.key(),
                     Collections.singletonList(fileId),
                     isResume(options),
                     TaskMetadata.Type.LOAD);
-            if (currentTask.getStatus().size() > 1) {
+            if (directLoadTask.getStatus().size() > 1) {
                 options.put(VariantStorageOptions.RESUME.key(), true);
                 options.put(STAGE_RESUME.key(), true);
                 options.put(MERGE_RESUME.key(), true);
@@ -371,12 +373,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
 
             // Run
-            Thread hook = getMetadataManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, currentTask.getId());
+            Thread hook = getMetadataManager().buildShutdownHook(DIRECT_LOAD.key(), studyId, directLoadTask.getId());
             try {
                 Runtime.getRuntime().addShutdownHook(hook);
                 ptr.run();
                 getMetadataManager()
-                        .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.DONE);
+                        .setStatus(getStudyId(), directLoadTask.getId(), TaskMetadata.Status.DONE);
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
@@ -402,7 +404,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         } catch (ExecutionException e) {
             try {
                 getMetadataManager()
-                        .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.ERROR);
+                        .setStatus(getStudyId(), directLoadTask.getId(), TaskMetadata.Status.ERROR);
             } catch (Exception e2) {
                 // Do not propagate this exception!
                 logger.error("Error reporting direct load error!", e2);
@@ -574,7 +576,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
 
-            operation = getMetadataManager().getTask(studyMetadata.getId(), STAGE.key(), Collections.singletonList(fileId));
+            operation = getMetadataManager().searchTask(studyMetadata.getId(), STAGE.key(), Collections.singletonList(fileId));
 
             if (operation != null && !operation.currentStatus().equals(TaskMetadata.Status.READY)) {
                 // There was an error writing the operation status. Restore to "READY"
@@ -596,14 +598,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
             options.put(STAGE.key(), true);
         }
-        currentTask = operation;
+        stageTask = operation;
         return operation;
     }
 
     public void stageError() throws StorageEngineException {
-        int fileId = getFileId();
-        getMetadataManager()
-                .atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, STAGE.key(), Collections.singletonList(fileId));
+        getMetadataManager().setStatus(getStudyId(), stageTask.getId(), TaskMetadata.Status.ERROR);
     }
 
     public void stageSuccess(VariantFileMetadata metadata) throws StorageEngineException {
@@ -613,7 +613,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         getMetadataManager().updateFileMetadata(getStudyId(), fileId, file -> file.setStatus(STAGE.key(), TaskMetadata.Status.READY));
         getMetadataManager()
-                .setStatus(getStudyId(), currentTask.getId(), TaskMetadata.Status.READY);
+                .setStatus(getStudyId(), stageTask.getId(), TaskMetadata.Status.READY);
         metadata.setId(String.valueOf(fileId));
         dbAdaptor.getMetadataManager().updateVariantFileMetadata(String.valueOf(getStudyId()), metadata);
 
@@ -665,7 +665,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             Thread hook = new Thread(() -> {
                 try {
                     logger.error("Merge shutdown hook!");
-                    getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, MERGE.key(), fileIds);
+                    getMetadataManager().setStatus(getStudyId(), mergeTask.getId(), TaskMetadata.Status.ERROR);
                 } catch (Exception e) {
                     logger.error("Failed setting status '" + MERGE.key() + "' operation over files " + fileIds
                             + " to '" + TaskMetadata.Status.ERROR + '\'', e);
@@ -676,12 +676,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             try {
                 writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, studyMetadata);
             } catch (Exception e) {
-                getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, MERGE.key(), fileIds);
+                getMetadataManager().setStatus(getStudyId(), mergeTask.getId(), TaskMetadata.Status.ERROR);
                 throw e;
             } finally {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
-            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.DONE, MERGE.key(), fileIds);
+            getMetadataManager().setStatus(getStudyId(), mergeTask.getId(), TaskMetadata.Status.DONE);
         }
 
         if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
@@ -717,10 +717,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 }
             }
             boolean resume = isResumeMerge(options);
-            currentTask = getMetadataManager()
+            mergeTask = getMetadataManager()
                     .addRunningTask(studyMetadata.getId(), MERGE.key(), fileIds, resume, TaskMetadata.Type.LOAD);
 
-            if (currentTask.currentStatus().equals(TaskMetadata.Status.DONE)) {
+            if (mergeTask.currentStatus().equals(TaskMetadata.Status.DONE)) {
                 options.put(MERGE_SKIP.key(), true);
             }
 
@@ -792,6 +792,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         VariantStorageMetadataManager metadataManager = getMetadataManager();
+        TaskMetadata currentTask = mergeTask != null ? mergeTask : directLoadTask;
         TaskMetadata.Status status = metadataManager.setStatus(studyMetadata.getId(), currentTask.getId(), TaskMetadata.Status.READY);
         if (status != TaskMetadata.Status.DONE) {
             logger.warn("Unexpected status " + status);

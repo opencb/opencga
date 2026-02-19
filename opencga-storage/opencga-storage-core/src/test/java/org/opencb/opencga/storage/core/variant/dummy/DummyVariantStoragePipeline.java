@@ -64,6 +64,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     private final Logger logger = LoggerFactory.getLogger(DummyVariantStoragePipeline.class);
     private final String dbName;
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private TaskMetadata taskMetadata;
 
     public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
                                        IOConnectorProvider ioConnectorProvider, String dbName, SampleIndexDBAdaptor sampleIndexDBAdaptor) {
@@ -94,7 +95,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         //   - if there are other loads ongoing:
         //      - They do not share samples with the current file being loaded
         //      - The split data is by CHROMOSOME or REGION
-        getMetadataManager().addRunningTask(studyId, "load", Collections.singletonList(getFileId()), resume, TaskMetadata.Type.LOAD,
+        taskMetadata = getMetadataManager().addRunningTask(studyId, "load", Collections.singletonList(getFileId()), resume, TaskMetadata.Type.LOAD,
                 operation -> {
                     if (operation.getName().equals("load")) {
                         if (operation.currentStatus() == TaskMetadata.Status.ERROR) {
@@ -242,10 +243,10 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
         getLoadStats().put("duplicatedLocus", resolver.getDuplicatedLocus());
         getLoadStats().put("discardedVariants", resolver.getDiscardedVariants());
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
-            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, "load", fileIds);
+            getMetadataManager().setStatus(getStudyId(), taskMetadata.getId(), TaskMetadata.Status.ERROR);
             throw new StorageEngineException("Error loading file " + input);
         } else {
-            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.DONE, "load", fileIds);
+            getMetadataManager().setStatus(getStudyId(), taskMetadata.getId(), TaskMetadata.Status.DONE);
         }
         return input;
     }
@@ -265,7 +266,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
         TaskMetadata.Status status = dbAdaptor.getMetadataManager()
-                .setStatus(studyMetadata.getId(), "load", fileIds, TaskMetadata.Status.READY);
+                .setStatus(studyMetadata.getId(), taskMetadata.getId(), TaskMetadata.Status.READY);
         if (status != TaskMetadata.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }

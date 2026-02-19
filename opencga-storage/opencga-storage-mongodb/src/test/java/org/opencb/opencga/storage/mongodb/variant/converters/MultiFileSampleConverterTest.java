@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
@@ -97,62 +98,65 @@ public class MultiFileSampleConverterTest {
      */
     @Test
     public void testWritePath_mgtFieldOnFileDocument() throws Exception {
-        Set<Integer> multiFileSampleIds = Collections.singleton(sampleIdC);
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap, multiFileSampleIds);
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap);
 
-        // Build a StudyEntry as if loading file1 (sampleA=0/0, sampleC=0/1)
+        // Build a StudyEntry as if loading file1 (sampleA=0/0=default, sampleC=0/1)
         StudyEntry studyEntry = buildStudyEntry(fileId1, SAMPLES_FILE1, Arrays.asList("0/0", "0/1"));
         StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
 
         Variant variant = new Variant("1:100:A:T");
-        Document studyDoc = studyConverter.convertToStorageType(variant, studyEntry,
+        Pair<Document, List<Document>> pair = studyConverter.convertToStorageType(variant, studyEntry,
                 studyEntry.getFile(String.valueOf(fileId1)),
                 new LinkedHashSet<>(SAMPLES_FILE1));
+        Document studyDoc = pair.getKey();
 
-        // Study-level gt should contain sampleA (non-default: 0/0 is default) and sampleC (0/1)
-        Document gt = studyDoc.get(GENOTYPES_FIELD, Document.class);
-        assertNotNull("GENOTYPES_FIELD should be present", gt);
-        // sampleC has genotype 0/1 → must appear in gt
-        List<Integer> gtEntry = gt.get(DocumentToSamplesConverter.genotypeToStorageType("0/1"), List.class);
-        assertNotNull("0/1 bucket should exist in gt", gtEntry);
-        assertTrue("sampleC should be in the 0/1 gt bucket", gtEntry.contains(sampleIdC));
+        // No study-level GENOTYPES_FIELD: GT lives exclusively in files[].mgt
+        assertNull("Study-level gt field should not be written", studyDoc.get("gt"));
+        assertNull("Study-level gt field should not be written", studyDoc.get(FILES_FIELD));
 
-        // File document should have an mgt field for sampleC
-        List<Document> files = studyDoc.get(FILES_FIELD, List.class);
+        // File document should have an mgt field with non-default GTs
+        List<Document> files = pair.getValue();
         assertEquals(1, files.size());
         Document fileDoc = files.get(0);
-        Document mgt = fileDoc.get(MULTI_FILE_GENOTYPE_FIELD, Document.class);
-        assertNotNull("File document should have an mgt field for multi-file samples", mgt);
+        Document mgt = fileDoc.get(FILE_GENOTYPE_FIELD, Document.class);
+        assertNotNull("File document should have an mgt field", mgt);
         List<Integer> mgtEntry = mgt.get(DocumentToSamplesConverter.genotypeToStorageType("0/1"), List.class);
         assertNotNull("mgt should have a 0/1 bucket", mgtEntry);
         assertTrue("sampleC should be in the mgt 0/1 bucket", mgtEntry.contains(sampleIdC));
 
-        // sampleA (non-multi-file) should NOT appear in mgt
+        // sampleA has default GT (0/0) → should NOT appear in mgt
         for (Object val : mgt.values()) {
-            assertFalse("sampleA (non-multi) should not appear in mgt", ((List<?>) val).contains(sampleIdA));
+            assertFalse("sampleA (default GT=0/0) should not appear in mgt", ((List<?>) val).contains(sampleIdA));
         }
     }
 
     /**
-     * Verify that when a single-file sample is in the study entry, no {@code mgt} field is written.
+     * Verify that mgt is written for all non-default GTs regardless of whether a sample is multi-file.
+     * In Stage 2, mgt is the only GT store and is written for every sample with a non-default GT.
      */
     @Test
-    public void testWritePath_noMgtForSingleFileSample() throws Exception {
-        // No multi-file samples
+    public void testWritePath_mgtWrittenForAllNonDefaultGTs() throws Exception {
         SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap);
         StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
 
+        // sampleA=0/0 (default), sampleC=0/1 (non-default)
         StudyEntry studyEntry = buildStudyEntry(fileId1, SAMPLES_FILE1, Arrays.asList("0/0", "0/1"));
         Variant variant = new Variant("1:100:A:T");
-        Document studyDoc = studyConverter.convertToStorageType(variant, studyEntry,
+        Pair<Document, List<Document>> pair = studyConverter.convertToStorageType(variant, studyEntry,
                 studyEntry.getFile(String.valueOf(fileId1)),
                 new LinkedHashSet<>(SAMPLES_FILE1));
+        List<Document> files = pair.getValue();
 
-        List<Document> files = studyDoc.get(FILES_FIELD, List.class);
         assertEquals(1, files.size());
         Document fileDoc = files.get(0);
-        assertNull("No mgt field when no multi-file samples are configured",
-                fileDoc.get(MULTI_FILE_GENOTYPE_FIELD));
+        Document mgt = fileDoc.get(FILE_GENOTYPE_FIELD, Document.class);
+        assertNotNull("mgt field must be written for non-default GTs", mgt);
+        List<Integer> bucket = mgt.get(DocumentToSamplesConverter.genotypeToStorageType("0/1"), List.class);
+        assertNotNull("0/1 bucket should exist", bucket);
+        assertTrue("sampleC (0/1) should be in mgt", bucket.contains(sampleIdC));
+        for (Object val : mgt.values()) {
+            assertFalse("sampleA (0/0=default) should not be in mgt", ((List<?>) val).contains(sampleIdA));
+        }
     }
 
     // ---------------------- Read path tests ----------------------
@@ -166,28 +170,20 @@ public class MultiFileSampleConverterTest {
      */
     @Test
     public void testReadPath_issueEntryCreatedForSecondaryFile() throws Exception {
-        Set<Integer> multiFileSampleIds = Collections.singleton(sampleIdC);
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap, multiFileSampleIds);
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap);
         StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
         Variant variant = new Variant("1:100:A:T");
 
-        // File 1: sampleA=0/0 (default, stored only if non-default), sampleC=0/1
+        // File 1: sampleA=0/0 (default, not in mgt), sampleC=0/1 → file1.mgt={"0/1": [sampleIdC]}
         StudyEntry studyEntry1 = buildStudyEntry(fileId1, SAMPLES_FILE1, Arrays.asList("0/0", "0/1"));
         Document file1Doc = getFileDocument(studyConverter, variant, studyEntry1, fileId1, SAMPLES_FILE1);
 
-        // File 2: sampleB=1/1, sampleC=0/0
-        StudyEntry studyEntry2 = buildStudyEntry(fileId2, SAMPLES_FILE2, Arrays.asList("1/1", "0/0"));
+        // File 2: sampleB=1/1, sampleC=1/1 → file2.mgt={"1/1": [sampleIdB, sampleIdC]}
+        // sampleC=1/1 (non-default) so it IS stored in mgt, allowing the DISCREPANCY to be detected.
+        StudyEntry studyEntry2 = buildStudyEntry(fileId2, SAMPLES_FILE2, Arrays.asList("1/1", "1/1"));
         Document file2Doc = getFileDocument(studyConverter, variant, studyEntry2, fileId2, SAMPLES_FILE2);
 
-        // Build the MongoDB study document as it would be stored in the DB.
-        // Study-level gt: sampleA is default (0/0, not stored), sampleC=0/1, sampleB=1/1
-        // (sampleC's gt from file2 is not stored in the study-level gt, per design)
-        Document gts = new Document()
-                .append(DocumentToSamplesConverter.genotypeToStorageType("0/1"), Collections.singletonList(sampleIdC))
-                .append(DocumentToSamplesConverter.genotypeToStorageType("1/1"), Collections.singletonList(sampleIdB));
-        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
-                .append(FILES_FIELD, Arrays.asList(file1Doc, file2Doc))
-                .append(GENOTYPES_FIELD, gts);
+        List<Document> filesDoc = Arrays.asList(file1Doc, file2Doc);
 
         // Build a VariantQueryProjection returning all three samples and both files
         VariantQueryProjection projection = buildProjection(
@@ -197,16 +193,16 @@ public class MultiFileSampleConverterTest {
 
         DocumentToSamplesConverter readConverter = new DocumentToSamplesConverter(metadataManager, projection);
         StudyEntry result = new StudyEntry(STUDY_NAME);
-        readConverter.convertToDataModelType(studyDoc, result, STUDY_ID);
+        readConverter.convertToDataModelType(filesDoc, result, STUDY_ID);
 
         // Primary samples: A, B, C (one entry each)
         assertEquals(3, result.getSamples().size());
 
-        // sampleC's primary GT should be 0/1 (MAIN_ALT, from file1)
+        // sampleC's primary GT should be 0/1 (MAIN_ALT wins over 1/1, from file1)
         SampleEntry sampleCEntry = result.getSamples().get(result.getSamplesPosition().get(SAMPLE_C));
         assertEquals("sampleC primary GT should be 0/1 (MAIN_ALT)", "0/1", sampleCEntry.getData().get(0));
 
-        // There must be exactly one IssueEntry for sampleC (from file2 with GT 0/0)
+        // There must be exactly one IssueEntry for sampleC (from file2 with GT 1/1)
         List<IssueEntry> issues = result.getIssues();
         assertNotNull("Issues list should not be null", issues);
         assertEquals("Exactly one IssueEntry expected", 1, issues.size());
@@ -214,7 +210,7 @@ public class MultiFileSampleConverterTest {
         IssueEntry issue = issues.get(0);
         assertEquals(IssueType.DISCREPANCY, issue.getType());
         assertEquals(SAMPLE_C, issue.getSample().getSampleId());
-        assertEquals("0/0", issue.getSample().getData().get(0));
+        assertEquals("1/1", issue.getSample().getData().get(0));
     }
 
     /**
@@ -245,21 +241,15 @@ public class MultiFileSampleConverterTest {
         Document file2Doc = new Document(FILEID_FIELD, fileId2)
                 .append(SAMPLE_DATA_FIELD, new Document("dp", dpFile2));
 
-        // Study-level gt: sampleC=0/1 (from file1), sampleB=1/1 (from file2)
-        // mgt on file1: sampleC=0/1; mgt on file2: sampleC=0/0
+        // mgt on file1: sampleC=0/1; mgt on file2: sampleC=1/1 (must be non-default so it is stored)
         Document mgt1 = new Document(DocumentToSamplesConverter.genotypeToStorageType("0/1"),
                 Collections.singletonList(sampleIdC));
-        file1Doc.append(MULTI_FILE_GENOTYPE_FIELD, mgt1);
-        Document mgt2 = new Document(DocumentToSamplesConverter.genotypeToStorageType("0/0"),
+        file1Doc.append(FILE_GENOTYPE_FIELD, mgt1);
+        Document mgt2 = new Document(DocumentToSamplesConverter.genotypeToStorageType("1/1"),
                 Collections.singletonList(sampleIdC));
-        file2Doc.append(MULTI_FILE_GENOTYPE_FIELD, mgt2);
+        file2Doc.append(FILE_GENOTYPE_FIELD, mgt2);
 
-        Document gts = new Document()
-                .append(DocumentToSamplesConverter.genotypeToStorageType("0/1"), Collections.singletonList(sampleIdC))
-                .append(DocumentToSamplesConverter.genotypeToStorageType("1/1"), Collections.singletonList(sampleIdB));
-        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
-                .append(FILES_FIELD, Arrays.asList(file1Doc, file2Doc))
-                .append(GENOTYPES_FIELD, gts);
+        List<Document> filesDoc = Arrays.asList(file1Doc, file2Doc);
 
         VariantQueryProjection projection = buildProjection(
                 Arrays.asList(sampleIdA, sampleIdB, sampleIdC),
@@ -268,18 +258,18 @@ public class MultiFileSampleConverterTest {
 
         DocumentToSamplesConverter readConverter = new DocumentToSamplesConverter(metadataManager, projection);
         StudyEntry result = new StudyEntry(STUDY_NAME);
-        readConverter.convertToDataModelType(studyDoc, result, STUDY_ID);
+        readConverter.convertToDataModelType(filesDoc, result, STUDY_ID);
 
-        // sampleC primary: GT=0/1 (MAIN_ALT from file1), DP=20 (from file1)
+        // sampleC primary: GT=0/1 (MAIN_ALT from file1.mgt), DP=20 (from file1)
         SampleEntry sampleCEntry = result.getSamples().get(result.getSamplesPosition().get(SAMPLE_C));
         assertEquals("0/1", sampleCEntry.getData().get(0));
         assertEquals("sampleC primary DP should come from file1", "20", sampleCEntry.getData().get(1));
 
-        // IssueEntry: GT=0/0 (from file2), DP=40 (from file2's sampleData)
+        // IssueEntry: GT=1/1 (from file2), DP=40 (from file2's sampleData)
         List<IssueEntry> issues = result.getIssues();
         assertEquals(1, issues.size());
         IssueEntry issue = issues.get(0);
-        assertEquals("0/0", issue.getSample().getData().get(0));
+        assertEquals("1/1", issue.getSample().getData().get(0));
         assertEquals("IssueEntry DP should come from file2", "40", issue.getSample().getData().get(1));
     }
 
@@ -289,8 +279,7 @@ public class MultiFileSampleConverterTest {
      */
     @Test
     public void testReadPath_noIssueEntryWhenOnlyOneFilePresent() throws Exception {
-        Set<Integer> multiFileSampleIds = Collections.singleton(sampleIdC);
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap, multiFileSampleIds);
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap);
         StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
         Variant variant = new Variant("1:200:C:G");
 
@@ -298,12 +287,7 @@ public class MultiFileSampleConverterTest {
         StudyEntry studyEntry1 = buildStudyEntry(fileId1, SAMPLES_FILE1, Arrays.asList("0/1", "0/1"));
         Document file1Doc = getFileDocument(studyConverter, variant, studyEntry1, fileId1, SAMPLES_FILE1);
 
-        Document gts = new Document()
-                .append(DocumentToSamplesConverter.genotypeToStorageType("0/1"),
-                        Arrays.asList(sampleIdA, sampleIdC));
-        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
-                .append(FILES_FIELD, Collections.singletonList(file1Doc))
-                .append(GENOTYPES_FIELD, gts);
+        List<Document> filesDoc = Collections.singletonList(file1Doc);
 
         VariantQueryProjection projection = buildProjection(
                 Arrays.asList(sampleIdA, sampleIdC),
@@ -312,7 +296,7 @@ public class MultiFileSampleConverterTest {
 
         DocumentToSamplesConverter readConverter = new DocumentToSamplesConverter(metadataManager, projection);
         StudyEntry result = new StudyEntry(STUDY_NAME);
-        readConverter.convertToDataModelType(studyDoc, result, STUDY_ID);
+        readConverter.convertToDataModelType(filesDoc, result, STUDY_ID);
 
         List<IssueEntry> issues = result.getIssues();
         assertTrue("No IssueEntry when sampleC appears in only one file",
@@ -320,39 +304,32 @@ public class MultiFileSampleConverterTest {
     }
 
     /**
-     * Regression test: when the first file was loaded without LOAD_SPLIT_DATA=MULTI (no mgt on its
-     * file document), but the second file was loaded with the flag (has mgt), the read path must
-     * still create an IssueEntry for the discrepancy.
+     * When one of the variant's file documents has no {@code mgt} field (e.g. it was indexed before
+     * Stage 2 or the sample's GT was the default), the read path must NOT create an IssueEntry for
+     * the missing file — only files that explicitly carry mgt data for sampleC participate in
+     * DISCREPANCY detection.
      *
      * <p>Layout:
      * <ul>
-     *   <li>file1 (no mgt): sampleC=0/1 — stored only in study-level gt</li>
-     *   <li>file2 (has mgt): sampleC=0/0 — stored in file2.mgt</li>
+     *   <li>file1 (has mgt): sampleC=0/1 — stored in file1.mgt</li>
+     *   <li>file2 (no mgt): no GT data for sampleC in this file document</li>
      * </ul>
-     * Expected: primary GT = 0/1 (MAIN_ALT wins), IssueEntry(GT=0/0) for file2.
+     * Expected: sampleC primary GT = 0/1 (from file1.mgt), no IssueEntry.
      */
     @Test
-    public void testReadPath_issueEntryWhenFirstFileHasNoMgt() throws Exception {
-        Set<Integer> multiFileSampleIds = Collections.singleton(sampleIdC);
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap, multiFileSampleIds);
+    public void testReadPath_noIssueEntryWhenFileHasNoMgt() throws Exception {
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(studyMetadata, sampleIdsMap);
         StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
         Variant variant = new Variant("1:300:G:C");
 
-        // file2 is the one loaded with MULTI flag — build its file document the normal way (will have mgt)
-        StudyEntry studyEntry2 = buildStudyEntry(fileId2, SAMPLES_FILE2, Arrays.asList("1/1", "0/0"));
-        Document file2Doc = getFileDocument(studyConverter, variant, studyEntry2, fileId2, SAMPLES_FILE2);
+        // file1 has mgt with sampleC=0/1
+        StudyEntry studyEntry1 = buildStudyEntry(fileId1, SAMPLES_FILE1, Arrays.asList("0/0", "0/1"));
+        Document file1Doc = getFileDocument(studyConverter, variant, studyEntry1, fileId1, SAMPLES_FILE1);
 
-        // file1 was loaded WITHOUT the flag: build a plain file document with no mgt field
-        Document file1Doc = new Document(DocumentToStudyEntryConverter.FILEID_FIELD, fileId1);
+        // file2 has NO mgt field at all
+        Document file2Doc = new Document(FILEID_FIELD, fileId2);
 
-        // Study-level gt: sampleC=0/1 (written during file1 load, no filtering since MULTI wasn't set),
-        //                 sampleB=1/1 (from file2)
-        Document gts = new Document()
-                .append(DocumentToSamplesConverter.genotypeToStorageType("0/1"), Collections.singletonList(sampleIdC))
-                .append(DocumentToSamplesConverter.genotypeToStorageType("1/1"), Collections.singletonList(sampleIdB));
-        Document studyDoc = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, STUDY_ID)
-                .append(DocumentToStudyEntryConverter.FILES_FIELD, Arrays.asList(file1Doc, file2Doc))
-                .append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, gts);
+        List<Document> filesDoc = Arrays.asList(file1Doc, file2Doc);
 
         VariantQueryProjection projection = buildProjection(
                 Arrays.asList(sampleIdA, sampleIdB, sampleIdC),
@@ -361,21 +338,15 @@ public class MultiFileSampleConverterTest {
 
         DocumentToSamplesConverter readConverter = new DocumentToSamplesConverter(metadataManager, projection);
         StudyEntry result = new StudyEntry(STUDY_NAME);
-        readConverter.convertToDataModelType(studyDoc, result, STUDY_ID);
+        readConverter.convertToDataModelType(filesDoc, result, STUDY_ID);
 
-        // sampleC primary GT should be 0/1 (MAIN_ALT; came from study-level gt / file1)
+        // sampleC primary GT = 0/1 (from file1.mgt — the only mgt source)
         SampleEntry sampleCEntry = result.getSamples().get(result.getSamplesPosition().get(SAMPLE_C));
-        assertEquals("sampleC primary GT should be 0/1 (MAIN_ALT)", "0/1", sampleCEntry.getData().get(0));
+        assertEquals("sampleC primary GT should be 0/1 (from file1.mgt)", "0/1", sampleCEntry.getData().get(0));
 
-        // There must be exactly one IssueEntry for sampleC (from file2 with GT 0/0)
+        // No IssueEntry: file2 has no mgt, so no discrepancy can be detected
         List<IssueEntry> issues = result.getIssues();
-        assertNotNull("Issues list should not be null", issues);
-        assertEquals("Exactly one IssueEntry expected", 1, issues.size());
-
-        IssueEntry issue = issues.get(0);
-        assertEquals(IssueType.DISCREPANCY, issue.getType());
-        assertEquals(SAMPLE_C, issue.getSample().getSampleId());
-        assertEquals("0/0", issue.getSample().getData().get(0));
+        assertTrue("No IssueEntry when secondary file has no mgt", issues == null || issues.isEmpty());
     }
 
     /**
@@ -417,21 +388,24 @@ public class MultiFileSampleConverterTest {
         // file3 document: secondary alt = C (alleles: A=0, T=1, C=2 → sample1 GT 1/2 = T/C)
         Document altC = new Document(ALTERNATES_ALT, "C").append(ALTERNATES_TYPE, "SNV");
         Document file3Doc = new Document(FILEID_FIELD, fid3)
+                .append(STUDYID_FIELD, STUDY_ID)
                 .append(ALTERNATES_FIELD, Collections.singletonList(altC))
-                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile3));
+                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile3))
+                .append(FILE_GENOTYPE_FIELD, new Document(DocumentToSamplesConverter.genotypeToStorageType("1/2"),
+                        Collections.singletonList(sid1)));
 
         // file4 document: secondary alt = G (alleles: A=0, T=1, G=2 → sample2 GT 1/2 = T/G)
         Document altG = new Document(ALTERNATES_ALT, "G").append(ALTERNATES_TYPE, "SNV");
         Document file4Doc = new Document(FILEID_FIELD, fid4)
+                .append(STUDYID_FIELD, STUDY_ID)
                 .append(ALTERNATES_FIELD, Collections.singletonList(altG))
-                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile4));
+                .append(SAMPLE_DATA_FIELD, new Document("ac", acFile4))
+                .append(FILE_GENOTYPE_FIELD, new Document(DocumentToSamplesConverter.genotypeToStorageType("1/2"),
+                        Collections.singletonList(sid2)));
 
-        // Study-level gt: both samples have GT "1/2" (each relative to their own file's allele list)
-        Document gts = new Document()
-                .append(DocumentToSamplesConverter.genotypeToStorageType("1/2"), Arrays.asList(sid1, sid2));
-        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID)
-                .append(FILES_FIELD, Arrays.asList(file3Doc, file4Doc))
-                .append(GENOTYPES_FIELD, gts);
+        // Both samples have GT "1/2" stored in their respective file's mgt field
+        List<Document> files = Arrays.asList(file3Doc, file4Doc);
+        Document studyDoc = new Document(STUDYID_FIELD, STUDY_ID);
 
         VariantQueryProjection projection = buildProjection(
                 Arrays.asList(sid1, sid2), Arrays.asList(fid3, fid4), Collections.emptySet());
@@ -442,7 +416,7 @@ public class MultiFileSampleConverterTest {
         studyConv.setMetadataManager(metadataManager);
         studyConv.addStudyName(STUDY_ID, STUDY_NAME);
 
-        StudyEntry result = studyConv.convertToDataModelType(studyDoc, variant);
+        StudyEntry result = studyConv.convertToDataModelType(studyDoc, files, variant);
 
         // Secondary alternates: [C, G] in that insertion order
         List<AlternateCoordinate> alts = result.getSecondaryAlternates();
@@ -490,11 +464,9 @@ public class MultiFileSampleConverterTest {
 
     private Document getFileDocument(StudyEntryToDocumentConverter studyConverter, Variant variant,
                                      StudyEntry studyEntry, int fileId, List<String> sampleNames) {
-        Document studyDoc = studyConverter.convertToStorageType(variant, studyEntry,
+        return studyConverter.convertToStorageType(variant, studyEntry,
                 studyEntry.getFile(String.valueOf(fileId)),
-                new LinkedHashSet<>(sampleNames));
-        List<Document> files = studyDoc.get(FILES_FIELD, List.class);
-        return files.get(0);
+                new LinkedHashSet<>(sampleNames)).getValue().get(0);
     }
 
     private VariantQueryProjection buildProjection(List<Integer> sampleIds, List<Integer> fileIds,

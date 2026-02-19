@@ -17,35 +17,65 @@ import java.util.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD;
 
 public class SampleToDocumentConverter {
 
     private final StudyMetadata studyMetadata;
     private final Set<String> defaultGenotype;
     private final Map<String, Integer> sampleIdsMap;
-    /** Sample IDs that are loaded with {@code SplitData.MULTI}. May be empty. */
-    private final Set<Integer> multiFileSampleIds;
 
     public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap) {
-        this(studyMetadata, sampleIdsMap, Collections.emptySet());
-    }
-
-    public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap,
-                                     Set<Integer> multiFileSampleIds) {
         this.studyMetadata = studyMetadata;
         this.sampleIdsMap = sampleIdsMap;
-        this.multiFileSampleIds = multiFileSampleIds;
         List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
         this.defaultGenotype = new HashSet<>(defGenotype);
+    }
+
+    /**
+     * @deprecated Use {@link #SampleToDocumentConverter(StudyMetadata, Map)}. The multiFileSampleIds
+     *             parameter is no longer needed since mgt is written for all samples in root-level files[].
+     * @param studyMetadata study metadata
+     * @param sampleIdsMap  sample name → id mapping
+     * @param multiFileSampleIds ignored
+     */
+    @Deprecated
+    public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap,
+                                     Set<Integer> multiFileSampleIds) {
+        this(studyMetadata, sampleIdsMap);
     }
 
     private int getSampleId(String sampleName) {
         return sampleIdsMap.get(sampleName);
     }
 
-    public Document convertToStorageType(StudyEntry studyEntry, Document otherFields, LinkedHashSet<String> samplesInFile) {
+
+    public Document convertToStorageType(StudyEntry studyEntry, LinkedHashSet<String> samplesInFile) {
+        Document fileDocument = new Document();
+        convertToStorageType(studyEntry, samplesInFile, fileDocument);
+        return fileDocument;
+    }
+
+    /**
+     * Convert the sample data of the given StudyEntry to a Document, and append it to the given fileDocument.
+     * Add fields to the fileDocument:
+     * - "samplesData": the sample data for the samples in this file, with extra format fields stored as compressed protobuf OtherFields.
+     * - "mgt": the per-file genotype map, with sample ids grouped by genotype. This is only added if genotypes are not
+     *          excluded and there are genotypes different from the default genotype.
+     *
+     * @param studyEntry     the StudyEntry containing the sample data
+     * @param samplesInFile  the set of sample names that belong to the file being processed. Only these samples will be
+     *                       included in the "samplesData" field.
+     * @param fileDocument   the Document to which the sample data will be appended. This is modified in-place and also
+     *                       returned for convenience.
+     */
+    public void convertToStorageType(StudyEntry studyEntry, LinkedHashSet<String> samplesInFile, Document fileDocument) {
+        Document dataFields = new Document();
+        Document mgt = new Document();
+        Document mongoSamples = fileDocument
+                .append(SAMPLE_DATA_FIELD, dataFields);
+
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
-        Map<String, List<Integer>> multiFileGenotypeCodes = new HashMap<>();
 
         boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
@@ -74,39 +104,18 @@ public class SampleToDocumentConverter {
             }
             int id = getSampleId(sampleName);
             genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>()).add(id);
-            // For multi-file samples, also track the per-file genotype (stored in "mgt" on the file document).
-            if (multiFileSampleIds.contains(id)) {
-                multiFileGenotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>()).add(id);
-            }
         }
 
-        // In Mongo, samples are stored in a map, classified by their genotype.
-        // The most common genotype will be marked as "default" and the specific
-        // positions where it is shown will not be stored. Example from 1000G:
-        // "def" : 0|0,
-        // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
-        // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
-        Document mongoSamples = new Document();
-        Document mongoGenotypes = new Document();
-        for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
-            String genotypeStr = DocumentToSamplesConverter.genotypeToStorageType(entry.getKey());
-            if (!defaultGenotype.contains(entry.getKey())) {
-                mongoGenotypes.append(genotypeStr, entry.getValue());
+        // Build the per-file mgt map (FILE_GENOTYPE_FIELD) for ALL samples.
+        // The study-level "gt" field is no longer written; all GT data lives in the root-level files[].mgt.
+        // This document is extracted by StudyEntryToDocumentConverter and stored on the file document directly.
+        if (!excludeGenotypes && !genotypeCodes.isEmpty()) {
+            for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
+                if (!defaultGenotype.contains(entry.getKey())) {
+                    mgt.append(DocumentToSamplesConverter.genotypeToStorageType(entry.getKey()), entry.getValue());
+                }
             }
-        }
-
-        if (!excludeGenotypes) {
-            mongoSamples.append(DocumentToStudyEntryConverter.GENOTYPES_FIELD, mongoGenotypes);
-        }
-
-        // Build the per-file mgt map for multi-file samples (same shape as the study-level gt map).
-        // This is extracted by StudyEntryToDocumentConverter and stored on the file document directly.
-        if (!multiFileGenotypeCodes.isEmpty()) {
-            Document mgt = new Document();
-            for (Map.Entry<String, List<Integer>> entry : multiFileGenotypeCodes.entrySet()) {
-                mgt.append(DocumentToSamplesConverter.genotypeToStorageType(entry.getKey()), entry.getValue());
-            }
-            mongoSamples.append(DocumentToStudyEntryConverter.MULTI_FILE_GENOTYPE_FIELD, mgt);
+            mongoSamples.append(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, mgt);
         }
 
 
@@ -183,11 +192,9 @@ public class SampleToDocumentConverter {
                         }
                     }
                 }
-                otherFields.append(extraField.toLowerCase(), byteArray);
+                dataFields.append(extraField.toLowerCase(), byteArray);
             } // else { Don't set this field }
         }
-
-        return mongoSamples;
     }
 
 }
