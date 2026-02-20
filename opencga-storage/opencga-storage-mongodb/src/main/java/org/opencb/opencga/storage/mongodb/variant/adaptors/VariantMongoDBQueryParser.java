@@ -22,6 +22,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -1237,7 +1238,6 @@ public class VariantMongoDBQueryParser {
 
         Set<String> projections = new HashSet<>();
         Bson studyElemMatch = null;
-        Bson filesElemMatch = null;
 
         if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
             if (options.getBoolean(QueryOptions.SORT)) {
@@ -1274,27 +1274,6 @@ public class VariantMongoDBQueryParser {
             // to avoid returning all samples and files of the study.
             shouldApplyStudyElemMatch = fields.contains(VariantField.STUDIES_SAMPLES) || fields.contains(VariantField.STUDIES_FILES);
         }
-        // Use files elemMatch if the query contains files or samples to return, to avoid returning all files of the study.
-        boolean shouldApplyFilesElemMatch = fields.contains(VariantField.STUDIES_FILES) || fields.contains(VariantField.STUDIES_SAMPLES);
-
-        if (shouldApplyFilesElemMatch) {
-            Set<Integer> fileIds = new HashSet<>();
-            for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : selectVariantElements.getStudies().values()) {
-                fileIds.addAll(studyProjection.getFileIds());
-                studyProjection.getSampleIds().forEach(sampleId -> {
-                    fileIds.addAll(metadataManager.getFileIdsFromSampleId(studyProjection.getStudyMetadata().getId(), sampleId, true));
-                });
-            }
-            if (fileIds.size() == 1) {
-                filesElemMatch = Projections.elemMatch(
-                        DocumentToVariantConverter.FILES_FIELD,
-                        in(DocumentToStudyEntryConverter.FILEID_FIELD, fileIds));
-            }  else {
-                // Do not apply elemMatch if there are more than one file, to avoid returning incomplete files data.
-                shouldApplyFilesElemMatch = false;
-            }
-        }
-
         if (shouldApplyStudyElemMatch) {
             studyElemMatch = Projections.elemMatch(
                     DocumentToVariantConverter.STUDIES_FIELD,
@@ -1366,23 +1345,187 @@ public class VariantMongoDBQueryParser {
             // Avoid Path collision at studies
             projections.removeIf(key -> key.startsWith(DocumentToVariantConverter.STUDIES_FIELD));
         }
-        if (filesElemMatch != null) {
-            // Avoid Path collision at files
-            projections.removeIf(key -> key.startsWith(DocumentToVariantConverter.FILES_FIELD));
-        }
         Bson projection = Projections.include(new ArrayList<>(projections));
 
         if (studyElemMatch != null) {
             projection = Projections.fields(studyElemMatch, projection);
-        }
-        if (filesElemMatch != null) {
-            projection = Projections.fields(filesElemMatch, projection);
         }
 
 
         logger.info("QueryOptions: = {}", options.toJson());
         logger.info("Projection:   = {}", projection.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         return projection;
+    }
+
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query.
+     *
+     * <ol>
+     *   <li>{@code $match} — same filter as {@link #parseQuery(ParsedVariantQuery)}</li>
+     *   <li>{@code $addFields} (optional) — trim the root {@code files[]} array to only the requested file IDs</li>
+     *   <li>{@code $project} — field inclusion (no {@code $elemMatch}, which is invalid in aggregation)</li>
+     * </ol>
+     */
+    protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery) {
+        return createAggregationPipeline(variantQuery, variantQuery.getInputOptions());
+    }
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query.
+     *
+     * <ol>
+     *   <li>{@code $match} — same filter as {@link #parseQuery(ParsedVariantQuery)}</li>
+     *   <li>{@code $addFields} (optional) — trim the root {@code files[]} array to only the requested file IDs</li>
+     *   <li>{@code $project} — field inclusion (no {@code $elemMatch}, which is invalid in aggregation)</li>
+     * </ol>
+     *
+     * @param variantQuery the parsed query
+     * @param options the query options, used to determine the sort field and order for the projection stage. If {@code null}, no sort will be applied.
+     */
+    protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        VariantQueryProjection selectVariantElements = variantQuery.getProjection();
+
+        List<Bson> pipeline = new ArrayList<>(3);
+
+        // Stage 1: $match
+        pipeline.add(new Document("$match", parseQuery(variantQuery)));
+
+        // Stage 2: optional $addFields to filter the root files[] array server-side
+        Set<VariantField> projFields = selectVariantElements.getFields();
+        if (projFields.contains(VariantField.STUDIES_FILES) || projFields.contains(VariantField.STUDIES_SAMPLES)) {
+            Document filterCond = buildFilesFilterCondition(selectVariantElements);
+            if (filterCond != null) {
+                Document filterExpr = new Document("$filter", new Document()
+                        .append("input", "$" + DocumentToVariantConverter.FILES_FIELD)
+                        .append("cond", filterCond));
+                Document addFields = new Document("$addFields",
+                        new Document(DocumentToVariantConverter.FILES_FIELD, filterExpr));
+                logger.info("AddFields = {}", addFields.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                pipeline.add(addFields);
+            }
+        }
+
+        // Stage 3: $project — rebuild without $elemMatch (invalid in aggregation pipelines)
+        Document project = new Document("$project", buildProjectionForAggregate(variantQuery.getQuery(), options, selectVariantElements));
+        logger.info("Project = {}", project.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        pipeline.add(project);
+
+        return pipeline;
+    }
+
+    /**
+     * Build a plain {@code Projections.include()} Bson without any {@code $elemMatch} operators,
+     * which are not valid inside an aggregation {@code $project} stage.
+     */
+    private Bson buildProjectionForAggregate(Query query, QueryOptions options, VariantQueryProjection selectVariantElements) {
+        if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
+            if (options.getBoolean(QueryOptions.SORT)) {
+                options.put(QueryOptions.SORT, "_id");
+                options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);
+            } else {
+                options.remove(QueryOptions.SORT);
+            }
+        }
+
+        Set<String> projections = new HashSet<>();
+        Set<VariantField> fields = new HashSet<>(selectVariantElements.getFields());
+        fields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        if (fields.contains(VariantField.STUDIES)) {
+            fields.add(VariantField.STUDIES_STUDY_ID);
+        }
+
+        // No $elemMatch on studies — always add format-specific sample/file fields explicitly
+        if (fields.contains(VariantField.STUDIES_SAMPLES)) {
+            List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
+            if (formats != null) {
+                fields.remove(VariantField.STUDIES_SAMPLES);
+                if (formats.contains(VariantQueryUtils.ALL)) {
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.FILEID_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.STUDYID_FIELD);
+                } else {
+                    for (String format : formats) {
+                        if (format.equals(GT)) {
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                        } else {
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
+                        }
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.ALTERNATES_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.ORI_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILEID_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.STUDYID_FIELD);
+                    }
+                }
+            }
+        }
+
+        fields = VariantField.prune(fields);
+        for (VariantField s : fields) {
+            List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
+            if (keys != null) {
+                for (String key : keys) {
+                    projections.add(key);
+                }
+            }
+        }
+
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            projections.add(INDEX_FIELD);
+        }
+
+        Bson projection = Projections.include(new ArrayList<>(projections));
+        return projection;
+    }
+
+    /**
+     * Build the {@code cond} expression for a {@code $filter} on the root {@code files[]} array.
+     * Returns {@code null} when there is no study restriction (all files should be returned).
+     */
+    private Document buildFilesFilterCondition(VariantQueryProjection selectVariantElements) {
+        List<Document> studyConditions = new ArrayList<>();
+        for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : selectVariantElements.getStudies().values()) {
+            int sid = studyProjection.getStudyMetadata().getId();
+            Set<Integer> fileIds = new HashSet<>(studyProjection.getFileIds());
+            studyProjection.getSampleIds().forEach(sampleId ->
+                    fileIds.addAll(metadataManager.getFileIdsFromSampleId(sid, sampleId, true)));
+            if (metadataManager.getIndexedFiles(sid).size() == fileIds.size()) {
+                // If all files from the study are requested, filter by study only, without filtering by file ID
+                fileIds.clear();
+            }
+            if (fileIds.isEmpty()) {
+                // No specific files requested — include all files belonging to this study
+                studyConditions.add(new Document("$eq",
+                        Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, sid)));
+            } else {
+                studyConditions.add(new Document("$and", Arrays.asList(
+                        new Document("$eq", Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, sid)),
+                        new Document("$in", Arrays.asList("$$this." + DocumentToStudyEntryConverter.FILEID_FIELD, new ArrayList<>(fileIds))
+                        ))));
+            }
+        }
+
+        if (studyConditions.isEmpty()) {
+            return null;
+        } else if (studyConditions.size() == 1) {
+            return studyConditions.get(0);
+        } else {
+            return new Document("$or", studyConditions);
+        }
     }
 
     private void addQueryStringFilter(String key, String value, List<Bson> filters) {

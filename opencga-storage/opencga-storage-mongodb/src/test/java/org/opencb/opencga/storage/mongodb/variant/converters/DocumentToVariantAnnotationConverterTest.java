@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.bson.BsonInt32;
 import org.bson.BsonInt64;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
@@ -201,6 +202,9 @@ public class DocumentToVariantAnnotationConverterTest {
         }
         if (actual instanceof BsonInt64) {
             actual = ((BsonInt64) actual).getValue();
+        }
+        if (actual instanceof BsonString) {
+            actual = ((BsonString) actual).getValue();
         }
 
         if (expected instanceof Document && actual instanceof Document) {

@@ -23,8 +23,6 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -44,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -464,19 +463,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Bson mongoQuery = queryParser.parseQuery(variantQuery);
-        Bson projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
 
         if (options.getBoolean("explain", false)) {
-            Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
-            logger.debug("MongoDB Explain = {}",
-                    explain.toJson(JsonWriterSettings.builder().outputMode(JsonMode.SHELL).indent(true).build()));
+            logger.debug("MongoDB explain is not supported for aggregation pipelines");
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
-        DataResult<Variant> result = variantsCollection.find(mongoQuery, projection, converter.asComplexTypeConverter(), options);
+        DataResult<Variant> result = variantsCollection.aggregate(pipeline, converter.asComplexTypeConverter(), options);
         return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
-
     }
 
     @Override
@@ -596,52 +591,47 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
         }
-        return iteratorFinal(variantQuery, options);
-    }
+        // Ignore COUNT option, as the iterator will return all the results, and the count is not needed.
+        options.remove(QueryOptions.COUNT);
 
-    private VariantDBIterator iteratorFinal(final ParsedVariantQuery variantQuery, final QueryOptions options) {
-        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Bson mongoQuery = queryParser.parseQuery(variantQuery);
-        Bson projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
+        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
         if (options.containsKey(QueryOptions.TIMEOUT)
                 || options.containsKey(QueryOptions.LIMIT)
                 || !options.getBoolean(QueryOptions.SORT, false)) {
             StopWatch stopWatch = StopWatch.createStarted();
+            final QueryOptions finalOptions = options;
             VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(
-                    () -> variantsCollection.nativeQuery().find(mongoQuery, projection, options), converter);
+                    () -> variantsCollection.nativeQuery().aggregate(pipeline, null, finalOptions), converter);
             dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
             return dbIterator;
         } else {
-            logger.debug("Using mongodb persistent iterator");
-            return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+            return VariantMongoDBIterator.persistentIterator(variantsCollection, pipeline, options, converter);
         }
     }
 
+    @Deprecated
     public MongoDBIterator<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
-        if (query == null) {
-            query = new Query();
-        }
-        if (options == null) {
-            options = new QueryOptions();
-        }
+        ParsedVariantQuery variantQuery = new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true);
+        return nativeIterator(variantQuery, options, persistent);
+    }
 
-        Bson mongoQuery = queryParser.parseQuery(query);
-        Bson projection = queryParser.createProjection(query, options);
-        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
-        logger.info("Query : " + mongoQuery.toBsonDocument().toJson());
-        logger.info("Projection: " + projection.toBsonDocument().toJson());
-
+    public MongoDBIterator<Document> nativeIterator(ParsedVariantQuery query, QueryOptions options, boolean persistent) {
+        List<Bson> pipeline = queryParser.createAggregationPipeline(query, options);
 
         if (persistent) {
             logger.debug("Using mongodb persistent iterator");
-            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options), -1);
+            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, pipeline, options), -1);
         } else {
-            return variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+            return variantsCollection.nativeQuery().aggregate(pipeline, null, options);
         }
     }
 

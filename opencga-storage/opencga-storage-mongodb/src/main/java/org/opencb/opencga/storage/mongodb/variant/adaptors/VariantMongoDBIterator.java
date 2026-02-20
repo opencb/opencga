@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantCo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -62,6 +63,16 @@ public class VariantMongoDBIterator extends VariantDBIterator {
                                                      DocumentToVariantConverter converter) {
         StopWatch watch = StopWatch.createStarted();
         MongoPersistentCursor cursor = new MongoPersistentCursor(collection, query, projection, options);
+        VariantMongoDBIterator iterator = new VariantMongoDBIterator(cursor, converter);
+        iterator.timeFetching += watch.getNanoTime();
+        return iterator;
+    }
+
+    //Package protected
+    static VariantMongoDBIterator persistentIterator(MongoDBCollection collection, List<Bson> pipeline, QueryOptions options,
+                                                     DocumentToVariantConverter converter) {
+        StopWatch watch = StopWatch.createStarted();
+        MongoPersistentCursor cursor = new MongoPersistentCursor(collection, pipeline, options);
         VariantMongoDBIterator iterator = new VariantMongoDBIterator(cursor, converter);
         iterator.timeFetching += watch.getNanoTime();
         return iterator;

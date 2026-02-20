@@ -17,13 +17,17 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -566,6 +570,161 @@ public class VariantMongoDBQueryParserTest {
                 .append(INCLUDE_FILE.key(), NONE).append(INCLUDE_GENOTYPE.key(), true), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));
         checkEqualDocuments(expected, projection, false);
 
+    }
+
+    // ---- createAggregationPipeline tests ----
+
+    private ParsedVariantQuery parsedQuery(Query query) {
+        return new VariantQueryParser(null, metadataManager).parseQuery(query, new QueryOptions(), true);
+    }
+
+    /**
+     * No study/file restriction in the projection → no $addFields stage, pipeline is [$match, $project].
+     */
+    @Test
+    public void testAggregationPipelineNoFileFilter() {
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(new Query()), new QueryOptions());
+
+        assertEquals(2, pipeline.size());
+        assertTrue(((Document) pipeline.get(0)).containsKey("$match"));
+        assertTrue(((Document) pipeline.get(1)).containsKey("$project"));
+    }
+
+    /**
+     * Single specific file requested for a study → $addFields with $filter cond
+     * {@code {$and: [{$eq: [$$this.sid, studyId]}, {$in: [$$this.fid, [file_1_id]]}]}}.
+     */
+    @Test
+    public void testAggregationPipelineSingleFileFilter() {
+        int studyId = metadataManager.getStudyId("study_1");
+        Query query = new Query()
+                .append(INCLUDE_STUDY.key(), "study_1")
+                .append(INCLUDE_FILE.key(), "/data/file_1");
+
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(query), new QueryOptions());
+
+        assertEquals(3, pipeline.size());
+        assertTrue(((Document) pipeline.get(0)).containsKey("$match"));
+        Document addFieldsStage = (Document) pipeline.get(1);
+        assertTrue(addFieldsStage.containsKey("$addFields"));
+        assertTrue(((Document) pipeline.get(2)).containsKey("$project"));
+
+        Document cond = extractFilterCond(addFieldsStage);
+        assertSidFidFilterCond(cond, studyId, Collections.singletonList(file_1_id));
+    }
+
+    /**
+     * Two specific files from the same study → $addFields with $filter cond
+     * {@code {$and: [{$eq: [$$this.sid, studyId]}, {$in: [$$this.fid, [file_1_id, file_2_id]]}]}}.
+     */
+    @Test
+    public void testAggregationPipelineTwoFilesFilter() {
+        int studyId = metadataManager.getStudyId("study_1");
+        Query query = new Query()
+                .append(INCLUDE_STUDY.key(), "study_1")
+                .append(INCLUDE_FILE.key(), "/data/file_1,/data/file_2");
+
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(query), new QueryOptions());
+
+        assertEquals(3, pipeline.size());
+        Document cond = extractFilterCond((Document) pipeline.get(1));
+        List<?> andList = cond.getList("$and", Object.class);
+        assertEquals(2, andList.size());
+        // The $in list must contain exactly the two requested file IDs
+        Document inClause = (Document) andList.get(1);
+        List<?> inArgs = inClause.getList("$in", Object.class);
+        List<?> fidList = (List<?>) inArgs.get(1);
+        assertEquals(2, fidList.size());
+        assertTrue(fidList.contains(file_1_id));
+        assertTrue(fidList.contains(file_2_id));
+    }
+
+    /**
+     * All files of a study requested (no specific file IDs) → $addFields with sid-only condition,
+     * no fid restriction.
+     */
+    @Test
+    public void testAggregationPipelineAllFilesOfStudy() {
+        int studyId = metadataManager.getStudyId("study_1");
+        Query query = new Query()
+                .append(INCLUDE_STUDY.key(), "study_1")
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_SAMPLE.key(), ALL);
+
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(query), new QueryOptions());
+
+        assertEquals(3, pipeline.size());
+        Document cond = extractFilterCond((Document) pipeline.get(1));
+        // No file restriction — just match by study id
+        Document expectedCond = new Document("$eq", Arrays.asList("$$this." + STUDYID_FIELD, studyId));
+        checkEqualDocuments(expectedCond, cond);
+    }
+
+    /**
+     * No file projection (INCLUDE_FILE=NONE) → files field not in projection,
+     * so no $addFields stage is emitted.
+     */
+    @Test
+    public void testAggregationPipelineExcludeFiles() {
+        Query query = new Query()
+                .append(INCLUDE_STUDY.key(), "study_1")
+                .append(INCLUDE_FILE.key(), NONE)
+                .append(INCLUDE_SAMPLE.key(), NONE);
+
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(query), new QueryOptions());
+
+        // No $addFields when files are excluded from projection
+        assertEquals(2, pipeline.size());
+        assertFalse(((Document) pipeline.get(1)).containsKey("$addFields"));
+    }
+
+    /**
+     * Sample-based include: file IDs are derived from the sample's file association.
+     * The filter should reference the file that carries the requested sample.
+     */
+    @Test
+    public void testAggregationPipelineSampleDerivedFileFilter() {
+        int studyId = metadataManager.getStudyId("study_1");
+        // sample_10101 belongs to file_1 (file_1_id)
+        Query query = new Query()
+                .append(INCLUDE_STUDY.key(), "study_1")
+                .append(INCLUDE_SAMPLE.key(), "sample_10101");
+
+        List<Bson> pipeline = parser.createAggregationPipeline(parsedQuery(query), new QueryOptions());
+
+        assertEquals(3, pipeline.size());
+        Document cond = extractFilterCond((Document) pipeline.get(1));
+        // The cond should contain file_1_id derived from sample_10101
+        assertSidFidFilterCond(cond, studyId, Collections.singletonList(file_1_id));
+    }
+
+    /**
+     * Assert the aggregation $filter cond has the form
+     * {@code {$and: [{$eq: ["$$this.sid", studyId]}, {$in: ["$$this.fid", fileIds]}]}}.
+     * Uses direct traversal instead of checkEqualDocuments to avoid the $in sort heuristic
+     * which is only valid for query-style $in (unordered set), not aggregation $in (positional).
+     */
+    private static void assertSidFidFilterCond(Document cond, int studyId, List<Integer> fileIds) {
+        List<?> andList = cond.getList("$and", Object.class);
+        assertEquals(2, andList.size());
+
+        Document eqClause = (Document) andList.get(0);
+        List<?> eqArgs = eqClause.getList("$eq", Object.class);
+        assertEquals("$$this." + STUDYID_FIELD, eqArgs.get(0));
+        assertEquals(studyId, eqArgs.get(1));
+
+        Document inClause = (Document) andList.get(1);
+        List<?> inArgs = inClause.getList("$in", Object.class);
+        assertEquals("$$this." + FILEID_FIELD, inArgs.get(0));
+        assertEquals(fileIds, inArgs.get(1));
+    }
+
+    /** Extract the {@code cond} document from an {@code $addFields} pipeline stage. */
+    private static Document extractFilterCond(Document addFieldsStage) {
+        Document addFields = (Document) addFieldsStage.get("$addFields");
+        Document filterExpr = (Document) addFields.get(DocumentToVariantConverter.FILES_FIELD);
+        Document filterDoc = (Document) filterExpr.get("$filter");
+        return (Document) filterDoc.get("cond");
     }
 
 }
