@@ -1211,7 +1211,9 @@ public class FamilyManagerTest extends AbstractManagerTest {
         FamilyUpdateParams updateParams = null;
         QueryOptions options = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
 
-        assertEquals(1, familyManager.update(studyFqn, originalFamily.first().getId(), updateParams, options, ownerToken).getNumUpdated());
+        assertEquals(0, familyManager.update(studyFqn, originalFamily.first().getId(), updateParams, options, ownerToken).getNumUpdated());
+        Family family = familyManager.get(studyFqn, originalFamily.first().getId(), QueryOptions.empty(), ownerToken).first();
+        assertNotNull(family.getRoles());
     }
 
     @Test

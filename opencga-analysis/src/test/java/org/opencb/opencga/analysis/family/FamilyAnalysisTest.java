@@ -168,17 +168,18 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     @Test
-    public void updateTest() throws CatalogException {
+    public void updateTest() throws Exception {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
         Family prevFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
         assertEquals(prevFamily.getPedigreeGraph().getBase64(), family.getPedigreeGraph().getBase64());
 
         QueryOptions queryOptions = new QueryOptions()
-                .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
-                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
-                .first();
+                .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+        catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser);
+        // Wait for the async pedigree graph generation to finish before fetching the family again
+        catalogManager.getFamilyManager().asyncPedigreeWait();
+        Family updatedFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
 
         assertEquals(prevFamily.getPedigreeGraph().getBase64(), updatedFamily.getPedigreeGraph().getBase64());
         assertEquals(prevFamily.getVersion() + 1, updatedFamily.getVersion());
@@ -362,7 +363,7 @@ public class FamilyAnalysisTest extends GenericTest {
         if (firstExecution) {
             try {
                 System.out.println("Sleeping for 2 minutes to allow downloading the Docker image that will calculate the pedigree graph");
-                Thread.sleep(120000); // Sleep for 2 minutes to allow downloading the Docker image that will calculate the pedigree graph
+                Thread.sleep(5000); // Sleep for 2 minutes to allow downloading the Docker image that will calculate the pedigree graph
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

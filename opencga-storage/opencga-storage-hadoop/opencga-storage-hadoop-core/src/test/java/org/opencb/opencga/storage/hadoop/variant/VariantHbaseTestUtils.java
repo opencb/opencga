@@ -238,21 +238,24 @@ public class VariantHbaseTestUtils {
         }
     }
 
-    private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) {
+    private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, PrintStream out) throws IOException {
         if (dbAdaptor.getMetadataManager().getStudyIds().isEmpty()) {
             out.println("No studies found!");
             return;
         }
-        VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
-                new QueryOptions(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true));
-        ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        while (iterator.hasNext()) {
-            Variant variant = iterator.next();
-            try {
-                out.println(mapper.writeValueAsString(variant));
-            } catch (JsonProcessingException e) {
-                throw Throwables.propagate(e);
+        try (VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
+                new QueryOptions(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))) {
+            ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                try {
+                    out.println(mapper.writeValueAsString(variant));
+                } catch (JsonProcessingException e) {
+                    throw Throwables.propagate(e);
+                }
             }
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 
