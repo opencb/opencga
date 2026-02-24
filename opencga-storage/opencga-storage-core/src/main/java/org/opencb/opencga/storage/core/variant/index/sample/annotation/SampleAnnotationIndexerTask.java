@@ -56,7 +56,7 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
                 }
 
                 if (validGt) {
-                    chunk.addVariant(i, gt, annotation);
+                    chunk.addVariant(i, gt, variant, annotation);
                 }
                 if (hasIssues) {
                     // For MULTI-file samples, also add annotation entries for secondary file entries (DISCREPANCY IssueEntries).
@@ -75,7 +75,7 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
                                 issueValidGt = SampleIndexSchema.isAnnotatedGenotype(issueGt);
                             }
                             if (issueValidGt) {
-                                chunk.addVariant(i, issueGt, annotation);
+                                chunk.addVariant(i, issueGt, variant, annotation);
                             }
                         }
                     }
@@ -112,7 +112,12 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
 
 
     protected class Chunk {
-        private final List<Map<String, SampleIndexVariantAnnotationBuilder>> builders;
+        /**
+         * Per-sample, per-GT buffer of (variant, annotation) pairs.
+         * Variants are sorted by {@link SampleIndexSchema#INTRA_CHROMOSOME_VARIANT_COMPARATOR} at flush time
+         * to ensure positional alignment with the genotype index, which stores variants in that same order.
+         */
+        private final List<Map<String, List<VariantAnnotationPair>>> builders;
         private final SampleIndexEntryChunk indexChunk;
 
         Chunk(SampleIndexEntryChunk indexChunk) {
@@ -123,28 +128,28 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
             }
         }
 
-        public Map<String, SampleIndexVariantAnnotationBuilder> get(int sampleIdx) {
-            return builders.get(sampleIdx);
-        }
-
-        public SampleIndexVariantAnnotationBuilder get(int sampleIdx, String gt) {
-            return builders.get(sampleIdx).computeIfAbsent(gt, k -> new SampleIndexVariantAnnotationBuilder(schema));
-        }
-
-        public void addVariant(int sampleIdx, String gt, SampleIndexVariantAnnotation annotation) {
-            get(sampleIdx, gt).add(annotation);
+        public void addVariant(int sampleIdx, String gt, Variant variant, SampleIndexVariantAnnotation annotation) {
+            builders.get(sampleIdx)
+                    .computeIfAbsent(gt, k -> new ArrayList<>())
+                    .add(new VariantAnnotationPair(variant, annotation));
         }
 
         private List<SampleIndexEntry> toEntries() {
             int sampleIdx = 0;
             List<SampleIndexEntry> entries = new ArrayList<>(builders.size());
-            for (Map<String, SampleIndexVariantAnnotationBuilder> sampleBuilder : builders) {
+            for (Map<String, List<VariantAnnotationPair>> sampleBuilderMap : builders) {
                 Integer sampleId = sampleIds.get(sampleIdx);
 
                 SampleIndexEntry sampleIndexEntry = new SampleIndexEntry(sampleId, indexChunk.getChromosome(), indexChunk.getBatchStart());
-                for (Map.Entry<String, SampleIndexVariantAnnotationBuilder> builderEntry : sampleBuilder.entrySet()) {
+                for (Map.Entry<String, List<VariantAnnotationPair>> builderEntry : sampleBuilderMap.entrySet()) {
                     String gt = builderEntry.getKey();
-                    SampleIndexVariantAnnotationBuilder builder = builderEntry.getValue();
+                    List<VariantAnnotationPair> pairs = builderEntry.getValue();
+                    // Sort to match genotype-index order before writing annotation bytes.
+                    pairs.sort((a, b) -> SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(a.getVariant(), b.getVariant()));
+                    SampleIndexVariantAnnotationBuilder builder = new SampleIndexVariantAnnotationBuilder(schema, pairs.size());
+                    for (VariantAnnotationPair pair : pairs) {
+                        builder.add(pair.getAnnotation());
+                    }
                     if (!builder.isEmpty()) {
                         sampleIndexEntry.addGtEntry(builder.buildAndReset(gt));
                     }
@@ -159,5 +164,22 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
 
     }
 
+    private static final class VariantAnnotationPair {
+        private final Variant variant;
+        private final SampleIndexVariantAnnotation annotation;
+
+        VariantAnnotationPair(Variant variant, SampleIndexVariantAnnotation annotation) {
+            this.variant = variant;
+            this.annotation = annotation;
+        }
+
+        Variant getVariant() {
+            return variant;
+        }
+
+        SampleIndexVariantAnnotation getAnnotation() {
+            return annotation;
+        }
+    }
 
 }
