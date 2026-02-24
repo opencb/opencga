@@ -55,10 +55,6 @@ import static org.junit.Assert.assertTrue;
 
 @Category(MediumTests.class)
 public class ClinicalPipelineWrapperAnalysisTest {
-
-//    private static AbstractClinicalManagerTest clinicalTest;
-//    private static ResourceManager resourceManager;
-
     private final static Path NGS_PIPELINE_DATA_PATH = Paths.get("/opt/ngs-pipeline");
 
     private final String organizationId = "test";
