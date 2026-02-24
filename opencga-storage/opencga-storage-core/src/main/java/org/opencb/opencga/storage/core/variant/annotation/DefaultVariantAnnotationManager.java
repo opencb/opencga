@@ -274,7 +274,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 }, 200);
             }
             Task<Variant, VariantAnnotation> annotationTask = Task
-                    .join(variantAnnotator, variants -> {
+                    .tee(variantAnnotator, variants -> {
                         progressLogger.increment(variants.size(),
                                 () -> {
                                     Variant variant = variants.get(variants.size() - 1);

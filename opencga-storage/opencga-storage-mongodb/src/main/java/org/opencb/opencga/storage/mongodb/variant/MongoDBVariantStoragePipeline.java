@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
@@ -329,7 +330,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
                 sampleIndexFromMergeTask = new MongoDBSampleIndexFromMergeTask(sampleIndexDBAdaptor, studyId, sampleIds,
                         getOptions(), schema);
-                loadThreads = 1; // task uses a sorted buffer; not thread-safe
             } else {
                 logger.info("Sample Index will NOT be populated");
                 sampleIndexFromMergeTask = null;
@@ -360,21 +360,27 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     progressLogger);
 
             // Runner
+            // sorted=true is required when the sample-index writer is active: MongoDBSampleGenotypeIndexerTask
+            // maintains a sorted accumulation buffer and requires variants to arrive in genomic (reader) order.
+            // The unsorted PTR delivers batches to the writer in worker-completion order, which can be
+            // out-of-order with >1 loadThreads. sorted=true restores the reader-order guarantee.
+            boolean sortedPtr = sampleIndexFromMergeTask != null;
             ParallelTaskRunner<Document, ?> ptr;
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                     .setReadQueuePutTimeout(20 * 60)
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
+                    .setSorted(sortedPtr)
                     .setAbortOnFail(true).build();
-            Task<Document, MongoDBOperations> mergeTask = sampleIndexFromMergeTask != null
-                    ? variantMerger.then(sampleIndexFromMergeTask)
-                    : variantMerger;
-            if (isDirectLoadParallelWrite(options)) {
+            DataWriter<MongoDBOperations> directWriter = sampleIndexFromMergeTask != null
+                    ? DataWriter.tee(directLoader, sampleIndexFromMergeTask, true)
+                    : directLoader;
+            if (isDirectLoadParallelWrite(options) && sampleIndexFromMergeTask == null) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(stageReader, mergeTask.then(directLoader), null, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(directLoader), null, config);
             } else {
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(stageReader, mergeTask, directLoader, config);
+                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, directWriter, config);
             }
 
             // Run
@@ -642,7 +648,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
             sampleIndexFromMergeTask = new MongoDBSampleIndexFromMergeTask(sampleIndexDBAdaptor, getStudyId(), sampleIds,
                     options, schema);
-            loadThreads = 1; // task uses a sorted buffer; not thread-safe
         } else {
             logger.info("Sample Index will NOT be populated");
         }
@@ -747,21 +752,24 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
                 studyMetadata, fileIds, resume, cleanWhileLoading, progressLogger);
 
-        Task<Document, MongoDBOperations> mergerTask = sampleIndexFromMergeTask != null
-                ? variantMerger.then(sampleIndexFromMergeTask)
-                : variantMerger;
+        DataWriter<MongoDBOperations> mergeWriter = sampleIndexFromMergeTask != null
+                ? DataWriter.tee(variantLoader, sampleIndexFromMergeTask, true)
+                : variantLoader;
 
+        // sorted=true is required when the sample-index writer is active: see directLoad for rationale.
+        boolean sortedPtr = sampleIndexFromMergeTask != null;
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setReadQueuePutTimeout(20 * 60)
                 .setNumTasks(loadThreads)
                 .setBatchSize(batchSize)
+                .setSorted(sortedPtr)
                 .setAbortOnFail(true).build();
         try {
-            if (isMergeParallelWrite(options)) {
-                ptrMerge = new ParallelTaskRunner<>(reader, mergerTask.then(variantLoader), null, config);
+            if (isMergeParallelWrite(options) && sampleIndexFromMergeTask == null) {
+                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger.then(variantLoader), null, config);
             } else {
-                ptrMerge = new ParallelTaskRunner<>(reader, mergerTask, variantLoader, config);
+                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, mergeWriter, config);
             }
         } catch (RuntimeException e) {
             throw new StorageEngineException("Error while creating ParallelTaskRunner", e);
