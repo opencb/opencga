@@ -1363,8 +1363,9 @@ public class VariantMongoDBQueryParser {
     /**
      * Parse query options. Transform SORT and ORDER to be compatible with the aggregation pipeline, if needed.
      *
+     * @param pipeline aggregation pipeline to add the corresponding stages for SORT, SKIP and LIMIT
      * @param options query options to parse
-     * @return parsed query options
+     * @return modified query options
      */
     public QueryOptions parseAggregationPipelineQueryOptions(List<Bson> pipeline, QueryOptions options) {
         if (options == null) {
@@ -1609,7 +1610,7 @@ public class VariantMongoDBQueryParser {
             return new Document("$or", studyConditions);
         }
     }
-    
+
     private Document buildStudiesFilterCondition(VariantQueryProjection selectVariantElements) {
         List<Document> studyConditions = new ArrayList<>();
         Set<Integer> studyIds = selectVariantElements.getStudies().keySet();

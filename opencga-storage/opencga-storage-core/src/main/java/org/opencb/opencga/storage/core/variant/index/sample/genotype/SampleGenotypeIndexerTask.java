@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.core.variant.index.sample.genotype;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -122,7 +124,8 @@ public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry
             rebuildIndex = false;
             for (int i = 0; i < sampleIds.size(); i++) {
                 Integer sampleId = sampleIds.get(i);
-                List<Integer> files = dbAdaptor.getMetadataManager().getSampleMetadata(studyId, sampleId).getFiles();
+                SampleMetadata sampleMetadata = dbAdaptor.getMetadataManager().getSampleMetadata(studyId, sampleId);
+                List<Integer> files = sampleMetadata.getFiles();
                 // Map all files
                 Map<Integer, Integer> map = new HashMap<>();
                 int idx = 0;
@@ -131,6 +134,7 @@ public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry
                     idx++;
                 }
                 fileIdxMap[i] = map;
+                multiFileIndex[i] = files.size() > 1;
             }
         }
     }
@@ -200,36 +204,37 @@ public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry
     @Override
     public List<SampleIndexEntry> apply(List<Variant> variants) {
         for (Variant variant : variants) {
+            if (!validVariant(variant)) {
+                // Skip NO_VARIATION variants, as they are not indexed in the sample index
+                continue;
+            }
             SampleIndexEntryChunk indexChunk = new SampleIndexEntryChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
+            List<IssueEntry> issues = studyEntry.getIssues();
+            // For MULTI-file samples, sample names are needed to match DISCREPANCY IssueEntries to sample indices.
+            boolean hasIssues = !issues.isEmpty();
+            List<String> sampleNames = hasIssues ? studyEntry.getOrderedSamplesName() : null;
+
+            // TODO: Convert each file to a partial SampleIndexVariant, and then addSampleDataIndexValues to it
+            //    See SampleIndexDriver#SampleIndexerMapper#map() for an example of how to convert a Variant
+            //    to a SampleIndexVariant reusing the fileIndex
+
             // The variant hasGT if has the SampleDataKey GT AND the genotypes are not being excluded
             boolean hasGT = includeGenotype && !studyEntry.getSampleDataKeys().isEmpty()
                     && studyEntry.getSampleDataKeys().get(0).equals("GT");
+
             for (SampleEntry sample : studyEntry.getSamples()) {
-                String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
-                if (validVariant(variant) && validGenotype(gt)) {
-                    final int fileIndex;
-                    final int filePosition;
-                    if (sample.getFileIndex() == null) {
-                        filePosition = fileIdxMap[sampleIdx].get(fileId);
-                        fileIndex = 0;
-                    } else {
-                        fileIndex = sample.getFileIndex();
-                        if (multiFileIndex[sampleIdx]) {
-                            String fileName = studyEntry.getFiles().get(fileIndex).getFileId();
-                            int fileId = dbAdaptor.getMetadataManager().getFileId(studyId, fileName);
-                            filePosition = fileIdxMap[sampleIdx].get(fileId);
-                        } else {
-                            // Single file per sample
-                            filePosition = 0;
+                addVariant(variant, sample, hasGT, sampleIdx, studyEntry, indexChunk);
+                // For MULTI-file samples
+                // Each DISCREPANCY issue corresponds to an extra sample index variant entry added by a separate file load;
+                if (hasIssues) {
+                    String sampleName = sampleNames.get(sampleIdx);
+                    for (IssueEntry issue : issues) {
+                        if (IssueType.DISCREPANCY == issue.getType() && sampleName.equals(issue.getSample().getSampleId())) {
+                            addVariant(variant, issue.getSample(), hasGT, sampleIdx, studyEntry, indexChunk);
                         }
                     }
-                    genotypes.add(gt);
-                    Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
-                    SampleIndexVariant indexEntry = sampleIndexVariantConverter
-                            .createSampleIndexVariant(sampleIdx, fileIndex, filePosition, variant);
-                    chunk.addVariant(sampleIdx, gt, indexEntry);
                 }
                 sampleIdx++;
             }
@@ -237,6 +242,36 @@ public class SampleGenotypeIndexerTask implements Task<Variant, SampleIndexEntry
 
         // Leave 3 chunks in the buffer
         return convert(3);
+    }
+
+    private boolean addVariant(Variant variant, SampleEntry sample, boolean hasGT, int sampleIdx, StudyEntry studyEntry,
+                            SampleIndexEntryChunk indexChunk) {
+        String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
+        if (validGenotype(gt)) {
+            final int fileIndex;
+            final int filePosition;
+            if (sample.getFileIndex() == null) {
+                filePosition = fileIdxMap[sampleIdx].get(fileId);
+                fileIndex = 0;
+            } else {
+                fileIndex = sample.getFileIndex();
+                if (multiFileIndex[sampleIdx]) {
+                    String fileName = studyEntry.getFiles().get(fileIndex).getFileId();
+                    int fileId = dbAdaptor.getMetadataManager().getFileId(studyId, fileName);
+                    filePosition = fileIdxMap[sampleIdx].get(fileId);
+                } else {
+                    // Single file per sample
+                    filePosition = 0;
+                }
+            }
+            genotypes.add(gt);
+            Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
+            SampleIndexVariant indexEntry = sampleIndexVariantConverter
+                    .createSampleIndexVariant(fileIndex, filePosition, variant, sample.getData());
+            chunk.addVariant(sampleIdx, gt, indexEntry);
+            return true;
+        }
+        return false;
     }
 
     @Override

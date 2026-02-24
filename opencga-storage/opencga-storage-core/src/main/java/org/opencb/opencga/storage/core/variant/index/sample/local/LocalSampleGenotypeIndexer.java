@@ -87,8 +87,8 @@ public class LocalSampleGenotypeIndexer extends SampleGenotypeIndexer {
                     }
 
                     if (SampleIndexSchema.validGenotype(gt)) {
-                        SampleIndexVariant sampleIndexVariant = variantConverter.createSampleIndexVariant(i, 0,
-                                variant);
+                        SampleIndexVariant sampleIndexVariant = variantConverter.createSampleIndexVariant(0, 0,
+                                variant, studyEntry.getSampleData(i));
                         SampleIndexEntryBuilder builder = builders.computeIfAbsent(sampleId,
                                 k -> new SampleIndexEntryBuilder(k, variant.getChromosome(), batchStart, schema, true,
                                         false));

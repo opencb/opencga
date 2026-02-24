@@ -1,6 +1,9 @@
 package org.opencb.opencga.storage.core.variant.index.sample.annotation;
 
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -35,9 +38,13 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
             }
             SampleIndexVariantAnnotation annotation = annotationConverter.convert(variant.getAnnotation());
             Chunk chunk = chunks.computeIfAbsent(new SampleIndexEntryChunk(variant), Chunk::new);
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            List<IssueEntry> issues = studyEntry.getIssues();
+            boolean hasIssues = !issues.isEmpty();
+            // For MULTI-file samples, sample names are needed to match DISCREPANCY IssueEntries to sample indices.
+            List<String> sampleNames = hasIssues ? studyEntry.getOrderedSamplesName() : null;
             for (int i = 0; i < sampleIds.size(); i++) {
-//                Integer sampleId = sampleIds.get(i);
-                SampleEntry sampleEntry = variant.getStudies().get(0).getSamples().get(i);
+                SampleEntry sampleEntry = studyEntry.getSamples().get(i);
                 String gt = sampleEntry.getData().get(0);
 
                 boolean validGt;
@@ -47,8 +54,31 @@ public class SampleAnnotationIndexerTask implements Task<Variant, SampleIndexEnt
                 } else {
                     validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
                 }
+
                 if (validGt) {
                     chunk.addVariant(i, gt, annotation);
+                }
+                if (hasIssues) {
+                    // For MULTI-file samples, also add annotation entries for secondary file entries (DISCREPANCY IssueEntries).
+                    // Each DISCREPANCY issue corresponds to an extra sample index variant entry added by a separate file load;
+                    // the annotation index must have a matching byte for each such entry.
+                    String sampleName = sampleNames.get(i);
+                    for (IssueEntry issue : issues) {
+                        if (IssueType.DISCREPANCY == issue.getType()
+                                && sampleName.equals(issue.getSample().getSampleId())) {
+                            String issueGt = issue.getSample().getData().get(0);
+                            boolean issueValidGt;
+                            if (issueGt == null || issueGt.isEmpty()) {
+                                issueGt = GenotypeClass.NA_GT_VALUE;
+                                issueValidGt = true;
+                            } else {
+                                issueValidGt = SampleIndexSchema.isAnnotatedGenotype(issueGt);
+                            }
+                            if (issueValidGt) {
+                                chunk.addVariant(i, issueGt, annotation);
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -2,8 +2,12 @@ package org.opencb.opencga.storage.core.variant.index.sample.models;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.core.variant.index.core.DataField;
+import org.opencb.opencga.storage.core.variant.index.core.DataFieldBase;
 import org.opencb.opencga.storage.thirdparty.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
@@ -133,6 +137,26 @@ public class SampleIndexVariant {
                     sb.append("null");
                 } else {
                     sb.append(Bytes.toStringBinary(fileDatum));
+                    for (DataFieldBase<?> field : schema.getFileData().getFields()) {
+                        if (field == schema.getFileData().getOriginalCallField()) {
+                            OriginalCall call = schema.getFileData().readOriginalCall(fileDatum, variant);
+                            sb.append(" (").append(call).append(")");
+                        } else if (field == schema.getFileData().getSecondaryAlternatesField()) {
+                            List<AlternateCoordinate> alternateCoordinates = schema.getFileData()
+                                    .readSecondaryAlternates(fileDatum, variant);
+                            sb.append(" (").append(alternateCoordinates).append(")");
+                        } else {
+                            Object value;
+                            if (field instanceof DataField) {
+                                value = ((DataField<?>) field).readAndDecode(fileDatum);
+                            } else {
+                                value = field.read(fileDatum);
+                            }
+                            sb.append(" (").append(field.getClass().getSimpleName()).append(": ").append(value).append(")");
+                        }
+                    }
+
+
                 }
                 sb.append(" , ");
             }

@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -35,7 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @Category(LongTests.class)
 public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVariantStorageTest {
@@ -116,6 +116,7 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
         MongoDBSampleIndexDBAdaptor mongoAdaptor = (MongoDBSampleIndexDBAdaptor) sampleIndexDBAdaptor;
         ObjectMap options = new ObjectMap(ParamConstants.OVERWRITE, true);
 
+        URI outdir = newOutputUri();
         for (String study : studies) {
             int studyId = metadataManager.getStudyId(study);
             int version = getSampleIndexVersion(studyId);
@@ -144,6 +145,8 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
             if (!studyTrios.isEmpty()) {
                 variantStorageEngine.familyIndex(study, studyTrios, options);
             }
+
+            printSampleIndexContents(study, outdir);
 
             // Compare rebuilt collection with snapshot
             Map<String, Document> actual = snapshotCollection(collectionName);
@@ -183,8 +186,14 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
         for (Map.Entry<String, Document> entry : expected.entrySet()) {
             String docId = entry.getKey();
             Document actualDoc = actual.get(docId);
-            assertNotNull("Missing document '" + docId + "' for study " + study, actualDoc);
-            assertEquals("Document mismatch for '" + docId + "' in study " + study, entry.getValue(), actualDoc);
+            try {
+                assertNotNull("Missing document '" + docId + "' for study " + study, actualDoc);
+                assertEquals("Document mismatch for '" + docId + "' in study " + study, entry.getValue(), actualDoc);
+            } catch (AssertionError e) {
+                System.err.println("Expected document: " + entry.getValue().toJson());
+                System.err.println("Actual document: " + (actualDoc != null ? actualDoc.toJson() : "null"));
+                throw e;
+            }
         }
     }
 

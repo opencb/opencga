@@ -235,9 +235,6 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         MongoDBCollection collection = getCollection(toStudyId(query.getStudy()), query.getSchema().getVersion());
         Bson filter = queryBuilder.buildFilter(query, locusQuery);
         Bson projection = queryBuilder.buildProjection(query, includeAllFields);
-        System.out.println("SampleIndex query filter: " + filter.toBsonDocument().toJson());
-        System.out.println("SampleIndex query projection: " + (projection != null ? projection.toBsonDocument().toJson() : "null"));
-        System.out.println(" Collection: " + getSampleIndexCollectionName(toStudyId(query.getStudy()), query.getSchema().getVersion()));
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.INCLUDE, projection)
                 .append(QueryOptions.SORT, queryBuilder.defaultSort());

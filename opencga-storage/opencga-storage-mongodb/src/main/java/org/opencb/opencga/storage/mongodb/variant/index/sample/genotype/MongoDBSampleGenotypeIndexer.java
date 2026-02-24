@@ -65,6 +65,9 @@ public class MongoDBSampleGenotypeIndexer extends SampleGenotypeIndexer {
         } else {
             variantQuery.includeSample(sampleNames);
         }
+        // FIXME: This reader will merge samples from different files, which may cause discrepancies with the original sample index entries.
+        //      This would also merge all secondary alternates
+        //      Need to use nativeIterator.
         VariantDBReader reader = new VariantDBReader(engine.getDBAdaptor(), variantQuery, variantOptions);
         Task<Variant, SampleIndexEntry> task = new SampleGenotypeIndexerTask(sampleIndexDBAdaptor, studyId, sampleIds, options, schema);
         MongoDBSampleIndexEntryWriter writer = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, schema, options);

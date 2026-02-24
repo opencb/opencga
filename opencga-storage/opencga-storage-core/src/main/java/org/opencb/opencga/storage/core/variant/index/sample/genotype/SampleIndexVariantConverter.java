@@ -4,10 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.OriginalCall;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
@@ -32,18 +29,17 @@ public class SampleIndexVariantConverter {
         fileDataSchema = configuration.getFileData();
     }
 
-    public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int filePosition, Variant variant) {
-        // Expecting only one study and only one file
-        return createSampleIndexVariant(sampleIdx, 0, filePosition, variant);
+    public SampleIndexVariant createSampleIndexVariant(Variant variant, SampleEntry sampleEntry, int filePosition) {
+        return createSampleIndexVariant(sampleEntry.getFileIndex(), filePosition, variant, sampleEntry.getData());
     }
 
-    public SampleIndexVariant createSampleIndexVariant(int sampleIdx, int fileIdx, int filePosition, Variant variant) {
+    public SampleIndexVariant createSampleIndexVariant(int fileIdx, int filePosition, Variant variant, List<String> sampleData) {
         // Expecting only one study
         StudyEntry study = variant.getStudies().get(0);
         FileEntry file = study.getFiles().get(fileIdx);
 
-        BitBuffer fileIndexValue =  createFileIndexValue(variant.getType(), filePosition, file.getData(),
-                study.getSampleDataKeyPositions(), study.getSampleData(sampleIdx));
+        BitBuffer fileIndexValue = createFileIndexValue(variant.getType(), filePosition, file.getData(),
+                study.getSampleDataKeyPositions(), sampleData);
         ByteBuffer fileDataIndexValue = createFileDataIndexValue(variant, filePosition, file.getCall(),
                 study.getSecondaryAlternates());
 

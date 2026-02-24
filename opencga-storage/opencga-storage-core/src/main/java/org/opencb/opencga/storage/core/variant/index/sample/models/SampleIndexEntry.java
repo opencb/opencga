@@ -6,10 +6,7 @@ import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.thirdparty.hbase.util.Bytes;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Model representing an entry (row) of the SampleIndex.
@@ -633,6 +630,19 @@ public class SampleIndexEntry {
                     : Bytes.toStringBinary(parentsIndex, parentsIndexOffset, parentsIndexLength));
             sb.append('}');
             return sb.toString();
+        }
+
+        public List<String> validate() {
+            List<String> findings = new LinkedList<>();
+            if (variants != null && (variantsOffset < 0 || variantsLength < 0 || variantsOffset + variantsLength > variants.length)) {
+                findings.add(new StringBuilder("Invalid variants offset/length: offset=").append(variantsOffset).append(", length=")
+                        .append(variantsLength).append(", array length=").append(variants.length).append(". ").toString());
+            }
+            if (annotationIndexLength > 0 && annotationIndexLength != count) {
+                findings.add(new StringBuilder("Invalid annotation index length: expected ").append(count).append(", but was ")
+                        .append(annotationIndexLength).append(". ").toString());
+            }
+            return findings;
         }
 
         public String toStringSummary() {

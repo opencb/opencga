@@ -53,11 +53,13 @@ public abstract class SampleGenotypeIndexer {
         }
         int version = schema.getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
+        List<String> finalSamplesNameList = new ArrayList<>(samples.size());
         List<String> alreadyIndexed = new LinkedList<>();
         for (Integer sampleId : sampleIds) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             if (overwrite || sampleMetadata.getSampleIndexStatus(version) != TaskMetadata.Status.READY) {
                 finalSamplesList.add(sampleId);
+                finalSamplesNameList.add(sampleMetadata.getName());
             } else {
                 // SamplesIndex already annotated
                 alreadyIndexed.add(sampleMetadata.getName());
@@ -74,9 +76,11 @@ public abstract class SampleGenotypeIndexer {
         }
 
         if (finalSamplesList.size() < 20) {
-            logger.info("Run sample index build on samples " + finalSamplesList);
+            logger.info("Run sample index genotype indexer on study '{}'({}), schema version {}, for samples {}",
+                    metadataManager.getStudyName(studyId), studyId, schema.getVersion(), finalSamplesNameList);
         } else {
-            logger.info("Run sample index build on " + finalSamplesList.size() + " samples");
+            logger.info("Run sample index genotype indexer on study '{}'({}), schema version {}, for {} samples",
+                    metadataManager.getStudyName(studyId), studyId, schema.getVersion(), finalSamplesList.size());
         }
 
         run(studyId, schema, finalSamplesList, options);

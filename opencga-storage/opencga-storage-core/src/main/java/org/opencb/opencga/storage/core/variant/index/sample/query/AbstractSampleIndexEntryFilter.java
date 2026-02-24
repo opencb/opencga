@@ -208,6 +208,10 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
                         gtEntry.getGt());
                 try {
                     logger.warn(gtEntry.toStringSummary());
+                    List<String> findings = gtEntry.validate();
+                    for (String finding : findings) {
+                        logger.warn("  - " + finding);
+                    }
                     logger.warn(converter.getSchema().toString());
                 } catch (Exception exception) {
                     e.addSuppressed(exception);
