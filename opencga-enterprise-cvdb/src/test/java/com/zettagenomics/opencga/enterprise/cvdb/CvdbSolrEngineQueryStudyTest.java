@@ -132,6 +132,7 @@ public class CvdbSolrEngineQueryStudyTest {
         query.put(PROJECT_PARAM_NAME, projectId);
         QueryOptions queryOptions = new QueryOptions();
 
+        // CVDB queries
         DataResult<ClinicalAnalysis> caResult = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         System.out.println("num. ca = " + caResult.getNumResults());
         assertTrue(caResult.getNumResults() > 0);

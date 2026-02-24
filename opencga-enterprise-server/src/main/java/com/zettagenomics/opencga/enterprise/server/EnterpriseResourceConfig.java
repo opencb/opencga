@@ -9,6 +9,7 @@ import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.fileupload.FileUploadServlet;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 import org.opencb.opencga.server.rest.utils.FileRangesWSServer;
+import org.opencb.opencga.server.rest.OpenCGAObjectMapperProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
 
     private static final Logger logger;
     public static final Map<String, Class<?>> enterpriseApiClasses;
-    private static final Set<Class<?>> auxiliarClasses;
+    protected static final Set<Class<?>> auxiliarClasses;
 
     static {
         logger = LoggerFactory.getLogger(EnterpriseResourceConfig.class);
@@ -59,6 +60,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
 
         auxiliarClasses.add(ParamExceptionMapper.class);
         auxiliarClasses.add(OpenCgaApplicationEventListener.class);
+        auxiliarClasses.add(OpenCGAObjectMapperProvider.class);
     }
 
     public EnterpriseResourceConfig() {
