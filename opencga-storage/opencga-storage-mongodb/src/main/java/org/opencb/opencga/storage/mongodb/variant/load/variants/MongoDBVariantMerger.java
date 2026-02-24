@@ -993,6 +993,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      */
     protected void updateMongoDBOperations(Variant emptyVar, List<String> ids, List<Document> fileDocuments,
                                            boolean newStudy, boolean newVariant, MongoDBOperations mongoDBOps) {
+        if (!fileDocuments.isEmpty()) {
+            mongoDBOps.getPendingFileDocs().add(Pair.of(emptyVar, new ArrayList<>(fileDocuments)));
+        }
+
         final String id;
 
         if (newStudy) {

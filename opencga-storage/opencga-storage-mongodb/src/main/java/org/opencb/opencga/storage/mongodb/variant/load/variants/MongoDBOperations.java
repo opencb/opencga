@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load.variants;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.variant.Variant;
 
 import java.util.*;
 
@@ -36,6 +38,9 @@ public class MongoDBOperations {
     private final ExistingStudy existingStudy = new ExistingStudy();
 
     private final Set<String> genotypes = new HashSet<>();
+
+    /** Per-variant: merged file documents to index into the sample index. Set by MongoDBVariantMerger. */
+    private final List<Pair<Variant, List<Document>>> pendingFileDocs = new ArrayList<>();
 
     // Stage documents to cleanup
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
@@ -118,6 +123,10 @@ public class MongoDBOperations {
 
     public Set<String> getGenotypes() {
         return genotypes;
+    }
+
+    public List<Pair<Variant, List<Document>>> getPendingFileDocs() {
+        return pendingFileDocs;
     }
 
     // Document may exist, study does not exist

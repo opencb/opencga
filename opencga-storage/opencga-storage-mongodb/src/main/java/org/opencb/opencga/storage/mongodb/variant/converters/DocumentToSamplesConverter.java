@@ -669,11 +669,18 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             return null;
         }
         String key = fieldKey.toLowerCase();
-        Binary binary = sampleDataDoc.get(key, Binary.class);
-        if (binary == null) {
+        Object raw = sampleDataDoc.get(key);
+        if (raw == null) {
             return null;
         }
-        byte[] byteArray = binary.getData();
+        byte[] byteArray;
+        if (raw instanceof Binary) {
+            byteArray = ((Binary) raw).getData();
+        } else if (raw instanceof byte[]) {
+            byteArray = (byte[]) raw;
+        } else {
+            throw new IllegalArgumentException("Expected Binary or byte[] for sampleData." + key + " field, got " + raw.getClass());
+        }
         if (byteArray == null || byteArray.length == 0) {
             return null;
         }

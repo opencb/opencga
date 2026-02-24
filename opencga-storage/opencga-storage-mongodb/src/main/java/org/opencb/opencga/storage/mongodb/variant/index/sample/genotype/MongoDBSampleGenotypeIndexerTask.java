@@ -24,6 +24,8 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesCo
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.IntFunction;
@@ -50,6 +52,8 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     private final boolean compressExtraParams;
     private final SampleIndexVariantConverter converter;
     private final VariantStorageMetadataManager metadataManager;
+    private final SampleIndexDBAdaptor dbAdaptor;
+    private final boolean rebuildIndex;
     /** Custom sample-data index fields (source=SAMPLE). */
     private final List<IndexField<String>> sampleCustomFields;
     /** sampleCustomField key → position index, passed to {@link SampleIndexVariantConverter#addSampleDataIndexValues}. */
@@ -68,13 +72,22 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     /** Buffer: SampleIndexEntryChunk → one SampleIndexEntryBuilder per sampleId. */
     private final Map<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>> buffer = new LinkedHashMap<>();
 
-    @SuppressWarnings("unchecked")
     public MongoDBSampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                             int studyId, List<Integer> sampleIds,
                                             ObjectMap options, SampleIndexSchema schema) {
+        this(dbAdaptor, studyId, sampleIds, options, schema, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public MongoDBSampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
+                                            int studyId, List<Integer> sampleIds,
+                                            ObjectMap options, SampleIndexSchema schema,
+                                            boolean rebuildIndex) {
         this.studyId = studyId;
         this.sampleIds = sampleIds;
         this.schema = schema;
+        this.rebuildIndex = rebuildIndex;
+        this.dbAdaptor = dbAdaptor;
         this.converter = new SampleIndexVariantConverter(schema);
         this.metadataManager = dbAdaptor.getMetadataManager();
 
@@ -201,14 +214,7 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
 
                         SampleIndexVariant entry = new SampleIndexVariant(variant, sampleFileIndex, fileData);
 
-                        List<SampleIndexEntryBuilder> builders = buffer.computeIfAbsent(indexChunk, c -> {
-                            List<SampleIndexEntryBuilder> list = new ArrayList<>(sampleIds.size());
-                            for (int i = 0; i < sampleIds.size(); i++) {
-                                list.add(new SampleIndexEntryBuilder(sampleIds.get(i),
-                                        c.getChromosome(), c.getBatchStart(), schema, false, multiFileIndex[i]));
-                            }
-                            return list;
-                        });
+                        List<SampleIndexEntryBuilder> builders = buffer.computeIfAbsent(indexChunk, this::createBuilders);
                         builders.get(sampleIdx).add(gt, entry);
                     }
                 }
@@ -238,6 +244,26 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
             it.remove();
         }
         return entries;
+    }
+
+    private List<SampleIndexEntryBuilder> createBuilders(SampleIndexEntryChunk chunk) {
+        List<SampleIndexEntryBuilder> list = new ArrayList<>(sampleIds.size());
+        for (int i = 0; i < sampleIds.size(); i++) {
+            SampleIndexEntryBuilder builder;
+            if (rebuildIndex) {
+                try {
+                    builder = dbAdaptor.queryByGtBuilder(studyId, sampleIds.get(i),
+                            chunk.getChromosome(), chunk.getBatchStart(), schema);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } else {
+                builder = new SampleIndexEntryBuilder(sampleIds.get(i),
+                        chunk.getChromosome(), chunk.getBatchStart(), schema, false, multiFileIndex[i]);
+            }
+            list.add(builder);
+        }
+        return list;
     }
 
     /**

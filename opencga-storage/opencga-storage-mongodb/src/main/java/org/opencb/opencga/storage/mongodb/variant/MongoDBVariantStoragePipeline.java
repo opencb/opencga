@@ -50,8 +50,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.genotype.MongoDBSampleIndexFromMergeTask;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
@@ -159,18 +159,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         logger.info("Merge mode: {}", mergeMode);
-        // FIXME: MergeMode ADVANCED might add extra secondaryAlternates to the variants.
-        //      This might cause problems with the sample index, as the genotypes will be changed.
-        //      We should check if the sample index is compatible with the merge mode, or if we need to rebuild it after the merge.
-        //      Or ensure that the sample index is built after the merge, so it will be built with the final set of variants.
-        if (studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
-                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue())) {
-            if (YesNoAuto.parse(options, LOAD_SAMPLE_INDEX.key()).yesOrAuto()) {
-                logger.warn("Merge mode is BASIC (ignore overlapping variants), but sample index is enabled. "
-                        + "This might cause problems with the sample index, as the genotypes will be changed.");
-            }
-
-        }
 
         // 2) Determine DEFAULT_GENOTYPE
         if (studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key()).contains(GenotypeClass.UNKNOWN_GENOTYPE)) {
@@ -334,18 +322,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .then(remapIdsTask)
                     .then(largestVariantTask);
 
-            SampleIndexVariantWriter sampleIndexWriter;
+            MongoDBSampleIndexFromMergeTask sampleIndexFromMergeTask;
             if (loadSampleIndex) {
-                logger.info("Secondary Sample Index will be populated during stage load");
-                List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
-                SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
-                sampleIndexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds, schema,
-                        getOptions(), VariantStorageEngine.SplitData.from(getOptions()));
-                // Load sample index happens at reader task before the variants are transformed into stage documents
-                variantReader = variantReader.then(sampleIndexWriter.asTask());
+                logger.info("Secondary Sample Index will be populated after merge during direct load");
+                List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
+                SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
+                sampleIndexFromMergeTask = new MongoDBSampleIndexFromMergeTask(sampleIndexDBAdaptor, studyId, sampleIds,
+                        getOptions(), schema);
+                loadThreads = 1; // task uses a sorted buffer; not thread-safe
             } else {
                 logger.info("Sample Index will NOT be populated");
-                sampleIndexWriter = null;
+                sampleIndexFromMergeTask = null;
             }
 
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
@@ -379,12 +366,15 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
+            Task<Document, MongoDBOperations> mergeTask = sampleIndexFromMergeTask != null
+                    ? variantMerger.then(sampleIndexFromMergeTask)
+                    : variantMerger;
             if (isDirectLoadParallelWrite(options)) {
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(directLoader), null, config);
+                ptr = new ParallelTaskRunner<>(stageReader, mergeTask.then(directLoader), null, config);
             } else {
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, directLoader, config);
+                ptr = new ParallelTaskRunner<>(stageReader, mergeTask, directLoader, config);
             }
 
             // Run
@@ -398,10 +388,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
-            if (sampleIndexWriter != null) {
-                // Update list of loaded genotypes
-                this.loadedGenotypes = sampleIndexWriter.getLoadedGenotypes();
-                this.sampleIndexVersion = sampleIndexWriter.getSampleIndexVersion();
+            if (sampleIndexFromMergeTask != null) {
+                this.loadedGenotypes = sampleIndexFromMergeTask.getLoadedGenotypes();
+                this.sampleIndexVersion = sampleIndexFromMergeTask.getSampleIndexVersion();
             }
             this.largestVariantLength = largestVariantTask.getMaxLength();
 
@@ -445,23 +434,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
 
-        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
-        SampleIndexVariantWriter sampleIndexWriter;
-        if (loadSampleIndex) {
-            logger.info("Secondary Sample Index will be populated during stage load");
-            if (loadThreads > 1) {
-                logger.warn("Secondary Sample Index population is not thread safe. Setting load threads to 1");
-            }
-            loadThreads = 1; // Sample index writer is not thread safe (yet)
-            List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
-            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
-            sampleIndexWriter = sampleIndexDBAdaptor.newSampleIndexVariantWriter(getStudyId(), getFileId(), sampleIds, schema, getOptions(),
-                    VariantStorageEngine.SplitData.from(getOptions()));
-        } else {
-            logger.info("Sample Index will NOT be populated");
-            sampleIndexWriter = null;
-        }
-
         try {
             StudyMetadata studyMetadata = getStudyMetadata();
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
@@ -484,19 +456,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask();
 
-            Task<Variant, StageWriteOperations> task;
-            if (sampleIndexWriter == null) {
-                task = remapIdsTask
-                        .then(progressLoggerTask)
-                        .then(largestVariantTask)
-                        .then(converterTask);
-            } else {
-                task = remapIdsTask
-                        .then(sampleIndexWriter)
-                        .then(progressLoggerTask)
-                        .then(largestVariantTask)
-                        .then(converterTask);
-            }
+            Task<Variant, StageWriteOperations> task = remapIdsTask
+                    .then(progressLoggerTask)
+                    .then(largestVariantTask)
+                    .then(converterTask);
 
             // Writer step
             MongoDBVariantStageLoader stageLoader =
@@ -539,11 +502,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             long skippedVariants = converterTask.getSkippedVariants();
             stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
 
-            if (sampleIndexWriter != null) {
-                // Update list of loaded genotypes
-                this.loadedGenotypes = sampleIndexWriter.getLoadedGenotypes();
-                this.sampleIndexVersion = sampleIndexWriter.getSampleIndexVersion();
-            }
             this.largestVariantLength = largestVariantTask.getMaxLength();
 
             loadStats.append(MERGE.key(), false);
@@ -673,6 +631,22 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
 
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        MongoDBSampleIndexFromMergeTask sampleIndexFromMergeTask = null;
+        if (loadSampleIndex) {
+            logger.info("Secondary Sample Index will be populated after merge");
+            List<Integer> sampleIds = new ArrayList<>();
+            for (Integer fid : fileIds) {
+                sampleIds.addAll(getMetadataManager().getFileMetadata(getStudyId(), fid).getSamples());
+            }
+            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(getStudyId());
+            sampleIndexFromMergeTask = new MongoDBSampleIndexFromMergeTask(sampleIndexDBAdaptor, getStudyId(), sampleIds,
+                    options, schema);
+            loadThreads = 1; // task uses a sorted buffer; not thread-safe
+        } else {
+            logger.info("Sample Index will NOT be populated");
+        }
+
         if (options.getBoolean(MERGE_SKIP.key())) {
             // It was already merged, but still some work is needed. Exit to do postLoad step
             writeResult = new MongoDBVariantWriteResult();
@@ -689,7 +663,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             });
             Runtime.getRuntime().addShutdownHook(hook);
             try {
-                writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, studyMetadata);
+                writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, studyMetadata, sampleIndexFromMergeTask);
             } catch (Exception e) {
                 getMetadataManager().setStatus(getStudyId(), mergeTask.getId(), TaskMetadata.Status.ERROR);
                 throw e;
@@ -697,6 +671,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
             getMetadataManager().setStatus(getStudyId(), mergeTask.getId(), TaskMetadata.Status.DONE);
+        }
+
+        if (sampleIndexFromMergeTask != null) {
+            this.loadedGenotypes = sampleIndexFromMergeTask.getLoadedGenotypes();
+            this.sampleIndexVersion = sampleIndexFromMergeTask.getSampleIndexVersion();
         }
 
         if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
@@ -744,7 +723,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     private MongoDBVariantWriteResult mergeByChromosome(List<Integer> fileIds, int batchSize, int loadThreads,
-                                                        StudyMetadata studyMetadata)
+                                                        StudyMetadata studyMetadata,
+                                                        MongoDBSampleIndexFromMergeTask sampleIndexFromMergeTask)
             throws StorageEngineException {
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyMetadata.getId());
@@ -767,6 +747,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
                 studyMetadata, fileIds, resume, cleanWhileLoading, progressLogger);
 
+        Task<Document, MongoDBOperations> mergerTask = sampleIndexFromMergeTask != null
+                ? variantMerger.then(sampleIndexFromMergeTask)
+                : variantMerger;
+
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setReadQueuePutTimeout(20 * 60)
@@ -775,9 +759,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 .setAbortOnFail(true).build();
         try {
             if (isMergeParallelWrite(options)) {
-                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger.then(variantLoader), null, config);
+                ptrMerge = new ParallelTaskRunner<>(reader, mergerTask.then(variantLoader), null, config);
             } else {
-                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, variantLoader, config);
+                ptrMerge = new ParallelTaskRunner<>(reader, mergerTask, variantLoader, config);
             }
         } catch (RuntimeException e) {
             throw new StorageEngineException("Error while creating ParallelTaskRunner", e);

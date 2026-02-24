@@ -32,8 +32,6 @@ public final class MongoDBSampleIndexQueryBuilder {
         } else {
             filter.put(DocumentToSampleIndexEntryConverter.SAMPLE_ID, sampleId);
         }
-        System.out.println("Building filter for sampleId: " + sampleId);
-        System.out.println(" Filter: " + filter.toJson());
         // Additional filters mostly handled in-memory; placeholder left for future expansion
         return filter;
     }
