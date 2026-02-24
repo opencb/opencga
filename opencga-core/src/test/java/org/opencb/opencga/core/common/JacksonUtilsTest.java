@@ -152,4 +152,60 @@ public class JacksonUtilsTest {
                 "GwasAssociationStudyTraitScoresMixin",
                 mixinClass.getSimpleName());
     }
+
+    @Test
+    public void testVariantMixinIsRegisteredInUpdateObjectMapper() {
+        // Verify that the GwasAssociationStudyTraitScores mixin is properly registered in the update mapper
+        // This is the key test for TASK-8139: ensures that InterpretationUpdateParams deserialization works
+        ObjectMapper updateMapper = JacksonUtils.getUpdateObjectMapper();
+
+        // Check if the mixin is registered for the class
+        Class<?> mixinClass = updateMapper.findMixInClassFor(GwasAssociationStudyTraitScores.class);
+
+        assertNotNull("Mixin should be registered for GwasAssociationStudyTraitScores in update mapper", mixinClass);
+        assertEquals("Should use GwasAssociationStudyTraitScoresMixin in update mapper",
+                "GwasAssociationStudyTraitScoresMixin",
+                mixinClass.getSimpleName());
+    }
+
+    @Test
+    public void testUpdateObjectMapperCanDeserializeGwasWithCamelCase() throws Exception {
+        // This directly tests the GWAS scores deserialization using the update object mapper
+        // which is used by InterpretationUpdateParams
+        String jsonWithCamelCase = "{\"pValue\":0.00001,\"pValueMlog\":5.0,\"pValueText\":\"1e-5\",\"orBeta\":1.5,\"percentCI\":\"95% CI\"}";
+
+        // Get the ObjectMapper used for catalog updates (the one that should have the variant mixin added)
+        ObjectMapper updateMapper = JacksonUtils.getUpdateObjectMapper();
+
+        // Try to deserialize - this should work with the mixin added in TASK-8139
+        GwasAssociationStudyTraitScores scores = updateMapper.readValue(jsonWithCamelCase, GwasAssociationStudyTraitScores.class);
+
+        // Verify the values were correctly deserialized
+        assertNotNull("Deserialized object should not be null", scores);
+        assertEquals("pValue should be deserialized", 0.00001, scores.getPValue(), 0.0);
+        assertEquals("pValueMlog should be deserialized", 5.0, scores.getPValueMlog(), 0.0);
+        assertEquals("pValueText should be deserialized", "1e-5", scores.getPValueText());
+        assertEquals("orBeta should be deserialized", 1.5, scores.getOrBeta(), 0.0);
+        assertEquals("percentCI should be deserialized", "95% CI", scores.getPercentCI());
+    }
+
+    @Test
+    public void testUpdateObjectMapperCanDeserializeGwasWithLowercase() throws Exception {
+        // Test backward compatibility with lowercase field names using the update mapper
+        String jsonWithLowercase = "{\"pvalue\":0.00002,\"pvalueMlog\":4.7,\"pvalueText\":\"2e-5\",\"orBeta\":1.3,\"percentCI\":\"95% CI\"}";
+
+        // Get the ObjectMapper used for catalog updates
+        ObjectMapper updateMapper = JacksonUtils.getUpdateObjectMapper();
+
+        // Try to deserialize - should work due to @JsonAlias
+        GwasAssociationStudyTraitScores scores = updateMapper.readValue(jsonWithLowercase, GwasAssociationStudyTraitScores.class);
+
+        // Verify the values were correctly deserialized
+        assertNotNull("Deserialized object should not be null", scores);
+        assertEquals("pValue should be deserialized from lowercase", 0.00002, scores.getPValue(), 0.0);
+        assertEquals("pValueMlog should be deserialized from lowercase", 4.7, scores.getPValueMlog(), 0.0);
+        assertEquals("pValueText should be deserialized from lowercase", "2e-5", scores.getPValueText());
+        assertEquals("orBeta should be deserialized from lowercase", 1.3, scores.getOrBeta(), 0.0);
+        assertEquals("percentCI should be deserialized from lowercase", "95% CI", scores.getPercentCI());
+    }
 }

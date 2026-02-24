@@ -118,7 +118,6 @@ public class JacksonUtils {
 
     private static ObjectMapper generateUpdateObjectMapper(JsonFactory jf) {
         ObjectMapper objectMapper = generateDefaultObjectMapper(jf);
-        addVariantMixIn(objectMapper);
 
         objectMapper.addMixIn(Individual.class, IndividualMixin.class);
         objectMapper.addMixIn(Family.class, FamilyMixin.class);
