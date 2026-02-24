@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.zip.DataFormatException;
 
@@ -649,17 +650,21 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return StringUtils.replace(genotype, ".", "-1");
     }
 
+
     /**
-     * Extract a single sample's value for a given extra format field from a file's sampleData document.
+     * Parse a field from a file's sampleData document once and return a positional accessor.
      *
-     * @param sampleDataDoc  The {@code sampleData} sub-document inside the file document.  May be null.
-     * @param samplePosition 0-based position of the sample inside the file's ordered sample list.
-     * @param fieldKey       The format field name (e.g. "DP", "GQ"). Lowercased internally.
-     * @param compressed     Whether the binary value may be compressed with DEFLATE.
-     * @return The decoded value string, {@code UNKNOWN_FIELD} if the field exists but has no entry for
-     *         that position, or {@code null} if the field is absent or the document is null.
+     * <p>The protobuf binary is decompressed and parsed a single time. The returned function
+     * accepts a 0-based sample position within the file and returns the decoded string value for
+     * that sample, or {@code null} if the position is out of range.
+     *
+     * @param sampleDataDoc The {@code sampleData} sub-document inside the file document.  May be null.
+     * @param fieldKey      The format field name (e.g. "DP", "GQ"). Lowercased internally.
+     * @param compressed    Whether the binary value may be compressed with DEFLATE.
+     * @return A positional accessor function, or {@code null} if the field is absent or the document is null.
      */
-    public static String extractSampleField(Document sampleDataDoc, int samplePosition, String fieldKey, boolean compressed) {
+    public static IntFunction<String> sampleFieldAccessor(
+            Document sampleDataDoc, String fieldKey, boolean compressed) {
         if (sampleDataDoc == null) {
             return null;
         }
@@ -683,14 +688,19 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
         try {
             VariantMongoDBProto.OtherFields otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
-            if (otherFields.getIntValuesCount() > samplePosition) {
-                return INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getIntValues(samplePosition));
-            } else if (otherFields.getFloatValuesCount() > samplePosition) {
-                return FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getFloatValues(samplePosition));
-            } else if (otherFields.getStringValuesCount() > samplePosition) {
-                return otherFields.getStringValues(samplePosition);
+            if (otherFields.getIntValuesCount() > 0) {
+                return pos -> pos < otherFields.getIntValuesCount()
+                        ? INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getIntValues(pos))
+                        : null;
+            } else if (otherFields.getFloatValuesCount() > 0) {
+                return pos -> pos < otherFields.getFloatValuesCount()
+                        ? FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getFloatValues(pos))
+                        : null;
+            } else {
+                return pos -> pos < otherFields.getStringValuesCount()
+                        ? otherFields.getStringValues(pos)
+                        : null;
             }
-            return UNKNOWN_FIELD;
         } catch (InvalidProtocolBufferException e) {
             throw new UncheckedIOException(e);
         }

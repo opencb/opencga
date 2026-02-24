@@ -7,21 +7,26 @@ import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.index.core.IndexField;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryChunk;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.FileIndexSchema;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
+import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.getChunkStart;
@@ -45,11 +50,14 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     private final boolean compressExtraParams;
     private final SampleIndexVariantConverter converter;
     private final VariantStorageMetadataManager metadataManager;
+    /** Custom sample-data index fields (source=SAMPLE). */
+    private final List<IndexField<String>> sampleCustomFields;
+    /** sampleCustomField key → position index, passed to {@link SampleIndexVariantConverter#addSampleDataIndexValues}. */
+    private final Map<String, Integer> sampleDataKeyPositions;
 
     /** sampleId → index in {@code sampleIds} list. */
     private final Map<Integer, Integer> sampleIdToIdx;
     /** [sampleIdx] → (fileId → filePosition). */
-    @SuppressWarnings("unchecked")
     private final Map<Integer, Integer>[] fileIdxMap;
     /** [sampleIdx] — whether this sample has multiple files. */
     private final boolean[] multiFileIndex;
@@ -60,6 +68,7 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     /** Buffer: SampleIndexEntryChunk → one SampleIndexEntryBuilder per sampleId. */
     private final Map<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>> buffer = new LinkedHashMap<>();
 
+    @SuppressWarnings("unchecked")
     public MongoDBSampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                             int studyId, List<Integer> sampleIds,
                                             ObjectMap options, SampleIndexSchema schema) {
@@ -69,10 +78,16 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
         this.converter = new SampleIndexVariantConverter(schema);
         this.metadataManager = dbAdaptor.getMetadataManager();
 
-        boolean compress = metadataManager.getStudyMetadata(studyId).getAttributes()
+        this.compressExtraParams = metadataManager.getStudyMetadata(studyId).getAttributes()
                 .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
-        this.compressExtraParams = compress;
+
+        FileIndexSchema fileIndex = schema.getFileIndex();
+        sampleCustomFields = fileIndex.getCustomFieldsSourceSample();
+        sampleDataKeyPositions = new HashMap<>(sampleCustomFields.size());
+        for (int i = 0; i < sampleCustomFields.size(); i++) {
+            sampleDataKeyPositions.put(sampleCustomFields.get(i).getKey(), i);
+        }
 
         sampleIdToIdx = new HashMap<>(sampleIds.size());
         for (int i = 0; i < sampleIds.size(); i++) {
@@ -131,13 +146,30 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                 Document attrsDoc = fileDoc.get(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, Document.class);
                 Document sampleDataDoc = fileDoc.get(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD, Document.class);
 
-                // TODO: Convert each file to a partial SampleIndexVariant, and then addSampleDataIndexValues to it
-                //    See SampleIndexDriver#SampleIndexerMapper#map() for an example of how to convert a Variant
-                //    to a SampleIndexVariant reusing the fileIndex
+                // Two-pass approach (mirrors SampleIndexDriver#SampleIndexerMapper):
+                // Pass 1 — build a base SampleIndexVariant from file-level data only (filePosition=0, no sampleData).
+                //           This encodes type, file attributes (FILTER/QUAL), secondary alternates, and original call.
+                SampleIndexVariant fileEntry = converter.createSampleIndexVariant(
+                        0, variant, call, alts,
+                        k -> {
+                            if (attrsDoc == null) {
+                                return null;
+                            } else {
+                                Object o = attrsDoc.get(k);
+                                if (o == null) {
+                                    return null;
+                                } else {
+                                    return o.toString();
+                                }
+                            }
+                        },
+                        k -> null);
+                ByteBuffer fileData = fileEntry.getFileData().isEmpty() ? null : fileEntry.getFileData().get(0);
 
-                // Cache samples-in-file list for sampleData position lookup
+                // Build per-field positional accessors for this file's sampleData (parsed once per field).
                 List<Integer> samplesInFile = samplesInFileCache.computeIfAbsent(
                         fid, f -> new ArrayList<>(metadataManager.getFileMetadata(studyId, f).getSamples()));
+                Map<String, IntFunction<String>> sampleDataAccessors = buildSampleDataAccessors(sampleDataDoc);
 
                 for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
                     String gt = DocumentToSamplesConverter.genotypeToDataModelType(mgtEntry.getKey());
@@ -156,27 +188,18 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                             continue;
                         }
 
+                        // Pass 2 — copy the file-level bit buffer, add per-sample data, write correct filePosition.
                         int samplePosInFile = samplesInFile.indexOf(sampleId);
-                        final Document finalSampleDataDoc = sampleDataDoc;
-                        final int finalSamplePosInFile = samplePosInFile;
+                        BitBuffer sampleFileIndex = new BitBuffer(fileEntry.getFilesIndex().get(0));
+                        converter.addSampleDataIndexValues(sampleFileIndex, sampleDataKeyPositions,
+                                pos -> {
+                                    IntFunction<String> accessor =
+                                            sampleDataAccessors.get(sampleCustomFields.get(pos).getKey().toLowerCase());
+                                    return accessor != null ? accessor.apply(samplePosInFile) : null;
+                                });
+                        schema.getFileIndex().getFilePositionIndex().write(filePosition, sampleFileIndex);
 
-                        SampleIndexVariant entry = converter.createSampleIndexVariant(
-                                filePosition, variant, call, alts,
-                                k -> {
-                                    if (attrsDoc == null) {
-                                        return null;
-                                    } else {
-                                        Object o = attrsDoc.get(k);
-                                        if (o == null) {
-                                            return null;
-                                        } else {
-                                            return o.toString();
-                                        }
-                                    }
-                                },
-                                // TODO: optimize by extracting sampleData for all samples in file at once, instead of per-sample lookups
-                                k -> DocumentToSamplesConverter.extractSampleField(
-                                        finalSampleDataDoc, finalSamplePosInFile, k, compressExtraParams));
+                        SampleIndexVariant entry = new SampleIndexVariant(variant, sampleFileIndex, fileData);
 
                         List<SampleIndexEntryBuilder> builders = buffer.computeIfAbsent(indexChunk, c -> {
                             List<SampleIndexEntryBuilder> list = new ArrayList<>(sampleIds.size());
@@ -215,6 +238,30 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
             it.remove();
         }
         return entries;
+    }
+
+    /**
+     * Build per-field positional accessors for a file's {@code sampleData} sub-document.
+     *
+     * <p>Only the fields included in the sample index ({@link #sampleCustomFields}) are parsed.
+     * Each protobuf binary is decompressed and parsed once; the returned function accesses only
+     * the requested sample position on demand.
+     *
+     * @return Map from field key (lowercased) to a positional accessor ({@code pos -> value}).
+     */
+    private Map<String, IntFunction<String>> buildSampleDataAccessors(Document sampleDataDoc) {
+        if (sampleDataDoc == null || sampleCustomFields.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, IntFunction<String>> result = new HashMap<>(sampleCustomFields.size());
+        for (IndexField<String> field : sampleCustomFields) {
+            String key = field.getKey().toLowerCase();
+            IntFunction<String> accessor = DocumentToSamplesConverter.sampleFieldAccessor(sampleDataDoc, key, compressExtraParams);
+            if (accessor != null) {
+                result.put(key, accessor);
+            }
+        }
+        return result;
     }
 
     private static Variant buildVariant(Document doc) {
