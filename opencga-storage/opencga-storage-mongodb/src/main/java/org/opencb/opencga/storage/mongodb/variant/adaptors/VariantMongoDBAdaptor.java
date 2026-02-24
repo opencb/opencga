@@ -464,6 +464,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
         List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
 
         if (options.getBoolean("explain", false)) {
             logger.debug("MongoDB explain is not supported for aggregation pipelines");
@@ -594,14 +595,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             options = new QueryOptions(options);
         }
+        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
+
         // Ignore COUNT option, as the iterator will return all the results, and the count is not needed.
         options.remove(QueryOptions.COUNT);
 
-        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
-
-        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQuery.getProjection());
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
         if (options.containsKey(QueryOptions.TIMEOUT)
@@ -610,7 +612,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             StopWatch stopWatch = StopWatch.createStarted();
             final QueryOptions finalOptions = options;
             VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(
-                    () -> variantsCollection.nativeQuery().aggregate(pipeline, null, finalOptions), converter);
+                    () -> variantsCollection.iterator(pipeline, null, finalOptions), converter);
             dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
             return dbIterator;
         } else {
@@ -626,12 +628,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public MongoDBIterator<Document> nativeIterator(ParsedVariantQuery query, QueryOptions options, boolean persistent) {
         List<Bson> pipeline = queryParser.createAggregationPipeline(query, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
 
         if (persistent) {
             logger.debug("Using mongodb persistent iterator");
             return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, pipeline, options), -1);
         } else {
-            return variantsCollection.nativeQuery().aggregate(pipeline, null, options);
+            return variantsCollection.iterator(pipeline, null, options);
         }
     }
 

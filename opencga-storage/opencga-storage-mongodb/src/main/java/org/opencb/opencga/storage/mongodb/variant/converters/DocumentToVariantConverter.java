@@ -304,7 +304,6 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         // Files
         if (variantStudyEntryConverter != null) {
             List<Document> studies = variantObject.get(STUDIES_FIELD, List.class);
-            // Root-level files (Stage 2 format). If absent, fall back to study-embedded files (Stage 1).
             List<Document> rootFiles = variantObject.get(FILES_FIELD, List.class);
 
             if (studies != null) {
@@ -315,7 +314,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                         if (rootFiles != null) {
                             for (Document rootFile : rootFiles) {
                                 if (rootFile == null || rootFile.get(STUDYID_FIELD) == null) {
-                                    System.out.println("WARNING: Found file without study ID. Skipping file " + rootFile.toJson());
+                                    throw new IllegalStateException("Root-level file is missing " + STUDYID_FIELD + " field: " + rootFile);
                                 }
                                 int fileSid = rootFile.get(STUDYID_FIELD, Number.class).intValue();
                                 if (fileSid == sid) {

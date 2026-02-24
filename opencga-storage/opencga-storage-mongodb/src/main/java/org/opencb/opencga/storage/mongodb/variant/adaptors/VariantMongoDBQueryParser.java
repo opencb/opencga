@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +33,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -1358,6 +1361,61 @@ public class VariantMongoDBQueryParser {
     }
 
     /**
+     * Parse query options. Transform SORT and ORDER to be compatible with the aggregation pipeline, if needed.
+     *
+     * @param options query options to parse
+     * @return parsed query options
+     */
+    public QueryOptions parseAggregationPipelineQueryOptions(List<Bson> pipeline, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        if (options.containsKey(QueryOptions.SORT)) {
+            if (options.getBoolean(QueryOptions.SORT)) {
+                String order = options.getString(QueryOptions.ORDER, QueryOptions.DESC.toUpperCase(Locale.ROOT));
+                Bson sort;
+                if (order.equalsIgnoreCase(QueryOptions.ASCENDING) || order.equalsIgnoreCase(QueryOptions.ASC) || order.equals("1")) {
+                    sort = Aggregates.sort(Sorts.ascending("_id"));
+                } else {
+                    sort = Aggregates.sort(Sorts.descending("_id"));
+                }
+                logger.info("Sort: {}", sort.toBsonDocument().toJson());
+                pipeline.add(sort);
+            }
+            options.remove(QueryOptions.SORT);
+        }
+        if (options.containsKey(QueryOptions.SKIP)) {
+            Bson skip = MongoDBQueryUtils.getSkip(options);
+            if (skip != null) {
+                pipeline.add(skip);
+                options.remove(QueryOptions.SKIP);
+                logger.info("Skip: {}", skip.toBsonDocument().toJson());
+            }
+        }
+        if (options.containsKey(QueryOptions.LIMIT)) {
+            Bson limit = MongoDBQueryUtils.getLimit(options);
+            if (limit != null) {
+                pipeline.add(limit);
+                options.remove(QueryOptions.LIMIT);
+                logger.info("Limit: {}", limit.toBsonDocument().toJson());
+            }
+        }
+        // Remove include/exclude from options if the pipeline already contains a $project stage with the projection,
+        // to avoid conflicts between them.
+        if (options.containsKey(QueryOptions.INCLUDE) || options.containsKey(QueryOptions.EXCLUDE)) {
+            boolean hasProject = pipeline.stream()
+                    .anyMatch(stage -> stage.toBsonDocument().containsKey("$project"));
+            if (hasProject) {
+                options.remove(QueryOptions.INCLUDE);
+                options.remove(QueryOptions.EXCLUDE);
+            }
+        }
+        return options;
+    }
+
+    /**
      * Build an aggregation pipeline equivalent to the main {@code get()} query.
      *
      * <ol>
@@ -1366,9 +1424,16 @@ public class VariantMongoDBQueryParser {
      *   <li>{@code $project} — field inclusion (no {@code $elemMatch}, which is invalid in aggregation)</li>
      * </ol>
      */
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query using options from the query itself.
+     *
+     * @param variantQuery the parsed query
+     * @return aggregation pipeline
+     */
     protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery) {
         return createAggregationPipeline(variantQuery, variantQuery.getInputOptions());
     }
+
     /**
      * Build an aggregation pipeline equivalent to the main {@code get()} query.
      *
@@ -1379,7 +1444,8 @@ public class VariantMongoDBQueryParser {
      * </ol>
      *
      * @param variantQuery the parsed query
-     * @param options the query options, used to determine the sort field and order for the projection stage. If {@code null}, no sort will be applied.
+     * @param options      query options (sort, skip, limit); if {@code null} defaults are used
+     * @return aggregation pipeline
      */
     protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
@@ -1397,20 +1463,33 @@ public class VariantMongoDBQueryParser {
         // Stage 2: optional $addFields to filter the root files[] array server-side
         Set<VariantField> projFields = selectVariantElements.getFields();
         if (projFields.contains(VariantField.STUDIES_FILES) || projFields.contains(VariantField.STUDIES_SAMPLES)) {
-            Document filterCond = buildFilesFilterCondition(selectVariantElements);
-            if (filterCond != null) {
+            Document fields = new Document();
+
+            Document studyFilterConf = buildStudiesFilterCondition(selectVariantElements);
+            if (studyFilterConf != null) {
+                Document filterExpr = new Document("$filter", new Document()
+                        .append("input", "$" + DocumentToVariantConverter.STUDIES_FIELD)
+                        .append("cond", studyFilterConf));
+                fields.put(DocumentToVariantConverter.STUDIES_FIELD, filterExpr);
+            }
+
+            Document fileFilterCond = buildFilesFilterCondition(selectVariantElements);
+            if (fileFilterCond != null) {
                 Document filterExpr = new Document("$filter", new Document()
                         .append("input", "$" + DocumentToVariantConverter.FILES_FIELD)
-                        .append("cond", filterCond));
-                Document addFields = new Document("$addFields",
-                        new Document(DocumentToVariantConverter.FILES_FIELD, filterExpr));
-                logger.info("AddFields = {}", addFields.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                        .append("cond", fileFilterCond));
+                fields.put(DocumentToVariantConverter.FILES_FIELD, filterExpr);
+            }
+            if (!fields.isEmpty()) {
+                Bson addFields = new Document("$addFields", fields);
+                logger.info("AddFields = {}", addFields.toBsonDocument().toJson());
                 pipeline.add(addFields);
             }
         }
 
         // Stage 3: $project — rebuild without $elemMatch (invalid in aggregation pipelines)
-        Document project = new Document("$project", buildProjectionForAggregate(variantQuery.getQuery(), options, selectVariantElements));
+        Bson projectionBson = buildProjectionForAggregate(variantQuery.getQuery(), options, selectVariantElements);
+        Document project = new Document("$project", projectionBson);
         logger.info("Project = {}", project.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         pipeline.add(project);
 
@@ -1435,6 +1514,9 @@ public class VariantMongoDBQueryParser {
         Set<VariantField> fields = new HashSet<>(selectVariantElements.getFields());
         fields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
         if (fields.contains(VariantField.STUDIES)) {
+            fields.add(VariantField.STUDIES_STUDY_ID);
+        }
+        if (fields.stream().anyMatch(f -> f.getParent() == VariantField.STUDIES)) {
             fields.add(VariantField.STUDIES_STUDY_ID);
         }
 
@@ -1527,6 +1609,30 @@ public class VariantMongoDBQueryParser {
             return new Document("$or", studyConditions);
         }
     }
+    
+    private Document buildStudiesFilterCondition(VariantQueryProjection selectVariantElements) {
+        List<Document> studyConditions = new ArrayList<>();
+        Set<Integer> studyIds = selectVariantElements.getStudies().keySet();
+        if (studyIds.isEmpty()) {
+            return null;
+        } else if (studyIds.size() == 1) {
+            // If there is only one study, filter by study ID only, without filtering by file ID
+             studyConditions.add(new Document("$eq",
+                    Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, studyIds.iterator().next())));
+        } else {
+            studyConditions.add(new Document("$in",
+                    Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, new ArrayList<>(studyIds))));
+        }
+
+        if (studyConditions.isEmpty()) {
+            return null;
+        } else if (studyConditions.size() == 1) {
+            return studyConditions.get(0);
+        } else {
+            return new Document("$or", studyConditions);
+        }
+    }
+
 
     private void addQueryStringFilter(String key, String value, List<Bson> filters) {
         this.addQueryFilter(key, value, filters, Function.identity());
