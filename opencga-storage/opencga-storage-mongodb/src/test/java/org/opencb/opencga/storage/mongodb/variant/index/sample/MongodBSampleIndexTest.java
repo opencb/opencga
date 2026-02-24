@@ -44,7 +44,7 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
     public void load() throws Exception {
         super.load();
 
-        URI outdir = newOutputUri();
+        URI outdir = newOutputUri("post-load", getTmpRootDir().toUri());
         for (String study : studies) {
             System.out.println("=== Study: " + study + " ===");
             printVariantsContent(study, outdir);
@@ -85,7 +85,7 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
             String collectionName = ((MongoDBSampleIndexDBAdaptor) sampleIndexDBAdaptor)
                     .getSampleIndexCollectionName(studyId, query.getSchema().getVersion());
 
-            Path output = Paths.get(outdir.resolve(collectionName + "." + sampleName + ".detailed.txt"));
+            Path output = Paths.get(outdir.resolve(collectionName + ".ID-" + sampleId + "." + sampleName + ".detailed.txt"));
             System.out.println("output = " + output);
             try (OutputStream os = Files.newOutputStream(output);
                  PrintStream out = new PrintStream(os)) {

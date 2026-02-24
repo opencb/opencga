@@ -229,10 +229,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public static URI newOutputUri() throws IOException {
-        if (rootDir == null) {
-            newRootDir();
-        }
-        return newOutputUri(rootDir.toUri());
+        return newOutputUri(getTmpRootDir().toUri());
     }
 
     public static URI newOutputUri(Path output) throws IOException {

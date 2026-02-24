@@ -149,7 +149,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     RELEASE("release", 1),
 
-    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED);
+    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.BASIC);
 
     private final String key;
     private final Object value;

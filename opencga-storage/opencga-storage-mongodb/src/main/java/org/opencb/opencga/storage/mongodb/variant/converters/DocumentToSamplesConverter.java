@@ -649,4 +649,51 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return StringUtils.replace(genotype, ".", "-1");
     }
 
+    /**
+     * Extract a single sample's value for a given extra format field from a file's sampleData document.
+     *
+     * @param sampleDataDoc  The {@code sampleData} sub-document inside the file document.  May be null.
+     * @param samplePosition 0-based position of the sample inside the file's ordered sample list.
+     * @param fieldKey       The format field name (e.g. "DP", "GQ"). Lowercased internally.
+     * @param compressed     Whether the binary value may be compressed with DEFLATE.
+     * @return The decoded value string, {@code UNKNOWN_FIELD} if the field exists but has no entry for
+     *         that position, or {@code null} if the field is absent or the document is null.
+     */
+    public static String extractSampleField(Document sampleDataDoc, int samplePosition, String fieldKey, boolean compressed) {
+        if (sampleDataDoc == null) {
+            return null;
+        }
+        String key = fieldKey.toLowerCase();
+        Binary binary = sampleDataDoc.get(key, Binary.class);
+        if (binary == null) {
+            return null;
+        }
+        byte[] byteArray = binary.getData();
+        if (byteArray == null || byteArray.length == 0) {
+            return null;
+        }
+        if (compressed) {
+            try {
+                byteArray = CompressionUtils.decompress(byteArray);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } catch (DataFormatException ignore) {
+                // not actually compressed
+            }
+        }
+        try {
+            VariantMongoDBProto.OtherFields otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
+            if (otherFields.getIntValuesCount() > samplePosition) {
+                return INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getIntValues(samplePosition));
+            } else if (otherFields.getFloatValuesCount() > samplePosition) {
+                return FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(otherFields.getFloatValues(samplePosition));
+            } else if (otherFields.getStringValuesCount() > samplePosition) {
+                return otherFields.getStringValues(samplePosition);
+            }
+            return UNKNOWN_FIELD;
+        } catch (InvalidProtocolBufferException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
 }

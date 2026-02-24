@@ -131,6 +131,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         super.securePreLoad(studyMetadata, source);
         int fileId = getFileId();
 
+        MergeMode mergeMode;
         // 1) Determine merge mode
         if (studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())
                 || studyMetadata.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
@@ -141,9 +142,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), MergeMode.ADVANCED);
                 logger.debug("Merge overlapping variants, as said in the StudyMetadata");
             }
-            options.put(VariantStorageOptions.MERGE_MODE.key(), studyMetadata.getAttributes().get(VariantStorageOptions.MERGE_MODE.key()));
+            mergeMode = MergeMode.from(studyMetadata.getAttributes());
+            options.put(VariantStorageOptions.MERGE_MODE.key(), mergeMode);
         } else {
-            MergeMode mergeMode = MergeMode.from(options);
+            mergeMode = MergeMode.from(options);
             studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), mergeMode);
             switch (mergeMode) {
                 case BASIC:
@@ -155,6 +157,19 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 default:
                     throw new IllegalArgumentException("Unknown merge mode: " + mergeMode);
             }
+        }
+        logger.info("Merge mode: {}", mergeMode);
+        // FIXME: MergeMode ADVANCED might add extra secondaryAlternates to the variants.
+        //      This might cause problems with the sample index, as the genotypes will be changed.
+        //      We should check if the sample index is compatible with the merge mode, or if we need to rebuild it after the merge.
+        //      Or ensure that the sample index is built after the merge, so it will be built with the final set of variants.
+        if (studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
+                MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue())) {
+            if (YesNoAuto.parse(options, LOAD_SAMPLE_INDEX.key()).yesOrAuto()) {
+                logger.warn("Merge mode is BASIC (ignore overlapping variants), but sample index is enabled. "
+                        + "This might cause problems with the sample index, as the genotypes will be changed.");
+            }
+
         }
 
         // 2) Determine DEFAULT_GENOTYPE
