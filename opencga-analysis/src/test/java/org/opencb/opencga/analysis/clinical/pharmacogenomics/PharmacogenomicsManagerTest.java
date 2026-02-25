@@ -1,123 +1,178 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
-import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
 
 @Category(ShortTests.class)
 public class PharmacogenomicsManagerTest {
 
-    private String genotypingContent;
-    private String translationContent;
+    @Test
+    @Category(MediumTests.class)
+    public void testAnnotateResults() throws IOException {
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .setVersion("v6.7")
+                .setDefaultSpecies("hsapiens")
+                .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient(clientConfiguration);
 
-//    @Before
-//    public void setUp() throws IOException {
-//        // Load file contents as strings
-//        Path genotypingFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/3G_Export_DO_TrueMark_128_Export_DO_TrueMark_128_Genotyping_07-11-2025-074600.txt");
-//        Path translationFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/PGX_SNP_CNV_128_OA_translation_RevC.csv");
-//
-//        genotypingContent = readFileContent(genotypingFile);
-//        translationContent = readFileContent(translationFile);
-//    }
+        List<AlleleTyperResult> results = buildResultsFromCsv();
+        assertFalse("Results should not be empty", results.isEmpty());
 
-//    private String readFileContent(Path filePath) throws IOException {
-//        StringBuilder content = new StringBuilder();
-//        try (BufferedReader br = new BufferedReader(new FileReader(filePath.toFile()))) {
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                content.append(line).append("\n");
-//            }
-//        }
-//        return content.toString();
-//    }
+        PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
+        manager.annotateResults(results, cellBaseClient);
 
-//    @Test
-//    public void testAlleleTyperWithStringInputs() throws IOException {
-//        // Test AlleleTyper with String inputs (without CatalogManager)
-//        AlleleTyper typer = new AlleleTyper();
-//
-//        // Parse translation from string
-//        typer.parseTranslationFromString(translationContent);
-//
-//        // Build results from string
-//        List<AlleleTyperResult> results = typer.buildAlleleTyperResultsFromString(genotypingContent);
-//
-//        // Verify results
-//        assertNotNull("Results should not be null", results);
-//        assertTrue("Should have multiple samples", results.size() > 0);
-//
-//        System.out.println("\n=== AlleleTyper String-based Processing ===");
-//        System.out.println("Total samples processed: " + results.size());
-//
-//        // Check first sample
-//        if (!results.isEmpty()) {
-//            AlleleTyperResult firstResult = results.get(0);
-//            System.out.println("First sample: " + firstResult.getSampleId());
-//            System.out.println("  Genes with calls: " + firstResult.getStarAlleles().size());
-//            System.out.println("  Total genotypes: " + firstResult.getGenotypes().size());
-//            System.out.println("  Translation genes: " + firstResult.getTranslation().size());
-//
-//            assertNotNull("Sample ID should not be null", firstResult.getSampleId());
-//            assertNotNull("Star alleles should not be null", firstResult.getStarAlleles());
-//            assertNotNull("Genotypes should not be null", firstResult.getGenotypes());
-//            assertNotNull("Translation should not be null", firstResult.getTranslation());
-//        }
-//    }
+        for (AlleleTyperResult result : results) {
+            assertNotNull(result);
+            if (result.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
+                if (starAlleleResult.getAlleleCalls() == null) {
+                    continue;
+                }
+                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
+                    assertNotNull("Annotation missing for gene=" + starAlleleResult.getGene()
+                            + " allele=" + alleleCall.getAllele(), alleleCall.getAnnotation());
+                    assertEquals("cellbase", alleleCall.getAnnotation().getSource());
+                    assertNotNull(alleleCall.getAnnotation().getDrugs());
+                }
+            }
+        }
+    }
 
-//    @Test
-//    public void testPharmacogenomicsManagerCreation() {
-//        // Test that PharmacogenomicsManager can be created without CatalogManager
-//        // (for unit testing purposes)
-//        // Note: In production, CatalogManager would be provided
-//
-//        System.out.println("\n=== PharmacogenomicsManager Test ===");
-//        System.out.println("PharmacogenomicsManager requires CatalogManager for full functionality");
-//        System.out.println("Allele typing can be performed independently with AlleleTyper");
-//        System.out.println("Results can be stored in catalog via PharmacogenomicsManager.alleleTyper()");
-//
-//        assertTrue("PharmacogenomicsManager class should exist", true);
-//    }
+    /**
+     * Reads TrueMark128_detail_result.csv.gz from test resources and builds an AlleleTyperResult list.
+     * The file uses CR-only (\r) line endings.
+     * Sample names: column A, rows 6–28 (1-indexed).
+     * Gene names:   columns C–V (0-based indices 2–21), row 5.
+     * Star alleles: columns C–V, rows 6–28.
+     * NTC (negative control) rows are skipped.
+     */
+    private List<AlleleTyperResult> buildResultsFromCsv() throws IOException {
+        InputStream is = getClass().getClassLoader().getResourceAsStream(
+                "pharmacogenomics/TrueMark128_detail_result.csv.gz");
+        assertNotNull("Test resource pharmacogenomics/TrueMark128_detail_result.csv.gz not found", is);
 
-//    @Test
-//    public void testStringBasedWorkflow() throws IOException {
-//        System.out.println("\n=== String-based Workflow Demonstration ===");
-//
-//        // Step 1: Parse translation
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFromString(translationContent);
-//        System.out.println("✓ Translation file parsed from String");
-//
-//        // Step 2: Process genotyping data
-//        List<AlleleTyperResult> results = typer.buildAlleleTyperResultsFromString(genotypingContent);
-//        System.out.println("✓ Genotyping data processed from String");
-//        System.out.println("✓ Generated " + results.size() + " sample results");
-//
-//        // Step 3: Export to JSON (demonstrating the workflow)
-//        if (!results.isEmpty()) {
-//            String json = typer.exportToJson(results.get(0));
-//            System.out.println("✓ Results can be exported to JSON");
-//            System.out.println("  JSON size: " + json.length() + " characters");
-//
-//            assertTrue("JSON should contain sampleId", json.contains("sampleId"));
-//            assertTrue("JSON should contain starAlleles", json.contains("starAlleles"));
-//            assertTrue("JSON should contain genotypes", json.contains("genotypes"));
-//        }
-//
-//        System.out.println("\n=== Workflow Complete ===");
-//        System.out.println("In production:");
-//        System.out.println("1. PharmacogenomicsManager receives String content");
-//        System.out.println("2. AlleleTyper processes the data");
-//        System.out.println("3. Results stored as sample attributes in Catalog");
-//    }
+        byte[] bytes;
+        try (GZIPInputStream gzis = new GZIPInputStream(is)) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = gzis.read(buf)) != -1) {
+                baos.write(buf, 0, n);
+            }
+            bytes = baos.toByteArray();
+        }
+
+        String[] rows = new String(bytes, StandardCharsets.UTF_8).split("\r");
+
+        // Find the header row where column A == "sample ID" (row 5 in the file)
+        List<String> geneHeaders = null;
+        int headerIdx = -1;
+        for (int i = 0; i < rows.length; i++) {
+            List<String> fields = parseCsvRow(rows[i]);
+            if (!fields.isEmpty() && "sample ID".equals(fields.get(0).trim())) {
+                geneHeaders = fields;
+                headerIdx = i;
+                break;
+            }
+        }
+        assertNotNull("Gene header row (sample ID) not found in CSV", geneHeaders);
+
+        List<AlleleTyperResult> results = new ArrayList<>();
+        for (int i = headerIdx + 1; i < rows.length; i++) {
+            List<String> fields = parseCsvRow(rows[i]);
+            if (fields.isEmpty() || fields.get(0).trim().isEmpty()) {
+                continue;
+            }
+            String sampleId = fields.get(0).trim();
+            if ("NTC".equalsIgnoreCase(sampleId)) {
+                continue;
+            }
+
+            List<AlleleTyperResult.StarAlleleResult> starAlleleResults = new ArrayList<>();
+            for (int col = 2; col <= 21 && col < fields.size() && col < geneHeaders.size(); col++) {
+                String gene = geneHeaders.get(col).trim();
+                List<AlleleTyperResult.AlleleCall> alleleCalls = parseAlleleCalls(fields.get(col).trim());
+                if (!alleleCalls.isEmpty()) {
+                    starAlleleResults.add(new AlleleTyperResult.StarAlleleResult(gene, alleleCalls, null));
+                }
+            }
+            results.add(new AlleleTyperResult(sampleId, starAlleleResults, null, null));
+        }
+        return results;
+    }
+
+    /**
+     * Parses a star-allele cell value into a list of AlleleCalls.
+     * Handles: "*1/*5", "{*2/*41, *21/*41}", "*4/*6, *4.003/*6", "{*1/*1,...}" (truncated).
+     * Non-star-allele values (Ref/Alt, APOE E3/E4, etc.) are skipped.
+     */
+    private List<AlleleTyperResult.AlleleCall> parseAlleleCalls(String rawValue) {
+        List<AlleleTyperResult.AlleleCall> calls = new ArrayList<>();
+        if (rawValue == null || rawValue.isEmpty()
+                || "no translation available".equalsIgnoreCase(rawValue)) {
+            return calls;
+        }
+
+        String value = rawValue;
+        if (value.startsWith("{") && value.endsWith("}")) {
+            value = value.substring(1, value.length() - 1);
+        }
+        // Remove truncated tail, e.g. ",...}"
+        int truncIdx = value.indexOf(",...");
+        if (truncIdx != -1) {
+            value = value.substring(0, truncIdx);
+        }
+
+        for (String part : value.split(",\\s*")) {
+            String allele = part.trim();
+            if (allele.contains("*")) {
+                calls.add(new AlleleTyperResult.AlleleCall(allele));
+            }
+        }
+        return calls;
+    }
+
+    /**
+     * Simple CSV row parser that correctly handles double-quoted fields containing commas.
+     */
+    private List<String> parseCsvRow(String line) {
+        List<String> fields = new ArrayList<>();
+        if (line == null || line.isEmpty()) {
+            return fields;
+        }
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                fields.add(current.toString());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        fields.add(current.toString());
+        return fields;
+    }
 }

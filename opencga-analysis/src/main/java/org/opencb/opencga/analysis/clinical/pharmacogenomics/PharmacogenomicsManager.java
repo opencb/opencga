@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
-import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
-import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -27,6 +25,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -36,11 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * PharmacogenomicsManager handles pharmacogenomics analysis workflow,
@@ -74,6 +70,12 @@ public class PharmacogenomicsManager {
             throws IOException, CatalogException {
         logger.info("Starting pharmacogenomics allele typing for study: {}", studyId);
 
+        // First, CellBase validator
+        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
+        if (cellBaseValidator == null) {
+            throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
+        }
+
         // Initialize AlleleTyper
         AlleleTyper typer = new AlleleTyper();
 
@@ -86,7 +88,7 @@ public class PharmacogenomicsManager {
         logger.info("Allele typing completed for {} samples", results.size());
 
         // Annotate star alleles with CellBase pharmacogenomics data
-        annotateResults(studyId, results, token);
+        annotateResults(results, cellBaseValidator.getCellBaseClient());
 
         // Store results in catalog for each sample
         storeResultsInCatalog(studyId, results, token);
@@ -98,14 +100,10 @@ public class PharmacogenomicsManager {
      * Annotate star alleles with CellBase pharmacogenomics data.
      * Skips annotation if no CellBase configuration is found for the project.
      */
-    private void annotateResults(String studyId, List<AlleleTyperResult> results, String token) throws CatalogException, IOException {
-        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
-        if (cellBaseValidator == null) {
-            logger.warn("No CellBase configuration found for study {}. Skipping star allele annotation.", studyId);
-            return;
-        }
+    public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
 
-        StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseValidator.getCellBaseClient());
+        StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
+        long startTime = System.currentTimeMillis();
         for (AlleleTyperResult result : results) {
             if (result == null || result.getAlleleTyperResults() == null) {
                 continue;
@@ -121,7 +119,8 @@ public class PharmacogenomicsManager {
                 }
             }
         }
-        logger.info("Star allele annotation completed for {} samples", results.size());
+        double annotationTime = (System.currentTimeMillis() - startTime) / 1000.0d;
+        logger.info("Star allele annotation completed for {} samples in {} s", results.size(), annotationTime);
     }
 
     /**
