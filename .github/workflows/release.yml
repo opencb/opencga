@@ -56,13 +56,43 @@ jobs:
     secrets: inherit
 
   # Add the deploy-maven and deploy-python jobs they depend on the build-hdi job
-  deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+  check-maven-version:
+    runs-on: ubuntu-latest
     needs: build-hdi
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Check if Maven artifact exists
+        id: check
+        run: |
+          GROUP_ID="org.opencb.opencga"
+          ARTIFACT_ID="opencga"
+          VERSION="${{ needs.build-hdi.outputs.version }}"
+          
+          # Convert groupId dots to path
+          GROUP_PATH=$(echo "$GROUP_ID" | tr '.' '/')
+          
+          MAVEN_URL="https://repo.maven.apache.org/maven2/${GROUP_PATH}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.pom"
+          
+          echo "Checking ${MAVEN_URL}"
+          
+          if curl --silent --fail "$MAVEN_URL" > /dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  deploy-maven:
+    needs:
+      - build-hdi
+      - check-maven-version
+    if: needs.check-maven-version.outputs.exists == 'false'
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     with:
       maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
       cache_key: ${{ needs.build-hdi.outputs.cache_key }}
     secrets: inherit
+
 
   # Add the release job that depends on all the previous jobs
   release:
@@ -137,7 +167,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-emr75
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr7.5"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr75.outputs.version }}-emr7.5"
       build_folder: build-folder-emr75
     secrets: inherit
 
