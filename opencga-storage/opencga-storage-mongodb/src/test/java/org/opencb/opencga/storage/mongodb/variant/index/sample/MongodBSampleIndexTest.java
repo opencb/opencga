@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -54,8 +55,10 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
 
 
     public void printVariantsContent(String study, URI outdir) throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) super.dbAdaptor;
+        printVariantsContent(study, outdir, (VariantMongoDBAdaptor) super.dbAdaptor);
+    }
 
+    public static void printVariantsContent(String study, URI outdir, VariantMongoDBAdaptor dbAdaptor) throws Exception {
         Path output = Paths.get(outdir.resolve(study + ".variants.json"));
         try (OutputStream os = Files.newOutputStream(output);
              PrintStream out = new PrintStream(os)) {
@@ -72,17 +75,23 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
                 throw new RuntimeException(e);
             }
         }
-
     }
+
     public void printSampleIndexContents(String study, URI outdir) throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) super.dbAdaptor;
-        int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
+        printSampleIndexContents(study, outdir, (VariantMongoDBAdaptor) super.dbAdaptor, (MongoDBSampleIndexDBAdaptor) sampleIndexDBAdaptor);
+    }
+
+    public static void printSampleIndexContents(String study, URI outdir,
+                                                VariantMongoDBAdaptor dbAdaptor, MongoDBSampleIndexDBAdaptor sampleIndexDBAdaptor)
+            throws Exception {
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
 
         for (Integer sampleId : metadataManager.getIndexedSamples(studyId)) {
             String sampleName = metadataManager.getSampleName(studyId, sampleId);
 
             SampleIndexQuery query = sampleIndexDBAdaptor.parseSampleIndexQuery(new VariantQuery().study(study).sample(sampleName));
-            String collectionName = ((MongoDBSampleIndexDBAdaptor) sampleIndexDBAdaptor)
+            String collectionName = sampleIndexDBAdaptor
                     .getSampleIndexCollectionName(studyId, query.getSchema().getVersion());
 
             Path output = Paths.get(outdir.resolve(collectionName + ".ID-" + sampleId + "." + sampleName + ".detailed.txt"));

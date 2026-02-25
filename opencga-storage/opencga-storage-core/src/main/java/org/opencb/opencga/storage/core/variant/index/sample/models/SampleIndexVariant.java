@@ -8,6 +8,8 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.index.core.DataField;
 import org.opencb.opencga.storage.core.variant.index.core.DataFieldBase;
+import org.opencb.opencga.storage.core.variant.index.sample.codecs.GenotypeCodec;
+import org.opencb.opencga.storage.core.variant.index.sample.query.AbstractSampleIndexEntryFilter;
 import org.opencb.opencga.storage.thirdparty.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
@@ -162,10 +164,20 @@ public class SampleIndexVariant {
             }
             sb.append("]");
         }
-        sb.append(separator).append("me: ")
-                .append(this.getMeCode());
-        sb.append(separator).append("parents: ")
-                .append(this.parentsCode);
+        sb.append(separator).append("me: ");
+        if (this.getMeCode() == null) {
+            sb.append(" null");
+        } else {
+            Integer me = this.getMeCode();
+            sb.append(me).append(" -> ").append(AbstractSampleIndexEntryFilter.isDeNovoStrict(me) ? "deNovoStrict"
+                    : (AbstractSampleIndexEntryFilter.isDeNovo(me) ? "deNovo" : "mendelianError"));
+        }
+        sb.append(separator).append("parents: ");
+        if (this.parentsCode == null) {
+            sb.append(" null");
+        } else {
+            sb.append(this.parentsCode).append(" -> ").append(GenotypeCodec.decodeParents(this.parentsCode).toString("<Father = %1$s, Mother = %2$s>"));
+        }
 
         if (annotationIndex != null) {
             annotationIndex.toString(schema, separator, sb);

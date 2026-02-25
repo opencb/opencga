@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 
@@ -104,6 +105,14 @@ public abstract class SampleFamilyIndexer {
 
     protected void runBatch(String study, List<Trio> trios, ObjectMap options, int studyId, int version)
             throws StorageEngineException {
+        if (trios.size() < 20) {
+            List<String> childNames = trios.stream().map(Trio::getChild).collect(Collectors.toList());
+            logger.info("Run sample family indexer on study '{}'({}), schema version {}, for trios with children {}",
+                    metadataManager.getStudyName(studyId), studyId, version, childNames);
+        } else {
+            logger.info("Run sample family indexer on study '{}'({}), schema version {}, for {} trios",
+                    metadataManager.getStudyName(studyId), studyId, version, trios.size());
+        }
         indexBatch(study, trios, options, studyId, version);
         postIndexBatch(studyId, trios, version);
     }

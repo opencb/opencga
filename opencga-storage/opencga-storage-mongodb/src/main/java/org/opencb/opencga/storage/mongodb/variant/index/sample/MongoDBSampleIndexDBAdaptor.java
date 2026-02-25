@@ -73,7 +73,7 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     public SampleFamilyIndexer newSampleFamilyIndexer(VariantStorageEngine engine) throws StorageEngineException {
-        return new MongoDBSampleFamilyIndexer(this);
+        return new MongoDBSampleFamilyIndexer(this, engine);
     }
 
     public DocumentToSampleIndexEntryConverter getConverter() {
