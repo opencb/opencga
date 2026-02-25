@@ -769,6 +769,52 @@ public class VariantMongoDBQueryParser {
 
             }
 
+            // Build per-file genotype conditions for multi-file samples.
+            // When a sample spans multiple files, FILE_DATA conditions (e.g. FILTER=PASS)
+            // must be tied to the genotype within the same file entry. Otherwise, the
+            // FILE_DATA condition could match one file while the genotype matches another.
+            Map<Integer, Bson> fileGenotypeConditions = null;
+            ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
+                    parsedVariantQuery.getStudyQuery().getGenotypes();
+            if (preGenotypesQuery != null && defaultStudy != null) {
+                List<String> preDefaultGenotypes = defaultStudy.getAttributes()
+                        .getAsStringList(DEFAULT_GENOTYPE.key());
+                for (KeyOpValue<SampleMetadata, List<String>> sampleGt : preGenotypesQuery.getValues()) {
+                    SampleMetadata sample = sampleGt.getKey();
+                    int sampleId = sample.getId();
+                    List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
+                            defaultStudy.getId(), sampleId, true);
+                    if (sampleFileIds.size() <= 1) {
+                        continue; // Single-file sample: no cross-file mismatch possible
+                    }
+                    List<Bson> gtOrConditions = new ArrayList<>();
+                    boolean canApply = true;
+                    for (String genotype : sampleGt.getValue()) {
+                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)
+                                || genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                            continue;
+                        }
+                        if (isNegated(genotype) || preDefaultGenotypes.contains(genotype)) {
+                            canApply = false; // Complex cases - skip optimization
+                            break;
+                        }
+                        String mgtKey = DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                                + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                        gtOrConditions.add(eq(mgtKey, sampleId));
+                    }
+                    if (canApply && !gtOrConditions.isEmpty()) {
+                        if (fileGenotypeConditions == null) {
+                            fileGenotypeConditions = new HashMap<>();
+                        }
+                        Bson gtFilter = gtOrConditions.size() == 1
+                                ? gtOrConditions.get(0) : or(gtOrConditions);
+                        for (Integer fileId : sampleFileIds) {
+                            fileGenotypeConditions.put(fileId, gtFilter);
+                        }
+                    }
+                }
+            }
+
             if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
                 List<Bson> infoElemMatch = new ArrayList<>(parsedFileData.getValues().size());
                 for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
@@ -791,6 +837,13 @@ public class VariantMongoDBQueryParser {
 
                         addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
                                 true, extraFilterFilters);
+                    }
+                    // Tie genotype conditions to this file's $elemMatch for multi-file samples
+                    if (fileGenotypeConditions != null) {
+                        Bson gtCondition = fileGenotypeConditions.get(fileId);
+                        if (gtCondition != null) {
+                            infoFilters.add(gtCondition);
+                        }
                     }
                     infoElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(infoFilters)));
                 }
@@ -1817,15 +1870,9 @@ public class VariantMongoDBQueryParser {
         for (KeyOpValue<String, String> elem : value.getValues()) {
             addCompQueryFilter(key, elem, compFilters, extendKey);
         }
-        /* FIXME: TASK-8038
         if (extraFilters != null) {
-            if (extraFilters.getOperation() == QueryOperation.OR) {
-                builder.or(extraFilters.getValues().toArray(new DBObject[0]));
-            } else {
-                builder.and(extraFilters.getValues().toArray(new DBObject[0]));
-            }
+            addAll(filters, extraFilters.getOperation(), extraFilters.getValues());
         }
-         */
 
         if (op == QueryOperation.OR) {
             filters.add(or(compFilters));
