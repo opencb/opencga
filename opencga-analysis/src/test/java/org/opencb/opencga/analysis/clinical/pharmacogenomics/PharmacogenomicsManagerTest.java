@@ -9,6 +9,9 @@ import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResul
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +40,9 @@ public class PharmacogenomicsManagerTest {
 
         PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
         manager.annotateResults(results, cellBaseClient);
+
+        byte[] json = new ObjectMapper().writeValueAsBytes(results);
+        System.out.println("Annotation serialized size: " + String.format("%.2f", json.length / 1024.0) + " KB");
 
         for (AlleleTyperResult result : results) {
             assertNotNull(result);
