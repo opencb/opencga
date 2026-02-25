@@ -316,6 +316,6 @@ public class DocumentToSampleIndexEntryConverter implements ComplexTypeConverter
     }
 
     public static String buildDocumentId(int sampleId, String chromosome, int batchStart) {
-        return String.format("%d_%s_%09d", sampleId, chromosome, batchStart);
+        return String.format("%d_%s_%010d", sampleId, chromosome, batchStart);
     }
 }

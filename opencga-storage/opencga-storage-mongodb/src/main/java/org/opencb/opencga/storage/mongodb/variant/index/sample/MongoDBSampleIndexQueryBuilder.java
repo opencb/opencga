@@ -22,13 +22,19 @@ public final class MongoDBSampleIndexQueryBuilder {
         int studyId = resolveStudyId(query.getStudy());
         int sampleId = metadataManager.getSampleId(studyId, query.getSample());
         if (locusQuery != null && locusQuery.getChunkRegion() != null) {
-            String documentIdPrefix = DocumentToSampleIndexEntryConverter.buildDocumentId(sampleId,
+            String lower = DocumentToSampleIndexEntryConverter.buildDocumentId(sampleId,
                     locusQuery.getChunkRegion().getChromosome(),
                     locusQuery.getChunkRegion().getStart());
-            // Use _id range for tighter filtering when possible
-            filter.put("_id", new Document("$gte", documentIdPrefix)
-                    .append("$lte", DocumentToSampleIndexEntryConverter.buildDocumentId(sampleId,
-                            locusQuery.getChunkRegion().getChromosome(), locusQuery.getChunkRegion().getEnd())));
+            // Use _id range for tighter filtering when possible.
+            // For full-chromosome scans (chunkEnd == MAX_VALUE) use a "~" suffix instead (ASCII 126 > "_" > any digit).
+            String upper;
+            if (locusQuery.getChunkRegion().getEnd() == Integer.MAX_VALUE) {
+                upper = sampleId + "_" + locusQuery.getChunkRegion().getChromosome() + "~";
+            } else {
+                upper = DocumentToSampleIndexEntryConverter.buildDocumentId(sampleId,
+                        locusQuery.getChunkRegion().getChromosome(), locusQuery.getChunkRegion().getEnd());
+            }
+            filter.put("_id", new Document("$gte", lower).append("$lte", upper));
         } else {
             filter.put(DocumentToSampleIndexEntryConverter.SAMPLE_ID, sampleId);
         }
