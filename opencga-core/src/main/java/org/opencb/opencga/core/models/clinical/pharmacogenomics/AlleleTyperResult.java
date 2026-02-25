@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.clinical;
+package org.opencb.opencga.core.models.clinical.pharmacogenomics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -12,8 +12,8 @@ public class AlleleTyperResult {
     @JsonProperty("sampleId")
     private String sampleId;
 
-    @JsonProperty("starAlleles")
-    private List<StarAlleleResult> starAlleles;
+    @JsonProperty("alleleTyperResults")
+    private List<StarAlleleResult> alleleTyperResults;
 
     @JsonProperty("genotypes")
     private List<Genotype> genotypes;
@@ -24,10 +24,10 @@ public class AlleleTyperResult {
     public AlleleTyperResult() {
     }
 
-    public AlleleTyperResult(String sampleId, List<StarAlleleResult> starAlleles,
+    public AlleleTyperResult(String sampleId, List<StarAlleleResult> alleleTyperResults,
                                   List<Genotype> genotypes, List<TranslationInfo> translation) {
         this.sampleId = sampleId;
-        this.starAlleles = starAlleles;
+        this.alleleTyperResults = alleleTyperResults;
         this.genotypes = genotypes;
         this.translation = translation;
     }
@@ -40,12 +40,12 @@ public class AlleleTyperResult {
         this.sampleId = sampleId;
     }
 
-    public List<StarAlleleResult> getStarAlleles() {
-        return starAlleles;
+    public List<StarAlleleResult> getAlleleTyperResults() {
+        return alleleTyperResults;
     }
 
-    public void setStarAlleles(List<StarAlleleResult> starAlleles) {
-        this.starAlleles = starAlleles;
+    public void setAlleleTyperResults(List<StarAlleleResult> alleleTyperResults) {
+        this.alleleTyperResults = alleleTyperResults;
     }
 
     public List<Genotype> getGenotypes() {
@@ -71,8 +71,8 @@ public class AlleleTyperResult {
         @JsonProperty("gene")
         private String gene;
 
-        @JsonProperty("alleles")
-        private List<AlleleCall> alleles;
+        @JsonProperty("alleleCalls")
+        private List<AlleleCall> alleleCalls;
 
         @JsonProperty("variants")
         private List<String> variants;
@@ -80,9 +80,9 @@ public class AlleleTyperResult {
         public StarAlleleResult() {
         }
 
-        public StarAlleleResult(String gene, List<AlleleCall> alleles, List<String> variants) {
+        public StarAlleleResult(String gene, List<AlleleCall> alleleCalls, List<String> variants) {
             this.gene = gene;
-            this.alleles = alleles;
+            this.alleleCalls = alleleCalls;
             this.variants = variants;
         }
 
@@ -94,12 +94,12 @@ public class AlleleTyperResult {
             this.gene = gene;
         }
 
-        public List<AlleleCall> getAlleles() {
-            return alleles;
+        public List<AlleleCall> getAlleleCalls() {
+            return alleleCalls;
         }
 
-        public void setAlleles(List<AlleleCall> alleles) {
-            this.alleles = alleles;
+        public void setAlleleCalls(List<AlleleCall> alleleCalls) {
+            this.alleleCalls = alleleCalls;
         }
 
         public List<String> getVariants() {
@@ -119,17 +119,16 @@ public class AlleleTyperResult {
         private String allele;
 
         @JsonProperty("annotation")
-        private Object annotation;  // Placeholder for future StarAlleleAnnotation
+        private StarAlleleAnnotation annotation;
 
         public AlleleCall() {
         }
 
         public AlleleCall(String allele) {
             this.allele = allele;
-            this.annotation = null;  // Will be filled by StarAlleleAnnotation
         }
 
-        public AlleleCall(String allele, Object annotation) {
+        public AlleleCall(String allele, StarAlleleAnnotation annotation) {
             this.allele = allele;
             this.annotation = annotation;
         }
@@ -142,11 +141,11 @@ public class AlleleTyperResult {
             this.allele = allele;
         }
 
-        public Object getAnnotation() {
+        public StarAlleleAnnotation getAnnotation() {
             return annotation;
         }
 
-        public void setAnnotation(Object annotation) {
+        public void setAnnotation(StarAlleleAnnotation annotation) {
             this.annotation = annotation;
         }
     }

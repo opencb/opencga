@@ -26,7 +26,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.interpreter.InterpreterAnalysisTool;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsManager;
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;

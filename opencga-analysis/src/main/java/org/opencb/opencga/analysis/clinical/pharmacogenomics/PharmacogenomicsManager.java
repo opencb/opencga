@@ -16,18 +16,28 @@
 
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,10 +85,73 @@ public class PharmacogenomicsManager {
 
         logger.info("Allele typing completed for {} samples", results.size());
 
+        // Annotate star alleles with CellBase pharmacogenomics data
+        annotateResults(studyId, results, token);
+
         // Store results in catalog for each sample
         storeResultsInCatalog(studyId, results, token);
 
         return results;
+    }
+
+    /**
+     * Annotate star alleles with CellBase pharmacogenomics data.
+     * Skips annotation if no CellBase configuration is found for the project.
+     */
+    private void annotateResults(String studyId, List<AlleleTyperResult> results, String token) throws CatalogException, IOException {
+        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
+        if (cellBaseValidator == null) {
+            logger.warn("No CellBase configuration found for study {}. Skipping star allele annotation.", studyId);
+            return;
+        }
+
+        StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseValidator.getCellBaseClient());
+        for (AlleleTyperResult result : results) {
+            if (result == null || result.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
+                String gene = starAlleleResult.getGene();
+                if (gene == null || gene.isEmpty() || starAlleleResult.getAlleleCalls() == null) {
+                    continue;
+                }
+                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
+                    StarAlleleAnnotation annotation = annotator.annotate(gene, alleleCall.getAllele());
+                    alleleCall.setAnnotation(annotation);
+                }
+            }
+        }
+        logger.info("Star allele annotation completed for {} samples", results.size());
+    }
+
+    /**
+     * Build a CellBaseValidator from the project's CellBase configuration.
+     *
+     * @return CellBaseValidator, or null if no configuration found
+     */
+    private CellBaseValidator buildCellBaseValidator(String studyId, String token) throws CatalogException {
+        // Resolve study to FQN first
+        Study study = catalogManager.getStudyManager()
+                .get(Collections.singletonList(studyId), StudyManager.INCLUDE_STUDY_IDS, false, token)
+                .first();
+        String projectFqn = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+
+        Project project = catalogManager.getProjectManager()
+                .get(projectFqn, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.CELLBASE.key(),
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key())), token)
+                .first();
+
+        CellBaseConfiguration cellbase = project.getCellbase();
+        ProjectOrganism organism = project.getOrganism();
+
+        if (cellbase == null || organism == null) {
+            return null;
+        }
+
+        String species = organism.getScientificName();
+        String assembly = organism.getAssembly();
+        return new CellBaseValidator(cellbase, species, assembly);
     }
 
     /**
@@ -121,11 +194,8 @@ public class PharmacogenomicsManager {
                 SampleUpdateParams updateParams = new SampleUpdateParams();
                 updateParams.setAttributes(attributes);
 
-                OpenCGAResult<?> updateResult = catalogManager.getSampleManager()
-                        .update(studyId, sampleId, updateParams, QueryOptions.empty(), token);
-
+                catalogManager.getSampleManager().update(studyId, sampleId, updateParams, QueryOptions.empty(), token);
                 logger.debug("Updated sample {} with pharmacogenomics results", sampleId);
-
             } catch (CatalogException e) {
                 logger.error("Failed to update sample {} with pharmacogenomics results: {}", sampleId, e.getMessage());
                 throw e;

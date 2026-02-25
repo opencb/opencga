@@ -1,9 +1,14 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.io.BufferedReader;
@@ -11,6 +16,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -352,6 +358,53 @@ public class AlleleTyperTest {
 //        System.out.println("\nNA17114 CYP2D6 alleles found: " + cyp2d6Alleles2);
 //        System.out.println("Expected: *1/*5");
 //    }
+
+    @Test
+    @Category(MediumTests.class)
+    public void testGenerateAnnotatedJsonLines() throws IOException {
+        Path genotypingFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/3G_Export_DO_TrueMark_128_Export_DO_TrueMark_128_Genotyping_07-11-2025-074600.txt");
+        Path translationFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/PGX_SNP_CNV_128_OA_translation_RevC.csv");
+
+        // 1. Run AlleleTyper
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+        System.out.println("AlleleTyper produced " + results.size() + " sample results");
+
+        // 2. Annotate with CellBase pharmacogenomics
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .setVersion("v6.7")
+                .setDefaultSpecies("hsapiens")
+                .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient(clientConfiguration);
+        StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
+
+        for (AlleleTyperResult result : results) {
+            if (result == null || result.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
+                String gene = starAlleleResult.getGene();
+                if (gene == null || gene.isEmpty() || starAlleleResult.getAlleleCalls() == null) {
+                    continue;
+                }
+                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
+                    StarAlleleAnnotation annotation = annotator.annotate(gene, alleleCall.getAllele());
+                    alleleCall.setAnnotation(annotation);
+                    System.out.println("  Annotated " + gene + " " + alleleCall.getAllele()
+                            + " -> " + annotation.getDrugs().size() + " drugs");
+                }
+            }
+        }
+
+        // 3. Export to JSONL
+        Path outputFile = Paths.get("/home/imedina/projects/SESPA/pgx/pharmacogenomics_results.jsonl");
+        typer.exportToJsonLines(results, outputFile);
+
+        System.out.println("\nOutput file: " + outputFile);
+        System.out.println("Total samples: " + results.size());
+        assertTrue("Output file should exist", outputFile.toFile().exists());
+    }
 
     private String truncate(String str, int maxLength) {
         if (str == null || str.length() <= maxLength) {

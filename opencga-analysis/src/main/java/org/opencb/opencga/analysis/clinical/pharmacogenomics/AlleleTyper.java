@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -355,8 +355,8 @@ public class AlleleTyper {
      */
     private AlleleTyperResult buildSampleResult(String sampleId, PharmacogenomicsProfile profile,
                                                       Map<String, String> genotypes) {
-        // Build star allele results
-        List<AlleleTyperResult.StarAlleleResult> starAlleles = new ArrayList<>();
+        // Build allele typer results per gene
+        List<AlleleTyperResult.StarAlleleResult> alleleTyperResults = new ArrayList<>();
 
         for (Map.Entry<String, List<String>> geneEntry : profile.getGeneAlleles().entrySet()) {
             String gene = geneEntry.getKey();
@@ -371,7 +371,7 @@ public class AlleleTyper {
                 alleleCalls.add(new AlleleTyperResult.AlleleCall(allele));
             }
 
-            starAlleles.add(new AlleleTyperResult.StarAlleleResult(gene, alleleCalls, geneVariants));
+            alleleTyperResults.add(new AlleleTyperResult.StarAlleleResult(gene, alleleCalls, geneVariants));
         }
 
         // Build genotype list
@@ -383,7 +383,7 @@ public class AlleleTyper {
         // Build translation info
         List<AlleleTyperResult.TranslationInfo> translationList = buildTranslationInfo();
 
-        return new AlleleTyperResult(sampleId, starAlleles, genotypeList, translationList);
+        return new AlleleTyperResult(sampleId, alleleTyperResults, genotypeList, translationList);
     }
 
     /**

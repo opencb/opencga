@@ -29,7 +29,6 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSumm
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
@@ -44,6 +43,7 @@ import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperParams;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;

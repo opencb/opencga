@@ -1,5 +1,5 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
-import org.opencb.opencga.core.models.clinical.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 
 import org.junit.Before;
 import org.junit.Test;
