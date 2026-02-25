@@ -182,7 +182,9 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                 // Build per-field positional accessors for this file's sampleData (parsed once per field).
                 List<Integer> samplesInFile = samplesInFileCache.computeIfAbsent(
                         fid, f -> new ArrayList<>(metadataManager.getFileMetadata(studyId, f).getSamples()));
-                Map<String, IntFunction<String>> sampleDataAccessors = buildSampleDataAccessors(sampleDataDoc);
+                Document sfdDoc = fileDoc.get(DocumentToStudyEntryConverter.SAMPLE_FILTERABLE_DATA_FIELD, Document.class);
+                Map<String, IntFunction<String>> sampleDataAccessors =
+                        buildSampleDataAccessors(sampleDataDoc, sfdDoc, samplesInFile);
 
                 for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
                     String gt = DocumentToSamplesConverter.genotypeToDataModelType(mgtEntry.getKey());
@@ -271,18 +273,37 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
      *
      * <p>Only the fields included in the sample index ({@link #sampleCustomFields}) are parsed.
      * Each protobuf binary is decompressed and parsed once; the returned function accesses only
-     * the requested sample position on demand.
+     * the requested sample position on demand. Falls back to the {@code sfd} document when
+     * a protobuf accessor is not available.
      *
+     * @param sampleDataDoc protobuf-encoded sample data (may be null)
+     * @param sfdDoc        queryable sample filterable data document (may be null)
+     * @param samplesInFile ordered list of sample IDs in the file (for sfd index lookup)
      * @return Map from field key (lowercased) to a positional accessor ({@code pos -> value}).
      */
-    private Map<String, IntFunction<String>> buildSampleDataAccessors(Document sampleDataDoc) {
-        if (sampleDataDoc == null || sampleCustomFields.isEmpty()) {
+    private Map<String, IntFunction<String>> buildSampleDataAccessors(Document sampleDataDoc, Document sfdDoc,
+                                                                      List<Integer> samplesInFile) {
+        if ((sampleDataDoc == null && sfdDoc == null) || sampleCustomFields.isEmpty()) {
             return Collections.emptyMap();
         }
         Map<String, IntFunction<String>> result = new HashMap<>(sampleCustomFields.size());
         for (IndexField<String> field : sampleCustomFields) {
             String key = field.getKey().toLowerCase();
-            IntFunction<String> accessor = DocumentToSamplesConverter.sampleFieldAccessor(sampleDataDoc, key, compressExtraParams);
+            IntFunction<String> accessor = sampleDataDoc != null
+                    ? DocumentToSamplesConverter.sampleFieldAccessor(sampleDataDoc, key, compressExtraParams)
+                    : null;
+            if (accessor == null && sfdDoc != null) {
+                Document fieldSfd = sfdDoc.get(key, Document.class);
+                if (fieldSfd != null) {
+                    accessor = pos -> {
+                        if (pos < 0 || pos >= samplesInFile.size()) {
+                            return null;
+                        }
+                        Object val = fieldSfd.get(String.valueOf(samplesInFile.get(pos)));
+                        return val != null ? val.toString() : null;
+                    };
+                }
+            }
             if (accessor != null) {
                 result.put(key, accessor);
             }

@@ -176,7 +176,9 @@ public class SampleIndexVariant {
         if (this.parentsCode == null) {
             sb.append(" null");
         } else {
-            sb.append(this.parentsCode).append(" -> ").append(GenotypeCodec.decodeParents(this.parentsCode).toString("<Father = %1$s, Mother = %2$s>"));
+            sb.append(this.parentsCode).append(" -> ")
+                    .append(GenotypeCodec.decodeParents(this.parentsCode)
+                            .toString("<Father = %1$s, Mother = %2$s>"));
         }
 
         if (annotationIndex != null) {

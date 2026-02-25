@@ -24,6 +24,8 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
@@ -35,6 +37,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -45,6 +48,7 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,7 +255,19 @@ public class VariantMongoDBQueryParser {
         if (!filters.isEmpty()) {
             logger.info("MongoDB Query (all of):");
             if (idIntersectBson != null) {
-                logger.info("  IdIntersect = {}", idIntersectBson.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                BsonDocument bsonDocument = idIntersectBson.toBsonDocument();
+                String message;
+                if (bsonDocument.containsKey("$in")) {
+                    BsonArray array = bsonDocument.getArray("$in");
+                    if (array.size() > 10) {
+                        message = "{\"$in\" : [ \"" + array.get(0).asString().getValue() + "\" ... " + array.size() + " ] }";
+                    } else {
+                        message = bsonDocument.toJson(JSON_WRITER_SETTINGS);
+                    }
+                } else {
+                    message = bsonDocument.toJson(JSON_WRITER_SETTINGS);
+                }
+                logger.info("  IdIntersect = {}", message);
             }
             if (regionFilters.size() > 1) {
                 logger.info("  Region filters (any of):");
@@ -702,6 +718,57 @@ public class VariantMongoDBQueryParser {
             }
         }
 
+        // Build per-file and per-sample genotype conditions for multi-file samples.
+        // Used by FILE_DATA to tie conditions to the same file entry, and by SAMPLE_DATA
+        // to tie sfd conditions to the genotype within the same file entry.
+        Map<Integer, Bson> fileGenotypeConditions = null;
+        Map<Integer, Bson> sampleGenotypeConditions = null;
+        ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
+                parsedVariantQuery.getStudyQuery().getGenotypes();
+        if (preGenotypesQuery != null && defaultStudy != null) {
+            List<String> preDefaultGenotypes = defaultStudy.getAttributes()
+                    .getAsStringList(DEFAULT_GENOTYPE.key());
+            for (KeyOpValue<SampleMetadata, List<String>> sampleGt : preGenotypesQuery.getValues()) {
+                SampleMetadata sample = sampleGt.getKey();
+                int sampleId = sample.getId();
+                List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
+                        defaultStudy.getId(), sampleId, true);
+                List<Bson> gtOrConditions = new ArrayList<>();
+                boolean canApply = true;
+                for (String genotype : sampleGt.getValue()) {
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)
+                            || genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                        continue;
+                    }
+                    if (isNegated(genotype) || preDefaultGenotypes.contains(genotype)) {
+                        canApply = false; // Complex cases - skip optimization
+                        break;
+                    }
+                    String mgtKey = DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                    gtOrConditions.add(eq(mgtKey, sampleId));
+                }
+                if (canApply && !gtOrConditions.isEmpty()) {
+                    Bson gtFilter = gtOrConditions.size() == 1
+                            ? gtOrConditions.get(0) : or(gtOrConditions);
+                    // Per-sample condition (used by SAMPLE_DATA)
+                    if (sampleGenotypeConditions == null) {
+                        sampleGenotypeConditions = new HashMap<>();
+                    }
+                    sampleGenotypeConditions.put(sampleId, gtFilter);
+                    // Per-file condition (used by FILE_DATA, only for multi-file samples)
+                    if (sampleFileIds.size() > 1) {
+                        if (fileGenotypeConditions == null) {
+                            fileGenotypeConditions = new HashMap<>();
+                        }
+                        for (Integer fileId : sampleFileIds) {
+                            fileGenotypeConditions.put(fileId, gtFilter);
+                        }
+                    }
+                }
+            }
+        }
+
         if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
             String filterValue = query.getString(FILTER.key());
             QueryOperation filterOperation = checkOperator(filterValue);
@@ -713,9 +780,6 @@ public class VariantMongoDBQueryParser {
             boolean useFileElemMatch = !fileIds.isEmpty();
             boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
-//                values = query.getString(QUAL.key());
-//                QueryOperation qualOperation = checkOperator(values);
-//                List<String> qualValues = splitValue(values, qualOperation);
             if (!useFileElemMatch) {
                 // Files are now at root level, so no studyQueryPrefix needed.
                 String key = DocumentToStudyEntryConverter.FILES_FIELD + '.'
@@ -769,52 +833,6 @@ public class VariantMongoDBQueryParser {
 
             }
 
-            // Build per-file genotype conditions for multi-file samples.
-            // When a sample spans multiple files, FILE_DATA conditions (e.g. FILTER=PASS)
-            // must be tied to the genotype within the same file entry. Otherwise, the
-            // FILE_DATA condition could match one file while the genotype matches another.
-            Map<Integer, Bson> fileGenotypeConditions = null;
-            ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
-                    parsedVariantQuery.getStudyQuery().getGenotypes();
-            if (preGenotypesQuery != null && defaultStudy != null) {
-                List<String> preDefaultGenotypes = defaultStudy.getAttributes()
-                        .getAsStringList(DEFAULT_GENOTYPE.key());
-                for (KeyOpValue<SampleMetadata, List<String>> sampleGt : preGenotypesQuery.getValues()) {
-                    SampleMetadata sample = sampleGt.getKey();
-                    int sampleId = sample.getId();
-                    List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
-                            defaultStudy.getId(), sampleId, true);
-                    if (sampleFileIds.size() <= 1) {
-                        continue; // Single-file sample: no cross-file mismatch possible
-                    }
-                    List<Bson> gtOrConditions = new ArrayList<>();
-                    boolean canApply = true;
-                    for (String genotype : sampleGt.getValue()) {
-                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)
-                                || genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-                            continue;
-                        }
-                        if (isNegated(genotype) || preDefaultGenotypes.contains(genotype)) {
-                            canApply = false; // Complex cases - skip optimization
-                            break;
-                        }
-                        String mgtKey = DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
-                                + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
-                        gtOrConditions.add(eq(mgtKey, sampleId));
-                    }
-                    if (canApply && !gtOrConditions.isEmpty()) {
-                        if (fileGenotypeConditions == null) {
-                            fileGenotypeConditions = new HashMap<>();
-                        }
-                        Bson gtFilter = gtOrConditions.size() == 1
-                                ? gtOrConditions.get(0) : or(gtOrConditions);
-                        for (Integer fileId : sampleFileIds) {
-                            fileGenotypeConditions.put(fileId, gtFilter);
-                        }
-                    }
-                }
-            }
-
             if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
                 List<Bson> infoElemMatch = new ArrayList<>(parsedFileData.getValues().size());
                 for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
@@ -852,7 +870,41 @@ public class VariantMongoDBQueryParser {
         }
 
         if (isValidParam(query, SAMPLE_DATA)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery =
+                    parsedVariantQuery.getStudyQuery().getSampleDataQuery();
+            if (sampleDataQuery != null && sampleDataQuery.isNotEmpty()) {
+                List<Bson> sampleDataFilters = new ArrayList<>();
+                for (KeyValues<SampleMetadata, KeyOpValue<String, String>> sampleKv
+                        : sampleDataQuery.getValues()) {
+                    SampleMetadata sample = sampleKv.getKey();
+                    int sampleId = sample.getId();
+
+                    // Validate all queried fields are filterable for this sample's files
+                    validateSampleDataFieldsFilterable(sample, sampleKv, defaultStudy);
+
+                    // Build conditions for each field filter
+                    List<Bson> elemMatchFilters = new ArrayList<>();
+                    for (KeyOpValue<String, String> condition : sampleKv.getValues()) {
+                        String field = condition.getKey();
+                        String op = condition.getOp();
+                        String value = condition.getValue();
+                        String sfdKey = DocumentToStudyEntryConverter.SAMPLE_FILTERABLE_DATA_FIELD + "."
+                                + field.toLowerCase() + "." + sampleId;
+                        addCompQueryFilter(sfdKey, value, elemMatchFilters, op);
+                    }
+
+                    // Add genotype tie-in for multi-file samples
+                    if (sampleGenotypeConditions != null) {
+                        Bson gtCondition = sampleGenotypeConditions.get(sampleId);
+                        if (gtCondition != null) {
+                            elemMatchFilters.add(gtCondition);
+                        }
+                    }
+
+                    sampleDataFilters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(elemMatchFilters)));
+                }
+                addAll(filters, sampleDataQuery.getOperation(), sampleDataFilters);
+            }
         }
 
         // Only will contain values if the genotypesOperator is AND
@@ -1103,6 +1155,35 @@ public class VariantMongoDBQueryParser {
         } else {
             filters.add(and(filterFilters));
 //            filters.addAll(filterFilters);
+        }
+    }
+
+    /**
+     * Validate that all FORMAT fields referenced in a SAMPLE_DATA query are filterable (have sfd data)
+     * for all files that contain the given sample.
+     */
+    private void validateSampleDataFieldsFilterable(SampleMetadata sample,
+                                                    KeyValues<SampleMetadata, KeyOpValue<String, String>> sampleKv,
+                                                    StudyMetadata defaultStudy) {
+        if (defaultStudy == null) {
+            throw VariantQueryException.missingStudyForSample(String.valueOf(sample.getId()), metadataManager.getStudyNames());
+        }
+        List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
+                defaultStudy.getId(), sample.getId(), true);
+        for (KeyOpValue<String, String> condition : sampleKv.getValues()) {
+            String field = condition.getKey();
+            for (Integer fileId : sampleFileIds) {
+                FileMetadata fileMeta = metadataManager.getFileMetadata(defaultStudy.getId(), fileId);
+                List<String> sfdFields = fileMeta.getAttributes()
+                        .getAsStringList(MongoDBVariantStorageOptions.SFD_FIELDS_KEY);
+                if (sfdFields == null || sfdFields.isEmpty() || !sfdFields.contains(field)) {
+                    throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA,
+                            MongoDBVariantStorageEngine.STORAGE_ENGINE_ID,
+                            "Field '" + field + "' is not filterable for file '"
+                                    + metadataManager.getFileName(defaultStudy.getId(), fileId)
+                                    + "'. The file may need to be re-indexed.");
+                }
+            }
         }
     }
 

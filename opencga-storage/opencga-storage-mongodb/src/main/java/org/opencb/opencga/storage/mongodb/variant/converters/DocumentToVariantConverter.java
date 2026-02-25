@@ -117,6 +117,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                 FILES_FIELD + '.' + FILEID_FIELD,
                 FILES_FIELD + '.' + FILE_GENOTYPE_FIELD,
                 FILES_FIELD + '.' + SAMPLE_DATA_FIELD,
+                FILES_FIELD + '.' + SAMPLE_FILTERABLE_DATA_FIELD,
                 FILES_FIELD + '.' + ALTERNATES_FIELD,
                 FILES_FIELD + '.' + ORI_FIELD
         ));

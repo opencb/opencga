@@ -48,6 +48,11 @@ public class DocumentToStudyEntryConverter {
     public static final String FILEID_FIELD = "fid";
     public static final String SAMPLE_DATA_FIELD = "sampleData";
     /**
+     * Per-file queryable sample data. Maps field name → {sampleId → typed value}.
+     * Only FORMAT fields with VCF Number="1" or "." are stored here.
+     */
+    public static final String SAMPLE_FILTERABLE_DATA_FIELD = "sfd";
+    /**
      * Per-file genotype map.
      */
     public static final String FILE_GENOTYPE_FIELD = "mgt";

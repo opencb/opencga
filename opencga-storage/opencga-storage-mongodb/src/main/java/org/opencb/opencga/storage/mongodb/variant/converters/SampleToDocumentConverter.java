@@ -4,6 +4,7 @@ import com.google.common.collect.HashBiMap;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -18,18 +19,37 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOp
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.SAMPLE_FILTERABLE_DATA_FIELD;
 
 public class SampleToDocumentConverter {
 
     private final StudyMetadata studyMetadata;
     private final Set<String> defaultGenotype;
     private final Map<String, Integer> sampleIdsMap;
+    /** Set of extra-field indices (into extraFields list) that are filterable (Number="1" or "."). */
+    private final Set<Integer> filterableFieldIndices;
 
     public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap) {
         this.studyMetadata = studyMetadata;
         this.sampleIdsMap = sampleIdsMap;
         List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
         this.defaultGenotype = new HashSet<>(defGenotype);
+
+        // Compute which extra FORMAT fields are filterable based on VCF Number attribute.
+        // Fields with Number="1" or "." are filterable; others (A, R, G, etc.) are not.
+        List<String> extraFields = studyMetadata.getAttributes()
+                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
+        Map<String, VariantFileHeaderComplexLine> formatsMap = studyMetadata.getVariantHeaderLines("FORMAT");
+        this.filterableFieldIndices = new HashSet<>();
+        for (int i = 0; i < extraFields.size(); i++) {
+            VariantFileHeaderComplexLine line = formatsMap.get(extraFields.get(i));
+            if (line != null) {
+                String number = line.getNumber();
+                if ("1".equals(number) || ".".equals(number)) {
+                    filterableFieldIndices.add(i);
+                }
+            }
+        }
     }
 
     /**
@@ -62,6 +82,7 @@ public class SampleToDocumentConverter {
      * - "samplesData": the sample data for the samples in this file, with extra format fields stored as compressed protobuf OtherFields.
      * - "mgt": the per-file genotype map, with sample ids grouped by genotype. This is only added if genotypes are not
      *          excluded and there are genotypes different from the default genotype.
+     * - "sfd": per-field queryable sample data (only for filterable FORMAT fields).
      *
      * @param studyEntry     the StudyEntry containing the sample data
      * @param samplesInFile  the set of sample names that belong to the file being processed. Only these samples will be
@@ -131,16 +152,17 @@ public class SampleToDocumentConverter {
         List<String> extraFieldsType = studyMetadata.getAttributes()
                 .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key());
 
+        // sfd document: maps fieldName(lowercase) → {sampleId(string) → typed value}
+        Document sfdDocument = new Document();
+
         for (int i = 0; i < extraFields.size(); i++) {
             String extraField = extraFields.get(i);
             String extraFieldType = i < extraFieldsType.size() ? extraFieldsType.get(i) : "String";
-
+            boolean filterable = filterableFieldIndices.contains(i);
 
             VariantMongoDBProto.OtherFields.Builder builder = VariantMongoDBProto.OtherFields.newBuilder();
-//            List<Object> values = new ArrayList<>(samplesPosition.size());
-//            for (int size = samplesPosition.size(); size > 0; size--) {
-//                values.add(UNKNOWN_FIELD);
-//            }
+            Document fieldSfd = filterable ? new Document() : null;
+
             sampleIdx = 0;
             if (studyEntry.getSampleDataKeySet().contains(extraField)) {
                 Integer formatIdx = studyEntry.getSampleDataKeyPosition(extraField);
@@ -150,34 +172,40 @@ public class SampleToDocumentConverter {
                     if (!samplesInFile.contains(sampleName)) {
                         continue;
                     }
-//                    Integer index = samplesPosition.get(sampleName);
                     String stringValue = sample.getData().get(formatIdx);
-//                    Object value;
-//                    if (NumberUtils.isNumber(stringValue)) {
-//                        try {
-//                            value = Integer.parseInt(stringValue);
-//                        } catch (NumberFormatException e) {
-//                            try {
-//                                value = Double.parseDouble(stringValue);
-//                            } catch (NumberFormatException e2) {
-//                                value = stringValue;
-//                            }
-//                        }
-//                    } else {
-//                        value = stringValue;
-//                    }
                     switch (extraFieldType) {
                         case "Integer": {
                             builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            // Add to sfd if filterable and not missing
+                            if (filterable && stringValue != null && !".".equals(stringValue)) {
+                                try {
+                                    int sampleId = getSampleId(sampleName);
+                                    fieldSfd.append(String.valueOf(sampleId), Integer.parseInt(stringValue));
+                                } catch (NumberFormatException e) {
+                                    // Skip non-parseable values
+                                }
+                            }
                             break;
                         }
                         case "Float": {
                             builder.addFloatValues(FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            if (filterable && stringValue != null && !".".equals(stringValue)) {
+                                try {
+                                    int sampleId = getSampleId(sampleName);
+                                    fieldSfd.append(String.valueOf(sampleId), Double.parseDouble(stringValue));
+                                } catch (NumberFormatException e) {
+                                    // Skip non-parseable values
+                                }
+                            }
                             break;
                         }
                         case "String":
                         default:
                             builder.addStringValues(stringValue);
+                            if (filterable && stringValue != null && !".".equals(stringValue)) {
+                                int sampleId = getSampleId(sampleName);
+                                fieldSfd.append(String.valueOf(sampleId), stringValue);
+                            }
                             break;
                     }
                 }
@@ -193,7 +221,17 @@ public class SampleToDocumentConverter {
                     }
                 }
                 dataFields.append(extraField.toLowerCase(), byteArray);
+
+                // Add filterable field data to sfd
+                if (filterable && fieldSfd != null && !fieldSfd.isEmpty()) {
+                    sfdDocument.append(extraField.toLowerCase(), fieldSfd);
+                }
             } // else { Don't set this field }
+        }
+
+        // Append sfd to fileDocument if any filterable data was collected
+        if (!sfdDocument.isEmpty()) {
+            fileDocument.append(SAMPLE_FILTERABLE_DATA_FIELD, sfdDocument);
         }
     }
 

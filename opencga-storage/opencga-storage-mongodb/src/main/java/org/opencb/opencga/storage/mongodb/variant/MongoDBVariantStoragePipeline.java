@@ -807,6 +807,29 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         Set<String> genotypes = new HashSet<>(studyMetadata.getAttributes().getAsStringList(LOADED_GENOTYPES.key()));
         genotypes.addAll(writeResult.getGenotypes());
         studyMetadata.getAttributes().put(LOADED_GENOTYPES.key(), genotypes);
+
+        // Compute filterable FORMAT fields (Number="1" or ".") and record in each file's metadata.
+        List<String> extraFields = studyMetadata.getAttributes().getAsStringList(EXTRA_FORMAT_FIELDS.key());
+        Map<String, org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine> formatsMap =
+                studyMetadata.getVariantHeaderLines("FORMAT");
+        List<String> filterableFields = new ArrayList<>();
+        for (String field : extraFields) {
+            org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine line = formatsMap.get(field);
+            if (line != null) {
+                String number = line.getNumber();
+                if ("1".equals(number) || ".".equals(number)) {
+                    filterableFields.add(field);
+                }
+            }
+        }
+        if (!filterableFields.isEmpty()) {
+            int studyId = studyMetadata.getId();
+            for (Integer fileId : fileIds) {
+                metadataManager.updateFileMetadata(studyId, fileId, fm -> {
+                    fm.getAttributes().put(SFD_FIELDS_KEY, filterableFields);
+                });
+            }
+        }
     }
 
     @Override
