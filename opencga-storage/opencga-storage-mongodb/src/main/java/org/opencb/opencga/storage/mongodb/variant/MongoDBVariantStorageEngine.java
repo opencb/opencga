@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -437,6 +438,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MongoCredentials credentials = getMongoCredentials();
         MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         return new MongoDBSampleIndexDBAdaptor(db, getMetadataManager());
+    }
+
+    @Override
+    protected VariantQueryParser getVariantQueryParser() throws StorageEngineException {
+        return new MongoDBVariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
     @Override
