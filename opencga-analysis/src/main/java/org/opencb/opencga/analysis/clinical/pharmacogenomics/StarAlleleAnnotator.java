@@ -61,10 +61,12 @@ public class StarAlleleAnnotator {
      * @throws IOException if CellBase query fails
      */
     public StarAlleleAnnotation annotate(String geneName, String starAllele) throws IOException {
-        // Parse diplotype into individual star allele names (e.g. "*4/*16" -> "*4", "*16")
+        // Parse diplotype into individual star allele names with gene prefix
+        // (e.g. gene="CYP2D6", starAllele="*4/*16" -> "CYP2D6*4", "CYP2D6*16")
+        // CellBase haplotypes include the gene name prefix (e.g. "CYP2D6*2")
         Set<String> individualAlleles = new HashSet<>();
         for (String allele : starAllele.split("/")) {
-            individualAlleles.add(allele.trim());
+            individualAlleles.add(geneName + allele.trim());
         }
 
         // Query all drugs for this gene (cached)
@@ -146,8 +148,7 @@ public class StarAlleleAnnotator {
             if (drug.getVariants() != null) {
                 List<PharmaVariantAnnotation> filteredVariants = drug.getVariants().stream()
                         .filter(v -> v.getGeneNames() != null && v.getGeneNames().contains(gene))
-                        .filter(v -> v.getHaplotypes() == null || v.getHaplotypes().isEmpty()
-                                || v.getHaplotypes().stream().anyMatch(starAlleles::contains))
+                        .filter(v -> v.getHaplotypes().stream().anyMatch(starAlleles::contains))
                         .collect(Collectors.toList());
                 copy.setVariants(filteredVariants);
             }

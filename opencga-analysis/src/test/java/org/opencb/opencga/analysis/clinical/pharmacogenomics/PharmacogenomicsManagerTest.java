@@ -16,6 +16,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,13 +38,24 @@ public class PharmacogenomicsManagerTest {
                 .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 30000));
         CellBaseClient cellBaseClient = new CellBaseClient(clientConfiguration);
 
+        ObjectMapper objectMapper = new ObjectMapper();
+
         List<AlleleTyperResult> results = buildResultsFromCsv();
         assertFalse("Results should not be empty", results.isEmpty());
+
+        // Write parsed CSV results (before annotation) to /tmp
+        Path parsedPath = Paths.get("/tmp/pgx_parsed_results.json");
+        Files.write(parsedPath, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(results));
+        System.out.println("Parsed CSV results written to: " + parsedPath);
 
         PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
         manager.annotateResults(results, cellBaseClient);
 
-        byte[] json = new ObjectMapper().writeValueAsBytes(results);
+        // Write annotated results to /tmp
+        byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(results);
+        Path annotatedPath = Paths.get("/tmp/pgx_annotated_results.json");
+        Files.write(annotatedPath, json);
+        System.out.println("Annotated results written to: " + annotatedPath);
         System.out.println("Annotation serialized size: " + String.format("%.2f", json.length / 1024.0) + " KB");
 
         for (AlleleTyperResult result : results) {
