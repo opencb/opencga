@@ -27,17 +27,22 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
     @JsonProperty("alleleTyperContent")
     private String alleleTyperContent;
 
+    @JsonProperty("outdir")
+    private String outdir;
+
     public PharmacogenomicsAnnotationAnalysisToolParams() {
     }
 
-    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent) {
+    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent, String outdir) {
         this.alleleTyperContent = alleleTyperContent;
+        this.outdir = outdir;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PharmacogenomicsAnnotationAnalysisToolParams{");
         sb.append("alleleTyperContent='").append(alleleTyperContent).append('\'');
+        sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -48,6 +53,15 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
 
     public PharmacogenomicsAnnotationAnalysisToolParams setAlleleTyperContent(String alleleTyperContent) {
         this.alleleTyperContent = alleleTyperContent;
+        return this;
+    }
+
+    public String getOutdir() {
+        return outdir;
+    }
+
+    public PharmacogenomicsAnnotationAnalysisToolParams setOutdir(String outdir) {
+        this.outdir = outdir;
         return this;
     }
 }

@@ -97,8 +97,8 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
     public void testAnnotationAnalysis() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_pgx_annotation_analysis"));
 
-        PharmacogenomicsAnnotationAnalysisToolParams params =
-                new PharmacogenomicsAnnotationAnalysisToolParams(alleleTyperContent);
+        PharmacogenomicsAnnotationAnalysisToolParams params = new PharmacogenomicsAnnotationAnalysisToolParams();
+        params.setAlleleTyperContent(alleleTyperContent);
 
         ExecutionResult executionResult = toolRunner.execute(
                 PharmacogenomicsAnnotationAnalysisTool.class,

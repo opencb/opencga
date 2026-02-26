@@ -933,6 +933,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "alleleTyperContent", commandOptions.alleleTyperContent, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             pharmacogenomicsAnnotationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

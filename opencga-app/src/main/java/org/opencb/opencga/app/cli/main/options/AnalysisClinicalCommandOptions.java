@@ -1145,6 +1145,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--allele-typer-content"}, description = "The body web service alleleTyperContent parameter", required = false, arity = 1)
         public String alleleTyperContent;
     
+        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        public String outdir;
+    
     }
 
     @Parameters(commandNames = {"pipeline-affy-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.")
