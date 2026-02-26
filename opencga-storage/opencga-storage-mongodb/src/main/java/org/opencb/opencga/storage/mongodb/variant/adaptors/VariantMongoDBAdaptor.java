@@ -1086,8 +1086,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - IDs
      * <p>
      * Study indices
-     * - StudyId
-     * - FileId
+     * - StudyId (studies.sid)
+     * File indices
+     * - FileId (files.fid)
      * <p>
      * Stats indices
      * - StatsMaf
@@ -1096,7 +1097,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Annotation indices
      * - XRef.id
      * - ConsequenceType.so
-     * - _gn_so : SPARSE
+     * - _ct_combined : SPARSE
      * - PopulationFrequency Study + Population + AlternateFrequency : SPARSE
      * - Clinical.Clinvar.clinicalSignificance  : SPARSE
      * ConservedRegionScore
@@ -1139,7 +1140,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(
                 new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), onBackground);
         variantsCollection.createIndex(
-                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
+                new Document(DocumentToVariantConverter.FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
 
         // Stats indices
         ////////////////
