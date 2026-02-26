@@ -23,7 +23,6 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
     public final static String ID = "pharmacogenomics-annotation-analysis";
     public final static String DESCRIPTION = "Annotate the star alleles for the input samples with pharmacogenomics data";
 
-    private String study;
     private CellBaseClient cellBaseClient;
 
     private List<AlleleTyperResult> alleleTyperResults;
@@ -36,8 +35,6 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
     @Override
     protected void check() throws Exception {
         super.check();
-
-        this.study = getStudyFqn();
 
         this.pharmacogenomicsManager = new PharmacogenomicsManager(getCatalogManager());
 
@@ -67,18 +64,10 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
         // Annotate the allele typer results using the pharmacogenomics manager
         pharmacogenomicsManager.annotateResults(alleleTyperResults, cellBaseClient);
 
-        // Write the annotated results to the output directory
-        ObjectMapper objectMapper = new ObjectMapper();
-        byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(alleleTyperResults);
-        Path annotatedPath = getOutDir().resolve("pgx_annotated_results.json");
-        Files.write(annotatedPath, json);
-        if (!Files.exists(annotatedPath)) {
-            throw new IOException("Could not write the pharmacogenomics annotation results to " + annotatedPath);
-        }
-        logger.info("Annotated results written to: {}", annotatedPath);
-        if (logger.isInfoEnabled()) {
-            logger.info("Annotated results serialized size: {} KB", String.format("%.2f", json.length / 1024.0));
-        }
+        // Save the results to the output directory
+        Path resultsPath = getOutDir().resolve(PharmacogenomicsAlleleTyperAnalysisTool.RESULTS_DIR);
+        Files.createDirectories(resultsPath);
+        pharmacogenomicsManager.storeResultsInPath(alleleTyperResults, resultsPath);
     }
 
 }

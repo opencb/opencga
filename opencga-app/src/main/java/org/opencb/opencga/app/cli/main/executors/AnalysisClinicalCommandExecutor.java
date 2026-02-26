@@ -48,6 +48,8 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperParams;
+import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperToolParams;
+import org.opencb.opencga.core.models.clinical.PharmacogenomicsAnnotationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
@@ -158,6 +160,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "pharmacogenomics-allele-typer":
                 queryResponse = alleleTyperPharmacogenomics();
+                break;
+            case "pharmacogenomics-allele-typer-run":
+                queryResponse = runPharmacogenomicsAlleleTyper();
+                break;
+            case "pharmacogenomics-annotation-run":
+                queryResponse = runPharmacogenomicsAnnotation();
                 break;
             case "pipeline-affy-run":
                 queryResponse = runPipelineAffy();
@@ -850,6 +858,87 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), PharmacogenomicsAlleleTyperParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().alleleTyperPharmacogenomics(pharmacogenomicsAlleleTyperParams, queryParams);
+    }
+
+    private RestResponse<Job> runPharmacogenomicsAlleleTyper() throws Exception {
+        logger.debug("Executing runPharmacogenomicsAlleleTyper in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPharmacogenomicsAlleleTyperCommandOptions commandOptions = analysisClinicalCommandOptions.runPharmacogenomicsAlleleTyperCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        PharmacogenomicsAlleleTyperToolParams pharmacogenomicsAlleleTyperToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pharmacogenomics/alleleTyper/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            pharmacogenomicsAlleleTyperToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PharmacogenomicsAlleleTyperToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "genotypingContent", commandOptions.genotypingContent, true);
+            putNestedIfNotEmpty(beanParams, "translationContent", commandOptions.translationContent, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            pharmacogenomicsAlleleTyperToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), PharmacogenomicsAlleleTyperToolParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPharmacogenomicsAlleleTyper(pharmacogenomicsAlleleTyperToolParams, queryParams);
+    }
+
+    private RestResponse<Job> runPharmacogenomicsAnnotation() throws Exception {
+        logger.debug("Executing runPharmacogenomicsAnnotation in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPharmacogenomicsAnnotationCommandOptions commandOptions = analysisClinicalCommandOptions.runPharmacogenomicsAnnotationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        PharmacogenomicsAnnotationAnalysisToolParams pharmacogenomicsAnnotationAnalysisToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pharmacogenomics/annotation/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            pharmacogenomicsAnnotationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PharmacogenomicsAnnotationAnalysisToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "alleleTyperContent", commandOptions.alleleTyperContent, true);
+
+            pharmacogenomicsAnnotationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), PharmacogenomicsAnnotationAnalysisToolParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPharmacogenomicsAnnotation(pharmacogenomicsAnnotationAnalysisToolParams, queryParams);
     }
 
     private RestResponse<Job> runPipelineAffy() throws Exception {

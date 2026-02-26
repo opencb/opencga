@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -36,6 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -95,12 +98,44 @@ public class PharmacogenomicsManager {
 
         return results;
     }
+    public List<AlleleTyperResult> alleleTyper(String studyId, String genotypingFileContent, String translationFileContent,
+                                               boolean annotate, String token)
+            throws IOException, CatalogException {
+        logger.info("Starting pharmacogenomics allele typing for study: {}", studyId);
+
+        // First, CellBase validator
+        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
+        if (cellBaseValidator == null) {
+            throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
+        }
+
+        // Initialize AlleleTyper
+        AlleleTyper typer = new AlleleTyper();
+
+        // Parse translation file
+        typer.parseTranslationFromString(translationFileContent);
+
+        // Build pharmacogenomics results
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResultsFromString(genotypingFileContent);
+        logger.info("Allele typing completed for {} samples", results.size());
+
+        if (annotate) {
+            // Annotate star alleles with CellBase pharmacogenomics data
+            annotateResults(results, cellBaseValidator.getCellBaseClient());
+        }
+
+//        // Store results in the path outdir: each sample in a JSON file
+//        storeResultsInCatalog(studyId, results, token);
+
+        return results;
+    }
 
     /**
      * Annotate star alleles with CellBase pharmacogenomics data.
      * Skips annotation if no CellBase configuration is found for the project.
      */
     public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
+        logger.info("Annotating star alleles with CellBase pharmacogenomics data");
         StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
         long startTime = System.currentTimeMillis();
         for (AlleleTyperResult result : results) {
@@ -150,6 +185,20 @@ public class PharmacogenomicsManager {
         String species = organism.getScientificName();
         String assembly = organism.getAssembly();
         return new CellBaseValidator(cellbase, species, assembly);
+    }
+
+    public void storeResultsInPath(List<AlleleTyperResult> results, Path annotatedDir) throws IOException {
+        long totalSize = 0;
+        for (AlleleTyperResult r : results) {
+            byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(r);
+            Path samplePath = annotatedDir.resolve(r.getSampleId() + ".json");
+            Files.write(samplePath, json);
+            totalSize += json.length;
+        }
+        logger.info("Allele typer results written to: {} ({}) files", annotatedDir, results.size());
+        if (logger.isInfoEnabled()) {
+            logger.info("Allele typer results total serialized size: {} KB", String.format("%.2f", totalSize / 1024.0));
+        }
     }
 
     /**

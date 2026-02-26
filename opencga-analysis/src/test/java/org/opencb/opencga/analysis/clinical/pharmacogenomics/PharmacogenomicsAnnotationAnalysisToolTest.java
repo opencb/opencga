@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
@@ -106,23 +108,23 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
 
         assertNotNull("Execution result should not be null", executionResult);
 
-        // Check the output file exists and is non-empty
-        Path annotatedPath = outDir.resolve("pgx_annotated_results.json");
-        assertTrue("Annotated results file should exist: " + annotatedPath, Files.exists(annotatedPath));
-        long fileSizeBytes = Files.size(annotatedPath);
-        assertTrue("Annotated results file should not be empty", fileSizeBytes > 0);
-        System.out.printf("Annotated results file size: %.2f KB%n", fileSizeBytes / 1024.0);
+        // Check that the results directory exists and contains one JSON file per sample
+        Path resultsDir = outDir.resolve(PharmacogenomicsAlleleTyperAnalysisTool.RESULTS_DIR);
+        assertTrue("Results directory should exist: " + resultsDir, Files.exists(resultsDir));
 
-        // Deserialise and verify annotations are present
+        List<Path> resultFiles;
+        try (Stream<Path> stream = Files.list(resultsDir)) {
+            resultFiles = stream.filter(p -> p.toString().endsWith(".json")).collect(Collectors.toList());
+        }
+        assertFalse("Results directory should contain at least one JSON file", resultFiles.isEmpty());
+        System.out.printf("Annotated results: %d sample file(s) in %s%n", resultFiles.size(), resultsDir);
+
+        // Deserialise each per-sample file and verify annotations are present
         ObjectMapper objectMapper = new ObjectMapper();
-        List<AlleleTyperResult> annotatedResults = objectMapper.readValue(
-                annotatedPath.toFile(),
-                objectMapper.getTypeFactory().constructCollectionType(List.class, AlleleTyperResult.class));
-
-        assertFalse("Annotated results should not be empty", annotatedResults.isEmpty());
-
         int annotatedCallCount = 0;
-        for (AlleleTyperResult sampleResult : annotatedResults) {
+        for (Path sampleFile : resultFiles) {
+            assertTrue("Sample result file should not be empty: " + sampleFile, Files.size(sampleFile) > 0);
+            AlleleTyperResult sampleResult = objectMapper.readValue(sampleFile.toFile(), AlleleTyperResult.class);
             assertNotNull("Sample result should not be null", sampleResult);
             if (sampleResult.getAlleleTyperResults() == null) {
                 continue;

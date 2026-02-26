@@ -25,6 +25,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.interpreter.InterpreterAnalysisTool;
+import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsAlleleTyperAnalysisTool;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsAnnotationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsManager;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAnnotationAnalysisToolParams;
@@ -1684,7 +1685,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @POST
     @Path("/pharmacogenomics/alleleTyper/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Perform pharmacogenomics allele typing and store results in sample attributes", response = AlleleTyperResult.class)
+    @ApiOperation(value = PharmacogenomicsAlleleTyperAnalysisTool.ID, response = Job.class)
     public Response pharmacogenomicsAlleleTyperRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1694,15 +1695,10 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(name = "body", value = "JSON containing genotyping and translation file contents", required = true)
-            PharmacogenomicsAlleleTyperParams params) {
-        try {
-            // TODO
-            // Return results
-            return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 0, null, 0));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            @ApiParam(name = "body", value = "JSON with parameters to execute the tool " + PharmacogenomicsAlleleTyperAnalysisTool.ID, required = true)
+            PharmacogenomicsAlleleTyperToolParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, PharmacogenomicsAlleleTyperAnalysisTool.ID, params, jobName, jobDescription,
+                dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1723,5 +1719,4 @@ public class ClinicalWebService extends AnalysisWebService {
         return submitJob(study, JobType.NATIVE_TOOL, PharmacogenomicsAnnotationAnalysisTool.ID, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
-
 }
