@@ -109,7 +109,7 @@ public class StarAlleleAnnotator {
 
         QueryOptions queryOptions = new QueryOptions("geneName", gene);
         queryOptions.put(QueryOptions.LIMIT, MAX_RESULTS);
-        queryOptions.put(QueryOptions.EXCLUDE, "genes");
+//        queryOptions.put(QueryOptions.EXCLUDE, "genes");
 
         CellBaseDataResponse<PharmaChemical> response = cellBaseClient.getGenericClient()
                 .get("clinical", "pharmacogenomics", "search", "", queryOptions, PharmaChemical.class);

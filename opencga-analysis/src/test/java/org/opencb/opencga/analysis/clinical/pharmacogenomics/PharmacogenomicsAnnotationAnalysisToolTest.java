@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
-import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAnnotationAnalysisToolParams;
@@ -75,11 +75,11 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
                         .setId(PROJECT_ID)
                         .setOrganism(new ProjectOrganism("hsapiens", "grch38"))
                         .setCellbase(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v6.7")),
-                AbstractManagerTest.INCLUDE_RESULT, token).first();
+                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
 
         // Create study
         Study study = catalogManager.getStudyManager()
-                .create(project.getId(), new Study().setId(STUDY_ID), AbstractManagerTest.INCLUDE_RESULT, token).first();
+                .create(project.getId(), new Study().setId(STUDY_ID), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first();
         studyFqn = study.getFqn();
 
         // Build allele typer JSON from the shared CSV test resource

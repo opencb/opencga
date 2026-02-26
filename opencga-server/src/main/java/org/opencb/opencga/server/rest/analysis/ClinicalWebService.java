@@ -1659,25 +1659,6 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/pharmacogenomics/annotation/run")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = PharmacogenomicsAnnotationAnalysisTool.DESCRIPTION, response = Job.class)
-    public Response pharmacogenomicsAnnotationRun(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(name = "body", value = "JSON with parameters to execute the tool " + PharmacogenomicsAnnotationAnalysisTool.ID, required = true)
-            PharmacogenomicsAnnotationAnalysisToolParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, PharmacogenomicsAnnotationAnalysisTool.ID, params, jobName, jobDescription,
-                dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
-    }
-
-    @POST
     @Path("/pharmacogenomics/alleleTyper")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Perform pharmacogenomics allele typing and store results in sample attributes", response = AlleleTyperResult.class)
@@ -1699,4 +1680,48 @@ public class ClinicalWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
     }
+
+    @POST
+    @Path("/pharmacogenomics/alleleTyper/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Perform pharmacogenomics allele typing and store results in sample attributes", response = AlleleTyperResult.class)
+    public Response pharmacogenomicsAlleleTyperRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = "JSON containing genotyping and translation file contents", required = true)
+            PharmacogenomicsAlleleTyperParams params) {
+        try {
+            // TODO
+            // Return results
+            return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 0, null, 0));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/pharmacogenomics/annotation/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = PharmacogenomicsAnnotationAnalysisTool.DESCRIPTION, response = Job.class)
+    public Response pharmacogenomicsAnnotationRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = "JSON with parameters to execute the tool " + PharmacogenomicsAnnotationAnalysisTool.ID, required = true)
+            PharmacogenomicsAnnotationAnalysisToolParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, PharmacogenomicsAnnotationAnalysisTool.ID, params, jobName, jobDescription,
+                dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
 }

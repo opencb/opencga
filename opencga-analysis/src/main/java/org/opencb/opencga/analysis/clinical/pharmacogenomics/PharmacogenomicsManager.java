@@ -101,7 +101,6 @@ public class PharmacogenomicsManager {
      * Skips annotation if no CellBase configuration is found for the project.
      */
     public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
-
         StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
         long startTime = System.currentTimeMillis();
         for (AlleleTyperResult result : results) {

@@ -46,20 +46,30 @@ public class PharmacogenomicsManagerTest {
         List<AlleleTyperResult> results = buildResultsFromCsv(is);
         assertFalse("Results should not be empty", results.isEmpty());
 
-        // Write parsed CSV results (before annotation) to /tmp
-        Path parsedPath = Paths.get("/tmp/pgx_parsed_results.json");
-        Files.write(parsedPath, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(results));
-        System.out.println("Parsed CSV results written to: " + parsedPath);
+        // Write parsed CSV results (before annotation) to /tmp, one file per sample
+        Path parsedDir = Paths.get("/tmp/pgx_parsed_results");
+        Files.createDirectories(parsedDir);
+        for (AlleleTyperResult r : results) {
+            Path samplePath = parsedDir.resolve(r.getSampleId() + ".json");
+            Files.write(samplePath, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(r));
+        }
+        System.out.println("Parsed CSV results written to: " + parsedDir + " (" + results.size() + " files)");
 
         PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
         manager.annotateResults(results, cellBaseClient);
 
-        // Write annotated results to /tmp
-        byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(results);
-        Path annotatedPath = Paths.get("/tmp/pgx_annotated_results.json");
-        Files.write(annotatedPath, json);
-        System.out.println("Annotated results written to: " + annotatedPath);
-        System.out.println("Annotation serialized size: " + String.format("%.2f", json.length / 1024.0) + " KB");
+        // Write annotated results to /tmp, one file per sample
+        Path annotatedDir = Paths.get("/tmp/pgx_annotated_results");
+        Files.createDirectories(annotatedDir);
+        long totalSize = 0;
+        for (AlleleTyperResult r : results) {
+            byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(r);
+            Path samplePath = annotatedDir.resolve(r.getSampleId() + ".json");
+            Files.write(samplePath, json);
+            totalSize += json.length;
+        }
+        System.out.println("Annotated results written to: " + annotatedDir + " (" + results.size() + " files)");
+        System.out.println("Annotation total serialized size: " + String.format("%.2f", totalSize / 1024.0) + " KB");
 
         for (AlleleTyperResult result : results) {
             assertNotNull(result);
