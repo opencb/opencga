@@ -54,6 +54,11 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -544,7 +549,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider);
+        SampleAnnotationIndexer constructor;
+        if (getSampleIndexDBAdaptor() == null) {
+            constructor = null;
+        } else {
+            constructor = getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this);
+        }
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider, constructor);
     }
 
     /**
@@ -625,6 +636,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException("Unsupported deleteStats");
     }
 
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported getSampleIndexDBAdaptor");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
@@ -636,7 +651,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleGenotypeIndexer(this)
+                .buildSampleIndex(study, samples, options);
     }
 
     /**
@@ -650,7 +667,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex annotate");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this)
+                .updateSampleAnnotation(study, samples, options);
     }
 
     /**
@@ -664,7 +683,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return List of trios used to index. Empty if there was nothing to do.
      */
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported familyIndex");
+        options = getMergedOptions(options);
+        return getSampleIndexDBAdaptor().newSampleFamilyIndexer(this)
+                .load(study, trios, options);
     }
 
     /**
@@ -753,12 +774,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (!configuration.getSearch().isActive()) {
             throw new StorageEngineException("Search is not active!");
         }
-
-        Query query = copy(inputQuery);
-        QueryOptions queryOptions = copy(inputQueryOptions);
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForLoading();
@@ -851,7 +866,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         long updateTimestamp = System.currentTimeMillis();
-        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateTimestamp);
+        return secondaryIndex(copy(inputQuery), copy(inputQueryOptions), overwrite, indexMetadata, updateTimestamp);
     }
 
     protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
@@ -1382,6 +1397,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
+        executors.add(new SampleIndexMendelianErrorQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SampleIndexVariantQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
         return executors;
@@ -1454,23 +1473,28 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new VariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
+    @Deprecated
     public DataResult distinct(Query query, String field) throws StorageEngineException {
         return getDBAdaptor().distinct(query, field);
     }
 
+    @Deprecated
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
         return getDBAdaptor().rank(query, field, numResults, asc);
     }
 
+    @Deprecated
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
         return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
                 region, regionIntervalSize);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, field, options);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, fields, options);
     }
@@ -1527,6 +1551,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
+            executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);

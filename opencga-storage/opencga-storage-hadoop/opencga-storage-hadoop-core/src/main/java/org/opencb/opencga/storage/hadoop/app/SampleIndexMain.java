@@ -16,8 +16,11 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -48,7 +51,7 @@ public class SampleIndexMain extends AbstractMain {
         String dbName = safeArg(args, 1);
 
         final HBaseManager hBaseManager;
-        SampleIndexDBAdaptor dbAdaptor = null;
+        HBaseSampleIndexDBAdaptor dbAdaptor = null;
         VariantStorageMetadataManager metadataManager = null;
 
         ObjectMap argsMap = getArgsMap(args, 2);
@@ -66,7 +69,7 @@ public class SampleIndexMain extends AbstractMain {
             HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, configuration);
             metadataManager = new VariantStorageMetadataManager(
                     new HBaseVariantStorageMetadataDBAdaptorFactory(hBaseManager, tableNameGenerator.getMetaTableName(), configuration));
-            dbAdaptor = new SampleIndexDBAdaptor(
+            dbAdaptor = new HBaseSampleIndexDBAdaptor(
                     hBaseManager, tableNameGenerator,
                     metadataManager);
             if (!hBaseManager.tableExists(tableNameGenerator.getMetaTableName())) {
@@ -129,7 +132,7 @@ public class SampleIndexMain extends AbstractMain {
         }
     }
 
-    private void query(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+    private void query(HBaseSampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
         VariantDBIterator iterator = dbAdaptor.iterator(sampleIndexQuery);
         if (argsMap.getBoolean("quiet", false)) {
@@ -142,7 +145,7 @@ public class SampleIndexMain extends AbstractMain {
         System.err.println("Time Converting : " + TimeUtils.durationToString(iterator.getTimeConverting(TimeUnit.MILLISECONDS)));
     }
 
-    private void rawQuery(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+    private void rawQuery(HBaseSampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
@@ -155,7 +158,7 @@ public class SampleIndexMain extends AbstractMain {
         Region region = argsMap.containsKey(VariantQueryParam.REGION.key())
                 ? Region.parseRegion(argsMap.getString(VariantQueryParam.REGION.key()))
                 : null;
-        CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region);
+        CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.indexEntryIterator(studyId, sampleId, region);
         if (argsMap.getBoolean("quiet", false)) {
             print(Iterators.size(iterator));
         } else {
@@ -167,9 +170,9 @@ public class SampleIndexMain extends AbstractMain {
         iterator.close();
     }
 
-    private void detailedQuery(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+    private void detailedQuery(HBaseSampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
-        CloseableIterator<SampleIndexVariant> iterator = dbAdaptor.rawIterator(sampleIndexQuery);
+        CloseableIterator<SampleIndexVariant> iterator = dbAdaptor.indexVariantIterator(sampleIndexQuery);
         SampleIndexSchema schema = sampleIndexQuery.getSchema();
         if (argsMap.getBoolean("quiet", false)) {
             print(Iterators.size(iterator));
@@ -182,7 +185,7 @@ public class SampleIndexMain extends AbstractMain {
         iterator.close();
     }
 
-    private void indexStats(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+    private void indexStats(HBaseSampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
@@ -206,7 +209,7 @@ public class SampleIndexMain extends AbstractMain {
         } else {
             schema = dbAdaptor.getSchemaFactory().getSchema(studyId, sampleId, false);
         }
-        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region, schema)) {
+        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.indexEntryIterator(studyId, sampleId, region, schema)) {
             while (iterator.hasNext()) {
                 SampleIndexEntry entry = iterator.next();
                 for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {

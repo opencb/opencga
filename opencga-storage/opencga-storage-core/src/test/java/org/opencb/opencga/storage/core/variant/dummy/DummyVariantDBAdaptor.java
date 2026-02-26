@@ -16,35 +16,42 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
-import com.google.common.collect.BiMap;
+import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.filters.VariantFilterBuilder;
+import org.opencb.opencga.storage.core.variant.query.filters.VariantProjectionBuilder;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 
 /**
  * Created on 28/11/16.
@@ -53,24 +60,15 @@ import java.util.stream.Collectors;
  */
 public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
-
     private final String dbName;
     private boolean closed = false;
     private Logger logger = LoggerFactory.getLogger(DummyVariantDBAdaptor.class);
-    private static final List<String> TEMPLATES;
-
-    static {
-        TEMPLATES = new ArrayList<>();
-        for (int chr = 1; chr <= 22; chr++) {
-            TEMPLATES.add(chr + ":1000:A:C");
-        }
-        TEMPLATES.add("X:1000:A:C");
-        TEMPLATES.add("Y:1000:A:C");
-        TEMPLATES.add("MT:1000:A:C");
-    }
+    private final VariantStorageMetadataManager metadataManager;
+    private static final String QUIET = "quiet";
 
     public DummyVariantDBAdaptor(String dbName) {
         this.dbName = dbName;
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
     @Override
@@ -103,7 +101,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public DataResult<Long> count(ParsedVariantQuery query) {
-        return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList((long) TEMPLATES.size()), 1);
+        AtomicLong count = new AtomicLong();
+        iterator(query).forEachRemaining(variant -> {
+            count.incrementAndGet();
+        });
+        return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(count.get()), count.get());
     }
 
     @Override
@@ -114,50 +116,60 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
         QueryOptions options = variantQuery.getInputOptions();
-        logger.info("Query " + variantQuery.getQuery().toJson());
-        logger.info("QueryOptions " + options.toJson());
-        logger.info("dbName " + dbName);
+        if (!options.getBoolean(QUIET, false)) {
+            logger.info("Query " + variantQuery.getQuery().toJson());
+        }
+//        logger.info("QueryOptions " + options.toJson());
+//        logger.info("dbName " + dbName);
 
-        List<Variant> variants = new ArrayList<>(TEMPLATES.size());
+        Map<String, Variant> db = DummyVariantStorageEngine.VARIANTS.get(dbName);
+        if (db == null) {
+            throw new IllegalStateException("Database " + dbName + " not found");
+        }
         HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryUtils.ID_INTERSECT.key()));
-        for (String template : TEMPLATES) {
-            if (!variantIds.isEmpty() && !variantIds.contains(template)) {
-                // Skip this variant
-                continue;
+        Predicate<Variant> filter = new VariantFilterBuilder().buildFilter(variantQuery);
+        String unknownGenotype = variantQuery.getQuery()
+                .getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE);
+
+        Iterator<Variant> iterator;
+        if (variantIds.isEmpty()) {
+            iterator = db.values().iterator();
+        } else {
+            iterator = Iterators.transform(variantIds.iterator(), db::get);
+            iterator = Iterators.filter(iterator, Objects::nonNull);
+        }
+        iterator = Iterators.filter(iterator, filter::test);
+        Function<Variant, Variant> cloner = new VariantProjectionBuilder().cloner();
+        Consumer<Variant> projector = new VariantProjectionBuilder().buildProjector(variantQuery);
+        iterator = Iterators.transform(iterator, variantOrig -> {
+            Variant variant = cloner.apply(variantOrig);
+            projector.accept(variant);
+            return variant;
+        });
+
+        // sort iterator
+        if (variantQuery.isSort()) {
+            List<Variant> variantList = new ArrayList<>();
+            iterator.forEachRemaining(variantList::add);
+            variantList.sort(Comparator.comparing(Variant::getChromosome)
+                    .thenComparing(Variant::getStart)
+                    .thenComparing(Variant::getEnd)
+                    .thenComparing(Variant::getReference)
+                    .thenComparing(Variant::getAlternate)
+                    .thenComparing(Variant::toString));
+            if (variantQuery.isSortDescending()) {
+                Collections.reverse(variantList);
             }
-
-            Variant variant = new Variant(template);
-
-
-            Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(variantQuery.getQuery(), options);
-            returnedSamples.forEach((study, samples) -> {
-                VariantStorageMetadataManager metadataManager = getMetadataManager();
-                StudyMetadata sm = metadataManager.getStudyMetadata(study);
-                if (metadataManager.getIndexedFiles(sm.getId()).isEmpty()) {
-                    // Ignore non indexed studies
-                    return; // continue
-                }
-                StudyEntry st = new StudyEntry(sm.getName(), Collections.emptyList(), Collections.singletonList("GT"));
-                BiMap<Integer, String> samplesMap = metadataManager.getIndexedSamplesMap(sm.getId()).inverse();
-                for (Integer sampleId : samples) {
-                    st.addSampleData(samplesMap.get(sampleId), Collections.singletonList("0/0"));
-                }
-                variant.addStudyEntry(st);
-                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(sm.getId())) {
-                    VariantStats stats = new VariantStats(cohort.getName());
-                    stats.addGenotype(new Genotype("0/0"), cohort.getSamples().size());
-                    st.addStats(stats);
-                }
-                List<FileEntry> files = new ArrayList<>();
-                for (Integer id : metadataManager.getIndexedFiles(sm.getId())) {
-                    files.add(new FileEntry(id.toString(), null, Collections.emptyMap()));
-                }
-                st.setFiles(files);
-            });
-            variants.add(variant);
+            iterator = variantList.iterator();
+        }
+        if (variantQuery.getSkip() > 0) {
+            Iterators.advance(iterator, variantQuery.getSkip());
+        }
+        if (variantQuery.getLimit() != null && variantQuery.getLimit() >= 0) {
+            iterator = Iterators.limit(iterator, variantQuery.getLimit());
         }
 
-        return toVariantDBIterator(variants);
+        return VariantDBIterator.wrapper(iterator);
     }
 
     VariantDBIterator toVariantDBIterator(final List<Variant> variants) {
@@ -188,16 +200,66 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
+        Map<String, Variant> db = DummyVariantStorageEngine.VARIANTS.get(dbName);
+        if (db == null) {
+            throw new IllegalStateException("Database " + dbName + " not found");
+        }
+        int updated = 0;
+        for (VariantStatsWrapper statsWrapper : variantStatsWrappers) {
+            Variant variant = db.get(statsWrapper.toVariant().toString());
+            if (variant != null) {
+                StudyEntry studyEntry = variant.getStudy(studyMetadata.getName());
+                if (studyEntry != null) {
+                    updated++;
+                    for (VariantStats stats : statsWrapper.getCohortStats()) {
+                        List<VariantStats> statsList = new ArrayList<>(studyEntry.getStats());
+                        statsList.removeIf(s -> s.getCohortId().equals(stats.getCohortId()));
+                        statsList.add(stats);
+                        studyEntry.setStats(statsList);
+                    }
+                }
+            }
+        }
         DataResult queryResult = new DataResult();
-        logger.info("Writing " + variantStatsWrappers.size() + " statistics");
+        logger.info("Writing " + variantStatsWrappers.size() + " stats. Updated " + updated + " variants.");
         queryResult.setNumMatches(variantStatsWrappers.size());
-        queryResult.setNumUpdated(variantStatsWrappers.size());
+        queryResult.setNumUpdated(updated);
         return queryResult;
     }
 
     @Override
     public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
-        return new DataResult();
+        Map<String, Variant> db = DummyVariantStorageEngine.VARIANTS.get(dbName);
+        if (db == null) {
+            throw new IllegalStateException("Database " + dbName + " not found");
+        }
+        int updated = 0;
+        for (VariantAnnotation annotation : variantAnnotations) {
+            String variantId = null;
+            if (annotation.getAdditionalAttributes() != null) {
+                AdditionalAttribute additionalAttribute = annotation.getAdditionalAttributes().get(GROUP_NAME.key());
+                if (additionalAttribute != null) {
+                    variantId = additionalAttribute
+                            .getAttribute()
+                            .get(VARIANT_ID.key());
+                }
+            }
+            if (variantId == null) {
+                variantId = new Variant(annotation.getChromosome(), annotation.getStart(),
+                        annotation.getReference(), annotation.getAlternate()).toString();
+            }
+
+            Variant variant = db.get(variantId);
+            if (variant != null) {
+                variant.setAnnotation(annotation);
+                updated++;
+            }
+        }
+        DataResult queryResult = new DataResult();
+        logger.info("Writing " + variantAnnotations.size() + " annotations. Updated " + updated + " variants.");
+        queryResult.setNumMatches(variantAnnotations.size());
+        queryResult.setNumUpdated(updated);
+        return queryResult;
     }
 
     @Override
@@ -206,18 +268,9 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         return new DataResult();
     }
 
-    // Unsupported methods
-    @Override
-    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
-        System.out.println("Update stats : "
-                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().stream().map(VariantStats::getCohortId).collect(Collectors.joining(","))));
-
-        return new DataResult();
-    }
-
     @Override
     public VariantStorageMetadataManager getMetadataManager() {
-        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        return metadataManager;
     }
 
     @Override

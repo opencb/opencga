@@ -123,6 +123,11 @@ public enum VariantStorageOptions implements ConfigurationOption {
     SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED("search.stats.functionalQueries.enabled", false),
     SEARCH_STATS_VARIANT_ID_VERSION("search.stats.variantId.version", "v2"),
 
+
+    SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER("storage.hadoop.sampleIndex.query.extendedRegionFilter.default", 5_000_000),
+    SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BUFFER("storage.hadoop.sampleIndex.query.sampleIndexOnly.partialData.buffer", 10000),
+    SAMPLE_INDEX_QUERY_SAMPLE_INDEX_ONLY_PD_BATCH("storage.hadoop.sampleIndex.query.sampleIndexOnly.partialData.batch", 250),
+
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     @Deprecated
     APPROXIMATE_COUNT("approximateCount", false),

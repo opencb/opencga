@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -51,7 +51,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -76,13 +76,13 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-@Category(ShortTests.class)
+@Category(LongTests.class)
 public class MongoVariantStorageEngineTest extends VariantStorageEngineTest implements MongoDBVariantStorageTest {
 
     @Before
@@ -297,7 +297,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertEquals(1, exception.getResults().size());
         assertTrue(exception.getResults().get(0).isLoadExecuted());
         assertNotNull(exception.getResults().get(0).getLoadError());
-        TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.LOAD);
+        int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
+        TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(), RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.LOAD);
         opInProgress.addStatus(TaskMetadata.Status.RUNNING);
         StorageEngineException expected = StorageEngineException.currentOperationInProgressException(opInProgress, metadataManager);
         assertEquals(expected.getClass(), exception.getResults().get(0).getLoadError().getClass());
@@ -369,7 +370,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             thread.start();
             Thread.sleep(200);
 
-            TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
+            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
+            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(),
+                    RandomUtils.nextInt(1000, 2000),
+                    MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
             StorageEngineException expected = MongoVariantStorageEngineException
                     .otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId), metadataManager);
@@ -379,7 +383,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                     new ObjectMap(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false));
-        } finally {
+        } catch (StorageEngineException e) {
             System.out.println("Interrupt!");
             thread.interrupt();
             System.out.println("Join!");
@@ -390,6 +394,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             // Second file is not staged or merged
 //            int secondFileId = studyMetadata.getFileIds().get(UriUtils.fileName(smallInputUri));
             List<TaskMetadata> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            System.out.println("ops = " + ops);
             assertEquals(0, ops.size());
         }
     }
@@ -415,12 +420,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 throw new RuntimeException(e);
             }
         });
-        VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageEngine().getDBAdaptor().getMetadataManager();
+
         try {
             thread.start();
             Thread.sleep(200);
 
-            TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
+            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
+            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(), RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
             StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId), metadataManager);
             thrown.expect(StoragePipelineException.class);
@@ -432,7 +438,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                             .append(MongoDBVariantStorageOptions.MERGE.key(), true)
                             .append(MongoDBVariantStorageOptions.STAGE.key(), false)
                             .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false), false, true);
-        } finally {
+        } catch (StorageEngineException e) {
             System.out.println("Interrupt!");
             thread.interrupt();
             System.out.println("Join!");
@@ -441,7 +447,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             // Second file is not staged or merged
             TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
-            List<TaskMetadata> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            List<TaskMetadata> ops = Arrays.stream(tasks)
+                    .filter(op -> op.getFileIds().contains(secondFileId))
+                    .collect(Collectors.toList());
+            System.out.println("ops = " + ops);
             assertEquals(1, ops.size());
             assertEquals(MongoDBVariantStorageOptions.STAGE.key(), ops.get(0).getName());
             System.out.println("DONE");
@@ -873,8 +882,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                         List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                         studies.sort(Comparator.comparing(o -> o.getInteger(STUDYID_FIELD)));
                         studies.forEach(study ->
-                                ((List<Document>) study.get(DocumentToStudyVariantEntryConverter.FILES_FIELD, List.class))
-                                .forEach(file -> file.remove(DocumentToStudyVariantEntryConverter.FILEID_FIELD)));
+                                ((List<Document>) study.get(DocumentToStudyEntryConverter.FILES_FIELD, List.class))
+                                .forEach(file -> file.remove(DocumentToStudyEntryConverter.FILEID_FIELD)));
                     }
                     return document;
                 });
@@ -983,11 +992,12 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
+                List<Document> files = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
                 assertEquals(id, 2, studies.size());
                 Document study1 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc1.getId())).findAny().orElse(null);
                 Document study2 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc2.getId())).findAny().orElse(null);
-                for (Document study : studies) {
-                    Document gts = study.get(GENOTYPES_FIELD, Document.class);
+                for (Document file : files) {
+                    Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
                     Set<Integer> samples = new HashSet<>();
                     for (String defaultGenotype : defaultGenotypes) {
                         assertThat(gts.keySet(), not(hasItem(defaultGenotype)));
@@ -999,7 +1009,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                             assertTrue(id, samples.add(sampleId));
                         }
                     }
-                    assertEquals("\"" + id + "\" study: " + study.get(STUDYID_FIELD), (int) getExpectedSamples.apply(study), samples.size());
+                    assertEquals("\"" + id + "\" study: " + file.get(STUDYID_FIELD), (int) getExpectedSamples.apply(file), samples.size());
                 }
 
                 Document gt1 = study1.get(GENOTYPES_FIELD, Document.class);
@@ -1137,15 +1147,22 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
 //                assertEquals(id, 2, studies.size());
                 for (Document study : studies) {
-                    Document gts = study.get(GENOTYPES_FIELD, Document.class);
-                    Map<Integer, String> samples = new HashMap<>();
+                    List<Document> files = ((List<Document>) document.get(DocumentToVariantConverter.FILES_FIELD, List.class))
+                            .stream()
+                            .filter(f -> Objects.equals(f.getInteger(STUDYID_FIELD), study.getInteger(STUDYID_FIELD)))
+                            .collect(Collectors.toList());
 
-                    for (Map.Entry<String, Object> entry : gts.entrySet()) {
-                        List<Integer> sampleIds = (List<Integer>) entry.getValue();
-                        for (Integer sampleId : sampleIds) {
-                            String message = "var: " + id + " Duplicated sampleId " + sampleId + " in gt " + entry.getKey() + " and " + samples.get(sampleId) + " : " + sampleIds;
-                            assertFalse(message, samples.containsKey(sampleId));
-                            assertTrue(message, samples.put(sampleId, entry.getKey()) == null);
+                    Map<Integer, String> samples = new HashMap<>();
+                    for (Document file : files) {
+                        Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
+
+                        for (Map.Entry<String, Object> entry : gts.entrySet()) {
+                            List<Integer> sampleIds = (List<Integer>) entry.getValue();
+                            for (Integer sampleId : sampleIds) {
+                                String message = "var: " + id + " Duplicated sampleId " + sampleId + " in gt " + entry.getKey() + " and " + samples.get(sampleId) + " : " + sampleIds;
+                                assertFalse(message, samples.containsKey(sampleId));
+                                assertTrue(message, samples.put(sampleId, entry.getKey()) == null);
+                            }
                         }
                     }
                 }

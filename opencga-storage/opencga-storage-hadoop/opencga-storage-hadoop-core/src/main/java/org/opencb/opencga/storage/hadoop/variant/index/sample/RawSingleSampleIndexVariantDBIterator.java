@@ -6,10 +6,15 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.index.sample.query.RawSampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseToSampleIndexConverter;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -22,7 +27,7 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
     protected int count = 0;
 
     public RawSingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexSchema schema,
-                                                 SampleIndexDBAdaptor dbAdaptor) {
+                                                 HBaseSampleIndexDBAdaptor dbAdaptor) {
         Collection<LocusQuery> locusQueries;
         if (CollectionUtils.isEmpty(query.getLocusQueries())) {
             // If no locusQueries are defined, get a list of one null element to initialize the stream.

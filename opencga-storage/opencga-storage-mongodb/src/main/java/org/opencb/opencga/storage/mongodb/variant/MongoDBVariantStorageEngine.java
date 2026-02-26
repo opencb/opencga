@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -35,6 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -52,6 +53,7 @@ import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationMan
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
@@ -107,7 +109,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions());
+        ObjectMap options = new ObjectMap(getOptions());
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, options,
+                getSampleIndexDBAdaptor());
     }
 
     @Override
@@ -118,45 +122,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
-        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider);
+        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider, getSampleIndexDBAdaptor()
+                .newSampleAnnotationIndexer(this));
     }
 
     @Override
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = metadataManager.getStudyId(study);
-        for (List<String> trio : trios) {
-            Integer father = metadataManager.getSampleId(studyId, trio.get(0));
-            Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
-            Integer child = metadataManager.getSampleId(studyId, trio.get(2));
-            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
-                if (father != null && father > 0) {
-                    sampleMetadata.setFather(father);
-                }
-                if (mother != null && mother > 0) {
-                    sampleMetadata.setMother(mother);
-                }
-            });
-        }
-        return new DataResult<List<String>>().setResults(trios);
-    }
-
-    @Override
-    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
+                                                     SearchIndexMetadata indexMetadata, long updateStartTimestamp)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         int deletedVariants;
         VariantSearchLoadResult searchIndex;
-        long timeStamp = System.currentTimeMillis();
 
-        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(indexMetadata)) {
             // First remove trashed variants.
             ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
-            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
-                deletedVariants = variantSearchManager.delete(dbName, removedVariants, progressLogger);
-                getDBAdaptor().cleanTrash(timeStamp);
+            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(updateStartTimestamp)) {
+                deletedVariants = variantSearchManager.delete(indexMetadata, removedVariants, progressLogger);
+                getDBAdaptor().cleanTrash(updateStartTimestamp);
             } catch (StorageEngineException | IOException | RuntimeException e) {
                 throw e;
             } catch (Exception e) {
@@ -164,20 +148,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
 
             // Then, load new variants.
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
         } else {
             //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
             deletedVariants = 0;
             logger.debug("Skip removed variants!");
 
             // Try to index the rest of variants. This method will fail if the search engine is not alive
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
 
             // If the variants were loaded correctly, the trash can be clean up.
-            getDBAdaptor().cleanTrash(timeStamp);
+            getDBAdaptor().cleanTrash(updateStartTimestamp);
         }
 
-        return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
+        return new VariantSearchLoadResult(
+                searchIndex.getNumProcessedVariants(),
+                searchIndex.getNumLoadedVariants(),
+                deletedVariants,
+                searchIndex.getNumInsertedVariants(),
+                searchIndex.getNumLoadedVariantsPartialStatsUpdate());
     }
 
     @Override
@@ -257,7 +246,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
-
+        if (doLoad) {
+            createStudyIfNeeded();
+        }
         Map<URI, MongoDBVariantStoragePipeline> storageResultMap = new LinkedHashMap<>();
         Map<URI, StoragePipelineResult> resultsMap = new LinkedHashMap<>();
         LinkedList<StoragePipelineResult> results = new LinkedList<>();
@@ -438,6 +429,19 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
         }
         return dbAdaptor.get();
+    }
+
+    @Override
+    public MongoDBSampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        MongoDataStoreManager mongoManager = getMongoDataStoreManager();
+        MongoCredentials credentials = getMongoCredentials();
+        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        return new MongoDBSampleIndexDBAdaptor(db, getMetadataManager());
+    }
+
+    @Override
+    protected VariantQueryParser getVariantQueryParser() throws StorageEngineException {
+        return new MongoDBVariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
     @Override

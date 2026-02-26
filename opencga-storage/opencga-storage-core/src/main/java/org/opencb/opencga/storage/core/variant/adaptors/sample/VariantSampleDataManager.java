@@ -4,6 +4,7 @@ import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -89,9 +90,12 @@ public class VariantSampleDataManager {
         List<SampleEntry> sampleEntries = new ArrayList<>(limit);
         Map<String, Integer> filesIdx = new HashMap<>();
         List<FileEntry> files = new ArrayList<>(limit);
+        List<IssueEntry> issues = new ArrayList<>(limit);
         List<VariantStats> stats = Collections.emptyList();
         List<String> sampleDataKeys = null;
+        Map<String, Integer> samplesPosition = new HashMap<>();
         VariantAnnotation annotation = null;
+        List<String> variantIds = null;
 
         int sampleSkip = 0;
         int readSamples = 0;
@@ -141,15 +145,17 @@ public class VariantSampleDataManager {
                 annotation = partialVariant.getAnnotation();
                 stats = partialStudy.getStats();
                 sampleDataKeys = partialStudy.getSampleDataKeys();
+                variantIds = partialVariant.getIds();
             }
             boolean hasGt = sampleDataKeys.get(0).equals("GT");
             List<String> samples = partialStudy.getOrderedSamplesName();
             readSamples += samples.size();
             for (int i = 0; i < samples.size(); i++) {
                 String sample = samples.get(i);
-                List<String> sampleData = partialStudy.getSamples().get(i).getData();
+                SampleEntry partialSample = partialStudy.getSamples().get(i);
+                List<String> partialSampleData = partialSample.getData();
 
-                String gt = hasGt ? sampleData.get(0) : GenotypeClass.NA_GT_VALUE;
+                String gt = hasGt ? partialSampleData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (gt.equals(".")) {
                     gt = GenotypeClass.NA_GT_VALUE;
                 }
@@ -160,13 +166,8 @@ public class VariantSampleDataManager {
                     if (gtCount > skip) {
                         if (sampleEntries.size() < limit) {
                             Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                            FileEntry fileEntry = null;
-                            for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
-                                String fileName = metadataManager.getFileName(studyId, fileId);
-                                fileEntry = partialStudy.getFile(fileName);
-                                break;
-                            }
-                            if (fileEntry == null) {
+                            FileEntry partialFileEntry = partialStudy.getFiles().get(partialSample.getFileIndex());
+                            if (partialFileEntry == null) {
                                 if (gt.equals(GenotypeClass.NA_GT_VALUE)) {
                                     continue;
                                 }
@@ -176,13 +177,26 @@ public class VariantSampleDataManager {
                                 }
                                 throw new VariantQueryException("No file found for sample '" + sample + "', expected any of " + fileNames);
                             }
-                            Integer fileIdx = filesIdx.get(fileEntry.getFileId());
-                            if (fileIdx == null) {
-                                fileIdx = files.size();
-                                filesIdx.put(fileEntry.getFileId(), fileIdx);
-                                files.add(fileEntry);
+                            Integer fileIdx = filesIdx.computeIfAbsent(partialFileEntry.getFileId(), k -> {
+                                files.add(partialFileEntry);
+                                return files.size() - 1;
+                            });
+                            sampleEntries.add(new SampleEntry(sample, fileIdx, partialSampleData));
+                            samplesPosition.put(sample, samplesPosition.size());
+                            if (partialStudy.getIssues() != null) {
+                                for (IssueEntry issue : partialStudy.getIssues()) {
+                                    if (issue.getSample().getSampleId().equals(sample)) {
+                                        issues.add(issue);
+                                        // Add file to the list of files, if not already there
+                                        FileEntry issueFileEntry = partialStudy.getFile(issue.getSample().getFileIndex());
+                                        fileIdx = filesIdx.computeIfAbsent(issueFileEntry.getFileId(), k -> {
+                                            files.add(issueFileEntry);
+                                            return files.size() - 1;
+                                        });
+                                        issue.getSample().setFileIndex(fileIdx);
+                                    }
+                                }
                             }
-                            sampleEntries.add(new SampleEntry(sample, fileIdx, sampleData));
                         }
                     }
                 }
@@ -200,13 +214,18 @@ public class VariantSampleDataManager {
         }
 
         variant = new Variant(variant.toString());
+        if (variantIds != null && !variantIds.isEmpty()) {
+            variant.setIds(variantIds);
+        }
         variant.setAnnotation(annotation);
         StudyEntry studyEntry = new StudyEntry(study);
         variant.addStudyEntry(studyEntry);
         studyEntry.setSamples(sampleEntries);
         studyEntry.setFiles(files);
+        studyEntry.setIssues(issues);
         studyEntry.setStats(stats);
         studyEntry.setSampleDataKeys(sampleDataKeys);
+        studyEntry.setSamplesPosition(samplesPosition);
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
         return new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variant), 1);
     }

@@ -37,8 +37,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.io.IOException;
 import java.net.URI;
@@ -569,7 +569,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     }
 
     protected void checkSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
+        HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
 
         for (String study : metadataManager.getStudies(null).keySet()) {

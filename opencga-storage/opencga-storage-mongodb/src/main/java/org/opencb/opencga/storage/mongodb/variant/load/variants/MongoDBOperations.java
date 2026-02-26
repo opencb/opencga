@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load.variants;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.variant.Variant;
 
 import java.util.*;
 
@@ -37,11 +39,13 @@ public class MongoDBOperations {
 
     private final Set<String> genotypes = new HashSet<>();
 
+    /** Per-variant: merged file documents to index into the sample index. Set by MongoDBVariantMerger. */
+    private final List<Pair<Variant, List<Document>>> pendingFileDocs = new ArrayList<>();
+
     // Stage documents to cleanup
 //    private List<Pair<Bson, Bson>> cleanFromStage = new ArrayList<>();
     private final List<String> documentsToCleanStudies = new ArrayList<>();
     private final List<String> documentsToCleanFiles = new ArrayList<>();
-    private final StageSecondaryAlternates secondaryAlternates = new StageSecondaryAlternates();
 
     private int skipped = 0;
     private int nonInserted = 0;
@@ -121,8 +125,8 @@ public class MongoDBOperations {
         return genotypes;
     }
 
-    StageSecondaryAlternates getSecondaryAlternates() {
-        return secondaryAlternates;
+    public List<Pair<Variant, List<Document>>> getPendingFileDocs() {
+        return pendingFileDocs;
     }
 
     // Document may exist, study does not exist
@@ -170,22 +174,4 @@ public class MongoDBOperations {
         }
     }
 
-    // Secondary alternates to be updated in the stage collection
-    class StageSecondaryAlternates {
-        private final List<String> ids = new LinkedList<>();
-        private final List<Bson> queries = new LinkedList<>();
-        private final List<Bson> updates = new LinkedList<>();
-
-        List<String> getIds() {
-            return ids;
-        }
-
-        List<Bson> getQueries() {
-            return queries;
-        }
-
-        List<Bson> getUpdates() {
-            return updates;
-        }
-    }
 }

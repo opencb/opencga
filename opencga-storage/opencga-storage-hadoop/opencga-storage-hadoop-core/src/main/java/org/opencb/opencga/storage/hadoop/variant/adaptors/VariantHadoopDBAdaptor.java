@@ -89,8 +89,6 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
-    public static final String NATIVE = "native";
-    public static final String QUIET = "quiet";
     public static final QueryParam ANNOT_NAME = QueryParam.create("annotName", "", Type.TEXT);
 
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
@@ -610,16 +608,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } catch (SQLException e) {
             throw new StorageEngineException("Error closing schema manager", e);
         }
-    }
-
-    /**
-     * @deprecated This method should not be used for batch load.
-     */
-    @Override
-    @Deprecated
-    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
-                                  QueryOptions queryOptions) {
-        throw new UnsupportedOperationException("Unimplemented method");
     }
 
     /**

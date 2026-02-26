@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
@@ -45,7 +45,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoDBVariantStageReaderTest implements MongoDBVariantStorageTest {
 
 
@@ -60,7 +60,7 @@ public class MongoDBVariantStageReaderTest implements MongoDBVariantStorageTest 
 
         collection = mongoDataStoreManager.get(DB_NAME).getCollection("stage");
         MongoDBVariantStageLoader loader = new MongoDBVariantStageLoader(collection, 1, 1, false);
-        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
+        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask();
 
         loader.open();
         loader.pre();

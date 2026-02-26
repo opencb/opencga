@@ -40,13 +40,13 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

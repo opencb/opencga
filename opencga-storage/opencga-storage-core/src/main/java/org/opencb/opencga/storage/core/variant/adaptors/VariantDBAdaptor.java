@@ -29,13 +29,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -43,6 +41,9 @@ import java.util.Map;
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
+
+    String NATIVE = "native";
+    String QUIET = "quiet";
 
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
@@ -129,6 +130,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param field Field to be distinct, it must be a valid QueryParams id
      * @return A DataResult with the all the distinct values
      */
+    @Deprecated
     DataResult distinct(Query query, String field);
 
     /**
@@ -140,6 +142,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
      * @return Frequencies of queried variants
      */
+    @Deprecated
     DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize);
 
     /**
@@ -152,40 +155,24 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param asc        Whether we want the top or the bottom part of the rank
      * @return A DataResult with a list of the entities and the number of elements
      */
+    @Deprecated
     DataResult rank(Query query, String field, int numResults, boolean asc);
 
+    @Deprecated
     DataResult groupBy(Query query, String field, QueryOptions options);
 
+    @Deprecated
     DataResult groupBy(Query query, List<String> fields, QueryOptions options);
 
-    /**
-     * Returns all the possible samples to be returned by an specific query.
-     *
-     * @param query     Query to execute
-     * @param options   Query Options
-     * @return  Map key: StudyId, value: list of sampleIds
-     */
-    default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryProjectionParser.getIncludeSampleIds(query, options, getMetadataManager());
-    }
-
-    DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
-
+    @Deprecated
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);
 
+    @Deprecated
     DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
 
-    /**
-     * Update custom annotation for all the variants with in a given region.
-     *
-     * @param query       Region to update
-     * @param name        Custom annotation name.
-     * @param attribute   Custom annotation for the region
-     * @param timeStamp   Timestamp of the operation
-     * @param options     Other options
-     * @return            Result of the insertion
-     */
+
+    @Deprecated
     DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
     VariantStorageMetadataManager getMetadataManager();

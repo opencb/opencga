@@ -27,11 +27,11 @@ import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 
 import java.util.*;
@@ -76,9 +76,9 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         studyColumn = VariantPhoenixSchema.getStudyColumn(studyMetadata.getId());
         this.addSecondaryAlternates = addSecondaryAlternates;
         this.defaultGenotypes = defaultGenotypes;
-        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
+        fixedFormat = VariantQueryParser.getFixedFormat(studyMetadata);
         this.excludeGenotypes = excludeGenotypes;
-        fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        fileAttributes = VariantQueryParser.getFixedAttributes(studyMetadata);
 
         sampleIdsMap = new HashMap<>();
         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {

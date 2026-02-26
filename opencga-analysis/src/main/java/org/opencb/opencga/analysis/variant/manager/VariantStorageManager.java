@@ -743,11 +743,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     //TODO: GroupByFieldEnum
+    @Deprecated
     public DataResult groupBy(String field, Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         return (DataResult) secure(query, queryOptions, token, engine -> engine.groupBy(query, field, queryOptions));
     }
 
+    @Deprecated
     public DataResult rank(Query query, String field, int limit, boolean asc, String token)
             throws StorageEngineException, CatalogException, IOException {
         int limitMax = 30;
@@ -761,6 +763,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 engine -> engine.count(query));
     }
 
+    @Deprecated
     public DataResult distinct(Query query, String field, String token)
             throws CatalogException, IOException, StorageEngineException {
         return (DataResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), token,
@@ -773,6 +776,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 engine -> engine.getPhased(variant.toString(), study, sample, options, 5000));
     }
 
+    @Deprecated
     public DataResult getFrequency(Query query, int interval, String token)
             throws CatalogException, IOException, StorageEngineException {
         return (DataResult) secure(query, null, token, engine -> {

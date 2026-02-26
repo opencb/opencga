@@ -16,6 +16,11 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.io.FileUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,6 +30,7 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -41,6 +47,8 @@ import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotati
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.local.LocalSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -49,7 +57,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -61,6 +74,10 @@ import java.util.*;
  */
 public class DummyVariantStorageEngine extends VariantStorageEngine {
 
+    protected static final Map<String, TreeMap<String, Variant>> VARIANTS = new HashMap<>();
+    protected static String DBNAME;
+    protected static String SAMPLE_INDEX_PATH;
+
     public DummyVariantStorageEngine() {
         super();
     }
@@ -68,6 +85,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     public DummyVariantStorageEngine(StorageConfiguration configuration) {
         super(configuration);
     }
+
     private Logger logger = LoggerFactory.getLogger(DummyVariantStorageEngine.class);
 
     public static final String STORAGE_ENGINE_ID = "dummy";
@@ -91,8 +109,52 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                         .setDatabase(new DatabaseCredentials()));
 
         if (clear) {
-            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+            clear();
         }
+    }
+
+    public static void clear() {
+        DummyProjectMetadataAdaptor.clear();
+        DummyStudyMetadataDBAdaptor.clear();
+        DummyFileMetadataDBAdaptor.clear();
+
+        if (SAMPLE_INDEX_PATH != null) {
+            try {
+                FileUtils.deleteDirectory(Paths.get(SAMPLE_INDEX_PATH).toFile());
+            } catch (IOException e) {
+                System.err.println("Could not delete sample index path: " + SAMPLE_INDEX_PATH);
+            }
+        }
+
+        VARIANTS.clear();
+        DBNAME = null;
+        SAMPLE_INDEX_PATH = null;
+    }
+
+    public static void writeAndClear(URI uri) {
+        writeAndClear(Paths.get(uri));
+    }
+
+    public static void writeAndClear(Path path) {
+        DummyFileMetadataDBAdaptor.writeAndClear(path);
+        DummyStudyMetadataDBAdaptor.writeAndClear(path);
+        DummyProjectMetadataAdaptor.writeAndClear(path);
+
+        ObjectMapper objectMapper = new ObjectMapper()
+                .addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        for (Map.Entry<String, TreeMap<String, Variant>> entry : VARIANTS.entrySet()) {
+            String dbName = entry.getKey();
+            String name = "variants_" + dbName + ".json";
+            try (OutputStream os = Files.newOutputStream(path.resolve(name).toFile().toPath())) {
+                SequenceWriter sw = objectMapper.writerWithDefaultPrettyPrinter().writeValuesAsArray(os);
+                for (Variant variant : entry.getValue().values()) {
+                    sw.write(variant);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        clear();
     }
 
     @Override
@@ -108,14 +170,16 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     @Override
     public DummyVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         DummyVariantStoragePipeline pipeline =
-                new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getIOManagerProvider());
+                new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID,
+                        getDBAdaptor(), getIOManagerProvider(), dbName, getSampleIndexDBAdaptor());
         pipeline.init(getOptions());
         return pipeline;
     }
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider()) {
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider(),
+                getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this)) {
 
             @Override
             protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
@@ -147,7 +211,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                                     .getSampleIndexConfigurationLatest(true).getVersion();
                             for (Integer sampleId : samplesToUpdate) {
                                 metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY,
+                                            sampleIndexVersion);
                                 });
                             }
                         }
@@ -177,15 +242,20 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        return new LocalSampleIndexDBAdaptor(getMetadataManager(), Paths.get(SAMPLE_INDEX_PATH));
+    }
+
+    @Override
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         logger.info("Running family index!");
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         int studyId = studyMetadata.getId();
-        for (int i = 0; i < trios.size(); i += 3) {
-            Integer father = metadataManager.getSampleId(studyId, trios.get(i));
-            Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
-            Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
+        for (Trio trio : trios) {
+            Integer father = trio.getFather() == null ? null : metadataManager.getSampleId(studyId, trio.getFather());
+            Integer mother = trio.getMother() == null ? null : metadataManager.getSampleId(studyId, trio.getMother());
+            Integer child = metadataManager.getSampleId(studyId, trio.getChild());
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
                 sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, studyMetadata.getSampleIndexConfigurationLatest().getVersion());
                 if (father != null && father > 0) {

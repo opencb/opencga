@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -58,6 +59,7 @@ import static org.junit.Assert.assertNotNull;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
     public static final String[] VCF_TEST_FILE_NAMES = {

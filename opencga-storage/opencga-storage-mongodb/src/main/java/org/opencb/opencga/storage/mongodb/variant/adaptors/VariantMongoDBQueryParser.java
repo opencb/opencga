@@ -16,16 +16,16 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
-import com.google.common.collect.Iterables;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.QueryBuilder;
-import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
@@ -35,6 +35,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -47,6 +48,7 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +59,12 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.mongodb.client.model.Filters.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.SEPARATOR;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.INDEX_FIELD;
 
 /**
@@ -73,6 +76,9 @@ public class VariantMongoDBQueryParser {
 
     public static final String OVERLAPPED_FILES_ONLY = "overlappedFilesOnly";
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
+    public static final JsonWriterSettings JSON_WRITER_SETTINGS = JsonWriterSettings.builder()
+            .outputMode(JsonMode.SHELL)
+            .indent(false).build();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
     //    private final CellBaseUtils cellBaseUtils;
@@ -83,97 +89,91 @@ public class VariantMongoDBQueryParser {
     }
 
     @Deprecated
-    protected Document parseQuery(Query query) {
-        return parseQuery(new VariantQueryParser(null, metadataManager).parseQuery(query, null, true));
+    protected Bson parseQuery(Query query) {
+        return parseQuery(new VariantQueryParser(null, metadataManager).parseQuery(query, null, false));
     }
 
-    protected Document parseQuery(ParsedVariantQuery parsedVariantQuery) {
+    protected Bson parseQuery(ParsedVariantQuery parsedVariantQuery) {
 
-        List<Bson> bsonList = new ArrayList<>();
+        // Region filters that intersect with other filters, but create a union between them
+        Bson idIntersectBson = null;
+        List<Bson> regionFilters = new ArrayList<>();
+        List<Bson> filters = new ArrayList<>();
         if (parsedVariantQuery != null) {
             // Copy given query. It may be modified
             Query query = new Query(parsedVariantQuery.getInputQuery());
-            boolean nonGeneRegionFilter = false;
+            // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
+            ParsedVariantQuery.VariantQueryXref variantQueryXref = parsedVariantQuery.getXrefs();
+
+            boolean pureGeneRegionFilter = !variantQueryXref.getGenes().isEmpty();
             /* VARIANT PARAMS */
 
             if (isValidParam(query, REGION)) {
-                nonGeneRegionFilter = true;
+                pureGeneRegionFilter = false;
                 List<Region> regions = Region.parseRegions(query.getString(REGION.key()), true);
                 if (!regions.isEmpty()) {
-                    getRegionFilter(regions, bsonList);
+                    getRegionFilter(regions, regionFilters);
                 }
             }
 
-            // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-
             if (!variantQueryXref.getIds().isEmpty()) {
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                        variantQueryXref.getIds(), bsonList, QueryOperation.OR);
-                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), bsonList, QueryOperation.OR);
+                pureGeneRegionFilter = false;
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
+                        variantQueryXref.getIds(), regionFilters);
+//                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, variantQueryXref.getIds(), regionFilters);
             }
 
             if (!variantQueryXref.getOtherXrefs().isEmpty()) {
-                nonGeneRegionFilter = true;
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                        variantQueryXref.getOtherXrefs(), bsonList, QueryOperation.OR);
+                pureGeneRegionFilter = false;
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID,
+                        variantQueryXref.getOtherXrefs(), regionFilters);
+            }
+            if (!variantQueryXref.getVariants().isEmpty()) {
+                pureGeneRegionFilter = false;
+                List<String> mongoIds = variantQueryXref.getVariants().stream().map(STRING_ID_CONVERTER::buildId)
+                        .collect(Collectors.toList());
+                Bson variantXrefIntersect;
+                if (mongoIds.size() == 1) {
+                    variantXrefIntersect = eq("_id", mongoIds.get(0));
+                } else {
+                    variantXrefIntersect = in("_id", mongoIds);
+                }
+                regionFilters.add(variantXrefIntersect);
             }
 
             List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
-            if (!variantQueryXref.getVariants().isEmpty() || !idIntersect.isEmpty()) {
-                nonGeneRegionFilter = true;
-                List<String> mongoIds = new ArrayList<>(variantQueryXref.getVariants().size() + idIntersect.size());
-                for (Variant variant : Iterables.concat(idIntersect, variantQueryXref.getVariants())) {
-                    mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
-                }
+            if (!idIntersect.isEmpty()) {
+                List<String> mongoIds = idIntersect.stream().map(STRING_ID_CONVERTER::buildId).collect(Collectors.toList());
                 if (mongoIds.size() == 1) {
-                    builder.or(new QueryBuilder().and("_id").is(mongoIds.get(0)).get());
+                    idIntersectBson = eq("_id", mongoIds.get(0));
                 } else {
-                    builder.or(new QueryBuilder().and("_id").in(mongoIds).get());
+                    idIntersectBson = in("_id", mongoIds);
                 }
             }
 
+            boolean ctBtFlagApplied = addGeneCombinationFilter(parsedVariantQuery, filters, regionFilters,
+                    pureGeneRegionFilter, !variantQueryXref.getGenes().isEmpty());
             if (!variantQueryXref.getGenes().isEmpty()) {
-                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-                    List<String> soList = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
-                    Set<String> gnSo = new HashSet<>(variantQueryXref.getGenes().size() * soList.size());
-                    for (String gene : variantQueryXref.getGenes()) {
-                        for (String so : soList) {
-                            int soNumber = parseConsequenceType(so);
-                            gnSo.add(DocumentToVariantAnnotationConverter.buildGeneSO(gene, soNumber));
-                        }
-                    }
-                    builder.or(new BasicDBObject(DocumentToVariantConverter.ANNOTATION_FIELD
-                            + '.' + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, new BasicDBObject("$in", gnSo)));
-                    if (!nonGeneRegionFilter) {
-                        // Filter already present in the GENE_SO_FIELD
-                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
-                    }
-                } else {
-                    addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                    + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                    + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                            variantQueryXref.getGenes(), builder, QueryOperation.OR);
+                if (parsedVariantQuery.getAnnotationQuery().getGeneCombinations() == null) {
+                    // If gene combination is present, the gene filter will be applied as part of the combination filter
+                    // Combination not present, so we can apply the gene filter directly
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID, variantQueryXref.getGenes(), regionFilters);
                 }
             }
 
             if (isValidParam(query, REFERENCE)) {
                 addQueryStringFilter(DocumentToVariantConverter.REFERENCE_FIELD, query.getString(REFERENCE.key()),
-                        builder, QueryOperation.AND);
+                        filters);
             }
 
             if (isValidParam(query, ALTERNATE)) {
                 addQueryStringFilter(DocumentToVariantConverter.ALTERNATE_FIELD, query.getString(ALTERNATE.key()),
-                        builder, QueryOperation.AND);
+                        filters);
             }
 
             if (isValidParam(query, TYPE)) {
-                addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getAsStringList(TYPE.key()), builder,
-                        QueryOperation.AND); //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
+                filters.add(addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getAsStringList(TYPE.key())));
+                //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
@@ -183,70 +183,276 @@ public class VariantMongoDBQueryParser {
                     throw VariantQueryException.malformedParam(RELEASE, query.getString(RELEASE.key()));
                 }
 
-                builder.and(DocumentToVariantConverter.RELEASE_FIELD).lessThanEquals(release);
+                filters.add(lte(DocumentToVariantConverter.RELEASE_FIELD, release));
             }
 
             /* ANNOTATION PARAMS */
-            QueryBuilder annotationQueryBuilder = new QueryBuilder();
-            parseAnnotationQueryParams(query, annotationQueryBuilder);
-            DBObject annotationQuery = annotationQueryBuilder.get();
-            if (!annotationQuery.keySet().isEmpty()) {
-                builder.and(annotationQuery);
-            }
+            filters.addAll(parseAnnotationQueryParams(parsedVariantQuery, query, ctBtFlagApplied));
 
             /* STUDIES */
-            QueryBuilder studyQueryBuilder = new QueryBuilder();
-            parseStudyQueryParams(parsedVariantQuery, query, studyQueryBuilder);
+            filters.addAll(parseStudyQueryParams(parsedVariantQuery, query));
 
             /* STATS PARAMS */
-            parseStatsQueryParams(parsedVariantQuery, query, studyQueryBuilder);
-            if (builder.get().keySet().isEmpty()) {
-                builder = studyQueryBuilder;
-            } else {
-                builder.and(studyQueryBuilder.get());
-            }
-
+            parseStatsQueryParams(parsedVariantQuery, query, filters);
         }
 
-        Document mongoQuery = new Document(builder.get().toMap());
+        return combine(parsedVariantQuery, regionFilters, idIntersectBson, filters);
+    }
+
+    /**
+     * Combine region filters, idIntersect filter and other filters.
+     *
+     *  AND
+     * ├─ ID_INTERSECT_FILTER
+     * ├─ FILTER_1
+     * ├─ FILTER_2
+     * ├─ ...
+     * └─ OR
+     *    ├─ REGION_FILTER_1
+     *    ├─ REGION_FILTER_2
+     *    └─ ...
+     *
+     * @param parsedVariantQuery
+     * @param regionFilters
+     * @param idIntersectBson
+     * @param otherFilters
+     * @return
+     */
+    private static Bson combine(ParsedVariantQuery parsedVariantQuery, List<Bson> regionFilters, Bson idIntersectBson,
+                                List<Bson> otherFilters) {
+        List<Bson> filters = new ArrayList<>();
+
+        if (idIntersectBson != null) {
+            filters.add(idIntersectBson);
+        }
+        // Combine region filters
+        if (!regionFilters.isEmpty()) {
+            Bson regionFilterBson;
+            if (regionFilters.size() == 1) {
+                regionFilterBson = regionFilters.get(0);
+            } else {
+                regionFilterBson = or(regionFilters);
+            }
+            filters.add(regionFilterBson);
+        }
+        filters.addAll(otherFilters);
+
+        Bson filter;
+        if (filters.isEmpty()) {
+            filter = empty();
+        } else {
+            filter = and(filters);
+        }
+
         if (logger.isDebugEnabled()) {
             logger.debug("----------------------");
             logger.debug("Query         = {}", VariantQueryUtils.printQuery(parsedVariantQuery == null
                     ? null
                     : parsedVariantQuery.getInputQuery()));
-            logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+            logger.debug("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         }
-        return mongoQuery;
+        logger.info("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        if (!filters.isEmpty()) {
+            logger.info("MongoDB Query (all of):");
+            if (idIntersectBson != null) {
+                BsonDocument bsonDocument = idIntersectBson.toBsonDocument();
+                String message;
+                if (bsonDocument.containsKey("$in")) {
+                    BsonArray array = bsonDocument.getArray("$in");
+                    if (array.size() > 10) {
+                        message = "{\"$in\" : [ \"" + array.get(0).asString().getValue() + "\" ... " + array.size() + " ] }";
+                    } else {
+                        message = bsonDocument.toJson(JSON_WRITER_SETTINGS);
+                    }
+                } else {
+                    message = bsonDocument.toJson(JSON_WRITER_SETTINGS);
+                }
+                logger.info("  IdIntersect = {}", message);
+            }
+            if (regionFilters.size() > 1) {
+                logger.info("  Region filters (any of):");
+                for (Bson regionFilter : regionFilters) {
+                    logger.info("    {}", regionFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                }
+            }
+            if (!otherFilters.isEmpty()) {
+                logger.info("  Other filters (all of):");
+                for (Bson otherFilter : otherFilters) {
+                    logger.info("    {}", otherFilter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+                }
+            }
+        }
+        return filter;
     }
 
-    private void parseAnnotationQueryParams(Query query, QueryBuilder builder) {
+    /**
+     * Add gene combination filters.
+     * Depending on the type of combination, the filter will be applied directly to the main filter list, or as part of the region filters.
+     *
+     * Scenarios:
+     *  - No region nor gene filter:
+     *     - Combination filter can be applied directly to the main filter list
+     *     - ct, bt and flag filters do not need to be applied separately
+     *  - Gene filter, but no other region filter:
+     *     - Combination filter can be applied as region filter, together with the gene filter.
+     *     - ct, bt and flag filters do not need to be applied separately
+     *  - Gene filter, and other region filters (e.g. region, id, xref):
+     *     - We need to apply the combination (ct+bt+flag) for gene and non-gene variants
+     *     - Combination filter is applied as region filter, together with the gene filter
+     *     - Combination filter (without gene) is applied as filter, to be applied for non-gene variants
+     *
+     * @param parsedVariantQuery  Parsed variant query with the gene combination to be applied
+     * @param filters             Filters
+     * @param regionFilters       Region filters
+     * @param pureGeneFilter      Is pure gene filter (no other region filters, and gene filter is applied as region filter)
+     * @param hasGeneFilter       Has gene filter, either pure or not
+     * @return  ctBtFlagApplied   ct+bt+flag filter fully applied as combination filter, no need to apply ct, bt and flag filters separately
+     */
+    private static boolean addGeneCombinationFilter(ParsedVariantQuery parsedVariantQuery, List<Bson> filters, List<Bson> regionFilters,
+                                                    boolean pureGeneFilter, boolean hasGeneFilter) {
+        boolean ctBtFlagApplied = false;
+        if (parsedVariantQuery.getAnnotationQuery().getGeneCombinations() == null) {
+            return ctBtFlagApplied;
+        }
+        if (hasGeneFilter && !pureGeneFilter) {
+            // Gene filter is applied, but not as pure gene region filter, so we need to apply the
+            // combination filter for non-gene variants as well
+            ParsedVariantQuery.ConsequenceTypeCombinations combination = VariantQueryParser.parseGeneBtSoFlagCombination(
+                    Collections.emptyList(), parsedVariantQuery.getInputQuery());
+            if (combination != null) {
+                addGeneCombinationFilter(combination, filters, regionFilters, false);
+                ctBtFlagApplied = true;
+            }
+        } else {
+            // No gene filter, or pure gene filter, so we can apply the combination filter directly
+             ctBtFlagApplied = true;
+        }
+        addGeneCombinationFilter(parsedVariantQuery.getAnnotationQuery().getGeneCombinations(), filters, regionFilters, hasGeneFilter);
+        return ctBtFlagApplied;
+    }
+
+    private static void addGeneCombinationFilter(ParsedVariantQuery.ConsequenceTypeCombinations combinations, List<Bson> filters,
+                                                 List<Bson> regionFilters, boolean hasGeneFilter) {
+        if (combinations != null) {
+            List<Bson> combinationFilters = new ArrayList<>();
+            String ctCombinedField = DocumentToVariantAnnotationConverter.CT_COMBINED;
+
+            for (ParsedVariantQuery.ConsequenceTypeCombination combination : combinations.getCombinations()) {
+                String gene = combination.getGene();
+                String bt = combination.getBiotype() != null
+                        ? DocumentToVariantAnnotationConverter.biotypeToStorage(combination.getBiotype()) : null;
+                String so = combination.getSo() != null
+                        ? String.valueOf(parseConsequenceType(combination.getSo())) : null;
+                String flag = combination.getFlag() != null
+                        ? DocumentToVariantAnnotationConverter.flagToStorage(combination.getFlag()) : null;
+
+                String any = "[^" + SEPARATOR + "]+";
+                String anySo = "\\d+";
+                switch (combinations.getType()) {
+                    case GENE_BIOTYPE_SO_FLAG:
+                        // Exact match on 4-part: gene_biotype_so_flag
+                        combinationFilters.add(eq(ctCombinedField,
+                                gene + SEPARATOR + bt + SEPARATOR + so + SEPARATOR + flag));
+                        break;
+                    case GENE_BIOTYPE_SO:
+                        // Expand all flag values → $in on 4-part
+                        combinationFilters.add(in(ctCombinedField,
+                                allCtCombinedValues(gene + SEPARATOR + bt + SEPARATOR + so + SEPARATOR)));
+                        break;
+                    case GENE_BIOTYPE:
+                        // Prefix match on 4-part: gene_biotype_*_*
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene + SEPARATOR + bt) + SEPARATOR));
+                        break;
+                    case GENE_BIOTYPE_FLAG:
+                        // Prefix gene_biotype_, any so, specific flag on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene + SEPARATOR + bt) + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case GENE_SO_FLAG:
+                        // Skip biotype, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + so + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case GENE_SO:
+                        // Skip biotype+flag, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + so + SEPARATOR));
+                        break;
+                    case GENE_FLAG:
+                        // Skip biotype+so, anchored on gene prefix on 4-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(gene) + SEPARATOR + any + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case BIOTYPE_SO_FLAG:
+                        // Exact match on 3-part: biotype_so_flag
+                        combinationFilters.add(eq(ctCombinedField,
+                                bt + SEPARATOR + so + SEPARATOR + flag));
+                        break;
+                    case BIOTYPE_SO:
+                        // Expand all flag values → $in on 3-part
+                        combinationFilters.add(in(ctCombinedField,
+                                allCtCombinedValues(bt + SEPARATOR + so + SEPARATOR)));
+                        break;
+                    case BIOTYPE_FLAG:
+                        // Prefix biotype_, any so, specific flag on 3-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + Pattern.quote(bt) + SEPARATOR + anySo + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    case SO_FLAG:
+                        // Any biotype, specific so+flag on 3-part
+                        combinationFilters.add(regex(ctCombinedField,
+                                "^" + any + SEPARATOR + so + SEPARATOR + Pattern.quote(flag) + "$"));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + combinations.getType());
+                }
+            }
+            if (!combinationFilters.isEmpty()) {
+                if (hasGeneFilter) {
+                    // Apply as part of the Region Filter
+                    regionFilters.add(or(combinationFilters));
+                } else {
+                    // No gene filter, so we can apply the combination filter directly
+                    filters.add(combinationFilters.size() == 1
+                            ? combinationFilters.get(0)
+                            : or(combinationFilters));
+                }
+            }
+        }
+    }
+
+    private List<Bson> parseAnnotationQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, boolean ctBtFlagApplied) {
+        List<Bson> filters = new ArrayList<>();
+
         if (query != null) {
             if (isValidParam(query, ANNOTATION_EXISTS)) {
                 boolean exists = query.getBoolean(ANNOTATION_EXISTS.key());
-                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD + "." + DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD);
-                builder.exists(exists);
+                filters.add(exists(DocumentToVariantAnnotationConverter.ANNOT_ID,
+                        exists));
                 if (!exists) {
-                    builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-                            + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                            + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD)
-                            .exists(false);
+                    filters.add(exists(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, false));
                 }
                 // else , should be combined with an or, and it would not speed up the filtering. This scenario is not so common
             }
 
-            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-                String value = query.getString(ANNOT_CONSEQUENCE_TYPE.key());
-                addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
-                        VariantQueryUtils::parseConsequenceType);
-            }
+            if (!ctBtFlagApplied) {
+                // If the combination of ct, bt and flag is not applied as region filter, we need to apply them separately
+                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+                    String value = query.getString(ANNOT_CONSEQUENCE_TYPE.key());
+                    addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, value, filters,
+                            VariantQueryUtils::parseConsequenceType);
+                }
 
-            if (isValidParam(query, ANNOT_BIOTYPE)) {
-                String biotypes = query.getString(ANNOT_BIOTYPE.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
+                if (isValidParam(query, ANNOT_BIOTYPE)) {
+                    String biotypes = query.getString(ANNOT_BIOTYPE.key());
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_BIOTYPE, biotypes, filters);
+                }
+
+                if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                    String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, filters);
+                }
             }
 
             if (isValidParam(query, ANNOT_POLYPHEN)) {
@@ -256,7 +462,7 @@ public class VariantMongoDBQueryParser {
 //                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD,
 //                        value, builder);
-                addScoreFilter(value, builder, ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN, true);
+                addScoreFilter(value, filters, ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN, true);
             }
 
             if (isValidParam(query, ANNOT_SIFT)) {
@@ -265,26 +471,20 @@ public class VariantMongoDBQueryParser {
 //                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD + "."
 //                        + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, value, builder);
-                addScoreFilter(value, builder, ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT, true);
+                addScoreFilter(value, filters, ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT, true);
             }
 
             if (isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
                 String value = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
-                addScoreFilter(value, builder, ANNOT_PROTEIN_SUBSTITUTION, true);
+                addScoreFilter(value, filters, ANNOT_PROTEIN_SUBSTITUTION, true);
             }
 
             if (isValidParam(query, ANNOT_CONSERVATION)) {
                 String value = query.getString(ANNOT_CONSERVATION.key());
-                addScoreFilter(value, builder, ANNOT_CONSERVATION, false);
+                addScoreFilter(value, filters, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
-                String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
-            }
-
+            /* FIXME: TASK-8038
             if (isValidParam(query, ANNOT_GENE_TRAIT_ID)) {
                 String value = query.getString(ANNOT_GENE_TRAIT_ID.key());
                 QueryOperation internalOp = checkOperator(value);
@@ -325,29 +525,27 @@ public class VariantMongoDBQueryParser {
                     builder.and(geneTraitBuilder.get());
                 }
             }
-
+*/
             if (isValidParam(query, ANNOT_GENE_TRAIT_NAME)) {
                 String value = query.getString(ANNOT_GENE_TRAIT_NAME.key());
 //                addCompQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
 //                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, false);
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME, value, filters);
             }
 
             List<List<String>> clinicalCombinationFilter = VariantQueryParser.parseClinicalCombination(query);
             if (!clinicalCombinationFilter.isEmpty()) {
-                String key = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS_FIELD;
+                String key = DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS;
                 if (clinicalCombinationFilter.size() == 1) {
-                    builder.and(key).in(clinicalCombinationFilter.get(0));
+                    filters.add(in(key, clinicalCombinationFilter.get(0)));
                 } else {
-                    List<DBObject> subQueries = new ArrayList<>(clinicalCombinationFilter.size());
+                    List<Bson> subQueries = new ArrayList<>(clinicalCombinationFilter.size());
                     for (List<String> clinicalCombination : clinicalCombinationFilter) {
-                        subQueries.add(new QueryBuilder().and(key).in(clinicalCombination).get());
+                        subQueries.add(in(key, clinicalCombination));
                     }
-                    builder.and(subQueries.toArray(new DBObject[0]));
+                    // FIXME: why not to flatten here?
+                    filters.add(and(subQueries));
                 }
             }
 
@@ -355,10 +553,7 @@ public class VariantMongoDBQueryParser {
                 String value = query.getString(ANNOT_HPO.key());
 //                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
 //                        QueryOperation.AND);
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, value, builder,
-                        QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.XREFS_ID, value, filters);
             }
 
 //            DBObject geneTraitQuery = geneTraitBuilder.get();
@@ -375,9 +570,7 @@ public class VariantMongoDBQueryParser {
                 // Split by comma or semi colon
                 List<String> goGenes = splitValue(value, queryOperation);
 
-                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(goGenes);
+                filters.add(in(DocumentToVariantAnnotationConverter.XREFS_ID, goGenes));
 
             }
 
@@ -389,42 +582,35 @@ public class VariantMongoDBQueryParser {
                 // Split by comma or semi colon
                 List<String> expressionGenes = splitValue(value, queryOperation);
 
-                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(expressionGenes);
+                filters.add(in(DocumentToVariantAnnotationConverter.XREFS_ID, expressionGenes));
 
             }
 
 
             if (isValidParam(query, ANNOT_PROTEIN_KEYWORD)) {
                 String value = query.getString(ANNOT_PROTEIN_KEYWORD.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, value, builder, QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, value, filters);
             }
 
             if (isValidParam(query, ANNOT_DRUG)) {
                 String value = query.getString(ANNOT_DRUG.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.DRUG_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, value, builder, QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.DRUG_NAME, value, filters);
             }
 
             if (isValidParam(query, ANNOT_FUNCTIONAL_SCORE)) {
                 String value = query.getString(ANNOT_FUNCTIONAL_SCORE.key());
-                addScoreFilter(value, builder, ANNOT_FUNCTIONAL_SCORE, false);
+                addScoreFilter(value, filters, ANNOT_FUNCTIONAL_SCORE, false);
             }
-
+            /* FIXME: TASK-8038
             if (isValidParam(query, CUSTOM_ANNOTATION)) {
                 String value = query.getString(CUSTOM_ANNOTATION.key());
-                addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
+                addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, f, true);
             }
-
+*/
             if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
                 String value = query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
-                addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
-                        DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, value, builder,
+                addFrequencyFilter(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES,
+                        DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, value, filters,
                         ANNOT_POPULATION_ALTERNATE_FREQUENCY, true); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
@@ -432,14 +618,14 @@ public class VariantMongoDBQueryParser {
 
             if (isValidParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
                 String value = query.getString(ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
-                addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
-                        DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder,
+                addFrequencyFilter(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES,
+                        DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, filters,
                         ANNOT_POPULATION_REFERENCE_FREQUENCY, false); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
             }
 
+            /* FIXME: TASK-8038
             if (isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
                 String value = query.getString(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
@@ -483,416 +669,527 @@ public class VariantMongoDBQueryParser {
                             }
                         });
             }
-
+*/
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                long ts = metadataManager.getProjectMetadata().getAttributes()
-                        .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+                long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForLoading()
+                        .getLastUpdateDateTimestamp();
                 if (ts > 0) {
                     String key = INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD;
-                    builder.or(
-                            QueryBuilder.start(key).greaterThan(ts).get(),
-                            QueryBuilder.start(key).exists(false).get()); // It may not exist from versions <1.4.x
+                    filters.add(gte(key, ts));
                 } // Otherwise, get all variants
             }
         }
+        return filters;
     }
 
-    private void parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, QueryBuilder builder) {
+    private List<Bson> parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, @Deprecated Query query) {
+        List<Bson> filters = new ArrayList<>();
+        if (query == null) {
+            return filters;
+        }
 
-        if (query != null) {
-            Map<String, Integer> studies = metadataManager.getStudies(null);
+        final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
 
-            String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
-            final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
+        if (parsedVariantQuery.getStudyQuery().getStudies() != null) {
+            ParsedQuery<NegatableValue<ResourceId>> studies = parsedVariantQuery.getStudyQuery().getStudies();
 
-            if (isValidParam(query, STUDY)) {
-                String value = query.getString(STUDY.key());
+            filters.add(addQueryFilter(DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyEntryConverter.STUDYID_FIELD,
+                    studies.getValues(),
+                    study -> study.getValue().getId()));
+        }
 
-                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD, value,
-                        builder, QueryOperation.AND, study -> metadataManager.getStudyId(study, false, studies));
+        boolean overlappedFilesFiles = query.getBoolean(OVERLAPPED_FILES_ONLY);
+        List<Integer> fileIds = Collections.emptyList();
+        QueryOperation filesOperation = QueryOperation.OR;
+        ParsedQuery<NegatableValue<ResourceId>> fileQuery = null;
+        if (parsedVariantQuery.getStudyQuery().getFiles() != null) {
+            fileQuery = parsedVariantQuery.getStudyQuery().getFiles();
+            filesOperation = fileQuery.getOperation();
+            fileIds = fileQuery.getValues().stream().filter(v -> !v.isNegated())
+                    .map(NegatableValue::getValue).map(ResourceId::getId).collect(Collectors.toList());
+
+        } else if (isValidParam(query, INCLUDE_FILE)) {
+            List<String> files = VariantQueryProjectionParser.getIncludeFilesList(query);
+            if (files != null) {
+                fileIds = new ArrayList<>(files.size());
+                for (String file : files) {
+                    fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
+                }
             }
+        }
 
-            boolean overlappedFilesFiles = query.getBoolean(OVERLAPPED_FILES_ONLY);
-            List<Integer> fileIds = Collections.emptyList();
-            List<String> fileNames = Collections.emptyList();
-            QueryOperation filesOperation = QueryOperation.OR;
-            if (isValidParam(query, FILE)) {
-                String filesValue = query.getString(FILE.key());
-                filesOperation = checkOperator(filesValue);
-                fileNames = splitValue(filesValue, filesOperation);
-
-                fileIds = fileNames
-                        .stream()
-                        .filter(value -> !isNegated(value))
-                        .map(value -> {
-                            Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
-                            if (fileId == null) {
-                                throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                            }
-                            if (overlappedFilesFiles) {
-                                fileId = -fileId;
-                            }
-                            return fileId;
-                        })
-                        .collect(Collectors.toList());
-            } else if (isValidParam(query, INCLUDE_FILE)) {
-                List<String> files = VariantQueryProjectionParser.getIncludeFilesList(query);
-                if (files != null) {
-                    fileIds = new ArrayList<>(files.size());
-                    for (String file : files) {
-                        fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
+        // Build per-file and per-sample genotype conditions for multi-file samples.
+        // Used by FILE_DATA to tie conditions to the same file entry, and by SAMPLE_DATA
+        // to tie sfd conditions to the genotype within the same file entry.
+        Map<Integer, Bson> fileGenotypeConditions = null;
+        Map<Integer, Bson> sampleGenotypeConditions = null;
+        ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
+                parsedVariantQuery.getStudyQuery().getGenotypes();
+        if (preGenotypesQuery != null && defaultStudy != null) {
+            List<String> preDefaultGenotypes = defaultStudy.getAttributes()
+                    .getAsStringList(DEFAULT_GENOTYPE.key());
+            for (KeyOpValue<SampleMetadata, List<String>> sampleGt : preGenotypesQuery.getValues()) {
+                SampleMetadata sample = sampleGt.getKey();
+                int sampleId = sample.getId();
+                List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
+                        defaultStudy.getId(), sampleId, true);
+                List<Bson> gtOrConditions = new ArrayList<>();
+                boolean canApply = true;
+                for (String genotype : sampleGt.getValue()) {
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)
+                            || genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                        continue;
+                    }
+                    if (isNegated(genotype) || preDefaultGenotypes.contains(genotype)) {
+                        canApply = false; // Complex cases - skip optimization
+                        break;
+                    }
+                    String mgtKey = DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                    gtOrConditions.add(eq(mgtKey, sampleId));
+                }
+                if (canApply && !gtOrConditions.isEmpty()) {
+                    Bson gtFilter = gtOrConditions.size() == 1
+                            ? gtOrConditions.get(0) : or(gtOrConditions);
+                    // Per-sample condition (used by SAMPLE_DATA)
+                    if (sampleGenotypeConditions == null) {
+                        sampleGenotypeConditions = new HashMap<>();
+                    }
+                    sampleGenotypeConditions.put(sampleId, gtFilter);
+                    // Per-file condition (used by FILE_DATA, only for multi-file samples)
+                    if (sampleFileIds.size() > 1) {
+                        if (fileGenotypeConditions == null) {
+                            fileGenotypeConditions = new HashMap<>();
+                        }
+                        for (Integer fileId : sampleFileIds) {
+                            fileGenotypeConditions.put(fileId, gtFilter);
+                        }
                     }
                 }
             }
+        }
 
-            if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
-                String filterValue = query.getString(FILTER.key());
-                QueryOperation filterOperation = checkOperator(filterValue);
-                List<String> filterValues = splitValue(filterValue, filterOperation);
-                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
-                QueryOperation fileDataOperation = parsedFileData.getOperation();
+        if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
+            String filterValue = query.getString(FILTER.key());
+            QueryOperation filterOperation = checkOperator(filterValue);
+            List<String> filterValues = splitValue(filterValue, filterOperation);
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
+            QueryOperation fileDataOperation = parsedFileData.getOperation();
 
 
-                boolean useFileElemMatch = !fileIds.isEmpty();
-                boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
+            boolean useFileElemMatch = !fileIds.isEmpty();
+            boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
-//                values = query.getString(QUAL.key());
-//                QueryOperation qualOperation = checkOperator(values);
-//                List<String> qualValues = splitValue(values, qualOperation);
-                if (!useFileElemMatch) {
-                    String key = studyQueryPrefix
-                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+            if (!useFileElemMatch) {
+                // Files are now at root level, so no studyQueryPrefix needed.
+                String key = DocumentToStudyEntryConverter.FILES_FIELD + '.'
+                        + DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
 
+                if (isValidParam(query, FILTER)) {
+                    getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, filters);
+                }
+                if (isValidParam(query, QUAL)) {
+                    addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), filters, false);
+                }
+            } else {
+                List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
+                String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
+
+                for (Integer fileId : fileIds) {
+                    List<Bson> fileFilters = new ArrayList<>();
+
+                    fileFilters.add(eq(DocumentToStudyEntryConverter.FILEID_FIELD, fileId));
                     if (isValidParam(query, FILTER)) {
-                        DBObject[] regexList = getFileFilterDBObjects(key + StudyEntry.FILTER, filterValues);
-                        if (filterOperation == QueryOperation.OR) {
-                            builder.or(regexList);
-                        } else {
-                            builder.and(regexList);
-                        }
+                        getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileFilters);
                     }
                     if (isValidParam(query, QUAL)) {
-                        addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), builder, false);
-                    }
-                } else {
-                    DBObject[] fileElemMatch = new DBObject[fileIds.size()];
-                    String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
-                    DBObject[] regexList = getFileFilterDBObjects(key + StudyEntry.FILTER, filterValues);
-
-                    int i = 0;
-                    for (Integer fileId : fileIds) {
-                        QueryBuilder fileBuilder = QueryBuilder.start();
-
-                        fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
-                        if (isValidParam(query, FILTER)) {
-                            if (filterOperation == QueryOperation.OR) {
-                                fileBuilder.or(regexList);
-                            } else {
-                                fileBuilder.and(regexList);
-                            }
-                        }
-                        if (isValidParam(query, QUAL)) {
-                            addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileBuilder, false);
-                        }
-
-                        if (infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
-                            if (defaultStudy == null) {
-                                throw VariantQueryException.missingStudyForFile(fileId.toString(),
-                                        metadataManager.getStudyNames());
-                            }
-                            String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
-                            KeyValues<String, KeyOpValue<String, String>> fileDataValue =
-                                    parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
-                            if (fileDataValue.getValues() != null) {
-                                KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
-                                Values<DBObject> extraFilterFilters = null;
-                                if (filterKeyOp != null) {
-                                    fileDataValue.getValues().remove(filterKeyOp);
-                                    Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
-                                    DBObject[] regexFilter = getFileFilterDBObjects(key + StudyEntry.FILTER, splitFilterValues.getValues());
-                                    extraFilterFilters = new Values<>(splitFilterValues.getOperation(), Arrays.asList(regexFilter));
-                                }
-                                addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileBuilder,
-                                        true, extraFilterFilters);
-                            }
-                        }
-
-                        fileElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
-                                new BasicDBObject("$elemMatch", fileBuilder.get()));
-                    }
-                    if (filesOperation == QueryOperation.OR) {
-                        builder.or(fileElemMatch);
-                    } else {
-                        builder.and(fileElemMatch);
+                        addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileFilters, false);
                     }
 
-                }
-
-                if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
-                    DBObject[] infoElemMatch = new DBObject[parsedFileData.getValues().size()];
-                    int i = 0;
-                    for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
+                    if (infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
                         if (defaultStudy == null) {
-                            throw VariantQueryException.missingStudyForFile(fileDataValue.getKey(), metadataManager.getStudyNames());
+                            throw VariantQueryException.missingStudyForFile(fileId.toString(),
+                                    metadataManager.getStudyNames());
                         }
-                        QueryBuilder infoBuilder = new QueryBuilder();
-                        Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
-                        infoBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).is(fileId);
+                        String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
+                        KeyValues<String, KeyOpValue<String, String>> fileDataValue =
+                                parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
                         if (fileDataValue.getValues() != null) {
                             KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
-                            Values<DBObject> extraFilterFilters = null;
+                            Values<Bson> extraFilterFilters = null;
                             if (filterKeyOp != null) {
                                 fileDataValue.getValues().remove(filterKeyOp);
                                 Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
-                                String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + ".";
-                                DBObject[] regexFilter = getFileFilterDBObjects(key + StudyEntry.FILTER, splitFilterValues.getValues());
-                                extraFilterFilters = new Values<>(splitFilterValues.getOperation(), Arrays.asList(regexFilter));
+                                List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
+                                extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
                             }
-
-                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoBuilder,
+                            addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
                                     true, extraFilterFilters);
                         }
-                        infoElemMatch[i++] = new BasicDBObject(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD,
-                                new BasicDBObject("$elemMatch", infoBuilder.get()));
                     }
-                    if (fileDataOperation == QueryOperation.OR) {
-                        builder.or(infoElemMatch);
-                    } else {
-                        builder.and(infoElemMatch);
-                    }
+                    fileElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileFilters)));
                 }
+                addAll(filters, filesOperation, fileElemMatch);
+
             }
 
-            if (isValidParam(query, SAMPLE_DATA)) {
-                throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
-            }
-
-            // Only will contain values if the genotypesOperator is AND
-            Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
-            Set<Integer> fileIdsFromSamples = Collections.emptySet();
-            ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = parsedVariantQuery.getStudyQuery().getGenotypes();
-            if (genotypesQuery != null) {
-                fileIdGroupsFromSamples = new HashSet<>();
-                fileIdsFromSamples = new HashSet<>();
-
-                List<String> defaultGenotypes;
-                List<String> loadedGenotypes;
-                if (defaultStudy != null) {
-                    defaultGenotypes = defaultStudy.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-                    loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
-                    loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
-                } else {
-                    defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
-                    loadedGenotypes = Arrays.asList(
-                            "0/0", "0|0",
-                            "0/1", "1/0", "1/1", "./.",
-                            "0|1", "1|0", "1|1", ".|.",
-                            "0|2", "2|0", "2|1", "1|2", "2|2",
-                            "0/2", "2/0", "2/1", "1/2", "2/2",
-                            GenotypeClass.UNKNOWN_GENOTYPE);
-                }
-
-                List<DBObject> genotypeQueries = new ArrayList<>(genotypesQuery.getValues().size());
-
-                for (KeyOpValue<SampleMetadata, List<String>> sampleGenotypeFilter : genotypesQuery.getValues()) {
-                    SampleMetadata sample = sampleGenotypeFilter.getKey();
-                    List<String> genotypes = sampleGenotypeFilter.getValue();
-
-                    // If empty, should find none. Add non-existing genotype
-                    // TODO: Fast empty result
-                    if (genotypes.isEmpty()) {
-                        genotypes.add(GenotypeClass.NONE_GT_VALUE);
+            if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
+                List<Bson> infoElemMatch = new ArrayList<>(parsedFileData.getValues().size());
+                for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
+                    if (defaultStudy == null) {
+                        throw VariantQueryException.missingStudyForFile(fileDataValue.getKey(), metadataManager.getStudyNames());
                     }
+                    List<Bson> infoFilters = new ArrayList<>();
+                    Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
+                    infoFilters.add(eq(DocumentToStudyEntryConverter.FILEID_FIELD, fileId));
+                    if (fileDataValue.getValues() != null) {
+                        KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
+                        Values<Bson> extraFilterFilters = null;
+                        if (filterKeyOp != null) {
+                            fileDataValue.getValues().remove(filterKeyOp);
+                            Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
+                            String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + ".";
+                            List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
+                            extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
+                        }
 
+                        addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
+                                true, extraFilterFilters);
+                    }
+                    // Tie genotype conditions to this file's $elemMatch for multi-file samples
+                    if (fileGenotypeConditions != null) {
+                        Bson gtCondition = fileGenotypeConditions.get(fileId);
+                        if (gtCondition != null) {
+                            infoFilters.add(gtCondition);
+                        }
+                    }
+                    infoElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(infoFilters)));
+                }
+                addAll(filters, fileDataOperation, infoElemMatch);
+            }
+        }
+
+        if (isValidParam(query, SAMPLE_DATA)) {
+            ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery =
+                    parsedVariantQuery.getStudyQuery().getSampleDataQuery();
+            if (sampleDataQuery != null && sampleDataQuery.isNotEmpty()) {
+                List<Bson> sampleDataFilters = new ArrayList<>();
+                for (KeyValues<SampleMetadata, KeyOpValue<String, String>> sampleKv
+                        : sampleDataQuery.getValues()) {
+                    SampleMetadata sample = sampleKv.getKey();
                     int sampleId = sample.getId();
 
-                    // We can not filter sample by file if one of the requested genotypes is the unknown genotype
-                    boolean canFilterSampleByFile = !genotypes.contains(GenotypeClass.UNKNOWN_GENOTYPE);
-                    boolean defaultGenotypeNegated = false;
-                    if (canFilterSampleByFile) {
-                        for (String genotype : genotypes) {
-                            // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
-                            if (isNegated(genotype)) {
-                                if (defaultGenotypes.contains(removeNegation(genotype))) {
-                                    canFilterSampleByFile = true;
-                                    defaultGenotypeNegated = true;
-                                    break;
-                                } else {
-                                    canFilterSampleByFile = false;
-                                }
-                            }
-                        }
-                    }
-                    QueryBuilder genotypesBuilder = QueryBuilder.start();
-                    if (canFilterSampleByFile) {
-                        List<Integer> fileIdsFromSample = new ArrayList<>();
-                        for (Integer file : metadataManager.getIndexedFiles(defaultStudy.getId())) {
-                            FileMetadata fileMetadata = metadataManager.getFileMetadata(defaultStudy.getId(), file);
-                            if (fileMetadata.getSamples().contains(sampleId)) {
-                                fileIdsFromSample.add(file);
-                            }
-                        }
+                    // Validate all queried fields are filterable for this sample's files
+                    validateSampleDataFieldsFilterable(sample, sampleKv, defaultStudy);
 
-                        if (defaultGenotypeNegated) {
-                            QueryBuilder negatedFileBuilder = new QueryBuilder()
-                                    .and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                            + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
-                            if (fileIdsFromSample.size() == 1) {
-                                negatedFileBuilder.notEquals(fileIdsFromSample.get(0));
-                            } else {
-                                negatedFileBuilder.notIn(fileIdsFromSample);
-                            }
-                            genotypesBuilder.or(negatedFileBuilder.get());
-                        } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
-                            genotypesBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD);
-                            if (fileIdsFromSample.size() == 1) {
-                                genotypesBuilder.is(fileIdsFromSample.get(0));
-                            } else {
-                                genotypesBuilder.in(fileIdsFromSample);
-                            }
-                        } else {
-                            // FILE ID filter can be added at the end, together with the main FILE filter
-                            fileIdGroupsFromSamples.add(fileIdsFromSample);
-                            fileIdsFromSamples.addAll(fileIdsFromSample);
+                    // Build conditions for each field filter
+                    List<Bson> elemMatchFilters = new ArrayList<>();
+                    for (KeyOpValue<String, String> condition : sampleKv.getValues()) {
+                        String field = condition.getKey();
+                        String op = condition.getOp();
+                        String value = condition.getValue();
+                        String sfdKey = DocumentToStudyEntryConverter.SAMPLE_FILTERABLE_DATA_FIELD + "."
+                                + field.toLowerCase() + "." + sampleId;
+                        addCompQueryFilter(sfdKey, value, elemMatchFilters, op);
+                    }
+
+                    // Add genotype tie-in for multi-file samples
+                    if (sampleGenotypeConditions != null) {
+                        Bson gtCondition = sampleGenotypeConditions.get(sampleId);
+                        if (gtCondition != null) {
+                            elemMatchFilters.add(gtCondition);
                         }
                     }
 
-                    for (String genotype : genotypes) {
-                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
-                            continue;
-                        }
-
-                        boolean negated = isNegated(genotype);
-                        if (negated) {
-                            genotype = removeNegation(genotype);
-                        }
-                        if (defaultGenotypes.contains(genotype)) {
-
-                            if (negated) {
-                                for (String otherGenotype : loadedGenotypes) {
-                                    if (defaultGenotypes.contains(otherGenotype)) {
-                                        continue;
-                                    }
-                                    String key = studyQueryPrefix
-                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
-                                    genotypesBuilder.or(new BasicDBObject(key, sampleId));
-                                }
-                            } else {
-                                QueryBuilder andBuilder = QueryBuilder.start();
-                                for (String otherGenotype : loadedGenotypes) {
-                                    if (defaultGenotypes.contains(otherGenotype)) {
-                                        continue;
-                                    }
-                                    String key = studyQueryPrefix
-                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
-                                    andBuilder.and(new BasicDBObject(key,
-                                            new Document("$ne", sampleId)));
-                                }
-                                genotypesBuilder.or(andBuilder.get());
-                            }
-                        } else {
-                            String s = studyQueryPrefix
-                                    + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                    + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
-                            if (negated) {
-                                //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
-                                genotypesBuilder.and(new BasicDBObject(s, new BasicDBObject("$ne", sampleId)));
-
-                            } else {
-                                //or [ {"gt.0|1" : <sampleId> } ]
-                                genotypesBuilder.or(new BasicDBObject(s, sampleId));
-                            }
-                        }
-                    }
-                    genotypeQueries.add(genotypesBuilder.get());
+                    sampleDataFilters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(elemMatchFilters)));
                 }
+                addAll(filters, sampleDataQuery.getOperation(), sampleDataFilters);
+            }
+        }
 
-                if (genotypesQuery.getOperation() == QueryOperation.OR) {
-                    builder.or(genotypeQueries.toArray(new DBObject[genotypeQueries.size()])).get();
-                } else {
-                    builder.and(genotypeQueries.toArray(new DBObject[genotypeQueries.size()]));
-                }
+        // Only will contain values if the genotypesOperator is AND
+        Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
+        Set<Integer> fileIdsFromSamples = Collections.emptySet();
+        ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = parsedVariantQuery.getStudyQuery().getGenotypes();
+        if (genotypesQuery != null) {
+            // One bson query per sample
+            List<Bson> genotypeQueries = new ArrayList<>(genotypesQuery.getValues().size());
 
+            fileIdGroupsFromSamples = new LinkedHashSet<>();
+            fileIdsFromSamples = new LinkedHashSet<>();
+
+            List<String> defaultGenotypes;
+            List<String> loadedGenotypes;
+            if (defaultStudy != null) {
+                defaultGenotypes = defaultStudy.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+                loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
+            } else {
+                defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
             }
 
-            if (fileNames.isEmpty()) {
-                // If there is no valid files filter, add files filter to speed up this query
-                if (!fileIdGroupsFromSamples.isEmpty()) {
-                    if ((genotypesQuery.getOperation() != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
-                            && fileIdsFromSamples.containsAll(metadataManager.getIndexedFiles(defaultStudy.getId()))) {
-                        // Do not add files filter if operator is OR and must select all the files.
-                        // i.e. ANY file among ALL indexed files
-                        logger.debug("Skip filter by all files");
-                    } else {
-                        addFileGroupsFilter(builder, studyQueryPrefix, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
+            for (KeyOpValue<SampleMetadata, List<String>> sampleGenotypeFilter : genotypesQuery.getValues()) {
+                SampleMetadata sample = sampleGenotypeFilter.getKey();
+                List<String> genotypes = sampleGenotypeFilter.getValue();
+                // Build the query for this sample
+                // {
+                //   $and: [
+                //      <genotypesFiltersAnd>... ,
+                //      {$or : <genotypesFiltersOr> }
+                //   ]
+                // }
+                //
+                // e.g.
+                // genotype="0/1,1/1" -> genotype = "0/1" OR genotype = "1/1"
+                // {
+                //   $and: [
+                //      { $or: [ {"gt.0|1" : <sampleId> } , {"gt.1|1" : <sampleId> } ] }
+                //      { "files.fileId" : { $in : [<fileIdFromSample>] } }
+                //   ]
+                // }
+
+                List<Bson> genotypesFiltersAnd = new ArrayList<>();
+                List<Bson> genotypesFiltersOr = new ArrayList<>();
+
+                // If empty, should find none. Add non-existing genotype
+                // TODO: Fast empty result
+                if (genotypes.isEmpty()) {
+                    genotypes.add(GenotypeClass.NONE_GT_VALUE);
+                }
+
+                int sampleId = sample.getId();
+
+                boolean canFilterSampleByFile = true;
+                boolean defaultGenotypeNegated = false;
+
+                for (String genotype : genotypes) {
+                    if (genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                        // We can not filter sample by file if one of the requested genotypes is the unknown genotype
+                        canFilterSampleByFile = false;
+                        break;
+                    } else if (isNegated(genotype)) {
+                        // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
+                        if (defaultGenotypes.contains(removeNegation(genotype))) {
+                            canFilterSampleByFile = true;
+                            defaultGenotypeNegated = true;
+                        } else {
+                            canFilterSampleByFile = false;
+                            break;
+                        }
                     }
                 }
-            } else {
-                if (fileIdGroupsFromSamples.isEmpty()) {
-                    addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
-                            fileNames, builder, QueryOperation.AND, filesOperation,
-                            value -> {
-                                Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
-                                if (fileId == null) {
-                                    throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                                }
-                                if (overlappedFilesFiles) {
-                                    fileId = -fileId;
-                                }
-                                return fileId;
-                            });
-                } else {
-                    // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
-                    // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
-                    if (filesOperation == QueryOperation.AND || filesOperation == null) {
-                        // sample = AND, files = AND
-                        // Simple mix
 
-                        // Some files may be negated. Get them, and put them appart
-                        List<Integer> negatedFiles = null;
-                        if (fileNames.stream().anyMatch(VariantQueryUtils::isNegated)) {
-                            negatedFiles = fileNames
-                                    .stream()
-                                    .filter(VariantQueryUtils::isNegated)
-                                    .map(value -> {
-                                        Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy)
-                                                .getValue();
-                                        if (fileId == null) {
-                                            throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                                        }
-                                        if (overlappedFilesFiles) {
-                                            fileId = -fileId;
-                                        }
-                                        return fileId;
-                                    })
-                                    .collect(Collectors.toList());
+                if (canFilterSampleByFile) {
+                    // Extra filter by FILE IDs associated to the sample.
+                    // Files are now at root level, so no studyQueryPrefix needed.
+                    List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(defaultStudy.getId(), sampleId, true);
+
+                    String key = DocumentToVariantConverter.FILES_FIELD
+                            + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
+                    if (defaultGenotypeNegated) {
+                        Bson negatedFile;
+                        if (fileIdsFromSample.size() == 1) {
+                            negatedFile = ne(key, fileIdsFromSample.get(0));
+                        } else {
+                            negatedFile = nin(key, fileIdsFromSample);
                         }
-                        for (Integer fileId : fileIds) {
-                            fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
+                        genotypesFiltersOr.add(negatedFile);
+                    } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
+                        if (fileIdsFromSample.size() == 1) {
+                            genotypesFiltersAnd.add(eq(key, fileIdsFromSample.get(0)));
+                        } else {
+                            genotypesFiltersAnd.add(in(key, fileIdsFromSample));
                         }
-                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
-
-                    } else if (filesOperation == QueryOperation.OR) {
-                        // samples = AND, files = OR
-
-                        // Put all files in a group
-                        // the filesOperation==OR will will be expressed with an "$in" of the new group
-                        fileIdGroupsFromSamples.add(fileIds);
-                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, null);
+                    } else {
+                        // FILE ID filter can be added at the end, together with the main FILE filter
+                        fileIdGroupsFromSamples.add(fileIdsFromSample);
+                        fileIdsFromSamples.addAll(fileIdsFromSample);
                     }
+                }
+
+                for (String genotype : genotypes) {
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                        continue;
+                    }
+
+                    boolean negated = isNegated(genotype);
+                    if (negated) {
+                        genotype = removeNegation(genotype);
+                    }
+                    if (defaultGenotypes.contains(genotype)) {
+                        // Filter by default genotype, which is missing
+                        // This means that we need to find the sample in all genotypes different than the default genotype
+                        if (negated) {
+                            for (String otherGenotype : loadedGenotypes) {
+                                if (defaultGenotypes.contains(otherGenotype)) {
+                                    continue;
+                                }
+                                // GT is now in root-level files[].mgt.
+                                String key = DocumentToVariantConverter.FILES_FIELD
+                                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
+                                genotypesFiltersOr.add(eq(key, sampleId));
+                            }
+                        } else {
+                            List<Bson> defaultGenotypeFilter = new ArrayList<>();
+                            for (String otherGenotype : loadedGenotypes) {
+                                if (defaultGenotypes.contains(otherGenotype)) {
+                                    continue;
+                                }
+                                // GT is now in root-level files[].mgt.
+                                String key = DocumentToVariantConverter.FILES_FIELD
+                                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
+                                defaultGenotypeFilter.add(ne(key, sampleId));
+                            }
+                            genotypesFiltersOr.add(and(defaultGenotypeFilter));
+                        }
+                    } else {
+                        // GT is now in root-level files[].mgt (FILE_GENOTYPE_FIELD).
+                        // sampleIds are globally unique across studies, so no studyQueryPrefix needed.
+                        String mgtKey = DocumentToVariantConverter.FILES_FIELD
+                                + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                                + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                        if (negated) {
+                            //and [ {"files.mgt.0|1" : { $ne : <sampleId> } } ]
+                            genotypesFiltersAnd.add(ne(mgtKey, sampleId));
+                        } else {
+                            //or [ {"files.mgt.0|1" : <sampleId> } ]
+                            genotypesFiltersOr.add(eq(mgtKey, sampleId));
+                        }
+                    }
+                }
+
+                if (!genotypesFiltersOr.isEmpty()) {
+                    genotypesFiltersAnd.add(0, or(genotypesFiltersOr));
+                }
+                if (genotypesFiltersAnd.size() == 1) {
+                    genotypeQueries.add(genotypesFiltersAnd.get(0));
+                } else {
+                    genotypeQueries.add(and(genotypesFiltersAnd));
+                }
+            }
+
+
+            addAll(filters, genotypesQuery.getOperation(), genotypeQueries);
+        }
+
+        if (fileQuery == null) {
+            // If there is no valid files filter, add files filter to speed up this query
+            if (!fileIdGroupsFromSamples.isEmpty()) {
+                if ((genotypesQuery.getOperation() != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
+                        && fileIdsFromSamples.containsAll(metadataManager.getIndexedFiles(defaultStudy.getId()))) {
+                    // Do not add files filter if operator is OR and must select all the files.
+                    // i.e. ANY file among ALL indexed files
+                    logger.debug("Skip filter by all files");
+                } else {
+                    addFileGroupsFilter(filters, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
+                }
+            }
+        } else {
+            if (fileIdGroupsFromSamples.isEmpty()) {
+                filters.add(addQueryFilter(DocumentToVariantConverter.FILES_FIELD
+                                + '.' + DocumentToStudyEntryConverter.FILEID_FIELD,
+                        fileQuery.getValues(), filesOperation,
+                        value -> {
+                            int fileId = value.getValue().getId();
+                            if (overlappedFilesFiles) {
+                                return -fileId;
+                            } else {
+                                return fileId;
+                            }
+                        }));
+            } else {
+                // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
+                // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
+                if (filesOperation == QueryOperation.AND || filesOperation == null) {
+                    // sample = AND, files = AND
+                    // Simple mix
+
+                    // Some files may be negated. Get them, and put them appart
+                    List<Integer> negatedFiles = null;
+                    if (fileQuery.stream().anyMatch(NegatableValue::isNegated)) {
+                        negatedFiles = fileQuery
+                                .stream()
+                                .filter(NegatableValue::isNegated)
+                                .map(value -> {
+                                    int fileId = value.getValue().getId();
+                                    if (overlappedFilesFiles) {
+                                        return -fileId;
+                                    } else {
+                                        return fileId;
+                                    }
+                                })
+                                .collect(Collectors.toList());
+                    }
+                    for (Integer fileId : fileIds) {
+                        fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
+                    }
+                    addFileGroupsFilter(filters, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
+
+                } else if (filesOperation == QueryOperation.OR) {
+                    // samples = AND, files = OR
+
+                    // Put all files in a group
+                    // the filesOperation==OR will be expressed with an "$in" of the new group
+                    fileIdGroupsFromSamples.add(fileIds);
+                    addFileGroupsFilter(filters, QueryOperation.AND, fileIdGroupsFromSamples, null);
                 }
             }
 
         }
+
+        return filters;
     }
 
-    private void addFileGroupsFilter(QueryBuilder builder, String studyQueryPrefix, QueryOperation operation,
+    private static void addAll(List<Bson> filters, QueryOperation filterOperation, List<Bson> filterFilters) {
+        if (filterOperation == QueryOperation.OR) {
+            filters.add(or(filterFilters));
+        } else {
+            filters.add(and(filterFilters));
+//            filters.addAll(filterFilters);
+        }
+    }
+
+    /**
+     * Validate that all FORMAT fields referenced in a SAMPLE_DATA query are filterable (have sfd data)
+     * for all files that contain the given sample.
+     */
+    private void validateSampleDataFieldsFilterable(SampleMetadata sample,
+                                                    KeyValues<SampleMetadata, KeyOpValue<String, String>> sampleKv,
+                                                    StudyMetadata defaultStudy) {
+        if (defaultStudy == null) {
+            throw VariantQueryException.missingStudyForSample(String.valueOf(sample.getId()), metadataManager.getStudyNames());
+        }
+        List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
+                defaultStudy.getId(), sample.getId(), true);
+        for (KeyOpValue<String, String> condition : sampleKv.getValues()) {
+            String field = condition.getKey();
+            for (Integer fileId : sampleFileIds) {
+                FileMetadata fileMeta = metadataManager.getFileMetadata(defaultStudy.getId(), fileId);
+                List<String> sfdFields = fileMeta.getAttributes()
+                        .getAsStringList(MongoDBVariantStorageOptions.SFD_FIELDS_KEY);
+                if (sfdFields == null || sfdFields.isEmpty() || !sfdFields.contains(field)) {
+                    throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA,
+                            MongoDBVariantStorageEngine.STORAGE_ENGINE_ID,
+                            "Field '" + field + "' is not filterable for file '"
+                                    + metadataManager.getFileName(defaultStudy.getId(), fileId)
+                                    + "'. The file may need to be re-indexed.");
+                }
+            }
+        }
+    }
+
+    private void addFileGroupsFilter(List<Bson> filters, QueryOperation operation,
                                      Set<List<Integer>> fileIdGroups, List<Integer> negatedFiles) {
+
         if (operation == QueryOperation.OR) {
             // Merge into one single group
             HashSet<Integer> fileIds = new HashSet<>();
@@ -902,33 +1199,33 @@ public class VariantMongoDBQueryParser {
             fileIdGroups = Collections.singleton(new ArrayList<>(fileIds));
         }
 
-        String fileIdField = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
-        List<DBObject> fileQueries = new ArrayList<>(fileIdGroups.size());
+        String fileIdField = DocumentToVariantConverter.FILES_FIELD
+                + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
+        List<Bson> fileQueries = new ArrayList<>(fileIdGroups.size());
         List<Integer> singleElementGroups = new ArrayList<>();
         for (List<Integer> group : fileIdGroups) {
             if (group.size() == 1) {
                 singleElementGroups.add(group.get(0));
             } else {
-                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$in", group)));
+                fileQueries.add(in(fileIdField, group));
             }
         }
         if (!singleElementGroups.isEmpty()) {
             if (singleElementGroups.size() == 1) {
-                fileQueries.add(new BasicDBObject(fileIdField, singleElementGroups.get(0)));
+                fileQueries.add(eq(fileIdField, singleElementGroups.get(0)));
             } else if (operation == QueryOperation.AND) {
-                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$all", singleElementGroups)));
+                fileQueries.add(all(fileIdField, singleElementGroups));
             } else {
-                fileQueries.add(new BasicDBObject(fileIdField, new BasicDBObject("$in", singleElementGroups)));
+                fileQueries.add(in(fileIdField, singleElementGroups));
             }
         }
 
         if (CollectionUtils.isNotEmpty(negatedFiles)) {
-            DBObject negatedFilter;
+            Bson negatedFilter;
             if (negatedFiles.size() == 1) {
-                negatedFilter = new BasicDBObject(fileIdField, new BasicDBObject("$ne", negatedFiles.get(0)));
+                negatedFilter = ne(fileIdField, negatedFiles.get(0));
             } else {
-                negatedFilter = new BasicDBObject(fileIdField, new BasicDBObject("$nin", negatedFiles));
+                negatedFilter = nin(fileIdField, negatedFiles);
             }
             if (operation != QueryOperation.OR) {
                 fileQueries.add(negatedFilter);
@@ -939,53 +1236,54 @@ public class VariantMongoDBQueryParser {
         }
 
         if (fileQueries.size() == 1) {
-            builder.get().putAll(fileQueries.get(0));
+            filters.add(fileQueries.get(0));
         } else if (operation == QueryOperation.OR) {
-//            builder.and(new BasicDBObject("$or", fileQueries));
-            Object or = builder.get().removeField("$or");
-            if (or == null) {
-                builder.or(fileQueries.toArray(new DBObject[0]));
-            } else {
-                builder.and(new BasicDBObject("$or", or), new BasicDBObject("$or", fileQueries));
-            }
+            filters.add(Filters.or(fileQueries));
         } else {
-            builder.and(fileQueries.toArray(new DBObject[0]));
+//            filters.add(Filters.and(fileQueries));
+            filters.addAll(fileQueries);
         }
     }
 
-    private DBObject[] getFileFilterDBObjects(String key, List<String> filterValues) {
-        DBObject[] regexList = new DBObject[filterValues.size()];
-        for (int i = 0; i < filterValues.size(); i++) {
-            String filter = filterValues.get(i);
-            boolean negated = isNegated(filter);
+    private void getFileFilter(String key, List<String> filterValues, QueryOperation op, List<Bson> filters) {
+        addAll(filters, op, getFileFilter(key, filterValues));
+    }
+
+    private List<Bson> getFileFilter(String key, List<String> filterValues) {
+        List<Bson> filters = new ArrayList<>(filterValues.size());
+        for (String value : filterValues) {
+            final Bson filter;
+            boolean negated = isNegated(value);
             if (negated) {
-                filter = removeNegation(filter);
+                value = removeNegation(value);
             }
-            if (filter.contains(VCFConstants.FILTER_CODE_SEPARATOR) || filter.equals(VCFConstants.PASSES_FILTERS_v4)) {
+            if (value.contains(VCFConstants.FILTER_CODE_SEPARATOR) || value.equals(VCFConstants.PASSES_FILTERS_v4)) {
                 if (!negated) {
-                    regexList[i] = new BasicDBObject(key, filter);
+                    filter = eq(key, value);
                 } else {
-                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$ne", filter));
+                    filter = ne(key, value);
                 }
             } else {
                 if (!negated) {
-                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$regex", filter));
+                    filter = regex(key, value);
                 } else {
-                    regexList[i] = new BasicDBObject(key, new BasicDBObject("$not", Pattern.compile(filter)));
+                    filter = not(regex(key, value));
                 }
             }
+            filters.add(filter);
         }
-        return regexList;
+        return filters;
     }
 
-    private void parseStatsQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, QueryBuilder builder) {
+    private void parseStatsQueryParams(ParsedVariantQuery parsedVariantQuery, Query query, List<Bson> filters) {
+
         if (query != null) {
             StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
 
             if (query.get(COHORT.key()) != null && !query.getString(COHORT.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.STATS_FIELD
                                 + '.' + DocumentToVariantStatsConverter.COHORT_ID,
-                        query.getString(COHORT.key()), builder, QueryOperation.AND,
+                        query.getString(COHORT.key()), filters,
                         s -> {
                             try {
                                 return Integer.parseInt(s);
@@ -1020,39 +1318,39 @@ public class VariantMongoDBQueryParser {
 
             if (isValidParam(query, STATS_REF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.REF_FREQ_FIELD, query.getString(STATS_REF.key()),
-                        builder, defaultStudy);
+                        filters, defaultStudy);
             }
 
             if (isValidParam(query, STATS_ALT)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, query.getString(STATS_ALT.key()),
-                        builder, defaultStudy);
+                        filters, defaultStudy);
             }
 
             if (isValidParam(query, STATS_MAF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MAF_FIELD, query.getString(STATS_MAF.key()),
-                        builder, defaultStudy);
+                        filters, defaultStudy);
             }
 
             if (isValidParam(query, STATS_MGF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MGF_FIELD, query.getString(STATS_MGF.key()),
-                        builder, defaultStudy);
+                        filters, defaultStudy);
             }
 
             if (isValidParam(query, STATS_PASS_FREQ)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.FILTER_FREQ_FIELD + '.' + VCFConstants.PASSES_FILTERS_v4,
-                        query.getString(STATS_PASS_FREQ.key()), builder, defaultStudy);
+                        query.getString(STATS_PASS_FREQ.key()), filters, defaultStudy);
             }
 
             if (isValidParam(query, MISSING_ALLELES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSALLELE_FIELD, query.getString(MISSING_ALLELES
-                        .key()), builder, defaultStudy);
+                        .key()), filters, defaultStudy);
             }
 
             if (isValidParam(query, MISSING_GENOTYPES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(
-                        MISSING_GENOTYPES.key()), builder, defaultStudy);
+                        MISSING_GENOTYPES.key()), filters, defaultStudy);
             }
-
+            /* FIXME: TASK-8038
             if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
                 for (String numgt : query.getAsStringList("numgt")) {
                     String[] split = numgt.split(":");
@@ -1062,19 +1360,21 @@ public class VariantMongoDBQueryParser {
                             split[1], builder, false);
                 }
             }
+             */
         }
     }
 
-    protected Document createProjection(Query query, QueryOptions options) {
+    protected Bson createProjection(Query query, QueryOptions options) {
         return createProjection(query, options, VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager));
     }
 
-    protected Document createProjection(Query query, QueryOptions options, VariantQueryProjection selectVariantElements) {
+    protected Bson createProjection(Query query, QueryOptions options, VariantQueryProjection selectVariantElements) {
         if (options == null) {
             options = new QueryOptions();
         }
 
-        Document projection = new Document();
+        Set<String> projections = new HashSet<>();
+        Bson studyElemMatch = null;
 
         if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
             if (options.getBoolean(QueryOptions.SORT)) {
@@ -1085,12 +1385,12 @@ public class VariantMongoDBQueryParser {
             }
         }
 
-        Set<VariantField> returnedFields = new HashSet<>(selectVariantElements.getFields());
+        Set<VariantField> fields = new HashSet<>(selectVariantElements.getFields());
         // Add all required fields
-        returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        fields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
         // StudyID is mandatory if returning any STUDY element
-        if (returnedFields.contains(VariantField.STUDIES)) {
-            returnedFields.add(VariantField.STUDIES_STUDY_ID);
+        if (fields.contains(VariantField.STUDIES)) {
+            fields.add(VariantField.STUDIES_STUDY_ID);
         }
 
 
@@ -1104,64 +1404,68 @@ public class VariantMongoDBQueryParser {
         // > db.variants.find({}, {"studies.files":1, studies:{$elemMatch:{sid:1}}})
         // {  studies : [ { sid : 1, files : [ ... ] , gt : { ... } } ]  }
         List<Integer> studiesIds = selectVariantElements.getStudyIds();
-        // Use elemMatch only if there is one study to return.
-        if (studiesIds.size() == 1) {
-            projection.put(
+        // Use elemMatch only if there is one study to return and the query contains samples or files to return.
+        boolean shouldApplyStudyElemMatch = studiesIds.size() == 1;
+        if (shouldApplyStudyElemMatch) {
+            // If the query contains samples or files to return, we need to apply the $elemMatch
+            // to avoid returning all samples and files of the study.
+            shouldApplyStudyElemMatch = fields.contains(VariantField.STUDIES_SAMPLES) || fields.contains(VariantField.STUDIES_FILES);
+        }
+        if (shouldApplyStudyElemMatch) {
+            studyElemMatch = Projections.elemMatch(
                     DocumentToVariantConverter.STUDIES_FIELD,
-                    new Document(
-                            "$elemMatch",
-                            new Document(
-                                    DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
-                                    new Document(
-                                            "$in",
-                                            studiesIds
-                                    )
-                            )
+                    eq(
+                            DocumentToStudyEntryConverter.STUDYID_FIELD,
+                            studiesIds.get(0)
                     )
             );
-        }
-
-        if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
-            List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
-            if (formats != null) { // If null, undefined. Return all
-                // Special conversion
-                returnedFields.remove(VariantField.STUDIES_SAMPLES);
-                if (formats.contains(VariantQueryUtils.ALL)) {
-                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
-                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, 1);
-                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
-                } else {
-                    for (String format : formats) {
-                        if (format.equals(GT)) {
-                            projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                    + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
-                        } else {
-                            projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                    + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                    + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase(), 1);
+        } else {
+            if (fields.contains(VariantField.STUDIES_SAMPLES)) {
+                List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
+                if (formats != null) { // If null, undefined. Return all
+                    // Special conversion
+                    fields.remove(VariantField.STUDIES_SAMPLES);
+                    if (formats.contains(VariantQueryUtils.ALL)) {
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILEID_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.STUDYID_FIELD);
+                    } else {
+                        for (String format : formats) {
+                            if (format.equals(GT)) {
+                                projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                        + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                            } else {
+                                projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                        + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
+                            }
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.ALTERNATES_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.ORI_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.FILEID_FIELD);
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.STUDYID_FIELD);
                         }
-                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
                     }
                 }
             }
         }
 
-        returnedFields = VariantField.prune(returnedFields);
+        fields = VariantField.prune(fields);
 
-        if (!returnedFields.isEmpty()) { //Include some
-            for (VariantField s : returnedFields) {
+        if (!fields.isEmpty()) { //Include some
+            for (VariantField s : fields) {
                 List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
                 if (keys != null) {
                     for (String key : keys) {
                         // Put if absent. Do not overwrite $elemMatch, if any
-                        projection.putIfAbsent(key, 1);
+                        projections.add(key);
                     }
                 }
 //                else {
@@ -1171,25 +1475,310 @@ public class VariantMongoDBQueryParser {
         }
 
         if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
-            projection.putIfAbsent(INDEX_FIELD, 1);
+            projections.add(INDEX_FIELD);
         }
 
-        logger.debug("QueryOptions: = {}", options.toJson());
-        logger.debug("Projection:   = {}", projection.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+        if (studyElemMatch != null) {
+            // Avoid Path collision at studies
+            projections.removeIf(key -> key.startsWith(DocumentToVariantConverter.STUDIES_FIELD));
+        }
+        Bson projection = Projections.include(new ArrayList<>(projections));
+
+        if (studyElemMatch != null) {
+            projection = Projections.fields(studyElemMatch, projection);
+        }
+
+
+        logger.info("QueryOptions: = {}", options.toJson());
+        logger.info("Projection:   = {}", projection.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         return projection;
     }
 
-    private QueryBuilder addQueryStringFilter(String key, String value, final QueryBuilder builder, VariantQueryUtils.QueryOperation op) {
-        return this.addQueryFilter(key, value, builder, op, Function.identity());
+    /**
+     * Parse query options. Transform SORT and ORDER to be compatible with the aggregation pipeline, if needed.
+     *
+     * @param pipeline aggregation pipeline to add the corresponding stages for SORT, SKIP and LIMIT
+     * @param options query options to parse
+     * @return modified query options
+     */
+    public QueryOptions parseAggregationPipelineQueryOptions(List<Bson> pipeline, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        if (options.containsKey(QueryOptions.SORT)) {
+            if (options.getBoolean(QueryOptions.SORT)) {
+                String order = options.getString(QueryOptions.ORDER, QueryOptions.DESC.toUpperCase(Locale.ROOT));
+                Bson sort;
+                if (order.equalsIgnoreCase(QueryOptions.ASCENDING) || order.equalsIgnoreCase(QueryOptions.ASC) || order.equals("1")) {
+                    sort = Aggregates.sort(Sorts.ascending("_id"));
+                } else {
+                    sort = Aggregates.sort(Sorts.descending("_id"));
+                }
+                logger.info("Sort: {}", sort.toBsonDocument().toJson());
+                pipeline.add(sort);
+            }
+            options.remove(QueryOptions.SORT);
+        }
+        if (options.containsKey(QueryOptions.SKIP)) {
+            Bson skip = MongoDBQueryUtils.getSkip(options);
+            if (skip != null) {
+                pipeline.add(skip);
+                options.remove(QueryOptions.SKIP);
+                logger.info("Skip: {}", skip.toBsonDocument().toJson());
+            }
+        }
+        if (options.containsKey(QueryOptions.LIMIT)) {
+            Bson limit = MongoDBQueryUtils.getLimit(options);
+            if (limit != null) {
+                pipeline.add(limit);
+                options.remove(QueryOptions.LIMIT);
+                logger.info("Limit: {}", limit.toBsonDocument().toJson());
+            }
+        }
+        // Remove include/exclude from options if the pipeline already contains a $project stage with the projection,
+        // to avoid conflicts between them.
+        if (options.containsKey(QueryOptions.INCLUDE) || options.containsKey(QueryOptions.EXCLUDE)) {
+            boolean hasProject = pipeline.stream()
+                    .anyMatch(stage -> stage.toBsonDocument().containsKey("$project"));
+            if (hasProject) {
+                options.remove(QueryOptions.INCLUDE);
+                options.remove(QueryOptions.EXCLUDE);
+            }
+        }
+        return options;
     }
 
-    private QueryBuilder addQueryStringFilter(String key, List<String> value, final QueryBuilder builder,
-                                              VariantQueryUtils.QueryOperation op) {
-        return this.addQueryFilter(key, value, builder, op, Function.identity());
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query.
+     *
+     * <ol>
+     *   <li>{@code $match} — same filter as {@link #parseQuery(ParsedVariantQuery)}</li>
+     *   <li>{@code $addFields} (optional) — trim the root {@code files[]} array to only the requested file IDs</li>
+     *   <li>{@code $project} — field inclusion (no {@code $elemMatch}, which is invalid in aggregation)</li>
+     * </ol>
+     */
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query using options from the query itself.
+     *
+     * @param variantQuery the parsed query
+     * @return aggregation pipeline
+     */
+    protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery) {
+        return createAggregationPipeline(variantQuery, variantQuery.getInputOptions());
     }
 
-    private QueryBuilder addQueryIntegerFilter(String key, String value, final QueryBuilder builder, VariantQueryUtils.QueryOperation op) {
-        return this.addQueryFilter(key, value, builder, op, elem -> {
+    /**
+     * Build an aggregation pipeline equivalent to the main {@code get()} query.
+     *
+     * <ol>
+     *   <li>{@code $match} — same filter as {@link #parseQuery(ParsedVariantQuery)}</li>
+     *   <li>{@code $addFields} (optional) — trim the root {@code files[]} array to only the requested file IDs</li>
+     *   <li>{@code $project} — field inclusion (no {@code $elemMatch}, which is invalid in aggregation)</li>
+     * </ol>
+     *
+     * @param variantQuery the parsed query
+     * @param options      query options (sort, skip, limit); if {@code null} defaults are used
+     * @return aggregation pipeline
+     */
+    protected List<Bson> createAggregationPipeline(ParsedVariantQuery variantQuery, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        VariantQueryProjection selectVariantElements = variantQuery.getProjection();
+
+        List<Bson> pipeline = new ArrayList<>(3);
+
+        // Stage 1: $match
+        pipeline.add(new Document("$match", parseQuery(variantQuery)));
+
+        // Stage 2: optional $addFields to filter the root files[] array server-side
+        Set<VariantField> projFields = selectVariantElements.getFields();
+        if (projFields.contains(VariantField.STUDIES_FILES) || projFields.contains(VariantField.STUDIES_SAMPLES)) {
+            Document fields = new Document();
+
+            Document studyFilterConf = buildStudiesFilterCondition(selectVariantElements);
+            if (studyFilterConf != null) {
+                Document filterExpr = new Document("$filter", new Document()
+                        .append("input", "$" + DocumentToVariantConverter.STUDIES_FIELD)
+                        .append("cond", studyFilterConf));
+                fields.put(DocumentToVariantConverter.STUDIES_FIELD, filterExpr);
+            }
+
+            Document fileFilterCond = buildFilesFilterCondition(selectVariantElements);
+            if (fileFilterCond != null) {
+                Document filterExpr = new Document("$filter", new Document()
+                        .append("input", "$" + DocumentToVariantConverter.FILES_FIELD)
+                        .append("cond", fileFilterCond));
+                fields.put(DocumentToVariantConverter.FILES_FIELD, filterExpr);
+            }
+            if (!fields.isEmpty()) {
+                Bson addFields = new Document("$addFields", fields);
+                logger.info("AddFields = {}", addFields.toBsonDocument().toJson());
+                pipeline.add(addFields);
+            }
+        }
+
+        // Stage 3: $project — rebuild without $elemMatch (invalid in aggregation pipelines)
+        Bson projectionBson = buildProjectionForAggregate(variantQuery.getQuery(), options, selectVariantElements);
+        Document project = new Document("$project", projectionBson);
+        logger.info("Project = {}", project.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
+        pipeline.add(project);
+
+        return pipeline;
+    }
+
+    /**
+     * Build a plain {@code Projections.include()} Bson without any {@code $elemMatch} operators,
+     * which are not valid inside an aggregation {@code $project} stage.
+     */
+    private Bson buildProjectionForAggregate(Query query, QueryOptions options, VariantQueryProjection selectVariantElements) {
+        if (options.containsKey(QueryOptions.SORT) && !("_id").equals(options.getString(QueryOptions.SORT))) {
+            if (options.getBoolean(QueryOptions.SORT)) {
+                options.put(QueryOptions.SORT, "_id");
+                options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);
+            } else {
+                options.remove(QueryOptions.SORT);
+            }
+        }
+
+        Set<String> projections = new HashSet<>();
+        Set<VariantField> fields = new HashSet<>(selectVariantElements.getFields());
+        fields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        if (fields.contains(VariantField.STUDIES)) {
+            fields.add(VariantField.STUDIES_STUDY_ID);
+        }
+        if (fields.stream().anyMatch(f -> f.getParent() == VariantField.STUDIES)) {
+            fields.add(VariantField.STUDIES_STUDY_ID);
+        }
+
+        // No $elemMatch on studies — always add format-specific sample/file fields explicitly
+        if (fields.contains(VariantField.STUDIES_SAMPLES)) {
+            List<String> formats = VariantQueryUtils.getIncludeSampleData(query);
+            if (formats != null) {
+                fields.remove(VariantField.STUDIES_SAMPLES);
+                if (formats.contains(VariantQueryUtils.ALL)) {
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.FILEID_FIELD);
+                    projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                            + DocumentToStudyEntryConverter.STUDYID_FIELD);
+                } else {
+                    for (String format : formats) {
+                        if (format.equals(GT)) {
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD);
+                        } else {
+                            projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase());
+                        }
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.ALTERNATES_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.ORI_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.FILEID_FIELD);
+                        projections.add(DocumentToVariantConverter.FILES_FIELD + '.'
+                                + DocumentToStudyEntryConverter.STUDYID_FIELD);
+                    }
+                }
+            }
+        }
+
+        fields = VariantField.prune(fields);
+        for (VariantField s : fields) {
+            List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
+            if (keys != null) {
+                for (String key : keys) {
+                    projections.add(key);
+                }
+            }
+        }
+
+        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+            projections.add(INDEX_FIELD);
+        }
+
+        Bson projection = Projections.include(new ArrayList<>(projections));
+        return projection;
+    }
+
+    /**
+     * Build the {@code cond} expression for a {@code $filter} on the root {@code files[]} array.
+     * Returns {@code null} when there is no study restriction (all files should be returned).
+     */
+    private Document buildFilesFilterCondition(VariantQueryProjection selectVariantElements) {
+        List<Document> studyConditions = new ArrayList<>();
+        for (VariantQueryProjection.StudyVariantQueryProjection studyProjection : selectVariantElements.getStudies().values()) {
+            int sid = studyProjection.getStudyMetadata().getId();
+            Set<Integer> fileIds = new HashSet<>(studyProjection.getFileIds());
+            studyProjection.getSampleIds().forEach(sampleId ->
+                    fileIds.addAll(metadataManager.getFileIdsFromSampleId(sid, sampleId, true)));
+            if (metadataManager.getIndexedFiles(sid).size() == fileIds.size()) {
+                // If all files from the study are requested, filter by study only, without filtering by file ID
+                fileIds.clear();
+            }
+            if (fileIds.isEmpty()) {
+                // No specific files requested — include all files belonging to this study
+                studyConditions.add(new Document("$eq",
+                        Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, sid)));
+            } else {
+                studyConditions.add(new Document("$and", Arrays.asList(
+                        new Document("$eq", Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, sid)),
+                        new Document("$in", Arrays.asList("$$this." + DocumentToStudyEntryConverter.FILEID_FIELD, new ArrayList<>(fileIds))
+                        ))));
+            }
+        }
+
+        if (studyConditions.isEmpty()) {
+            return null;
+        } else if (studyConditions.size() == 1) {
+            return studyConditions.get(0);
+        } else {
+            return new Document("$or", studyConditions);
+        }
+    }
+
+    private Document buildStudiesFilterCondition(VariantQueryProjection selectVariantElements) {
+        List<Document> studyConditions = new ArrayList<>();
+        Set<Integer> studyIds = selectVariantElements.getStudies().keySet();
+        if (studyIds.isEmpty()) {
+            return null;
+        } else if (studyIds.size() == 1) {
+            // If there is only one study, filter by study ID only, without filtering by file ID
+             studyConditions.add(new Document("$eq",
+                    Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, studyIds.iterator().next())));
+        } else {
+            studyConditions.add(new Document("$in",
+                    Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, new ArrayList<>(studyIds))));
+        }
+
+        if (studyConditions.isEmpty()) {
+            return null;
+        } else if (studyConditions.size() == 1) {
+            return studyConditions.get(0);
+        } else {
+            return new Document("$or", studyConditions);
+        }
+    }
+
+
+    private void addQueryStringFilter(String key, String value, List<Bson> filters) {
+        this.addQueryFilter(key, value, filters, Function.identity());
+    }
+
+    private void addQueryStringFilter(String key, List<String> value, List<Bson> filters) {
+        filters.add(this.addQueryFilter(key, value));
+    }
+
+    private void addQueryIntegerFilter(String key, String value, List<Bson> filters) {
+        this.addQueryFilter(key, value, filters, elem -> {
             try {
                 return Integer.parseInt(elem);
             } catch (NumberFormatException e) {
@@ -1198,50 +1787,51 @@ public class VariantMongoDBQueryParser {
         });
     }
 
-    private QueryBuilder addQueryIntegerFilter(String key, Collection<Integer> value, final QueryBuilder builder,
-                                               VariantQueryUtils.QueryOperation op) {
-        return this.addQueryFilter(key, value, builder, op);
+    private void addQueryIntegerFilter(String key, Collection<Integer> value, List<Bson> filters) {
+        filters.add(this.addQueryFilter(key, value));
     }
 
-    private <T> QueryBuilder addQueryFilter(String key, String value, final QueryBuilder builder, QueryOperation op,
+    private <T> void addQueryFilter(String key, String value, List<Bson> filters,
                                             Function<String, T> map) {
         VariantQueryUtils.QueryOperation intraOp = checkOperator(value);
-        return addQueryFilter(key, splitValue(value, intraOp), builder, op, intraOp, map);
+        filters.add(addQueryFilter(key, splitValue(value, intraOp), intraOp, map));
     }
 
-    private <T> QueryBuilder addQueryFilter(String key, Collection<T> value, final QueryBuilder builder, QueryOperation op) {
-        return addQueryFilter(key, value, builder, op, t -> t);
+    private <T> void addQueryFilter(String key, Collection<T> value, List<Bson> filters) {
+        filters.add(addQueryFilter(key, value));
     }
 
-    private <S, T> QueryBuilder addQueryFilter(String key, Collection<S> value, final QueryBuilder builder, QueryOperation op,
-                                               Function<S, T> map) {
-        return addQueryFilter(key, value, builder, op, QueryOperation.OR, map);
+    private <T> Bson addQueryFilter(String key, Collection<T> value) {
+        return addQueryFilter(key, value, Function.identity());
     }
 
-    private <S, T> QueryBuilder addQueryFilter(String key, Collection<S> values, QueryBuilder builder, QueryOperation op,
-                                               QueryOperation intraOp, Function<S, T> map) {
-        QueryBuilder auxBuilder;
-        if (op == VariantQueryUtils.QueryOperation.OR) {
-            auxBuilder = QueryBuilder.start();
-        } else {
-            auxBuilder = builder;
-        }
+    private <S, T> Bson addQueryFilter(String key, Collection<S> value, Function<S, T> map) {
+        return addQueryFilter(key, value, QueryOperation.OR, map);
+    }
 
+    private <S, T> Bson addQueryFilter(String key, Collection<S> values, QueryOperation intraOp, Function<S, T> map) {
+        final Bson filter;
         if (values.size() == 1) {
             S elem = values.iterator().next();
-            if (elem instanceof String && isNegated((String) elem)) {
-                T mapped = map.apply((S) removeNegation((String) elem));
-                if (mapped instanceof Collection) {
-                    auxBuilder.and(key).notIn(mapped);
+            if (elem instanceof String && isNegated((String) elem)
+                    || elem instanceof NegatableValue && ((NegatableValue<?>) elem).isNegated()) {
+                T mapped;
+                if (elem instanceof String) {
+                    mapped = map.apply((S) removeNegation((String) elem));
                 } else {
-                    auxBuilder.and(key).notEquals(mapped);
+                    mapped = map.apply(elem);
+                }
+                if (mapped instanceof Collection) {
+                    filter = nin(key, mapped);
+                } else {
+                    filter = ne(key, mapped);
                 }
             } else {
                 T mapped = map.apply(elem);
                 if (mapped instanceof Collection) {
-                    auxBuilder.and(key).in(mapped);
+                    filter = in(key, mapped);
                 } else {
-                    auxBuilder.and(key).is(mapped);
+                    filter = eq(key, mapped);
                 }
             }
         } else if (intraOp == QueryOperation.OR) {
@@ -1259,9 +1849,9 @@ public class VariantMongoDBQueryParser {
                 }
             }
             if (list.size() == 1) {
-                auxBuilder.and(key).is(list);
+                filter = eq(key, list);
             } else {
-                auxBuilder.and(key).in(list);
+                filter = in(key, list);
             }
         } else {
             //Split in two lists: positive and negative
@@ -1269,8 +1859,14 @@ public class VariantMongoDBQueryParser {
             List<Object> listNotIs = new ArrayList<>(values.size());
 
             for (S elem : values) {
-                if (elem instanceof String && isNegated((String) elem)) {
-                    T mapped = map.apply((S) removeNegation((String) elem));
+                if (elem instanceof String && isNegated((String) elem)
+                        || elem instanceof NegatableValue && ((NegatableValue<?>) elem).isNegated()) {
+                    T mapped;
+                    if (elem instanceof String) {
+                        mapped = map.apply((S) removeNegation((String) elem));
+                    } else {
+                        mapped = map.apply(elem);
+                    }
                     if (mapped instanceof Collection) {
                         listNotIs.addAll(((Collection) mapped));
                     } else {
@@ -1286,21 +1882,28 @@ public class VariantMongoDBQueryParser {
                 }
             }
 
+            Bson isFilter = null;
+            Bson notIsFilter = null;
             if (!listIs.isEmpty()) {    //Can not use method "is" because it will be overwritten with the "notEquals" or "notIn" method
-                auxBuilder.and(key).all(listIs);
+                isFilter = all(key, listIs);
             }
             if (listNotIs.size() == 1) {
-                auxBuilder.and(key).notEquals(listNotIs.get(0));
+                notIsFilter = ne(key, listNotIs.get(0));
             } else if (listNotIs.size() > 1) {
-                auxBuilder.and(key).notIn(listNotIs);
+                notIsFilter = nin(key, listNotIs);
             }
 
+            if (isFilter != null && notIsFilter != null) {
+                filter = and(isFilter, notIsFilter);
+            } else if (isFilter != null) {
+                filter = isFilter;
+            } else if (notIsFilter != null) {
+                filter = notIsFilter;
+            } else {
+                throw new IllegalStateException("Both filters are null");
+            }
         }
-
-        if (op == VariantQueryUtils.QueryOperation.OR) {
-            builder.or(auxBuilder.get());
-        }
-        return builder;
+        return filter;
     }
 
     /**
@@ -1309,76 +1912,62 @@ public class VariantMongoDBQueryParser {
      *
      * @param key
      * @param value
-     * @param builder
+     * @param filters
      * @param extendKey
-     * @return
      */
-    private QueryBuilder addCompListQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
+    private void addCompListQueryFilter(String key, String value, List<Bson> filters, boolean extendKey) {
         VariantQueryUtils.QueryOperation op = checkOperator(value);
         List<String> values = splitValue(value, op);
 
-        QueryBuilder compBuilder;
-        if (op == QueryOperation.OR) {
-            compBuilder = QueryBuilder.start();
-        } else {
-            compBuilder = builder;
-        }
+        List<Bson> compFilters = new ArrayList<>();
 
         for (String elem : values) {
-            addCompQueryFilter(key, elem, compBuilder, extendKey);
+            addCompQueryFilter(key, elem, compFilters, extendKey);
         }
 
-        if (op == QueryOperation.OR) {
-            builder.or(compBuilder.get());
-        }
-        return builder;
+        addAll(filters, op, compFilters);
     }
 
-    private QueryBuilder addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, QueryBuilder builder,
-                                                boolean extendKey) {
-        return addCompListQueryFilter(key, value, builder, extendKey, null);
+    private void addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, List<Bson> filters,
+                                        boolean extendKey) {
+        addCompListQueryFilter(key, value, filters, extendKey, null);
     }
 
-    private QueryBuilder addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, QueryBuilder builder,
-                                                boolean extendKey, Values<DBObject> extraFilters) {
+    private void addCompListQueryFilter(String key, KeyValues<String, KeyOpValue<String, String>> value, List<Bson> filters,
+                                                boolean extendKey, Values<Bson> extraFilters) {
         VariantQueryUtils.QueryOperation op = value.getOperation();
 
         if (extraFilters == null && value.getValues() == null) {
-            return builder;
+            return;
         }
 
-        QueryBuilder compBuilder;
+        List<Bson> compFilters;
         if (op == QueryOperation.OR) {
-            compBuilder = QueryBuilder.start();
+            compFilters = new ArrayList<>();
         } else {
-            compBuilder = builder;
+            compFilters = filters;
         }
 
         for (KeyOpValue<String, String> elem : value.getValues()) {
-            addCompQueryFilter(key, elem, compBuilder, extendKey);
+            addCompQueryFilter(key, elem, compFilters, extendKey);
         }
         if (extraFilters != null) {
-            if (extraFilters.getOperation() == QueryOperation.OR) {
-                builder.or(extraFilters.getValues().toArray(new DBObject[0]));
-            } else {
-                builder.and(extraFilters.getValues().toArray(new DBObject[0]));
-            }
+            addAll(filters, extraFilters.getOperation(), extraFilters.getValues());
         }
 
         if (op == QueryOperation.OR) {
-            builder.or(compBuilder.get());
+            filters.add(or(compFilters));
         }
-        return builder;
     }
 
-    private QueryBuilder addCompQueryFilter(String key, KeyOpValue<String, String> keyOpValue, QueryBuilder builder, boolean extendKey) {
+    private void addCompQueryFilter(String key, KeyOpValue<String, String> keyOpValue, List<Bson> filters, boolean extendKey) {
         if (extendKey && !keyOpValue.getKey().isEmpty()) {
             key = key + "." + keyOpValue.getKey();
         }
-        return addCompQueryFilter(key, keyOpValue.getValue(), builder, keyOpValue.getOp());
+        addCompQueryFilter(key, keyOpValue.getValue(), filters, keyOpValue.getOp());
     }
 
-    private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
+    private void addCompQueryFilter(String key, String value, List<Bson> filters, boolean extendKey) {
         KeyOpValue<String, String> keyOpValue = parseKeyOpValue(value);
         String op = "";
         if (keyOpValue.getKey() != null) {
@@ -1388,74 +1977,80 @@ public class VariantMongoDBQueryParser {
             value = keyOpValue.getValue();
             op = keyOpValue.getOp();
         }
-        return addCompQueryFilter(key, value, builder, op);
+        addCompQueryFilter(key, value, filters, op);
     }
 
-    private QueryBuilder addCompQueryFilter(String key, String obj, QueryBuilder builder, String op) {
+    private void addCompQueryFilter(String key, String obj, List<Bson> filters, String op) {
 
+        final Bson filter;
         switch (op) {
             case "<":
-                builder.and(key).lessThan(Double.parseDouble(obj));
+                filter = lt(key, Double.parseDouble(obj));
                 break;
             case "<<":
-                builder.and(new BasicDBObject("$or", Arrays.asList(
-                        QueryBuilder.start(key).lessThan(Double.parseDouble(obj)).get(),
-                        QueryBuilder.start(key).exists(false).get()
-                )));
+                filter = or(
+                        lt(key, Double.parseDouble(obj)),
+                        exists(key, false)
+                );
                 break;
             case "<=":
-                builder.and(key).lessThanEquals(Double.parseDouble(obj));
+                filter = lte(key, Double.parseDouble(obj));
                 break;
             case "<<=":
-                builder.and(new BasicDBObject("$or", Arrays.asList(
-                        QueryBuilder.start(key).lessThanEquals(Double.parseDouble(obj)).get(),
-                        QueryBuilder.start(key).exists(false).get()
-                )));
+                filter = or(
+                        lte(key, Double.parseDouble(obj)),
+                        exists(key, false)
+                );
                 break;
             case ">":
-                builder.and(key).greaterThan(Double.parseDouble(obj));
+                filter = gt(key, Double.parseDouble(obj));
                 break;
             case ">>":
-                builder.and(new BasicDBObject("$or", Arrays.asList(
-                        QueryBuilder.start(key).greaterThan(Double.parseDouble(obj)).get(),
-                        QueryBuilder.start(key).exists(false).get()
-                )));
+                filter = or(
+                        gt(key, Double.parseDouble(obj)),
+                        exists(key, false)
+                );
                 break;
             case ">=":
-                builder.and(key).greaterThanEquals(Double.parseDouble(obj));
+                filter = gte(key, Double.parseDouble(obj));
                 break;
             case ">>=":
-                builder.and(new BasicDBObject("$or", Arrays.asList(
-                        QueryBuilder.start(key).greaterThanEquals(Double.parseDouble(obj)).get(),
-                        QueryBuilder.start(key).exists(false).get()
-                )));
+                filter = or(
+                        gte(key, Double.parseDouble(obj)),
+                        exists(key, false)
+                );
                 break;
             case "=":
-            case "==":
+            case "==": {
+                Object o;
                 try {
-                    builder.and(key).is(Double.parseDouble(obj));
+                    o = Double.valueOf(obj);
                 } catch (NumberFormatException e) {
-                    builder.and(key).is(obj);
+                    o = obj;
                 }
+                filter = eq(key, o);
                 break;
+            }
             case "!=":
+                Object o;
                 try {
-                    builder.and(key).notEquals(Double.parseDouble(obj));
+                    o = Double.valueOf(obj);
                 } catch (NumberFormatException e) {
-                    builder.and(key).notEquals(obj);
+                    o = obj;
                 }
+                filter = ne(key, o);
                 break;
             case "~=":
             case "~":
-                builder.and(key).regex(Pattern.compile(obj));
+                filter = regex(key, obj);
                 break;
             default:
-                break;
+                throw VariantQueryException.malformedParam(key, obj, "Unsupported operator " + op);
         }
-        return builder;
+        filters.add(filter);
     }
 
-    private QueryBuilder addStringCompQueryFilter(VariantQueryParam param, String key, String value, QueryBuilder builder) {
+    private Bson addStringCompQueryFilter(VariantQueryParam param, String key, String value) {
         String[] split = splitOperator(value);
         String op = split[1];
         String obj = split[2];
@@ -1463,53 +2058,47 @@ public class VariantMongoDBQueryParser {
         switch (op) {
             case "!=":
             case "!":
-                builder.and(key).notEquals(obj);
-                break;
+                return ne(key, obj);
             case "~=":
             case "~":
-                builder.and(key).regex(Pattern.compile(obj));
-                break;
+                return regex(key, obj);
             case "":
             case "=":
             case "==":
-                builder.and(key).is(obj);
-                break;
+                return eq(key, obj);
             default:
                 throw VariantQueryException.malformedParam(param, value, "Unsupported operator " + op);
         }
-        return builder;
     }
 
     /**
      * Accepts a list of filters separated with "," or ";" with the expression: {SCORE}{OPERATION}{VALUE}.
      *
      * @param value        Value to parse
-     * @param builder      QueryBuilder
+     * @param filters      List of filters
      * @param scoreParam Score query param
      * @param allowDescriptionFilter Use string values as filters for the score description
-     * @return QueryBuilder
      */
-    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParam scoreParam,
+    private void addScoreFilter(String value, List<Bson> filters, VariantQueryParam scoreParam,
                                         boolean allowDescriptionFilter) {
-        return addScoreFilter(value, builder, scoreParam, null, allowDescriptionFilter);
+        addScoreFilter(value, filters, scoreParam, null, allowDescriptionFilter);
     }
 
     /**
      * Accepts a list of filters separated with "," or ";" with the expression: {SOURCE}{OPERATION}{VALUE}.
      *
      * @param value         Value to parse
-     * @param builder       QueryBuilder
+     * @param filters       List of filters to add the score filters
      * @param scoreParam    Score VariantQueryParam
      * @param defaultSource Default source value. If null, must be present in the filter. If not, must not be present.
      * @param allowDescriptionFilter Use string values as filters for the score description
-     * @return QueryBuilder
      */
-    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParam scoreParam, final String defaultSource,
+    private void addScoreFilter(String value, List<Bson> filters, VariantQueryParam scoreParam, final String defaultSource,
                                         boolean allowDescriptionFilter) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
-        List<DBObject> dbObjects = new ArrayList<>();
+        List<Bson> scoreFilters = new ArrayList<>();
         for (String elem : list) {
             String[] score = VariantQueryUtils.splitOperator(elem);
             String source;
@@ -1540,29 +2129,28 @@ public class VariantMongoDBQueryParser {
                 throw VariantQueryException.malformedParam(scoreParam, value);
             }
 
-            QueryBuilder scoreBuilder = new QueryBuilder();
+            List<Bson> scoreFilter = new ArrayList<>();
             if (NumberUtils.isParsable(scoreValue)) {
                 // Query by score
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD;
-                addCompQueryFilter(key, scoreValue, scoreBuilder, op);
+                addCompQueryFilter(key, scoreValue, scoreFilter, op);
             } else if (allowDescriptionFilter) {
                 // Query by description
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD;
-                addStringCompQueryFilter(scoreParam, key, scoreValue, scoreBuilder);
+                scoreFilter.add(addStringCompQueryFilter(scoreParam, key, scoreValue));
             } else {
                 throw VariantQueryException.malformedParam(scoreParam, value);
             }
-            dbObjects.add(scoreBuilder.get());
+            scoreFilters.add(and(scoreFilter));
         }
 
-        if (!dbObjects.isEmpty()) {
+        if (!scoreFilters.isEmpty()) {
             if (operation == null || operation == QueryOperation.AND) {
-                builder.and(dbObjects.toArray(new DBObject[dbObjects.size()]));
+                filters.add(and(scoreFilters));
             } else {
-                builder.and(new BasicDBObject("$or", dbObjects));
+                filters.add(or(scoreFilters));
             }
         }
-        return builder;
     }
 
     /**
@@ -1572,14 +2160,13 @@ public class VariantMongoDBQueryParser {
      * @param key                  PopulationFrequency schema field
      * @param alleleFrequencyField Allele frequency schema field
      * @param value                Value to parse
-     * @param builder              QueryBuilder
+     * @param
      * @param queryParam           QueryParam filter
-     * @return QueryBuilder
      */
-    private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, String value, QueryBuilder builder,
+    private void addFrequencyFilter(String key, String alleleFrequencyField, String value, List<Bson> filters,
                                             VariantQueryParam queryParam, boolean alternate) {
-        return addFrequencyFilter(key, value, builder, queryParam, alternate,
-                (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb, false));
+        addFrequencyFilter(key, value, filters, queryParam, alternate,
+                (v, f) -> addCompQueryFilter(alleleFrequencyField, v, f, false));
     }
 
     /**
@@ -1588,17 +2175,16 @@ public class VariantMongoDBQueryParser {
      *
      * @param key       PopulationFrequency schema field
      * @param value     Value to parse
-     * @param builder   QueryBuilder
+     * @param filters   List of filters
      * @param addFilter For complex filter
-     * @return QueryBuilder
      */
-    private QueryBuilder addFrequencyFilter(String key, String value, QueryBuilder builder, VariantQueryParam queryParam,
-                                            boolean alternate, BiConsumer<String, QueryBuilder> addFilter) {
+    private void addFrequencyFilter(String key, String value, List<Bson> filters, VariantQueryParam queryParam,
+                                            boolean alternate, BiConsumer<String, List<Bson>> addFilter) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
 
-        List<BasicDBObject> dbObjects = new ArrayList<>();
+        List<Bson> freqFilters = new ArrayList<>();
         for (String elem : list) {
             String[] split = elem.split(IS);
             if (split.length != 2) {
@@ -1619,29 +2205,28 @@ public class VariantMongoDBQueryParser {
 
             logger.debug("populationFrequency = " + Arrays.toString(populationFrequencySplit));
 
-            QueryBuilder frequencyBuilder = new QueryBuilder();
-            frequencyBuilder.and(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
-            frequencyBuilder.and(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(population);
-            Document studyPopFilter = new Document(frequencyBuilder.get().toMap());
-            addFilter.accept(operator + numValue, frequencyBuilder);
-            BasicDBObject elemMatch = new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get()));
+            List<Bson> frequencyFilters = new ArrayList<>();
+            frequencyFilters.add(eq(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, study));
+            frequencyFilters.add(eq(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, population));
+
+            Bson studyPopFilter = and(frequencyFilters);
+            addFilter.accept(operator + numValue, frequencyFilters);
+            Bson elemMatch = elemMatch(key, and(frequencyFilters));
             if (alternate && operator.startsWith("<") || !alternate && operator.startsWith(">")) {
-                BasicDBObject orNotExistsAnyPopulation = new BasicDBObject(key, new BasicDBObject("$exists", false));
-                BasicDBObject orNotExistsPopulation =
-                        new BasicDBObject(key, new BasicDBObject("$not", new BasicDBObject("$elemMatch", studyPopFilter)));
-                dbObjects.add(new BasicDBObject("$or", Arrays.asList(orNotExistsAnyPopulation, orNotExistsPopulation, elemMatch)));
+                Bson orNotExistsAnyPopulation = exists(key, false);
+                Bson orNotExistsPopulation = not(elemMatch(key, studyPopFilter));
+                freqFilters.add(or(orNotExistsAnyPopulation, orNotExistsPopulation, elemMatch));
             } else {
-                dbObjects.add(elemMatch);
+                freqFilters.add(elemMatch);
             }
         }
-        if (!dbObjects.isEmpty()) {
+        if (!freqFilters.isEmpty()) {
             if (operation == null || operation == QueryOperation.AND) {
-                builder.and(dbObjects.toArray(new BasicDBObject[dbObjects.size()]));
+                filters.addAll(freqFilters);
             } else {
-                builder.and(new BasicDBObject("$or", dbObjects));
+                filters.add(or(freqFilters));
             }
         }
-        return builder;
     }
 
     /**
@@ -1651,23 +2236,19 @@ public class VariantMongoDBQueryParser {
      *
      * @param key                       Stats field to filter
      * @param values                    Values to parse
-     * @param builder                   QueryBuilder
+     * @param filters                   List of filters to add the stats filters
      * @param defaultStudyMetadata
      */
-    private void addStatsFilterList(String key, String values, QueryBuilder builder, StudyMetadata defaultStudyMetadata) {
+    private void addStatsFilterList(String key, String values, List<Bson> filters, StudyMetadata defaultStudyMetadata) {
         QueryOperation op = checkOperator(values);
         List<String> valuesList = splitValue(values, op);
-        List<DBObject> statsQueries = new LinkedList<>();
+        List<Bson> statsQueries = new LinkedList<>();
         for (String value : valuesList) {
-            statsQueries.add(addStatsFilter(key, value, new QueryBuilder(), defaultStudyMetadata).get());
+            statsQueries.add(addStatsFilter(key, value, defaultStudyMetadata));
         }
 
         if (!statsQueries.isEmpty()) {
-            if (op == QueryOperation.OR) {
-                builder.or(statsQueries.toArray(new DBObject[statsQueries.size()]));
-            } else {
-                builder.and(statsQueries.toArray(new DBObject[statsQueries.size()]));
-            }
+            addAll(filters, op, statsQueries);
         }
     }
 
@@ -1677,10 +2258,9 @@ public class VariantMongoDBQueryParser {
      *
      * @param key                       Stats field to filter
      * @param filter                    Filter to parse
-     * @param builder                   QueryBuilder
      * @param defaultStudyMetadata
      */
-    private QueryBuilder addStatsFilter(String key, String filter, QueryBuilder builder, StudyMetadata defaultStudyMetadata) {
+    private Bson addStatsFilter(String key, String filter, StudyMetadata defaultStudyMetadata) {
         String[] studyValue = VariantQueryUtils.splitStudyResource(filter);
         if (studyValue.length == 2 || defaultStudyMetadata != null) {
             int studyId;
@@ -1706,33 +2286,34 @@ public class VariantMongoDBQueryParser {
                 valueStr = cohortOpValue[2];
             }
 
-            QueryBuilder statsBuilder = new QueryBuilder();
-            statsBuilder.and(DocumentToVariantStatsConverter.STUDY_ID).is(studyId);
+            List<Bson> filters = new LinkedList<>();
+
+            filters.add(eq(DocumentToVariantStatsConverter.STUDY_ID, studyId));
             if (cohortId != null) {
-                statsBuilder.and(DocumentToVariantStatsConverter.COHORT_ID).is(cohortId);
+                filters.add(eq(DocumentToVariantStatsConverter.COHORT_ID, cohortId));
             }
-            addCompQueryFilter(key, valueStr, statsBuilder, operator);
-            builder.and(DocumentToVariantConverter.STATS_FIELD).elemMatch(statsBuilder.get());
+            addCompQueryFilter(key, valueStr, filters, operator);
+            return elemMatch(DocumentToVariantConverter.STATS_FIELD, and(filters));
         } else {
-            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, filter, builder, false);
+            List<Bson> filters = new LinkedList<>();
+            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, filter, filters, false);
+            return and(filters);
         }
-        return builder;
     }
 
-    private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
+    private List<Bson> getRegionFilter(Region region, List<Bson> andBsonList) {
         List<String> chunkIds = getChunkIds(region);
-        builder.and(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter.CHUNK_IDS_FIELD).in(chunkIds);
-        builder.and(DocumentToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
-        builder.and(DocumentToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
-        return builder;
+        andBsonList.add(and(
+                in(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter.CHUNK_IDS_FIELD, chunkIds),
+                gte(DocumentToVariantConverter.END_FIELD, region.getStart()),
+                lte(DocumentToVariantConverter.START_FIELD, region.getEnd())
+        ));
+        return andBsonList;
     }
 
-    private QueryBuilder getRegionFilter(List<Region> regions, QueryBuilder builder) {
+    private void getRegionFilter(List<Region> regions, List<Bson> filters) {
         if (regions != null && !regions.isEmpty()) {
-            DBObject[] objects = new DBObject[regions.size()];
-            int i = 0;
             for (Region region : regions) {
-                DBObject regionObject = new BasicDBObject();
 //                if (region.getEnd() - region.getStart() < 1000000) {
 //                    List<String> chunkIds = getChunkIds(region);
 //                    regionObject.put(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter
@@ -1746,16 +2327,20 @@ public class VariantMongoDBQueryParser {
                 if (end < Integer.MAX_VALUE) { // Avoid overflow
                     end++;
                 }
-                regionObject.put("_id", new Document()
-                        .append("$gte", VariantStringIdConverter.buildId(region.getChromosome(), region.getStart()))
-                        .append("$lt", VariantStringIdConverter.buildId(region.getChromosome(), end)));
-
-                objects[i] = regionObject;
-                i++;
+                filters.add(and(
+                        gte("_id",
+                                VariantStringIdConverter.buildId(
+                                        region.getChromosome(),
+                                        region.getStart())
+                        ),
+                        lt("_id",
+                                VariantStringIdConverter.buildId(
+                                        region.getChromosome(),
+                                        end)
+                        )
+                ));
             }
-            builder.or(objects);
         }
-        return builder;
     }
 
     /* *******************
@@ -1788,6 +2373,19 @@ public class VariantMongoDBQueryParser {
 
     protected int getChunkEnd(int id, int chunksize) {
         return (id * chunksize) + chunksize - 1;
+    }
+
+    /**
+     * Given a prefix (e.g. "BRCA1_pc_1583_"), returns all possible complete values
+     * by appending each known flag storage code and "N" (null flag).
+     */
+    private static List<String> allCtCombinedValues(String prefix) {
+        List<String> flagValues = DocumentToVariantAnnotationConverter.allFlagStorageValues();
+        List<String> values = new ArrayList<>(flagValues.size());
+        for (String flagCode : flagValues) {
+            values.add(prefix + flagCode);
+        }
+        return values;
     }
 
 }

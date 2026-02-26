@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -47,7 +48,7 @@ public class VariantMetadataConverterTest {
     @Before
     public void setUp() throws Exception {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         projectMetadata = metadataManager.getAndUpdateProjectMetadata(new ObjectMap(VariantStorageOptions.SPECIES.key(), "hsapiens")
                 .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
 
@@ -85,7 +86,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryProjection(studyMetadata, Collections.emptyList(), Collections.emptyList()));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryProjection(metadataManager, studyMetadata, Collections.emptyList(), Collections.emptyList()));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

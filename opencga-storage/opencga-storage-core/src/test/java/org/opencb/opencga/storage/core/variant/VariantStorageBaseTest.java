@@ -105,7 +105,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             "20:17605163:A:G"
     )));
 
-    public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    public static final String VCF_TEST_FILE_NAME = "1k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     protected static URI inputUri;
 
     public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
@@ -229,10 +229,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public static URI newOutputUri() throws IOException {
-        if (rootDir == null) {
-            newRootDir();
-        }
-        return newOutputUri(rootDir.toUri());
+        return newOutputUri(getTmpRootDir().toUri());
     }
 
     public static URI newOutputUri(Path output) throws IOException {
@@ -378,6 +375,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         newParams.putIfAbsent(VariantStorageOptions.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantStorageOptions.SPECIES.key(), "hsapiens");
         newParams.putIfAbsent(VariantStorageOptions.ASSEMBLY.key(), "GRch37");
+        variantStorageManager.getConfiguration().getCellbase().setDataRelease("1");
         newParams.putIfAbsent(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);

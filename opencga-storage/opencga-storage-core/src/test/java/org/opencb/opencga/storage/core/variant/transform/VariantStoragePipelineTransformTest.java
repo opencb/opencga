@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -52,6 +53,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALF
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@StorageEngineTest
 public abstract class VariantStoragePipelineTransformTest extends VariantStorageBaseTest {
 
 

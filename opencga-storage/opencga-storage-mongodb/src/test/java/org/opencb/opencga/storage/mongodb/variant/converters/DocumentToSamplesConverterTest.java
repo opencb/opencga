@@ -19,9 +19,8 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 07/03/16.

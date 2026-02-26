@@ -7,23 +7,22 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.List;
 
 import static org.junit.Assert.assertFalse;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD;
 
 /**
  * Created on 27/10/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSomaticTest implements MongoDBVariantStorageTest {
 
     @Test
@@ -39,9 +38,11 @@ public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSo
             MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
             while (it.hasNext()) {
                 Document document = it.next();
-                assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
-                        .containsKey(GENOTYPES_FIELD));
-                System.out.println("dbObject = " + document);
+                List<Document> files = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
+                for (Document file : files) {
+                    assertFalse(file.containsKey(FILE_GENOTYPE_FIELD));
+                }
+//                System.out.println("dbObject = " + document);
             }
         }
     }

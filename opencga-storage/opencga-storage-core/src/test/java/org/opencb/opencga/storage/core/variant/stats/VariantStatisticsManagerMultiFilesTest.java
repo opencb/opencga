@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -25,6 +26,7 @@ import static org.opencb.opencga.storage.core.variant.stats.VariantStatisticsMan
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStorageBaseTest {
 
     protected StudyMetadata studyMetadata;

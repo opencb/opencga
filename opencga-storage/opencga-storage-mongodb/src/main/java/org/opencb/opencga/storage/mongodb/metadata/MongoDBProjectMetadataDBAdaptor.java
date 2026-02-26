@@ -46,16 +46,18 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (StringUtils.isNotEmpty(lockName)) {
             throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
         }
-        return mongoLock.lock(ID, lockDuration, timeout);
-    }
-
-    @Override
-    public void unLockProject(long lockId) {
-        mongoLock.unlock(ID, lockId);
+        try {
+            return mongoLock.lock(ID, lockDuration, timeout);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Timeout locking project", e);
+        }
     }
 
     @Override
@@ -117,8 +119,6 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
             if (getProjectMetadata().first() == null) {
                 updateProjectMetadata(new ProjectMetadata(), false);
             }
-        } catch (InterruptedException | TimeoutException e) {
-            throw new StorageEngineException("Unable to get lock over project", e);
         }
     }
 }

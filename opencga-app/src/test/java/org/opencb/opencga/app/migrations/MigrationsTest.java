@@ -115,6 +115,7 @@ public class MigrationsTest {
             opencga = null;
         }
         if (storageHadoop) {
+            Assume.assumeTrue(HBaseCompatApi.isHBaseCompatAvailable());
             Assume.assumeTrue(HBaseCompatApi.getInstance().isTestingAvailable());
         }
         opencga = new OpenCGATestExternalResource(storageHadoop);

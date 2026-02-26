@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,7 +78,7 @@ public class VariantWriterFactoryTest {
 
     @Test
     public void testContigLengthNull() throws IOException, StorageEngineException {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         DummyVariantDBAdaptor dbAdaptor = new DummyVariantDBAdaptor("opencga");
         VariantFileHeader header = new VariantFileHeader();
         header.setComplexLines(Arrays.asList(

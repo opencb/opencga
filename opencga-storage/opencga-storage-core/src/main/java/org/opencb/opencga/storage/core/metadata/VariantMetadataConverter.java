@@ -35,8 +35,8 @@ public class VariantMetadataConverter {
         String assembly = projectMetadata.getAssembly();
         for (StudyMetadata studyMetadata : variantQueryProjection.getStudyMetadatas()) {
             VariantStudyMetadata variantStudyMetadata = toVariantStudyMetadata(studyMetadata,
-                    variantQueryProjection.getStudy(studyMetadata.getId()).getSamples(),
-                    variantQueryProjection.getStudy(studyMetadata.getId()).getFiles());
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getSampleIds(),
+                    variantQueryProjection.getStudy(studyMetadata.getId()).getFileIds());
             studies.add(variantStudyMetadata);
         }
 

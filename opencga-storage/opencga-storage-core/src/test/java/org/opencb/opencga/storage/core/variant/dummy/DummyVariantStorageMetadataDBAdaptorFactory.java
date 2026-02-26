@@ -1,25 +1,35 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.apache.commons.io.FileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 
-import java.nio.file.Path;
+import java.io.IOException;
+import java.nio.file.Paths;
 
 /**
  * Created by jacobo on 20/01/19.
  */
 public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStorageMetadataDBAdaptorFactory {
 
-    private static String dbName;
-
     public DummyVariantStorageMetadataDBAdaptorFactory(String dbName) {
         this(false);
         if (dbName != null) {
-            if (DummyVariantStorageMetadataDBAdaptorFactory.dbName == null) {
-                DummyVariantStorageMetadataDBAdaptorFactory.dbName = dbName;
-            } else if (!DummyVariantStorageMetadataDBAdaptorFactory.dbName.equals(dbName)) {
+            if (DummyVariantStorageEngine.DBNAME == null) {
+                DummyVariantStorageEngine.DBNAME = dbName;
+                DummyVariantStorageEngine.SAMPLE_INDEX_PATH = "target/test-data/dummy-variant-storage-engine/sample_index/" + dbName;
+                if (Paths.get(DummyVariantStorageEngine.SAMPLE_INDEX_PATH).toFile().exists()) {
+                    // Clear previous sample index
+                    try {
+                        System.err.println("Clearing previous sample index in " + DummyVariantStorageEngine.SAMPLE_INDEX_PATH);
+                        FileUtils.deleteDirectory(Paths.get(DummyVariantStorageEngine.SAMPLE_INDEX_PATH).toFile());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } else if (!DummyVariantStorageEngine.DBNAME.equals(dbName)) {
                 throw new IllegalStateException("DummyVariantStorageMetadataDBAdaptor can't work with multiple dbNames at the same time. "
-                        + "Already configured for '" + DummyVariantStorageMetadataDBAdaptorFactory.dbName + "'. and requested for '" + dbName + "'");
+                        + "Already configured for '" + DummyVariantStorageEngine.DBNAME + "'. and requested for '" + dbName + "'");
             }
         }
     }
@@ -30,7 +40,7 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
 
     public DummyVariantStorageMetadataDBAdaptorFactory(boolean clear) {
         if (clear) {
-            clear();
+            DummyVariantStorageEngine.clear();
         }
     }
 
@@ -69,16 +79,4 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
         return new DummyStudyMetadataDBAdaptor();
     }
 
-    public static void clear() {
-        dbName = null;
-        DummyProjectMetadataAdaptor.clear();
-        DummyStudyMetadataDBAdaptor.clear();
-        DummyFileMetadataDBAdaptor.clear();
-    }
-
-    public static void writeAndClear(Path path) {
-        DummyProjectMetadataAdaptor.writeAndClear(path);
-        DummyFileMetadataDBAdaptor.writeAndClear(path);
-        DummyStudyMetadataDBAdaptor.writeAndClear(path);
-    }
 }

@@ -37,8 +37,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.util.*;
 
@@ -313,7 +313,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     protected void checkSampleIndexTable(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, String removedFile) throws Exception {
         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), removedFile);
         LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
+        HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
         SampleIndexSchema schemaLatest = sampleIndexDBAdaptor.getSchemaLatest(studyMetadata);
         for (Integer sampleId : sampleIds) {

@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
@@ -243,8 +244,8 @@ public abstract class VariantStatisticsManager {
                                         Collection<?> cohorts,
                                         ObjectMap options, Aggregation aggregation) {
         int studyId = study.getId();
-        Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId);
+        VariantQuery readerQuery = new VariantQuery().study(study.getName())
+                .includeStudy(study.getName());
         if (options.containsKey(VariantQueryParam.REGION.key())) {
             Object region = options.get(VariantQueryParam.REGION.key());
             readerQuery.put(VariantQueryParam.REGION.key(), region);
@@ -268,6 +269,7 @@ public abstract class VariantStatisticsManager {
             readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE);
         } else {
             readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+            readerQuery.sampleLimit(sampleIds.size());
         }
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(),

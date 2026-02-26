@@ -37,8 +37,10 @@
         <module>opencga-storage-app</module>
         <module>opencga-storage-core</module>
         <module>opencga-storage-hadoop</module>
+        <module>opencga-storage-mongodb</module>
         <module>opencga-storage-server</module>
         <module>opencga-storage-benchmark</module>
+        <module>opencga-storage-thirdparty</module>
     </modules>
 
     <dependencyManagement>

@@ -62,7 +62,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
     }
 
     private int annotationId;
-    private VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
 
     @Deprecated
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily) {
@@ -212,7 +211,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         geneSoFlag.remove(null);
         soFlag.remove(null);
 
-        Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variantAnnotation);
+        Set<String> xrefs = VariantAnnotationModelUtils.extractXRefs(variantAnnotation);
 
         map.put(CHROMOSOME, variantAnnotation.getChromosome());
         map.put(POSITION, variantAnnotation.getStart());
