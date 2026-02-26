@@ -68,46 +68,39 @@ public class PharmacogenomicsManager {
      * @throws IOException if parsing fails
      * @throws CatalogException if catalog operations fail
      */
-    public List<AlleleTyperResult> alleleTyper(String studyId, String genotypingFileContent,
-                                                     String translationFileContent, String token)
-            throws IOException, CatalogException {
-        logger.info("Starting pharmacogenomics allele typing for study: {}", studyId);
+//    public List<AlleleTyperResult> alleleTyper(String studyId, String genotypingFileContent,
+//                                                     String translationFileContent, String token)
+//            throws IOException, CatalogException {
+//        logger.info("Starting pharmacogenomics allele typing for study: {}", studyId);
+//
+//        // First, CellBase validator
+//        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
+//        if (cellBaseValidator == null) {
+//            throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
+//        }
+//
+//        // Initialize AlleleTyper
+//        AlleleTyper typer = new AlleleTyper();
+//
+//        // Parse translation file
+//        typer.parseTranslationFromString(translationFileContent);
+//
+//        // Build pharmacogenomics results
+//        List<AlleleTyperResult> results = typer.buildAlleleTyperResultsFromString(genotypingFileContent);
+//        logger.info("Allele typing completed for {} samples", results.size());
+//
+//        // Annotate star alleles with CellBase pharmacogenomics data
+//        annotateResults(results, cellBaseValidator.getCellBaseClient());
+//
+//        // Store results in catalog for each sample
+////        storeResultsInCatalog(studyId, results, token);
+//
+//        return results;
+//    }
 
-        // First, CellBase validator
-        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
-        if (cellBaseValidator == null) {
-            throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
-        }
-
-        // Initialize AlleleTyper
-        AlleleTyper typer = new AlleleTyper();
-
-        // Parse translation file
-        typer.parseTranslationFromString(translationFileContent);
-
-        // Build pharmacogenomics results
-        List<AlleleTyperResult> results = typer.buildAlleleTyperResultsFromString(genotypingFileContent);
-
-        logger.info("Allele typing completed for {} samples", results.size());
-
-        // Annotate star alleles with CellBase pharmacogenomics data
-        annotateResults(results, cellBaseValidator.getCellBaseClient());
-
-        // Store results in catalog for each sample
-        storeResultsInCatalog(studyId, results, token);
-
-        return results;
-    }
     public List<AlleleTyperResult> alleleTyper(String studyId, String genotypingFileContent, String translationFileContent,
-                                               boolean annotate, String token)
-            throws IOException, CatalogException {
+                                               boolean annotate, String token) throws IOException, CatalogException {
         logger.info("Starting pharmacogenomics allele typing for study: {}", studyId);
-
-        // First, CellBase validator
-        CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
-        if (cellBaseValidator == null) {
-            throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
-        }
 
         // Initialize AlleleTyper
         AlleleTyper typer = new AlleleTyper();
@@ -120,6 +113,12 @@ public class PharmacogenomicsManager {
         logger.info("Allele typing completed for {} samples", results.size());
 
         if (annotate) {
+            // First, CellBase validator
+            CellBaseValidator cellBaseValidator = buildCellBaseValidator(studyId, token);
+            if (cellBaseValidator == null) {
+                throw new IOException("No CellBase configuration found for study " + studyId + ". Skipping star allele annotation.");
+            }
+
             // Annotate star alleles with CellBase pharmacogenomics data
             annotateResults(results, cellBaseValidator.getCellBaseClient());
         }
