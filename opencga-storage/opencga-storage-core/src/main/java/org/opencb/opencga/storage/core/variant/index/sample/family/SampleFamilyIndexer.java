@@ -31,6 +31,12 @@ public abstract class SampleFamilyIndexer {
     }
 
     public DataResult<Trio> load(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
+        int studyId = metadataManager.getStudyId(study);
+        int version = sampleIndexDBAdaptor.getSchemaFactory().getSampleIndexConfigurationLatest(studyId, true).getVersion();
+        return load(study, trios, options, version);
+    }
+
+    public DataResult<Trio> load(String study, List<Trio> trios, ObjectMap options, int version) throws StorageEngineException {
         trios = new LinkedList<>(trios);
         DataResult<Trio> dr = new DataResult<>();
         dr.setResults(trios);
@@ -42,7 +48,6 @@ public abstract class SampleFamilyIndexer {
         }
 
         int studyId = metadataManager.getStudyId(study);
-        int version = sampleIndexDBAdaptor.getSchemaFactory().getSampleIndexConfigurationLatest(studyId, true).getVersion();
 
         Iterator<Trio> iterator = trios.iterator();
         while (iterator.hasNext()) {

@@ -30,10 +30,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -152,7 +149,8 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
             // Rebuild family index (only for studies that have trios defined)
             List<Trio> studyTrios = getTriosForStudy(study);
             if (!studyTrios.isEmpty()) {
-                variantStorageEngine.familyIndex(study, studyTrios, options);
+                variantStorageEngine.getSampleIndexDBAdaptor().newSampleFamilyIndexer(variantStorageEngine)
+                        .load(study, studyTrios, options, version);
             }
 
             printSampleIndexContents(study, outdir);
@@ -191,18 +189,38 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
     }
 
     private void assertEqualCollections(String study, Map<String, Document> expected, Map<String, Document> actual) {
+        if (expected.size() != actual.size()) {
+            Set<String> missing = new TreeSet<>(expected.keySet());
+            missing.removeAll(actual.keySet());
+            Set<String> extra = new TreeSet<>(actual.keySet());
+            extra.removeAll(expected.keySet());
+            System.err.println("Missing documents in rebuilt (" + missing.size() + "): " + missing);
+            System.err.println("Extra documents in rebuilt (" + extra.size() + "): " + extra);
+        }
         assertEquals("Different number of documents for study " + study, expected.size(), actual.size());
         for (Map.Entry<String, Document> entry : expected.entrySet()) {
             String docId = entry.getKey();
             Document actualDoc = actual.get(docId);
             try {
                 assertNotNull("Missing document '" + docId + "' for study " + study, actualDoc);
+                // Normalize the 'gts' list ordering before comparison — the order of genotype
+                // keys is not semantically meaningful and can differ between load and rebuild.
+                normalizeGtsList(entry.getValue());
+                normalizeGtsList(actualDoc);
                 assertEquals("Document mismatch for '" + docId + "' in study " + study, entry.getValue(), actualDoc);
             } catch (AssertionError e) {
                 System.err.println("Expected document: " + entry.getValue().toJson());
                 System.err.println("Actual document: " + (actualDoc != null ? actualDoc.toJson() : "null"));
                 throw e;
             }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void normalizeGtsList(Document doc) {
+        List<String> gts = doc.getList("gts", String.class);
+        if (gts != null) {
+            Collections.sort(gts);
         }
     }
 

@@ -236,15 +236,17 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             variants.addAll(variantList);
         }
 
-        boolean mayHaveDiscrepancies = query.isMultiFileSample() && entry.getDiscrepancies() > 0;
+        boolean mayHaveDuplicates = query.isMultiFileSample();
 
-        // Only sort not counting or the sample may have discrepancies
-        if (!count || mayHaveDiscrepancies) {
+        // Only sort if not counting or the sample may have duplicates across genotypes
+        if (!count || mayHaveDuplicates) {
             // List.sort is much faster than a TreeSet
             variants.sort(getComparator());
 
-            if (mayHaveDiscrepancies) {
-                // Remove possible duplicated elements
+            if (mayHaveDuplicates) {
+                // Remove possible duplicated elements.
+                // Multi-file samples may have the same variant stored in different genotype entries
+                // (e.g., phasing differences: 0|1 in one file, 1|0 in another).
                 Iterator<T> iterator = variants.iterator();
                 T variant = iterator.next();
                 while (iterator.hasNext()) {

@@ -38,7 +38,7 @@ public class MongoDBSingleSampleIndexRawIterator extends CloseableIterator<Sampl
     private Iterator<SampleIndexVariant> buildIterator(MongoDBSampleIndexDBAdaptor adaptor,
                                                        SingleSampleIndexQuery query,
                                                        LocusQuery locusQuery) {
-        MongoDBIterator<org.bson.Document> iterable = adaptor.buildQuery(query, locusQuery, true);
+        MongoDBIterator<org.bson.Document> iterable = adaptor.buildQuery(query, locusQuery, false);
         RawSampleIndexEntryFilter filter = new RawSampleIndexEntryFilter(query, locusQuery);
         return Iterators.concat(Iterators.transform(iterable, document -> {
             SampleIndexEntry entry = adaptor.getConverter().convertToDataModelType(document);
