@@ -185,32 +185,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
-        boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, splitData != null);
-
-        if (newSampleBatch) {
-            logger.info("New sample batch!!!");
-            //TODO: Check if there are regions with gaps
-//            ArrayList<Integer> indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
-//            if (!indexedFiles.isEmpty()) {
-//                LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(indexedFiles.get(indexedFiles.size() - 1));
-//                if (!sampleIds.isEmpty()) {
-//                    Integer sampleId = sampleIds.iterator().next();
-//                    String files = "";
-//                    for (Integer indexedFileId : indexedFiles) {
-//                        if (studyConfiguration.getSamplesInFiles().get(indexedFileId).contains(sampleId)) {
-//                            files += "!" + indexedFileId + ";";
-//                        }
-//                    }
-////                    String genotypes = sampleIds.stream().map(i -> studyConfiguration.getSampleIds().inverse().get(i) + ":" +
-// DBObjectToSamplesConverter.UNKNOWN_GENOTYPE).collect(Collectors.joining(","));
-//                    String genotypes = sampleId + ":" + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
-//                    Long v = getDBAdaptor(null).count(new Query()
-//                            .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
-//                            .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), files)
-//                            .append(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), genotypes)).first();
-//                }
-//            }
-        }
+        checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, splitData != null);
 
         boolean doMerge = options.getBoolean(MERGE.key(), false);
         boolean doStage = options.getBoolean(STAGE.key(), false);
@@ -940,25 +915,22 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     /**
      * Check if the samples from the selected file can be loaded.
      * <p>
-     * MongoDB storage plugin is not able to load batches of samples in a unordered way.
-     * A batch of samples is a group of samples of any size. It may be composed of one or several VCF files, depending
-     * on whether it is split by region (horizontally) or not.
-     * All the files from the same batch must be loaded, before loading the next batch. If a new batch of
-     * samples begins to be loaded, it won't be possible to load other files from previous batches
-     * <p>
-     * The StudyMetadata must be complete, with all the indexed files, and samples in files.
-     * Provided StudyMetadata won't be modified
      * Requirements:
-     * - All samples in file must be or loaded or not loaded
-     * - If all samples loaded, must match (same order and samples) with the last loaded file.
-     *
+     * - All samples in the file must be either all already indexed or all new (not yet indexed).
+     *   Mixed files (some new, some already indexed) are not allowed.
+     * - If all samples are already indexed, {@code loadSplitData} must be {@code true}
+     *   (e.g. loading a region-split / MULTI file for the same sample set).
+     * <p>
+     * The StudyMetadata must be complete, with all the indexed files and samples in files.
+     * The provided StudyMetadata will not be modified.
      *
      * @param metadataManager    MetadataManager
      * @param studyMetadata      StudyMetadata from the selected study
      * @param fileId             File to load
-     * @param loadSplitData      Allow load split data
-     * @return Returns if this file represents a new batch of samples
-     * @throws StorageEngineException If there is any unaccomplished requirement
+     * @param loadSplitData      Allow loading a file whose samples are all already indexed (split-data scenario)
+     * @return {@code true} if this file introduces a new batch of samples; {@code false} if all samples are already indexed
+     *         and {@code loadSplitData} is {@code true}
+     * @throws StorageEngineException if any requirement is not met
      */
     public static boolean checkCanLoadSampleBatch(
             VariantStorageMetadataManager metadataManager, final StudyMetadata studyMetadata, int fileId, boolean loadSplitData)
