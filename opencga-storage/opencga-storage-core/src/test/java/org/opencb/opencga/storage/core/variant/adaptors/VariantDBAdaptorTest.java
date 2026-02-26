@@ -1561,7 +1561,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         int lastStart = 0;
         for (Variant variant : queryResult.getResults()) {
             assertEquals("1", variant.getChromosome());
-            assertTrue(lastStart <= variant.getStart());
+            assertTrue("lastStart = " + lastStart + " thisVariant: " + variant, lastStart <= variant.getStart());
             lastStart = variant.getStart();
         }
 

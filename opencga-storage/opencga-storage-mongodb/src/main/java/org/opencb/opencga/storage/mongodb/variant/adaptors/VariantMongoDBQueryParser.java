@@ -1509,7 +1509,7 @@ public class VariantMongoDBQueryParser {
         }
         if (options.containsKey(QueryOptions.SORT)) {
             if (options.getBoolean(QueryOptions.SORT)) {
-                String order = options.getString(QueryOptions.ORDER, QueryOptions.DESC.toUpperCase(Locale.ROOT));
+                String order = options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING);
                 Bson sort;
                 if (order.equalsIgnoreCase(QueryOptions.ASCENDING) || order.equalsIgnoreCase(QueryOptions.ASC) || order.equals("1")) {
                     sort = Aggregates.sort(Sorts.ascending("_id"));
