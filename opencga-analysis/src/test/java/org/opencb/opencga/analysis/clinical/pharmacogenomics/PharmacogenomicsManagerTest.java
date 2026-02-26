@@ -40,7 +40,10 @@ public class PharmacogenomicsManagerTest {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<AlleleTyperResult> results = buildResultsFromCsv();
+        InputStream is = getClass().getClassLoader().getResourceAsStream(
+                "pharmacogenomics/TrueMark128_detail_result.csv.gz");
+        assertNotNull("Test resource pharmacogenomics/TrueMark128_detail_result.csv.gz not found", is);
+        List<AlleleTyperResult> results = buildResultsFromCsv(is);
         assertFalse("Results should not be empty", results.isEmpty());
 
         // Write parsed CSV results (before annotation) to /tmp
@@ -78,18 +81,14 @@ public class PharmacogenomicsManagerTest {
     }
 
     /**
-     * Reads TrueMark128_detail_result.csv.gz from test resources and builds an AlleleTyperResult list.
+     * From the input stream builds an AlleleTyperResult list.
      * The file uses CR-only (\r) line endings.
      * Sample names: column A, rows 6–28 (1-indexed).
      * Gene names:   columns C–V (0-based indices 2–21), row 5.
      * Star alleles: columns C–V, rows 6–28.
      * NTC (negative control) rows are skipped.
      */
-    private List<AlleleTyperResult> buildResultsFromCsv() throws IOException {
-        InputStream is = getClass().getClassLoader().getResourceAsStream(
-                "pharmacogenomics/TrueMark128_detail_result.csv.gz");
-        assertNotNull("Test resource pharmacogenomics/TrueMark128_detail_result.csv.gz not found", is);
-
+    public static List<AlleleTyperResult> buildResultsFromCsv(InputStream is) throws IOException {
         byte[] bytes;
         try (GZIPInputStream gzis = new GZIPInputStream(is)) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -145,7 +144,7 @@ public class PharmacogenomicsManagerTest {
      * Handles: "*1/*5", "{*2/*41, *21/*41}", "*4/*6, *4.003/*6", "{*1/*1,...}" (truncated).
      * Non-star-allele values (Ref/Alt, APOE E3/E4, etc.) are skipped.
      */
-    private List<AlleleTyperResult.AlleleCall> parseAlleleCalls(String rawValue) {
+    public static List<AlleleTyperResult.AlleleCall> parseAlleleCalls(String rawValue) {
         List<AlleleTyperResult.AlleleCall> calls = new ArrayList<>();
         if (rawValue == null || rawValue.isEmpty()
                 || "no translation available".equalsIgnoreCase(rawValue)) {
@@ -174,7 +173,7 @@ public class PharmacogenomicsManagerTest {
     /**
      * Simple CSV row parser that correctly handles double-quoted fields containing commas.
      */
-    private List<String> parseCsvRow(String line) {
+    public static List<String> parseCsvRow(String line) {
         List<String> fields = new ArrayList<>();
         if (line == null || line.isEmpty()) {
             return fields;

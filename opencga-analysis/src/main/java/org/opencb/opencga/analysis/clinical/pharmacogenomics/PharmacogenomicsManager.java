@@ -128,7 +128,7 @@ public class PharmacogenomicsManager {
      *
      * @return CellBaseValidator, or null if no configuration found
      */
-    private CellBaseValidator buildCellBaseValidator(String studyId, String token) throws CatalogException {
+    public CellBaseValidator buildCellBaseValidator(String studyId, String token) throws CatalogException {
         // Resolve study to FQN first
         Study study = catalogManager.getStudyManager()
                 .get(Collections.singletonList(studyId), StudyManager.INCLUDE_STUDY_IDS, false, token)

@@ -179,7 +179,7 @@ public class  AbstractManagerTest extends GenericTest {
 
     private static boolean firstExecutionFinished = false;
 
-    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+    public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @BeforeClass
     public static void configureFirstExecution() {
