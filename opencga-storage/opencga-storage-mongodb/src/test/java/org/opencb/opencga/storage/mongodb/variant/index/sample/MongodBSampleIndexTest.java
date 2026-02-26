@@ -17,6 +17,8 @@ import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexTest;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -102,13 +104,41 @@ public class MongodBSampleIndexTest extends SampleIndexTest implements MongoDBVa
                 out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
 
                 int variantIds = 0;
-                try (CloseableIterator<SampleIndexVariant> it = sampleIndexDBAdaptor.indexVariantIterator(query)) {
+                int entries = 0;
+
+                try (CloseableIterator<SampleIndexVariant> it = sampleIndexDBAdaptor.indexVariantIterator(query);
+                     CloseableIterator<SampleIndexEntry> entryIterator = sampleIndexDBAdaptor.indexEntryIterator(studyId, sampleId)) {
+                    SampleIndexEntry entry = null;
+                    int expectedCount = 0;
+                    int entryVariantCount = 0;
+
                     while (it.hasNext()) {
-                        SampleIndexVariant entry = it.next();
+                        SampleIndexVariant indexVariant = it.next();
+                        Integer start = indexVariant.getVariant().getStart();
+                        String chromosome = indexVariant.getVariant().getChromosome();
+                        while (entryIterator.hasNext() && (entry == null || !chromosome.equals(entry.getChromosome()) || start > entry.getBatchStart())) {
+                            entry = entryIterator.next();
+                            entries++;
+                            out.println("==============================================");
+                            out.println("#" + entries + "  " + entry.getChromosome() + " : " + entry.getBatchStart());
+                            expectedCount = 0;
+                            entryVariantCount = 0;
+                            for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {
+                                expectedCount += gtEntry.getCount();
+                                out.println(" - " + gtEntry.getGt() + " -> " + gtEntry.getCount());
+                            }
+                            out.println("Discrepancies : " + entry.getDiscrepancies());
+                            List<String> values = SampleIndexVariantBiConverter.split(
+                                    entry.getMendelianVariantsValue(),
+                                    entry.getMendelianVariantsOffset(),
+                                    entry.getMendelianVariantsLength());
+                            out.println("MendelianErrors : " + values);
+                        }
                         variantIds++;
+                        entryVariantCount++;
                         out.println("_______________________");
-                        out.println("#" + variantIds);
-                        out.println(entry.toString(query.getSchema()));
+                        out.println("#" + variantIds + " (" + entryVariantCount + "/" + expectedCount + ")");
+                        out.println(indexVariant.toString(query.getSchema()));
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);

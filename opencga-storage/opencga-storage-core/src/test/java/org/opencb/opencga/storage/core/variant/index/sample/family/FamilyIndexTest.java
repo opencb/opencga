@@ -226,6 +226,10 @@ public abstract class FamilyIndexTest extends VariantStorageBaseTest {
         }
         assertTrue(multiDeNovoVariants.isEmpty());
 
+        System.out.println("#multiMendelianErrorVariants=" + multiMendelianErrorVariants.size());
+        for (String multiMendelianErrorVariant : multiMendelianErrorVariants) {
+            System.out.println(" - " + multiMendelianErrorVariant);
+        }
         for (Variant var : variantStorageEngine.get(
                 new VariantQuery().includeSampleId(true).sample("PROBAND:mendelianerror"), new QueryOptions()).getResults()) {
             List<StudyEntry> studies = var.getStudies();

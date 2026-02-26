@@ -9,6 +9,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -72,12 +73,21 @@ public class MongoDBSampleFamilyIndexer extends SampleFamilyIndexer {
                         VariantField.STUDIES_FILES))
                 .append(QueryOptions.SORT, true);
 
+        // Collect files from all trio members. A file-based filter returns all variants regardless
+        // of GT value (including secondary alts with 0/0 GTs), which is needed to correctly detect
+        // Mendelian errors where the child has 0/0 but should have inherited a parental allele.
+        VariantStorageMetadataManager metadataManager = sampleIndexDBAdaptor.getMetadataManager();
+        Set<String> fileNamesSet = new LinkedHashSet<>();
+        for (String member : allMemberNames) {
+            Integer sampleId = metadataManager.getSampleId(studyId, member);
+            for (Integer fileId : metadataManager.getSampleMetadata(studyId, sampleId).getFiles()) {
+                fileNamesSet.add(metadataManager.getFileName(studyId, fileId));
+            }
+        }
+
         VariantQuery variantQuery = new VariantQuery().study(study);
-        if (childNames.size() < 50) {
-            // Use all members (children + parents) as the sample filter so that variants where only
-            // parents have non-ref GTs (but the child has 0/0) are also processed.  Those variants
-            // can be non-de-novo Mendelian Errors (child should have inherited a parental allele).
-            variantQuery.sample(allMemberNames);
+        if (childNames.size() < 50 && !fileNamesSet.isEmpty() && fileNamesSet.size() < 100) {
+            variantQuery.file(String.join(",", fileNamesSet));
         }
         // Always include all trio members so parent file data (mgt) is projected
         variantQuery.includeSample(allMemberNames);
