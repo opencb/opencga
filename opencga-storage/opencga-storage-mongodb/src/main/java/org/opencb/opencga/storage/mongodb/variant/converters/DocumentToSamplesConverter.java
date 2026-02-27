@@ -193,6 +193,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         boolean compressExtraParams = studyMetadata.getAttributes()
                 .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+        List<String> projectionSampleDataKeys = variantQueryProjection.getStudy(studyId) != null
+                ? variantQueryProjection.getStudy(studyId).getSampleDataKeys()
+                : null;
+        if (projectionSampleDataKeys != null) {
+            excludeGenotypes = !projectionSampleDataKeys.contains(VariantQueryUtils.GT);
+        }
         if (samplesPositionToReturn == null || samplesPositionToReturn.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, Collections.emptyList(), Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
@@ -202,8 +208,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         final Map<Integer, Document> files;
         final List<Integer> includeFileIds;
         final Set<Integer> loadedSamples;
-        final List<String> extraFields;
-        final List<String> sampleDataKeys;
+        List<String> extraFields;
+        List<String> sampleDataKeys;
         if (fileDocuments != null) {
             includeFileIds = new ArrayList<>(fileDocuments.size());
             files = new HashMap<>(fileDocuments.size());
@@ -234,7 +240,12 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             filesWithSamplesData = Collections.emptySet();
             loadedSamples = Collections.emptySet();
         }
-        extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
+        if (projectionSampleDataKeys != null) {
+            extraFields = new ArrayList<>(projectionSampleDataKeys);
+            extraFields.remove(VariantQueryUtils.GT);
+        } else {
+            extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
+        }
         sampleDataKeys = getSampleDataKeys(excludeGenotypes, extraFields);
         List<SampleEntry> sampleEntries = new ArrayList<>(samplesPositionToReturn.size());
 

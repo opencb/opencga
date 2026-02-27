@@ -625,51 +625,35 @@ public class VariantMongoDBQueryParser {
                 // (reference/alternate) where to check the frequency
             }
 
-            /* FIXME: TASK-8038
             if (isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
                 String value = query.getString(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
-                addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
-                                + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
-                        value, builder, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, true,
-                        (v, queryBuilder) -> {
+                addFrequencyFilter(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES,
+                        value, filters, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, true,
+                        (v, frequencyFilters) -> {
                             String[] split = splitOperator(v);
                             String op = split[1];
                             String obj = split[2];
-
                             double aDouble = Double.parseDouble(obj);
+                            String refField = DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD;
+                            String altField = DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD;
                             switch (op) {
                                 case "<":
-                                    queryBuilder.or(QueryBuilder.start(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).lessThan(aDouble).get(),
-                                            QueryBuilder.start(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).lessThan(aDouble).get()
-                                    );
+                                    frequencyFilters.add(or(lt(refField, aDouble), lt(altField, aDouble)));
                                     break;
                                 case "<=":
-                                    queryBuilder.or(QueryBuilder.start(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).lessThanEquals(aDouble).get(),
-                                            QueryBuilder.start(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).lessThanEquals(aDouble).get()
-                                    );
+                                    frequencyFilters.add(or(lte(refField, aDouble), lte(altField, aDouble)));
                                     break;
                                 case ">":
-                                    queryBuilder.and(DocumentToVariantAnnotationConverter.
-                                            POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).greaterThan(aDouble)
-                                            .and(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).greaterThan(aDouble);
+                                    frequencyFilters.add(and(gt(refField, aDouble), gt(altField, aDouble)));
                                     break;
                                 case ">=":
-                                    queryBuilder.and(DocumentToVariantAnnotationConverter.
-                                            POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).greaterThanEquals(aDouble)
-                                            .and(DocumentToVariantAnnotationConverter.
-                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).greaterThanEquals(aDouble);
+                                    frequencyFilters.add(and(gte(refField, aDouble), gte(altField, aDouble)));
                                     break;
                                 default:
                                     throw new IllegalArgumentException("Unsupported operator '" + op + "'");
                             }
                         });
             }
-*/
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
                 long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForLoading()
                         .getLastUpdateDateTimestamp();

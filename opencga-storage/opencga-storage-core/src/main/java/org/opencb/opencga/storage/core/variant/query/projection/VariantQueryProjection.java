@@ -113,6 +113,7 @@ public final class VariantQueryProjection {
         private List<ResourceId> files = Collections.emptyList();
         private List<Integer> fileIds = Collections.emptyList();
         private List<Integer> cohorts = Collections.emptyList();
+        private List<String> sampleDataKeys = null;
 
         public StudyVariantQueryProjection() {
         }
@@ -209,6 +210,15 @@ public final class VariantQueryProjection {
 
         public List<Integer> getCohorts() {
             return cohorts;
+        }
+
+        public List<String> getSampleDataKeys() {
+            return sampleDataKeys;
+        }
+
+        public StudyVariantQueryProjection setSampleDataKeys(List<String> sampleDataKeys) {
+            this.sampleDataKeys = sampleDataKeys;
+            return this;
         }
 
         public StudyVariantQueryProjection setCohorts(List<Integer> cohorts) {

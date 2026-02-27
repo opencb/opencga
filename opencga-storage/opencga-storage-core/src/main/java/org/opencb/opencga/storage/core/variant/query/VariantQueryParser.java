@@ -1180,7 +1180,6 @@ public class VariantQueryParser {
      * @param studyMetadata study metadata
      * @return  List of fixed formats
      */
-    // TODO: TASK-8038 Add to VariantQueryStudyProjection
     public static List<String> getFixedFormat(StudyMetadata studyMetadata) {
         List<String> format;
         List<String> extraFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());

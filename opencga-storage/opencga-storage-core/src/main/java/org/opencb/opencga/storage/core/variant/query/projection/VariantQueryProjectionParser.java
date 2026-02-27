@@ -130,6 +130,19 @@ public class VariantQueryProjectionParser {
             includeFields.removeAll(VariantField.STUDIES_SAMPLES.getChildren());
         }
 
+        if (includeFields.contains(VariantField.STUDIES_SAMPLES)) {
+            List<String> requestedSampleDataKeys = getIncludeSampleData(query);
+            for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
+                List<String> resolved;
+                if (requestedSampleDataKeys == null) {
+                    resolved = VariantQueryParser.getFixedFormat(study.getStudyMetadata());
+                } else {
+                    resolved = requestedSampleDataKeys;
+                }
+                study.setSampleDataKeys(resolved);
+            }
+        }
+
         if (includeFields.contains(VariantField.STUDIES_STATS)) {
             for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
                 int studyId = study.getId();
