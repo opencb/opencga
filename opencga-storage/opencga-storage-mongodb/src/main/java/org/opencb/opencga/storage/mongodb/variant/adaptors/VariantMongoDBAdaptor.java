@@ -214,15 +214,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             return removeStudy(study, timestamp, new QueryOptions("purge", true));
         }
 
-        // Remove all the study entries that does not contain any of the other indexed files.
-        // This include studies only with the files to remove and with negated fileIds (overlapped files)
-        Bson studiesToRemoveQuery = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                and(
-                        eq(STUDYID_FIELD, studyId),
-//                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds),
-                        nin(FILES_FIELD + '.' + FILEID_FIELD, otherIndexedFiles)
-                )
-        );
+        // Find variant documents where this study has ONLY the files being removed (no otherIndexedFiles remain).
+        // These variants need the entire study entry removed; the others just need the specific file entries pulled.
+        // Since files are now stored at root level (files[]), check root files[] instead of the old studies[].files.
+        // Include negated file IDs (-fid) used for PARTIAL / VIRTUAL file entries in multi-file loads.
+        List<Integer> allOtherFileIds = new ArrayList<>(otherIndexedFiles.size() * 2);
+        for (Integer f : otherIndexedFiles) {
+            allOtherFileIds.add(f);
+            allOtherFileIds.add(-f);
+        }
+        Bson studiesToRemoveQuery = and(
+                elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                not(elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                        and(eq(STUDYID_FIELD, studyId), in(FILEID_FIELD, allOtherFileIds)))));
         removeFilesFromStageCollection(studiesToRemoveQuery, studyId, fileIds);
 
         return removeFilesFromVariantsCollection(studiesToRemoveQuery, studyMetadata, fileIds, timestamp);

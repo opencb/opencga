@@ -180,11 +180,37 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = scm.getStudyId(study);
 
+        // Collect samples in the removed files and which ones still have other indexed files.
+        Set<Integer> otherIndexedFiles = new HashSet<>(scm.getIndexedFiles(studyId));
+        otherIndexedFiles.removeAll(fileIds);
+        Set<Integer> allRemovedSampleIds = new HashSet<>();
+        List<String> samplesToRebuildIndex = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            for (Integer sampleId : scm.getFileMetadata(studyId, fileId).getSamples()) {
+                allRemovedSampleIds.add(sampleId);
+                // Sample is still present in the study via other files — its sample-index needs rebuilding.
+                if (scm.getSampleMetadata(studyId, sampleId).getFiles().stream().anyMatch(otherIndexedFiles::contains)) {
+                    samplesToRebuildIndex.add(scm.getSampleName(studyId, sampleId));
+                }
+            }
+        }
+
+        MongoDBSampleIndexDBAdaptor mongoSampleIndexDBAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+        int schemaVersion = mongoSampleIndexDBAdaptor.getSchemaLatest(study).getVersion();
+
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFiles(study, files, task.getTimestamp(), new QueryOptions(options));
             postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), false);
+            // Clear sample index for ALL samples in removed files to remove stale data.
+            if (!allRemovedSampleIds.isEmpty()) {
+                mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, allRemovedSampleIds);
+            }
+            // Rebuild sample index for samples that still have data after the removal.
+            if (!samplesToRebuildIndex.isEmpty()) {
+                sampleIndex(study, samplesToRebuildIndex, new ObjectMap(options).append("overwrite", true));
+            }
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), true);
             throw e;

@@ -10,6 +10,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
@@ -114,11 +115,21 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             List<Integer> files = sampleMetadata.getFiles();
             Map<Integer, Integer> map = new HashMap<>(files.size());
-            for (int idx = 0; idx < files.size(); idx++) {
-                map.put(files.get(idx), idx);
+            // For MULTI split, encode actual file position so multi-file variants can resolve their source file.
+            // For REGION/CHROMOSOME split (or single-file), file position is always 0: each variant comes from
+            // exactly one file, and the position index within the sample's file list is irrelevant.
+            if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData()) && files.size() > 1) {
+                for (int idx = 0; idx < files.size(); idx++) {
+                    map.put(files.get(idx), idx);
+                }
+                multiFileIndex[i] = true;
+            } else {
+                for (Integer fid : files) {
+                    map.put(fid, 0);
+                }
+                multiFileIndex[i] = false;
             }
             fileIdxMap[i] = map;
-            multiFileIndex[i] = files.size() > 1;
         }
     }
 
@@ -217,7 +228,14 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                         SampleIndexVariant entry = new SampleIndexVariant(variant, sampleFileIndex, fileData);
 
                         List<SampleIndexEntryBuilder> builders = buffer.computeIfAbsent(indexChunk, this::createBuilders);
-                        builders.get(sampleIdx).add(gt, entry);
+                        SampleIndexEntryBuilder builder = builders.get(sampleIdx);
+                        // When rebuilding the index for a non-MULTI split (REGION/CHROMOSOME), reject duplicate
+                        // variants: if the builder already contains this variant (from a previously loaded file),
+                        // the new file must not overlap — throw to match the behaviour of SampleGenotypeIndexerTask.
+                        if (rebuildIndex && !multiFileIndex[sampleIdx] && builder.containsVariant(entry)) {
+                            throw new IllegalArgumentException("Already loaded variant " + variant);
+                        }
+                        builder.add(gt, entry);
                     }
                 }
             }

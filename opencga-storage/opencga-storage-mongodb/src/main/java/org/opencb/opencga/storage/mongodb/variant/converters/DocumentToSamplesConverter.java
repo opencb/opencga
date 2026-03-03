@@ -301,7 +301,20 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 trackPerFileExtraValues ? new HashMap<>() : Collections.emptyMap();
 
         if (!extraFields.isEmpty()) {
+            // Process non-includeFile files first, then includeFile files in order.
+            // This ensures ref-genotype samples' extra field values match their fileIndex.
+            List<Integer> orderedFilesWithSamplesData = new ArrayList<>(filesWithSamplesData.size());
             for (Integer fid : filesWithSamplesData) {
+                if (!includeFileIds.contains(fid)) {
+                    orderedFilesWithSamplesData.add(fid);
+                }
+            }
+            for (Integer fid : includeFileIds) {
+                if (filesWithSamplesData.contains(fid)) {
+                    orderedFilesWithSamplesData.add(fid);
+                }
+            }
+            for (Integer fid : orderedFilesWithSamplesData) {
                 Document samplesDataDocument = null;
                 if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD)) {
                     samplesDataDocument = files.get(fid)

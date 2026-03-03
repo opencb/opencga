@@ -158,6 +158,29 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         dataStore.dropCollection(sampleIndexCollectionName);
     }
 
+    /**
+     * Delete all sample-index documents for the given samples.
+     * Removes all chromosomal-batch documents whose {@code _id} starts with {@code {sampleId}_}.
+     * @param studyId study ID
+     * @param version schema version
+     * @param sampleIds sample IDs to clear
+     */
+    public void clearSampleIndex(int studyId, int version, Collection<Integer> sampleIds) {
+        if (sampleIds.isEmpty()) {
+            return;
+        }
+        MongoDBCollection collection = dataStore.getCollection(getSampleIndexCollectionName(studyId, version));
+        List<Bson> filters = new ArrayList<>(sampleIds.size());
+        for (Integer sampleId : sampleIds) {
+            // Document IDs have the form "{sampleId}_{chromosome}_{batchStart}", so use a prefix range.
+            String lower = sampleId + "_";
+            String upper = (sampleId + 1) + "_";
+            filters.add(Filters.and(Filters.gte("_id", lower), Filters.lt("_id", upper)));
+        }
+        Bson filter = filters.size() == 1 ? filters.get(0) : Filters.or(filters);
+        collection.remove(filter, new QueryOptions());
+    }
+
     public String getSampleIndexCollectionName(int studyId, int version) {
         return "sample_index_" + studyId + "_v" + version;
     }

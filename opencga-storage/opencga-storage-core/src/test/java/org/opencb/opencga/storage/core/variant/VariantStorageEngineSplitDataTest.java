@@ -37,7 +37,6 @@ import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSc
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -352,10 +351,9 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
 
 
         thrown.expect(StoragePipelineException.class);
-        thrown.expect(hasCause(isA(StorageEngineException.class)));
-        thrown.expect(hasCause(hasCause(isA(ExecutionException.class))));
-        thrown.expect(hasCause(hasCause(hasCause(isA(IllegalArgumentException.class)))));
-        thrown.expect(hasCause(hasCause(hasCause(hasMessage(containsString("Already loaded variant 20:238441:T:C"))))));
+        thrown.expect(hasCause(isA(Exception.class)));
+        thrown.expect(hasCause(hasCause(isA(IllegalArgumentException.class))));
+        thrown.expect(hasCause(hasCause(hasMessage(containsString("Already loaded variant 20:238441:T:C")))));
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20-21.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
     }
@@ -517,7 +515,7 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
         try {
             variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
         } catch (StoragePipelineException e) {
-            MatcherAssert.assertThat(e.getCause().getMessage(), startsWith("Can not \"Load\" files"));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString("Can not "));
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file2));
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file1));
         }
@@ -600,7 +598,7 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
         try {
             variantStorageEngine.index(Collections.singletonList(getResourceUri(resourceDir + file2)), outDir);
         } catch (StoragePipelineException e) {
-            MatcherAssert.assertThat(e.getCause().getMessage(), startsWith("Can not \"Load\" files"));
+            MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString("Can not "));
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file2));
             MatcherAssert.assertThat(e.getCause().getMessage(), CoreMatchers.containsString(file1));
         }

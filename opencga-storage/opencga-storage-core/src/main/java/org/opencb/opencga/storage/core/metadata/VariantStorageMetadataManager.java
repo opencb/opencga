@@ -2230,11 +2230,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the file is not valid for being loaded
      */
     private int registerFile(int studyId, String filePath, FileMetadata.Type type) throws StorageEngineException {
+        String fileName = Paths.get(filePath).getFileName().toString();
         Integer fileId = getFileId(studyId, filePath);
         if (fileId != null) {
+            FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
+                throw StorageEngineException.invalidFileStatus(fileMetadata.getId(), fileName);
+            }
             return fileId;
         }
-        String fileName = Paths.get(filePath).getFileName().toString();
         fileId = getFileIdOrDuplicated(studyId, fileName);
 
         if (fileId != null) {

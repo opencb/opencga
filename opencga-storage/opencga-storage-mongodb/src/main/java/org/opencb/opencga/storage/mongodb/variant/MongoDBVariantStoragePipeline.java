@@ -198,13 +198,34 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         options.put(STAGE.key(), doStage);
 
         if (options.getBoolean(DIRECT_LOAD.key(), DIRECT_LOAD.defaultValue())) {
-            // TODO: Check if can execute direct load
+            Set<Integer> sampleIds = new HashSet<>(getMetadataManager().getSampleIdsFromFileId(studyMetadata.getId(), fileId));
             directLoadTask = getMetadataManager().addRunningTask(
                     studyMetadata.getId(),
                     DIRECT_LOAD.key(),
                     Collections.singletonList(fileId),
                     isResume(options),
-                    TaskMetadata.Type.LOAD);
+                    TaskMetadata.Type.LOAD,
+                    operation -> {
+                        if (operation.getType() != TaskMetadata.Type.LOAD) {
+                            return false;
+                        }
+                        // Allow concurrent CHROMOSOME/REGION split loads regardless of sample overlap
+                        if (splitData == VariantStorageEngine.SplitData.CHROMOSOME
+                                || splitData == VariantStorageEngine.SplitData.REGION) {
+                            return true;
+                        }
+                        // Allow concurrent loads only when files don't share samples
+                        for (Integer opFileId : operation.getFileIds()) {
+                            Set<Integer> opSamples = getMetadataManager()
+                                    .getSampleIdsFromFileId(studyMetadata.getId(), opFileId);
+                            for (Integer opSample : opSamples) {
+                                if (sampleIds.contains(opSample)) {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    });
             if (directLoadTask.getStatus().size() > 1) {
                 options.put(VariantStorageOptions.RESUME.key(), true);
                 options.put(STAGE_RESUME.key(), true);
