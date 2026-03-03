@@ -312,6 +312,7 @@ public class DocumentToVariantAnnotationConverter
         va.setAlternate(variant.getAlternate());
         va.setStart(variant.getStart());
         va.setEnd(variant.getEnd());
+        va.setConsequenceTypes(new ArrayList<>());
         return va;
     }
 

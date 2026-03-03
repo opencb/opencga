@@ -1028,13 +1028,7 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
         VariantStoragePipeline mockedPipeline = Mockito.spy(variantStorageEngine.newStoragePipeline(true));
 
         Mockito.doReturn(mockedPipeline).when(mockedStorageEngine).newStoragePipeline(Mockito.anyBoolean());
-//        Mockito.doThrow(new StoragePipelineException(MOCKED_EXCEPTION, Collections.emptyList())).when(mockedPipeline).load(Mockito.any(), Mockito.any());
-        Mockito.doAnswer(invocation -> {
-            // Throw StorageEngineException when calling load
-            System.out.printf("MOCKED load(%s, %s)%n", invocation.getArgument(0), invocation.getArgument(1));
-            System.out.println("MOCKED load throw StorageEngineException");
-            throw new StoragePipelineException(MOCKED_EXCEPTION, Collections.emptyList());
-        }).when(mockedPipeline).load(Mockito.any(), Mockito.any());
+        mockLoadFailure(mockedPipeline);
 
         Mockito.doAnswer(invocation -> {
             // Call real method when calling preRemove, then throw StorageEngineException
@@ -1046,6 +1040,18 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
             throw new StorageEngineException(MOCKED_EXCEPTION);
         }).when(mockedStorageEngine).preRemove(Mockito.any(), Mockito.any(), Mockito.any());
         return mockedStorageEngine;
+    }
+
+    /**
+     * Set up the load-failure mock on the given pipeline spy.
+     * Subclasses may override this if the storage engine calls a different method instead of {@code load()}.
+     */
+    protected void mockLoadFailure(VariantStoragePipeline mockedPipeline) throws Exception {
+        Mockito.doAnswer(invocation -> {
+            System.out.printf("MOCKED load(%s, %s)%n", invocation.getArgument(0), invocation.getArgument(1));
+            System.out.println("MOCKED load throw StorageEngineException");
+            throw new StoragePipelineException(MOCKED_EXCEPTION, Collections.emptyList());
+        }).when(mockedPipeline).load(Mockito.any(), Mockito.any());
     }
 
     public void checkVariantsData(int studyIdActual, int studyIdExpected, Query query, QueryOptions options) throws Exception {

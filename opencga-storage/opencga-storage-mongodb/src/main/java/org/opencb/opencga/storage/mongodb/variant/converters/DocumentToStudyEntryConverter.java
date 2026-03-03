@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 
 import java.io.IOException;
 import java.util.*;
@@ -70,6 +71,8 @@ public class DocumentToStudyEntryConverter {
     private boolean includeSrc;
     private Map<Integer, List<Integer>> returnedFiles;
     private final Map<Integer, String> fileIds = new HashMap<>();
+    // Maps partial fileId -> virtual parent fileId (cached)
+    private final Map<Integer, Integer> partialToVirtualId = new HashMap<>();
 
     //    private Integer fileId;
     private DocumentToSamplesConverter samplesConverter;
@@ -174,16 +177,17 @@ public class DocumentToStudyEntryConverter {
                     Document ori = (Document) fileDocument.get(ORI_FIELD);
                     call = new OriginalCall(ori.getString("s"), ori.getInteger("i"));
                 }
-                if (returnedFiles != null && !returnedFiles.getOrDefault(studyId, Collections.emptyList()).contains(fid)) {
+                int resolvedFid = resolveToVirtualFileId(studyId, fid);
+                if (returnedFiles != null && !returnedFiles.getOrDefault(studyId, Collections.emptyList()).contains(resolvedFid)) {
                     // Always return originalCall when context allele is missing
                     if (call != null) {
-                        FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, Collections.emptyMap());
+                        FileEntry fileEntry = new FileEntry(getFileName(studyId, resolvedFid), call, Collections.emptyMap());
                         extraFiles.add(fileEntry);
                     }
                     continue;
                 }
                 HashMap<String, String> attributes = new HashMap<>();
-                FileEntry fileEntry = new FileEntry(getFileName(studyId, fid), call, attributes);
+                FileEntry fileEntry = new FileEntry(getFileName(studyId, resolvedFid), call, attributes);
                 int fileIndex = files.size();
                 files.add(fileEntry);
 
@@ -433,6 +437,26 @@ public class DocumentToStudyEntryConverter {
                     return studyName;
                 }
             }
+        });
+    }
+
+    /**
+     * Resolve a file ID to its virtual parent ID if it is a PARTIAL file.
+     * For NORMAL and VIRTUAL files, returns the file ID unchanged.
+     */
+    private int resolveToVirtualFileId(int studyId, int fileId) {
+        return partialToVirtualId.computeIfAbsent(fileId, fid -> {
+            if (metadataManager == null) {
+                return fid;
+            }
+            FileMetadata fileMeta = metadataManager.getFileMetadata(studyId, fid);
+            if (fileMeta != null && fileMeta.getType() == FileMetadata.Type.PARTIAL) {
+                Object virtualParentId = fileMeta.getAttributes().get(FileMetadata.VIRTUAL_PARENT);
+                if (virtualParentId != null) {
+                    return ((Number) virtualParentId).intValue();
+                }
+            }
+            return fid;
         });
     }
 
