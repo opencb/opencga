@@ -6,6 +6,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 
 import java.util.Map;
 
@@ -29,7 +30,8 @@ public final class MongoDBSampleIndexQueryBuilder {
             // For full-chromosome scans (chunkEnd == MAX_VALUE) use a "~" suffix instead (ASCII 126 > "_" > any digit).
             String upper;
             if (locusQuery.getChunkRegion().getEnd() == Integer.MAX_VALUE) {
-                upper = sampleId + "_" + locusQuery.getChunkRegion().getChromosome() + "~";
+                String paddedChr = VariantStringIdConverter.convertChromosome(locusQuery.getChunkRegion().getChromosome());
+                upper = sampleId + "_" + paddedChr + "~";
             } else {
                 upper = DocumentToSampleIndexEntryConverter.buildDocumentId(sampleId,
                         locusQuery.getChunkRegion().getChromosome(), locusQuery.getChunkRegion().getEnd());

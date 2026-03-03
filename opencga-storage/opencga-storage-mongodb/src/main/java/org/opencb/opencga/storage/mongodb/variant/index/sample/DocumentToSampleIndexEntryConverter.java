@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEn
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -316,6 +317,6 @@ public class DocumentToSampleIndexEntryConverter implements ComplexTypeConverter
     }
 
     public static String buildDocumentId(int sampleId, String chromosome, int batchStart) {
-        return String.format("%d_%s_%010d", sampleId, chromosome, batchStart);
+        return String.format("%d_%s_%010d", sampleId, VariantStringIdConverter.convertChromosome(chromosome), batchStart);
     }
 }
