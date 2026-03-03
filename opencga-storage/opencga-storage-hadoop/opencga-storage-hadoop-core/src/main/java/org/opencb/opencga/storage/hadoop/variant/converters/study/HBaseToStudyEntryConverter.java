@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -270,6 +271,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     private List<String> getSampleDataKeys(int studyId, List<String> fixedSampleDataKeys) {
+        // Prefer pre-resolved keys from projection (already handles null/all/none/specific — no literal "ALL"/"NONE")
+        if (configuration.getProjection() != null) {
+            VariantQueryProjection.StudyVariantQueryProjection study = configuration.getProjection().getStudy(studyId);
+            if (study != null && study.getSampleDataKeys() != null) {
+                return study.getSampleDataKeys();
+            }
+        }
+        // Fallback for MR-path callers that have no projection (sampleDataKeys comes from Hadoop config)
         if (configuration.getSampleDataKeys() == null) {
             return fixedSampleDataKeys;
         } else {

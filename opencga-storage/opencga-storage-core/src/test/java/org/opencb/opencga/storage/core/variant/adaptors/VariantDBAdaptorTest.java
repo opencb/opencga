@@ -2311,12 +2311,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
             for (Variant variant : queryResult.getResults()) {
                 assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            }
+            queryResult = query(new VariantQuery().includeSample(sampleNames.get(0)), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
+            for (Variant variant : queryResult.getResults()) {
+                for (FileEntry file : variant.getStudies().get(0).getFiles()) {
+                    // If any file entry is present, it must contain a call and no data.
+                    assertNotNull(file.getCall());
+                    assertEquals(0, file.getData().size());
+                }
                 assertThat(new HashSet<>(variant.getStudies().get(0).getSampleDataKeys()), is(FORMAT));
             }
         }
     }
 
     @Test
+
     public void testReturnNoneFiles() {
         queryResult = query(new Query(INCLUDE_FILE.key(), VariantQueryUtils.NONE).append(INCLUDE_SAMPLE.key(), ALL), new QueryOptions());
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());

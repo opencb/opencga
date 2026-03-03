@@ -366,7 +366,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
-                .setSampleDataKeys(getIncludeSampleData(query))
                 .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
         if (query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false)) {
