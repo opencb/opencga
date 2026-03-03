@@ -71,7 +71,8 @@ public class MongoDBSampleFamilyIndexer extends SampleFamilyIndexer {
                         VariantField.TYPE,
                         VariantField.STUDIES_SAMPLES,
                         VariantField.STUDIES_FILES))
-                .append(QueryOptions.SORT, true);
+                .append(QueryOptions.SORT, true)
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         // Collect files from all trio members. A file-based filter returns all variants regardless
         // of GT value (including secondary alts with 0/0 GTs), which is needed to correctly detect

@@ -707,6 +707,8 @@ public class VariantMongoDBQueryParser {
         // to tie sfd conditions to the genotype within the same file entry.
         Map<Integer, Bson> fileGenotypeConditions = null;
         Map<Integer, Bson> sampleGenotypeConditions = null;
+        // File IDs inferred from queried samples, used to scope FILTER/QUAL when no explicit FILE constraint.
+        Set<Integer> queriedSampleFileIdSet = null;
         ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
                 parsedVariantQuery.getStudyQuery().getGenotypes();
         if (preGenotypesQuery != null && defaultStudy != null) {
@@ -717,6 +719,13 @@ public class VariantMongoDBQueryParser {
                 int sampleId = sample.getId();
                 List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
                         defaultStudy.getId(), sampleId, true);
+                // Collect sample file IDs for FILTER/QUAL scoping when no explicit FILE constraint
+                if (fileIds.isEmpty()) {
+                    if (queriedSampleFileIdSet == null) {
+                        queriedSampleFileIdSet = new LinkedHashSet<>();
+                    }
+                    queriedSampleFileIdSet.addAll(sampleFileIds);
+                }
                 List<Bson> gtOrConditions = new ArrayList<>();
                 boolean canApply = true;
                 for (String genotype : sampleGt.getValue()) {
@@ -760,20 +769,32 @@ public class VariantMongoDBQueryParser {
             ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
             QueryOperation fileDataOperation = parsedFileData.getOperation();
 
-
             boolean useFileElemMatch = !fileIds.isEmpty();
             boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
             if (!useFileElemMatch) {
-                // Files are now at root level, so no studyQueryPrefix needed.
-                String key = DocumentToStudyEntryConverter.FILES_FIELD + '.'
-                        + DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
-
+                // FILTER/QUAL are stored per file entry. When multiple studies share the same
+                // variants collection, a flat query like "files.attrs.FILTER=PASS" can match
+                // file entries from other studies. Use $elemMatch with the study ID to scope
+                // the condition to the correct study.
+                // When a sample is in the query, also scope to that sample's files (matching
+                // HBase behaviour where includeFiles is inferred from the queried sample).
+                String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
+                List<Bson> fileAttrFilters = new ArrayList<>();
                 if (isValidParam(query, FILTER)) {
-                    getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, filters);
+                    getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileAttrFilters);
                 }
                 if (isValidParam(query, QUAL)) {
-                    addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), filters, false);
+                    addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileAttrFilters, false);
+                }
+                if (!fileAttrFilters.isEmpty()) {
+                    if (defaultStudy != null) {
+                        fileAttrFilters.add(eq(DocumentToStudyEntryConverter.STUDYID_FIELD, defaultStudy.getId()));
+                    }
+                    if (queriedSampleFileIdSet != null && !queriedSampleFileIdSet.isEmpty()) {
+                        fileAttrFilters.add(in(DocumentToStudyEntryConverter.FILEID_FIELD, queriedSampleFileIdSet));
+                    }
+                    filters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileAttrFilters)));
                 }
             } else {
                 List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
@@ -809,6 +830,15 @@ public class VariantMongoDBQueryParser {
                             }
                             addCompListQueryFilter(DocumentToStudyEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
                                     true, extraFilterFilters);
+                        }
+                    }
+                    // Tie genotype conditions to this file's $elemMatch for multi-file samples.
+                    // This ensures the genotype check is within the SAME file entry as the
+                    // FILTER/QUAL check, matching HBase's per-file-column genotype scoping.
+                    if (fileGenotypeConditions != null) {
+                        Bson gtCondition = fileGenotypeConditions.get(fileId);
+                        if (gtCondition != null) {
+                            fileFilters.add(gtCondition);
                         }
                     }
                     fileElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileFilters)));
@@ -1022,18 +1052,8 @@ public class VariantMongoDBQueryParser {
                                 genotypesFiltersOr.add(eq(key, sampleId));
                             }
                         } else {
-                            List<Bson> defaultGenotypeFilter = new ArrayList<>();
-                            for (String otherGenotype : loadedGenotypes) {
-                                if (defaultGenotypes.contains(otherGenotype)) {
-                                    continue;
-                                }
-                                // GT is now in root-level files[].mgt.
-                                String key = DocumentToVariantConverter.FILES_FIELD
-                                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
-                                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
-                                defaultGenotypeFilter.add(ne(key, sampleId));
-                            }
-                            genotypesFiltersOr.add(and(defaultGenotypeFilter));
+                            genotypesFiltersOr.add(buildDefaultGenotypeFilter(
+                                    defaultStudy, sampleId, loadedGenotypes, defaultGenotypes));
                         }
                     } else {
                         // GT is now in root-level files[].mgt (FILE_GENOTYPE_FIELD).
@@ -1131,6 +1151,42 @@ public class VariantMongoDBQueryParser {
         }
 
         return filters;
+    }
+
+    /**
+     * Build filter for default genotype (e.g. 0/0). Ensures the sample is NOT present in any
+     * non-default mgt field. For multi-file samples, uses $elemMatch to scope the check to a
+     * single file entry, preventing false negatives when the sample has a non-ref GT in a
+     * different file entry.
+     */
+    private Bson buildDefaultGenotypeFilter(StudyMetadata study, int sampleId,
+                                            List<String> loadedGenotypes, List<String> defaultGenotypes) {
+        List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(study.getId(), sampleId, true);
+        if (sampleFileIds.size() > 1) {
+            List<Bson> conditions = new ArrayList<>();
+            conditions.add(in(DocumentToStudyEntryConverter.FILEID_FIELD, sampleFileIds));
+            for (String otherGenotype : loadedGenotypes) {
+                if (defaultGenotypes.contains(otherGenotype)) {
+                    continue;
+                }
+                String mgtKey = DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
+                conditions.add(ne(mgtKey, sampleId));
+            }
+            return elemMatch(DocumentToVariantConverter.FILES_FIELD, and(conditions));
+        } else {
+            List<Bson> defaultGenotypeFilter = new ArrayList<>();
+            for (String otherGenotype : loadedGenotypes) {
+                if (defaultGenotypes.contains(otherGenotype)) {
+                    continue;
+                }
+                String key = DocumentToVariantConverter.FILES_FIELD
+                        + '.' + DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD
+                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
+                defaultGenotypeFilter.add(ne(key, sampleId));
+            }
+            return and(defaultGenotypeFilter);
+        }
     }
 
     private static void addAll(List<Bson> filters, QueryOperation filterOperation, List<Bson> filterFilters) {
@@ -2006,24 +2062,34 @@ public class VariantMongoDBQueryParser {
                 break;
             case "=":
             case "==": {
-                Object o;
-                try {
-                    o = Double.valueOf(obj);
-                } catch (NumberFormatException e) {
-                    o = obj;
+                // Comma-separated values from parseMultiKeyValueFilter mean OR (e.g. "culprit=DP,QD")
+                if (obj.contains(",")) {
+                    filter = in(key, Arrays.asList(obj.split(",")));
+                } else {
+                    Object o;
+                    try {
+                        o = Double.valueOf(obj);
+                    } catch (NumberFormatException e) {
+                        o = obj;
+                    }
+                    filter = eq(key, o);
                 }
-                filter = eq(key, o);
                 break;
             }
-            case "!=":
-                Object o;
-                try {
-                    o = Double.valueOf(obj);
-                } catch (NumberFormatException e) {
-                    o = obj;
+            case "!=": {
+                if (obj.contains(",")) {
+                    filter = nin(key, Arrays.asList(obj.split(",")));
+                } else {
+                    Object o;
+                    try {
+                        o = Double.valueOf(obj);
+                    } catch (NumberFormatException e) {
+                        o = obj;
+                    }
+                    filter = ne(key, o);
                 }
-                filter = ne(key, o);
                 break;
+            }
             case "~=":
             case "~":
                 filter = regex(key, obj);
