@@ -58,6 +58,7 @@ import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -1398,6 +1399,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         executors.add(new SearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
         executors.add(new SampleIndexMendelianErrorQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SampleIndexOnlyVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
