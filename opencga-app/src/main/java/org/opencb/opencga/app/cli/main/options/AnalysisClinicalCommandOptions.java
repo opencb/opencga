@@ -1095,8 +1095,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--genotyping-content"}, description = "The body web service genotypingContent parameter", required = false, arity = 1)
         public String genotypingContent;
     
+        @Parameter(names = {"--genotyping-file"}, description = "The body web service genotypingFile parameter", required = false, arity = 1)
+        public String genotypingFile;
+    
         @Parameter(names = {"--translation-content"}, description = "The body web service translationContent parameter", required = false, arity = 1)
         public String translationContent;
+    
+        @Parameter(names = {"--translation-file"}, description = "The body web service translationFile parameter", required = false, arity = 1)
+        public String translationFile;
     
         @Parameter(names = {"--annotate"}, description = "The body web service annotate parameter", required = false, arity = 1)
         public Boolean annotate;
@@ -1144,6 +1150,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--allele-typer-content"}, description = "The body web service alleleTyperContent parameter", required = false, arity = 1)
         public String alleleTyperContent;
+    
+        @Parameter(names = {"--allele-typer-file"}, description = "The body web service alleleTyperFile parameter", required = false, arity = 1)
+        public String alleleTyperFile;
     
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;

@@ -16,6 +16,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperToolParams;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -57,6 +59,8 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
     private String studyFqn;
     private String genotypingContent;
     private String translationContent;
+    private File genotypingFile;
+    private File translationFile;
 
     @Before
     public void setUp() throws Exception {
@@ -100,14 +104,77 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
 
         // Load translation file content (gzip-compressed)
         translationContent = readGzipFile(TRANSLATION_RESOURCE);
+
+        // Write each content to a temporary file and link it to catalog
+        // to be used later in the testAlleleTyperAnalysisUsingFile
+        Path genotypingFilePath = Paths.get(opencga.createTmpOutdir("_pgx_genotyping_input")).resolve("genotyping.txt");
+        Files.write(genotypingFilePath, genotypingContent.getBytes(StandardCharsets.UTF_8));
+        genotypingFile = catalogManager.getFileManager()
+                .link(studyFqn, new FileLinkParams().setUri(genotypingFilePath.toUri().toString()), false, token).first();
+
+        Path translationFilePath = Paths.get(opencga.createTmpOutdir("_pgx_translation_input")).resolve("translation.csv");
+        Files.write(translationFilePath, translationContent.getBytes(StandardCharsets.UTF_8));
+        translationFile = catalogManager.getFileManager()
+                .link(studyFqn, new FileLinkParams().setUri(translationFilePath.toUri().toString()), false, token).first();
     }
 
     @Test
-    public void testAlleleTyperAnalysis() throws Exception {
+    public void testAlleleTyperAnalysisUsingContent() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_pgx_allele_typer_analysis"));
 
         PharmacogenomicsAlleleTyperToolParams params = new PharmacogenomicsAlleleTyperToolParams(
-                genotypingContent, translationContent, true, null);
+                genotypingContent, null, translationContent, null, true, null);
+
+        ExecutionResult executionResult = toolRunner.execute(
+                PharmacogenomicsAlleleTyperAnalysisTool.class,
+                params,
+                new ObjectMap(ParamConstants.STUDY_PARAM, studyFqn),
+                outDir, null, false, token);
+
+        assertNotNull("Execution result should not be null", executionResult);
+
+        // Check that the results directory exists and contains one JSON file per sample
+        Path resultsDir = outDir.resolve(PharmacogenomicsAlleleTyperAnalysisTool.RESULTS_DIR);
+        assertTrue("Results directory should exist: " + resultsDir, Files.exists(resultsDir));
+
+        List<Path> resultFiles;
+        try (Stream<Path> stream = Files.list(resultsDir)) {
+            resultFiles = stream.filter(p -> p.toString().endsWith(".json")).collect(Collectors.toList());
+        }
+        assertFalse("Results directory should contain at least one JSON file", resultFiles.isEmpty());
+        System.out.printf("Allele typer results: %d sample file(s) in %s%n", resultFiles.size(), resultsDir);
+
+        // Deserialise each per-sample file and verify star allele results and annotations are present
+        ObjectMapper objectMapper = new ObjectMapper();
+        int annotatedCallCount = 0;
+        for (Path sampleFile : resultFiles) {
+            assertTrue("Sample result file should not be empty: " + sampleFile, Files.size(sampleFile) > 0);
+            AlleleTyperResult sampleResult = objectMapper.readValue(sampleFile.toFile(), AlleleTyperResult.class);
+            assertNotNull("Sample result should not be null", sampleResult);
+            if (sampleResult.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult starAlleleResult : sampleResult.getAlleleTyperResults()) {
+                if (starAlleleResult.getAlleleCalls() == null) {
+                    continue;
+                }
+                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
+                    if (alleleCall.getAnnotation() != null) {
+                        annotatedCallCount++;
+                    }
+                }
+            }
+        }
+        assertTrue("At least some allele calls should have been annotated", annotatedCallCount > 0);
+        System.out.println("Total annotated allele calls: " + annotatedCallCount);
+    }
+
+    @Test
+    public void testAlleleTyperAnalysisUsingFile() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_pgx_allele_typer_analysis"));
+
+        PharmacogenomicsAlleleTyperToolParams params = new PharmacogenomicsAlleleTyperToolParams(
+                null, genotypingFile.getId(), null, translationFile.getId(), true, null);
 
         ExecutionResult executionResult = toolRunner.execute(
                 PharmacogenomicsAlleleTyperAnalysisTool.class,

@@ -27,14 +27,18 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
     @JsonProperty("alleleTyperContent")
     private String alleleTyperContent;
 
+    @JsonProperty("alleleTyperFile")
+    private String alleleTyperFile;
+
     @JsonProperty("outdir")
     private String outdir;
 
     public PharmacogenomicsAnnotationAnalysisToolParams() {
     }
 
-    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent, String outdir) {
+    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent, String alleleTyperFile, String outdir) {
         this.alleleTyperContent = alleleTyperContent;
+        this.alleleTyperFile = alleleTyperFile;
         this.outdir = outdir;
     }
 
@@ -42,6 +46,7 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("PharmacogenomicsAnnotationAnalysisToolParams{");
         sb.append("alleleTyperContent='").append(alleleTyperContent).append('\'');
+        sb.append(", alleleTyperFile='").append(alleleTyperFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -53,6 +58,15 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
 
     public PharmacogenomicsAnnotationAnalysisToolParams setAlleleTyperContent(String alleleTyperContent) {
         this.alleleTyperContent = alleleTyperContent;
+        return this;
+    }
+
+    public String getAlleleTyperFile() {
+        return alleleTyperFile;
+    }
+
+    public PharmacogenomicsAnnotationAnalysisToolParams setAlleleTyperFile(String alleleTyperFile) {
+        this.alleleTyperFile = alleleTyperFile;
         return this;
     }
 
