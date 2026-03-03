@@ -2248,24 +2248,25 @@ public class VariantMongoDBQueryParser {
         String[] studyValue = VariantQueryUtils.splitStudyResource(filter);
         if (studyValue.length == 2 || defaultStudyMetadata != null) {
             int studyId;
-            Integer cohortId;
+            int cohortId;
+            String cohort;
             String operator;
             String valueStr;
             if (studyValue.length == 2) {
                 String[] cohortOpValue = VariantQueryUtils.splitOperator(studyValue[1]);
                 String study = studyValue[0];
-                String cohort = cohortOpValue[0];
+                cohort = cohortOpValue[0];
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
 
                 studyId = metadataManager.getStudyId(study);
-                cohortId = metadataManager.getCohortId(studyId, cohort);
+                cohortId = metadataManager.getCohortIdOrFail(studyId, cohort);
             } else {
 //                String study = defaultStudyMetadata.getStudyName();
                 studyId = defaultStudyMetadata.getId();
                 String[] cohortOpValue = VariantQueryUtils.splitOperator(filter);
-                String cohort = cohortOpValue[0];
-                cohortId = metadataManager.getCohortId(studyId, cohort);
+                cohort = cohortOpValue[0];
+                cohortId = metadataManager.getCohortIdOrFail(studyId, cohort);
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
             }
@@ -2273,9 +2274,7 @@ public class VariantMongoDBQueryParser {
             List<Bson> filters = new LinkedList<>();
 
             filters.add(eq(DocumentToVariantStatsConverter.STUDY_ID, studyId));
-            if (cohortId != null) {
-                filters.add(eq(DocumentToVariantStatsConverter.COHORT_ID, cohortId));
-            }
+            filters.add(eq(DocumentToVariantStatsConverter.COHORT_ID, cohortId));
             addCompQueryFilter(key, valueStr, filters, operator);
             return elemMatch(DocumentToVariantConverter.STATS_FIELD, and(filters));
         } else {
