@@ -1,0 +1,4 @@
+requests
+pyopencga
+pycellbase==5.8.5
+#lark-parser==0.12.0

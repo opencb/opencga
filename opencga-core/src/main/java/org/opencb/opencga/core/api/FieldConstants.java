@@ -313,7 +313,7 @@ public class FieldConstants {
             + "IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, "
             + "OTHER_PLINK, OTHER_VCF, OTHER_PED, @Deprecated VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, "
             + "REFERENCE_GENOME, NONE and UNKNOWN.";
-    public static final String FILE_CHECKSUM = "The checksum of the file.";
+    public static final String FILE_CHECKSUM = "The SHA-256 checksum of the file.";
     public static final String FILE_PATH = "The path of the file.";
     public static final String FILE_URI = "The uri of the file.";
     public static final String FILE_EXTERNAL = "Indicates whether the file comes from an external path or not.";
@@ -686,6 +686,19 @@ public class FieldConstants {
             + " If left empty, the VCF files will be stored in the job folder. If the keyword " + SAME_AS_INPUT_VCF
             + " is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
             + " destination path";
+
+    // Variant caller pipeline
+    @Deprecated
+    public static final String VARIANT_CALLER_PIPELINE_COMMAND_DESCRIPTION = "Command to be executed: {prepare | run}";
+    @Deprecated
+    public static final String VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION = "List of input files";
+    @Deprecated
+    public static final String VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION = "Path to the FASTA index files, BWA index files,...";
+    @Deprecated
+    public static final String VARIANT_CALLER_PIPELINE_PREPARE_INDICES_DESCRIPTION = "List of indices (separated by commas) to create when"
+            + " executing the command 'prepare'; supported values are: reference-genome, bwa and bwa-mem2";
+    @Deprecated
+    public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"

@@ -41,6 +41,7 @@ public class ClinicalAnalysisCreateParams {
     private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
+    private List<FileReferenceParam> reportedFiles;
 
     private ProbandParam proband;
     private FamilyParam family;
@@ -74,11 +75,12 @@ public class ClinicalAnalysisCreateParams {
     }
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                        List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean panelLocked, List<ClinicalAnalystParam> analysts,
-                                        ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
-                                        InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
-                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
+                                        List<FileReferenceParam> files, List<FileReferenceParam> reportedFiles, ProbandParam proband,
+                                        FamilyParam family, List<PanelReferenceParam> panels, Boolean panelLocked,
+                                        List<ClinicalAnalystParam> analysts, ClinicalReport report, ClinicalRequest request,
+                                        ClinicalResponsible responsible, InterpretationCreateParams interpretation,
+                                        ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
+                                        String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
                                         StatusParam status) {
@@ -87,6 +89,7 @@ public class ClinicalAnalysisCreateParams {
         this.type = type;
         this.disorder = disorder;
         this.files = files;
+        this.reportedFiles = reportedFiles;
         this.proband = proband;
         this.family = family;
         this.panels = panels;
@@ -114,6 +117,9 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getType(), DisorderReferenceParam.of(clinicalAnalysis.getDisorder()),
                 clinicalAnalysis.getFiles() != null
                         ? clinicalAnalysis.getFiles().stream().map(FileReferenceParam::of).collect(Collectors.toList())
+                        : null,
+                clinicalAnalysis.getReportedFiles() != null
+                        ? clinicalAnalysis.getReportedFiles().stream().map(FileReferenceParam::of).collect(Collectors.toList())
                         : null,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
@@ -152,6 +158,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", reportedFiles=").append(reportedFiles);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
@@ -223,6 +230,13 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
+        List<File> caReportedFiles = new LinkedList<>();
+        if (reportedFiles != null) {
+            for (FileReferenceParam file : reportedFiles) {
+                caFiles.add(file.toFile());
+            }
+        }
+
         List<Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
         if (panels != null) {
             for (PanelReferenceParam panel : panels) {
@@ -230,12 +244,12 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
-                diseasePanelList, panelLocked != null ? panelLocked : false, false, primaryInterpretation, new LinkedList<>(),
-                consent != null ? consent.toClinicalConsentAnnotation() : null,
+        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, caReportedFiles,
+                individual, f, diseasePanelList, panelLocked != null ? panelLocked : false, false, primaryInterpretation,
+                new LinkedList<>(), consent != null ? consent.toClinicalConsentAnnotation() : null,
                 clinicalAnalystList, report, request, responsible, priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
-                1, 1,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate,
+                modificationDate, dueDate, 1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
                 annotationSets, attributes, status != null ? status.toClinicalStatus() : null);
@@ -283,6 +297,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
+        return this;
+    }
+
+    public List<FileReferenceParam> getReportedFiles() {
+        return reportedFiles;
+    }
+
+    public ClinicalAnalysisCreateParams setReportedFiles(List<FileReferenceParam> reportedFiles) {
+        this.reportedFiles = reportedFiles;
         return this;
     }
 

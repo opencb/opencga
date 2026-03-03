@@ -33,6 +33,9 @@
 #' | rdInterpreter | /{apiVersion}/analysis/clinical/interpreter/rd | clinicalAnalysisId, probandId, familyId, panelIds, disorderId, configFile, study |
 #' | runInterpreterRd | /{apiVersion}/analysis/clinical/interpreter/rd/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runPipelineAffy | /{apiVersion}/analysis/clinical/pipeline/affy/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runPipelineGenomics | /{apiVersion}/analysis/clinical/pipeline/genomics/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runPipelinePrepare | /{apiVersion}/analysis/clinical/pipeline/prepare/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsRga | /{apiVersion}/analysis/clinical/rga/aggregationStats | limit, skip, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study, field[*] |
 #' | queryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaGene | /{apiVersion}/analysis/clinical/rga/gene/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
@@ -45,7 +48,7 @@
 #' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
-#' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
+#' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, reportedFilesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update | clinicalAnalysis[*], study, annotationSet[*], action, body |
 #' | info | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info | include, exclude, flattenAnnotations, clinicalAnalysis[*], study, version, deleted |
 #' | createInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create | include, exclude, clinicalAnalysis[*], study, setAs, includeResult, body[*] |
@@ -53,7 +56,7 @@
 #' | deleteInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete | study, clinicalAnalysis[*], interpretations[*], setAsPrimary |
 #' | revertInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert | study, clinicalAnalysis[*], interpretation[*], version[*] |
 #' | updateInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update | include, exclude, study, primaryFindingsAction, methodsAction, secondaryFindingsAction, commentsAction, panelsAction, setAs, clinicalAnalysis[*], interpretation[*], includeResult, body[*] |
-#' | updateReport | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update | include, exclude, clinicalAnalysis[*], study, commentsAction, supportingEvidencesAction, filesAction, includeResult, body[*] |
+#' | updateReport | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update | include, exclude, clinicalAnalysis[*], study, commentsAction, signaturesAction, referencesAction, includeResult, body[*] |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -313,6 +316,51 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param data Parameters to load clinical analysis in OpenCGA catalog from a file.
         load=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="load", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/pipeline/affy/run:
+        #' Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data JSON with parameters to execute the command affy-pipeline.
+        runPipelineAffy=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/pipeline/affy", subcategoryId=NULL, action="run", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/pipeline/genomics/run:
+        #' Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data JSON with parameters to execute the command ngs-pipeline-genomics.
+        runPipelineGenomics=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/pipeline/genomics", subcategoryId=NULL, action="run", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/pipeline/prepare/run:
+        #' Prepare the clinical pipeline.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data JSON with parameters to execute the command ngs-pipeline-prepare.
+        runPipelinePrepare=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/pipeline/prepare", subcategoryId=NULL, action="run", params=params,
+                httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/rga/aggregationStats:
         #' RGA aggregation stats.
@@ -687,6 +735,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param flagsAction Action to be performed if the array of flags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param analystsAction Action to be performed if the array of analysts is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param reportedFilesAction Action to be performed if the array of reported files is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param annotationSetsAction Action to be performed if the array of annotationSets is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
@@ -787,8 +836,8 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param clinicalAnalysis Clinical analysis ID.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param commentsAction Action to be performed if the array of comments is being updated. Allowed values: ['ADD REMOVE REPLACE']
-        #' @param supportingEvidencesAction Action to be performed if the array of supporting evidences is being updated. Allowed values: ['ADD SET REMOVE']
-        #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param signaturesAction Action to be performed if the array of signatures is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param referencesAction Action to be performed if the array of references is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing clinical report information.
         updateReport=fetchOpenCGA(object=OpencgaR, category="analysis/clinical", categoryId=clinicalAnalysis,

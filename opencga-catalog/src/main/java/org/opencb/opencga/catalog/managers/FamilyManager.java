@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
@@ -61,7 +62,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,12 +89,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     private UserManager userManager;
     private StudyManager studyManager;
 
+    // ExecutorService for async pedigree graph calculation
+    private final ExecutorService pedigreeGraphExecutor;
+    private final Map<String, AtomicReference<Future<?>>> pedigreeGraphFutures = new ConcurrentHashMap<>();
+
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
+
+        // Create a single-threaded executor for pedigree graph calculations to avoid overwhelming the system
+        this.pedigreeGraphExecutor = Executors.newFixedThreadPool(4, r -> {
+            Thread thread = new Thread(r, "PedigreeGraphCalculator");
+            thread.setDaemon(true); // Allow JVM to exit even if threads are running
+            return thread;
+        });
     }
 
     public static Pedigree getPedigreeFromFamily(Family family, String probandId) {
@@ -298,8 +313,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
+            // Insert family first, then calculate pedigree graph asynchronously with persisted data
             OpenCGAResult<Family> insert = getFamilyDBAdaptor(organizationId).insert(study.getUid(), family, existingMembers,
                     study.getVariableSets(), options);
+
+            // Asynchronously calculate pedigree graph after successful insert
+            // This avoids transaction timeout issues and ensures pedigree is calculated with complete persisted data
+            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId(), false);
+
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated family
                 OpenCGAResult<Family> queryResult = getFamily(organizationId, study.getUid(), family.getUuid(), options);
@@ -314,6 +335,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             auditManager.auditCreate(organizationId, userId, Enums.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        } catch (Exception e) {
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
+            throw new CatalogException("Unexpected error creating family '" + family.getId() + "': " + e.getMessage(), e);
         }
     }
 
@@ -1079,8 +1104,27 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         checkUpdateAnnotations(organizationId, study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY,
                 getFamilyDBAdaptor(organizationId), userId);
 
-        OpenCGAResult<Family> update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(),
-                options);
+        // Track if pedigree graph needs recalculation after update
+        boolean updatePedigreeGraph = options.getBoolean(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM);
+        boolean needsPedigreeRecalculation = updateRoles || updatePedigreeGraph
+                || parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())
+                || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key());
+
+        OpenCGAResult<Family> update;
+        if (!parameters.isEmpty()) {
+             update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(), options);
+        } else if (needsPedigreeRecalculation) {
+            update = OpenCGAResult.empty(Family.class);
+        } else {
+            throw new CatalogException("Nothing to update.");
+        }
+
+        // Asynchronously calculate pedigree graph if needed after successful update
+        // This avoids transaction timeout issues and ensures pedigree is calculated with complete persisted data
+        if (needsPedigreeRecalculation) {
+            asyncUpdatePedigreeGraph(organizationId, study.getUid(), family.getUid(), family.getId(), parameters.isEmpty());
+        }
+
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated family
             OpenCGAResult<Family> result = getFamilyDBAdaptor(organizationId).get(study.getUid(),
@@ -1088,6 +1132,73 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    /**
+     * Asynchronously calculates and updates the pedigree graph for a family.
+     * This method fetches the latest family data from the database and calculates the pedigree graph
+     * in a background thread, then updates only the pedigreeGraph field.
+     * This ensures that the pedigree is calculated with the most up-to-date persisted data including
+     * all member relationships, and avoids transaction timeout issues from Docker/R execution.
+     *
+     * @param organizationId  Organization ID
+     * @param studyUid        Study UID
+     * @param familyUid       Family UID
+     * @param familyId        Family ID (for logging)
+     * @param increaseVersion Force family version increase.
+     */
+    private void asyncUpdatePedigreeGraph(String organizationId, long studyUid, long familyUid, String familyId, boolean increaseVersion) {
+        String key = RandomStringUtils.randomAlphanumeric(5);
+        AtomicReference<Future<?>> ref = new AtomicReference<>();
+        pedigreeGraphFutures.put(key, ref); // Placeholder to indicate pedigree graph calculation is in progress
+        Future<?> pending = pedigreeGraphExecutor.submit(() -> {
+            try {
+                // Fetch the complete family with all members and relationships from database
+//                QueryOptions fetchOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+//                        FamilyDBAdaptor.QueryParams.ID.key(),
+//                        FamilyDBAdaptor.QueryParams.UID.key(),
+//                        FamilyDBAdaptor.QueryParams.UUID.key(),
+//                        FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+//                        FamilyDBAdaptor.QueryParams.MEMBERS.key(),
+//                        FamilyDBAdaptor.QueryParams.DISORDERS.key()
+//                ));
+                QueryOptions fetchOptions = QueryOptions.empty();
+
+                Query query = new Query()
+                        .append(FamilyDBAdaptor.QueryParams.UID.key(), familyUid)
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+                OpenCGAResult<Family> familyResult = getFamilyDBAdaptor(organizationId).get(query, fetchOptions);
+
+                if (familyResult.getNumResults() == 0) {
+                    logger.warn("Family {} not found for pedigree graph calculation", familyId);
+                    return;
+                }
+
+                Family family = familyResult.first();
+                // Calculate pedigree graph with the persisted data
+                PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family,
+                        Paths.get(configuration.getWorkspace()).getParent(),
+                        Paths.get(configuration.getAnalysis().getScratchDir()));
+
+                // Update only the pedigree graph field
+                ObjectMap updateParams = new ObjectMap(FamilyDBAdaptor.QueryParams.PEDIGREE_GRAPH.key(), pedigreeGraph);
+
+                getFamilyDBAdaptor(organizationId).update(familyUid, updateParams, Collections.emptyList(), QueryOptions.empty(),
+                        increaseVersion);
+
+                logger.info("Successfully calculated and updated pedigree graph for family {}", familyId);
+
+            } catch (Exception e) {
+                // Log the error but don't fail the family creation/update
+                logger.error("Error calculating pedigree graph for family {}. Family was created/updated successfully, "
+                        + "but pedigree graph could not be generated: {}", familyId, e.getMessage(), e);
+            } finally {
+                // Remove the future from the map to indicate completion
+                pedigreeGraphFutures.remove(key);
+            }
+        });
+        ref.set(pending);
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
@@ -1648,6 +1759,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Set<String> familyDisorders = family.getDisorders().stream().map(Disorder::getId).collect(Collectors.toSet());
             if (!familyDisorders.containsAll(memberDisorders)) {
                 throw new CatalogException("Some of the disorders are not present in any member of the family");
+            }
+        }
+    }
+
+    public void asyncPedigreeWait() throws InterruptedException, ExecutionException {
+        for (AtomicReference<Future<?>> ref : new ArrayList<>(pedigreeGraphFutures.values())) {
+            Future<?> future = ref.get();
+            if (future != null) {
+                future.get();
             }
         }
     }

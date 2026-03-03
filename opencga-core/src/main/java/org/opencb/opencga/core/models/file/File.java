@@ -579,6 +579,7 @@ public class File extends Annotable {
         IMAGE,
         PLAIN,
         BINARY,
+        JAVASCRIPT,
         NONE,
         UNKNOWN,
     }

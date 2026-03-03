@@ -6,10 +6,16 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManagerTest;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -20,6 +26,8 @@ import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 25/04/18.
@@ -72,5 +80,25 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
         Assert.assertEquals(0L, engine.annotate(outputUri, new ObjectMap()));
         System.out.println("Annotate + Overwrite :: Should annotate everything again");
         Assert.assertEquals(variants, engine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)));
+    }
+
+    @Test
+    public void testOtherTraitAssociationSources() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+
+        int limit = 5;
+        VariantQueryResult<Variant> queryResult = variantStorageEngine.get(new VariantQuery().clinical("hgmd"), new QueryOptions(QueryOptions.LIMIT, limit));
+        assertEquals(limit, queryResult.getNumResults());
+
+        queryResult = variantStorageEngine.get(new VariantQuery().sample("NA19600").clinical("hgmd"), new QueryOptions(QueryOptions.LIMIT, limit));
+        assertEquals(limit, queryResult.getNumResults());
     }
 }

@@ -62,7 +62,7 @@ public class CatalogSampleAnnotationsLoaderTest extends AbstractManagerTest {
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
         pedigree = loader.readPedigree(pedFileURL.getPath());
         pedFile = catalogManager.getFileManager().upload(studyFqn, new FileInputStream(new java.io.File(pedFileURL.toURI())),
-                new File().setPath("data/" + pedFileName), false, true, false, ownerToken).first();
+                new File().setPath("data/" + pedFileName), false, true, ownerToken).first();
     }
 
     @Test

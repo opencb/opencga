@@ -157,7 +157,9 @@ public class SampleIndexConfiguration {
                         FieldConfiguration.Source.ANNOTATION, "clinicalSource",
                         FieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar",
-                        "cosmic")
+                        "cosmic",
+                        "hgmd",
+                        "civic")
                         .setNullable(false)
         );
 

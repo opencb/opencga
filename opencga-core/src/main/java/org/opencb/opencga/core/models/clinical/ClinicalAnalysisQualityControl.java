@@ -8,17 +8,18 @@ import java.util.List;
 
 public class ClinicalAnalysisQualityControl {
 
-    @DataField(id = "summary", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_SUMMARY)
+    @DataField(id = "summary", description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_SUMMARY)
     private QualityControlSummary summary;
 
-    @DataField(id = "comments", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_COMMENTS)
+    @DataField(id = "comments", description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_COMMENTS)
     private List<ClinicalComment> comments;
 
-    @DataField(id = "comments", indexed = true,
-            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES)
+    @DataField(id = "files", description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES)
     private List<String> files;
+
+    public enum QualityControlSummary {
+        HIGH, MEDIUM, LOW, CRITICAL, UNKNOWN
+    }
 
     public ClinicalAnalysisQualityControl() {
     }
@@ -66,7 +67,4 @@ public class ClinicalAnalysisQualityControl {
         return this;
     }
 
-    public enum QualityControlSummary {
-        HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN
-    }
 }

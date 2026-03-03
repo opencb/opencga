@@ -167,7 +167,7 @@ public class CellBaseValidator {
 
         String serverVersion = getVersionFromServer();
         if (!supportsDataRelease(serverVersion)) {
-            logger.warn("DataRelease not supported on version '" + serverVersion + ".x'");
+            logger.warn("DataRelease not supported on version '{}.x'", serverVersion);
         } else {
             String dataRelease = getDataRelease();
             if (StringUtils.isEmpty(dataRelease)) {
@@ -288,6 +288,24 @@ public class CellBaseValidator {
     public static boolean supportsDataRelease(String serverVersion) {
         // Data Release support starts at version 5.1.0
         return VersionUtils.isMinVersion("5.1.0", serverVersion);
+    }
+
+    /**
+     * Check if the CellBase server supports Releases.
+     *
+     * Release support starts at version 6.7.0.
+     * This is different from Data Release support which starts at version 5.1.0
+     *
+     * @return
+     * @throws IOException
+     */
+    public boolean supportsRelease() throws IOException {
+        return supportsRelease(getVersionFromServer());
+    }
+
+    public static boolean supportsRelease(String serverVersion) {
+        // Release support starts at version 6.7.0
+        return VersionUtils.isMinVersion("6.7.0", serverVersion);
     }
 
     public boolean supportsDataReleaseActiveByDefaultIn() throws IOException {

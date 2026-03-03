@@ -1,0 +1,80 @@
+{
+  "method": {
+    "name": "example",
+    "version": "1.0.0"
+  },
+  "opencga": {
+    "host": "https://test.app.zettagenomics.com/task-7645/opencga",
+    "user": "test",
+    "organization": "test",
+    "study": ""
+  },
+  "input": {
+    "genes": ["BRCA1", "BRCA2", "TP53"],
+    "benign": "data/snv_benign_hg38_clean.vcf.gz",
+    "pathogenic": "data/snv_pathogenic_hg38.vcf.gz"
+  },
+  "execution": {
+    "logic": "hpo_query NOT IN gene_query",
+    "post_filtering": [
+      {
+        "filter": {
+          "type": "SNV",
+          "sampleData": "XISC>=3"
+        }
+      },
+      {
+        "exec": "..."
+      }
+    ],
+    "tier": [
+      {
+        "id": "tier1",
+        "name": "High Impact Variants",
+        "description": "Variants with high impact consequence types in known disease genes",
+        "filter": {
+          "genes": ["BRCA1", "BRCA2", "TP53"],
+          "consequence_types": ["transcript_ablation", "splice_acceptor_variant", "splice_donor_variant",
+            "stop_gained", "frameshift_variant", "stop_lost", "start_lost", "transcript_amplification",
+            "feature_elongation", "feature_truncation", "inframe_insertion", "inframe_deletion",
+            "missense_variant", "protein_altering_variant" ,"splice_region_variant"],
+          "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.01"]
+        }
+      },
+      {
+        "id": "tier2",
+        "name": "Moderate Impact Variants",
+        "description": "Variants with moderate impact consequence types in known disease genes",
+        "filter": {
+          "genes": ["BRCA1", "BRCA2", "TP53"],
+          "consequence_types": ["missense_variant", "inframe_insertion", "inframe_deletion",
+            "protein_altering_variant" ,"splice_region_variant"],
+          "population_frequency_alt": ["GNOMAD_GENOMES:ALL<0.01"]
+        }
+      }
+    ]
+  },
+  "queries": [
+    {
+      "id": "hpo_query",
+      "filters": {
+        "hpo": ["$CASE.phenotypes"],
+        "ct": "$INPUT.consequence_types"
+      }
+    },
+    {
+        "id": "gene_query",
+        "filters": {
+            "gene": "TSHB,LHX4,LAMC2,NOS1AP,LAMB3,TNNT2,MMACHC,GLUL,NPPA,CASQ2,PRDX1,TNNI3K,ACTA1,LMNA,TPO,MPV17,CALM2,SFTPB,SCN9A,HTRA2,LIPT1,SLC4A3,PAX8,DES,SGO1,CAV3,GBE1,HESX1,SLC25A20,TMEM43,ACY1,GLYCTK,SCN10A,SCN5A,CACNA1D,CRELD1,POU1F1,PPA2,TLL1,ANK2,GFM2,NDUFA2,PROP1,TRDN,TSPYL1,IYD,MTO1,DST,BRAT1,CACNA2D1,PRKAG2,GNB2,AKAP9,KCNH2,TG,SFTPC,LHX3,COQ4,GRIN1,NDUFA8,DOLK,KCNQ1,HEPHL1,KCNJ5,EFEMP2,SCN4B,TWNK,ECHS1,KCNA5,IFNG,TBX5,MYO1H,CACNA1C,CALM1,TSHR,HCN4,DUOXA2,GNB5,DUOX2,TSC2,ABCA3,COQ9,MYL4,SCO1,KCNJ2,CAVIN1,SCN4A,LAMA3,ASXL1,SNTA1,SLC5A5,TRPM4,UQCRFS1,CALM3,TANGO2,USP18,SCO2,KCNE2,KCNE1",
+            "ct": "missense_variant"
+        }
+    }
+  ],
+  "clinical_analysis": {
+    "create_interpretation": true
+  },
+  "output": {
+    "variants_report": "output/sjd_pipeline_per_variant_report.csv",
+    "summary": "output/sjd_pipeline_summary.csv"
+  }
+}

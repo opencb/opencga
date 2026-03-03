@@ -26,10 +26,9 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -41,9 +40,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOAD_SAMPLE_INDEX;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 
 /**
  * Created on 28/11/16.
@@ -69,8 +73,45 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, variantFileMetadata);
 
-        List<Integer> fileIds = Collections.singletonList(getFileId());
-        getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, TaskMetadata.Type.LOAD);
+        int studyId = getStudyId();
+//        getMetadataManager().addRunningTask(studyId, "load", fileIds, false, TaskMetadata.Type.LOAD);
+
+        boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
+        VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(getOptions());
+        AtomicLong ongoingLoads = new AtomicLong(0);
+        Set<Integer> sampleIdsFromFileId = new HashSet<>(getMetadataManager().getSampleIdsFromFileId(studyId, getFileId()));
+
+        // Allow to run the load if:
+        //   - There is no other load ongoing
+        //   - if there are other loads ongoing:
+        //      - They do not share samples with the current file being loaded
+        //      - The split data is by CHROMOSOME or REGION
+        getMetadataManager().addRunningTask(studyId, "load", Collections.singletonList(getFileId()), resume, TaskMetadata.Type.LOAD,
+                operation -> {
+                    if (operation.getName().equals("load")) {
+                        if (operation.currentStatus() == TaskMetadata.Status.ERROR) {
+                            Integer fileId = operation.getFileIds().get(0);
+                            String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
+                            logger.warn("Pending load operation for file " + fileName + " (" + fileId + ')');
+                        } else {
+                            ongoingLoads.incrementAndGet();
+                        }
+                        if (splitData != VariantStorageEngine.SplitData.CHROMOSOME && splitData != VariantStorageEngine.SplitData.REGION) {
+                            // Do not allow any concurrent load operation on files sharing samples
+                            for (Integer fileId : operation.getFileIds()) {
+                                Set<Integer> samples = getMetadataManager().getSampleIdsFromFileId(studyId, fileId);
+                                for (Integer sample : samples) {
+                                    if (sampleIdsFromFileId.contains(sample)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
     }
 
     @Override

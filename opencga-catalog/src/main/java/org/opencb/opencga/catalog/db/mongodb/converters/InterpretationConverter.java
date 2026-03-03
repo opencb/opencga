@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.InterpretationFindingsDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.panel.Panel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +39,8 @@ public class InterpretationConverter extends OpenCgaMongoConverter<Interpretatio
     @Override
     public Document convertToStorageType(Interpretation interpretation) {
         Document document = super.convertToStorageType(interpretation);
-        document.put(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), interpretation.getUid());
-        document.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), interpretation.getStudyUid());
+        document.put(InterpretationDBAdaptor.QueryParams.UID.key(), interpretation.getUid());
+        document.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), interpretation.getStudyUid());
 
         validateDocumentToUpdate(document);
 
@@ -46,10 +49,28 @@ public class InterpretationConverter extends OpenCgaMongoConverter<Interpretatio
 
     public void validateDocumentToUpdate(Document document) {
         validatePanelsToUpdate(document);
+        validateFindingsToUpdate(document, InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key());
+        validateFindingsToUpdate(document, InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key());
+    }
+
+    public void validateFindingsToUpdate(Document document, String key) {
+        List<Document> clinicalVariantList = document.getList(key, Document.class);
+        if (CollectionUtils.isNotEmpty(clinicalVariantList)) {
+            List<Document> finalClinicalVariantList = new ArrayList<>(clinicalVariantList.size());
+            for (Document clinicalVariant : clinicalVariantList) {
+                // We only store the id of the clinical variant
+                finalClinicalVariantList.add(new Document()
+                        .append(InterpretationFindingsDBAdaptor.QueryParams.ID.key(),
+                                clinicalVariant.getString(InterpretationFindingsDBAdaptor.QueryParams.ID.key()))
+                        .append(InterpretationFindingsDBAdaptor.QueryParams.VERSION.key(),
+                                clinicalVariant.getInteger(InterpretationFindingsDBAdaptor.QueryParams.VERSION.key())));
+            }
+            document.put(key, finalClinicalVariantList);
+        }
     }
 
     public void validatePanelsToUpdate(Document document) {
-        List<Document> panels = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key());
+        List<Document> panels = (List) document.get(InterpretationDBAdaptor.QueryParams.PANELS.key());
         if (panels != null) {
             // We make sure we don't store duplicates
             Map<Long, Panel> panelMap = new HashMap<>();
@@ -65,7 +86,7 @@ public class InterpretationConverter extends OpenCgaMongoConverter<Interpretatio
                 }
             }
 
-            document.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
+            document.put(InterpretationDBAdaptor.QueryParams.PANELS.key(),
                     panelMap.entrySet().stream()
                             .map(entry -> new Document()
                                     .append(PanelDBAdaptor.QueryParams.ID.key(), entry.getValue().getId())

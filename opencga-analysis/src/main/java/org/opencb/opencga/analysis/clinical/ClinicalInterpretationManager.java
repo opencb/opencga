@@ -314,7 +314,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                 // Only it's updated the following fields
                                 // Important to note that the results include the "new" clinical evidences
                                 clinicalVariant.setComments(primaryFinding.getComments())
-                                        .setFilters(primaryFinding.getFilters())
+                                        .setFilter(primaryFinding.getFilter())
                                         .setDiscussion(primaryFinding.getDiscussion())
                                         .setStatus(primaryFinding.getStatus())
                                         .setAttributes(primaryFinding.getAttributes());

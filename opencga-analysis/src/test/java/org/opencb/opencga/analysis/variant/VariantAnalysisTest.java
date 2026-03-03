@@ -1121,7 +1121,7 @@ public class VariantAnalysisTest {
         String fileStr = "clinical_analyses.json.gz";
         File file;
         try (InputStream stream = getClass().getResourceAsStream("/biofiles/" + fileStr)) {
-            file = catalogManager.getFileManager().upload(CANCER_STUDY, stream, new File().setPath("biofiles/" + fileStr), false, true, false, token).first();
+            file = catalogManager.getFileManager().upload(CANCER_STUDY, stream, new File().setPath("biofiles/" + fileStr), false, true, token).first();
         }
 
         System.out.println("file ID = " + file.getId());
@@ -1272,7 +1272,7 @@ public class VariantAnalysisTest {
         }
         if (file == null) {
             try (InputStream stream = getClass().getResourceAsStream("/" + folder + "/" + filename)) {
-                file = catalogManager.getFileManager().upload(STUDY, stream, new File().setPath(folder + "/" + filename), false, true, false, token).first();
+                file = catalogManager.getFileManager().upload(STUDY, stream, new File().setPath(folder + "/" + filename), false, true, token).first();
             }
         }
         return file;

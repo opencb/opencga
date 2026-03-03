@@ -205,6 +205,7 @@ public final class Enums {
         IMAGE_CONTENT,
         HEAD_CONTENT,
         TAIL_CONTENT,
+        UPDATE_CONTENT,
         INDEX,
         CHANGE_PERMISSION,
         REVERT,

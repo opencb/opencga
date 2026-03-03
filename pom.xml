@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>5.0.0</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,10 +43,10 @@
     </modules>
 
     <properties>
-        <cellbase.version>6.6.0</cellbase.version>
-        <biodata.version>5.0.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>5.0.0-SNAPSHOT</iva.version>
+        <cellbase.version>6.7.0-SNAPSHOT</cellbase.version>
+        <biodata.version>6.0.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>8.0.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>6.0.0-SNAPSHOT</iva.version>
 
 
         <oskar.version>0.2.0</oskar.version>
@@ -82,6 +82,7 @@
         <ga4gh.version>0.6.0a5</ga4gh.version>
         <jansi.version>2.4.0</jansi.version>
         <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
+        <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jcommander.version>1.69</jcommander.version>
         <jackson-codehaus.version>1.9.13</jackson-codehaus.version>
         <adal4j.version>1.6.3</adal4j.version>
@@ -159,6 +160,7 @@
         <rocksdbjni.version>10.2.1</rocksdbjni.version>
 
         <snakeyaml.version>1.33</snakeyaml.version>
+        <netty.version>4.1.131.Final</netty.version>
     </properties>
 
     <scm>
@@ -954,6 +956,11 @@
                 <version>${jakarta.ws.rs-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>${jakarta.annotation-api.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
                 <version>${jcommander.version}</version>
@@ -1238,6 +1245,14 @@
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <!-- Use netty-bom to align all netty modules version -->
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

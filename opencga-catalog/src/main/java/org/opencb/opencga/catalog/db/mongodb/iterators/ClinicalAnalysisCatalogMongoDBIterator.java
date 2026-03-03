@@ -51,6 +51,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
     private InterpretationMongoDBAdaptor interpretationDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
     private QueryOptions fileQueryOptions;
+    private QueryOptions reportedFileQueryOptions;
     private QueryOptions familyQueryOptions;
     private QueryOptions individualQueryOptions;
     private QueryOptions interpretationQueryOptions;
@@ -90,6 +91,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
 
         this.interpretationQueryOptions = createInnerQueryOptionsForVersionedEntity(options, INTERPRETATION.key(), false);
         this.fileQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FILES.key(), true);
+        this.reportedFileQueryOptions = createInnerQueryOptionsForVersionedEntity(options, REPORTED_FILES.key(), true);
         this.familyQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FAMILY.key(), false);
         this.individualQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PROBAND.key(), false);
         this.panelQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PANELS.key(), true);
@@ -126,6 +128,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
 
     private void fetchNextBatch() {
         Set<Long> fileSet = new HashSet<>();
+        Set<Long> reportedFileSet = new HashSet<>();
         Set<String> interpretationSet = new HashSet<>();
         Set<String> familySet = new HashSet<>();
         Set<String> individualSet = new HashSet<>();
@@ -157,6 +160,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
                     }
                 }
 
+                // Extract the reported files
+                files = clinicalDocument.getList(REPORTED_FILES.key(), Document.class);
+                if (CollectionUtils.isNotEmpty(files)) {
+                    for (Document file : files) {
+                        if (file != null && file.get(UID, Number.class).longValue() > 0) {
+                            reportedFileSet.add(file.get(UID, Number.class).longValue());
+                        }
+                    }
+                }
+
                 // Extract the panels
                 List<Document> panels = clinicalDocument.getList(PANELS.key(), Document.class);
                 if (CollectionUtils.isNotEmpty(panels)) {
@@ -183,7 +196,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
         }
 
         Map<String, Document> interpretationMap = fetchInterpretations(interpretationSet);
-        Map<Long, Document> fileMap = fetchFiles(fileSet);
+        Map<Long, Document> fileMap = fetchFiles(fileSet, fileQueryOptions);
+        Map<Long, Document> reportedFileMap = fetchFiles(reportedFileSet, reportedFileQueryOptions);
         Map<String, Document> familyMap = fetchFamilies(familySet);
         Map<String, Document> individualMap = fetchIndividuals(individualSet);
         Map<String, Document> panelMap = fetchPanels(panelSet);
@@ -192,7 +206,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
             // Fill data in clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 fillInterpretationData(clinicalAnalysis, interpretationMap);
-                fillFiles(clinicalAnalysis, fileMap);
+                fillFiles(clinicalAnalysis, FILES.key(), fileMap);
+                fillFiles(clinicalAnalysis, REPORTED_FILES.key(), reportedFileMap);
                 fillPanels(clinicalAnalysis, panelMap);
                 clinicalAnalysis.put(FAMILY.key(), fillFamilyData((Document) clinicalAnalysis.get(FAMILY.key()), familyMap));
                 clinicalAnalysis.put(PROBAND.key(), fillIndividualData((Document) clinicalAnalysis.get(PROBAND.key()), individualMap));
@@ -328,12 +343,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
         }
     }
 
-    private void fillFiles(Document clinicalAnalysis, Map<Long, Document> fileMap) {
+    private void fillFiles(Document clinicalAnalysis, String key, Map<Long, Document> fileMap) {
         if (fileMap.isEmpty()) {
             return;
         }
 
-        List<Document> sourceFiles = clinicalAnalysis.getList(FILES.key(), Document.class);
+        List<Document> sourceFiles = clinicalAnalysis.getList(key, Document.class);
         if (sourceFiles != null) {
             List<Document> targetFiles = new ArrayList<>(sourceFiles.size());
             for (Document file : sourceFiles) {
@@ -342,11 +357,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
                     targetFiles.add(fileMap.get(fileUid));
                 }
             }
-            clinicalAnalysis.put(FILES.key(), targetFiles);
+            clinicalAnalysis.put(key, targetFiles);
         }
     }
 
-    private Map<Long, Document> fetchFiles(Set<Long> fileSet) {
+    private Map<Long, Document> fetchFiles(Set<Long> fileSet, QueryOptions options) {
         Map<Long, Document> fileMap = new HashMap<>();
 
         if (fileSet.isEmpty()) {
@@ -361,9 +376,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends AnnotableCatalogM
         try {
             if (user != null) {
                 query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                fileList = fileDBAdaptor.nativeGet(clientSession, studyUid, query, fileQueryOptions, user).getResults();
+                fileList = fileDBAdaptor.nativeGet(clientSession, studyUid, query, options, user).getResults();
             } else {
-                fileList = fileDBAdaptor.nativeGet(clientSession, query, fileQueryOptions).getResults();
+                fileList = fileDBAdaptor.nativeGet(clientSession, query, options).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the files associated to the clinical analyses: {}", e.getMessage(), e);

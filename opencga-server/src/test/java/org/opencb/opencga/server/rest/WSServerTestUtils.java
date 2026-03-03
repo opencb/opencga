@@ -24,7 +24,7 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.commons.datastore.core.DataResponse;
+import org.junit.ClassRule;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -54,7 +54,9 @@ public class WSServerTestUtils {
     private Path configDir;
     public static final int PORT = 8889;
     public static final String DATABASE_PREFIX = "opencga_server_test_";
-    private CatalogManagerExternalResource catalogManagerResource;
+
+    @ClassRule
+    public static CatalogManagerExternalResource catalogManagerResource;
 
     @Deprecated
     public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {

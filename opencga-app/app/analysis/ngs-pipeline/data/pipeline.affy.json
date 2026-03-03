@@ -1,0 +1,11 @@
+{
+  "name": "Example Affy Pipeline",
+  "version": "1",
+  "description": "A sample bioinformatics pipeline configuration.",
+  "type": "affy",
+  "input": {
+    "chipType": "axiom-ku8",
+    "dataDir": "",
+    "indexDir": ""
+  }
+}

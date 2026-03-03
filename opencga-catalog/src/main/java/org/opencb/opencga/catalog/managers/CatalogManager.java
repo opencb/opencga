@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
-import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptorFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationMongoDBAdaptorFactory;

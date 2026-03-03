@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.slf4j.Logger;
 
 import java.io.UncheckedIOException;
 import java.util.Collection;
@@ -191,12 +192,13 @@ public abstract class ToolParams {
         for (BeanPropertyDefinition property : beanDescription.findProperties()) {
             Class<?> rawPrimaryType = property.getRawPrimaryType();
             internalPropertiesMap.put(property.getName(), rawPrimaryType);
-//            if (ToolParams.class.isAssignableFrom(rawPrimaryType)) {
-//                if (hasNestedFields(((Class<? extends ToolParams>) rawPrimaryType))) {
-//                    throw new IllegalStateException("Invalid param '" + property.getName() + "' from ToolParams " + aClass + ". "
-//                            + "Invalid multiple level nesting params");
-//                }
-//            }
+            if (ToolParams.class.isAssignableFrom(rawPrimaryType)) {
+                if (hasNestedFields(((Class<? extends ToolParams>) rawPrimaryType))) {
+                    Logger logger = org.slf4j.LoggerFactory.getLogger(aClass);
+                    logger.warn("The param '{}' from ToolParams {}: multiple level nesting params are not allowed and might lead to"
+                            + " unexpected behaviour.", property.getName(), aClass);
+                }
+            }
         }
         return internalPropertiesMap;
     }

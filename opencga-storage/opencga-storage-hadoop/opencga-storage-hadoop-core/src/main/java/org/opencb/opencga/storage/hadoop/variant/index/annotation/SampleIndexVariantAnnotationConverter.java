@@ -1,11 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -169,10 +167,10 @@ public class SampleIndexVariantAnnotationConverter {
             clinical = true;
             List<String> combinations = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
             Set<String> source = new HashSet<>();
-//            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
-//                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
-//                    clinicalSource.add(evidenceEntry.getSource().getName().toLowerCase());
-//                }
+            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
+                    source.add(evidenceEntry.getSource().getName().toLowerCase());
+                }
 //                if (evidenceEntry.getVariantClassification() != null) {
 //                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
 //                    if (clinicalSignificance != null) {
@@ -182,15 +180,8 @@ public class SampleIndexVariantAnnotationConverter {
 //                        clinicalSignificances.add(clinicalSignificance.toString());
 //                    }
 //                }
-//            }
-
-            for (String combination : combinations) {
-                if (combination.startsWith("cosmic")) {
-                    source.add("cosmic");
-                } else if (combination.startsWith("clinvar")) {
-                    source.add("clinvar");
-                }
             }
+
             schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(source), clinicalIndex);
             schema.getClinicalIndexSchema().getClinicalSignificanceField().write(combinations, clinicalIndex);
         }

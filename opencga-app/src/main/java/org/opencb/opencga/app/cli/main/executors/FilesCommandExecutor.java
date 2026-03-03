@@ -32,6 +32,7 @@ import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.FileAclEntryList;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.file.FileContentUpdateParams;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileFetch;
@@ -145,6 +146,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "annotation-sets-annotations-update":
                 queryResponse = updateAnnotationSetsAnnotations();
+                break;
+            case "content-update":
+                queryResponse = updateContent();
                 break;
             case "download":
                 queryResponse = download();
@@ -812,6 +816,38 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
         return openCGAClient.getFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
+    }
+
+    private RestResponse<File> updateContent() throws Exception {
+        logger.debug("Executing updateContent in Files command line");
+
+        FilesCommandOptions.UpdateContentCommandOptions commandOptions = filesCommandOptions.updateContentCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        FileContentUpdateParams fileContentUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/{file}/content/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            fileContentUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileContentUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "content", commandOptions.content, true);
+
+            fileContentUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), FileContentUpdateParams.class);
+        }
+        return openCGAClient.getFileClient().updateContent(commandOptions.file, fileContentUpdateParams, queryParams);
     }
 
     private RestResponse<DataInputStream> download() throws Exception {

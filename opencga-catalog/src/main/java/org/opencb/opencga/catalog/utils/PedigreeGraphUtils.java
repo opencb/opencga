@@ -39,6 +39,7 @@ public class PedigreeGraphUtils {
             Path rScriptPath = openCgaHome.resolve("analysis/pedigree-graph");
 
             Path outDir = Paths.get(scratchDir + "/pedigree-graph-" + family.getUuid() + "-" + System.nanoTime());
+            System.out.println("Creating pedigree graph in " + outDir.toAbsolutePath());
             outDir.toFile().mkdir();
             Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
 

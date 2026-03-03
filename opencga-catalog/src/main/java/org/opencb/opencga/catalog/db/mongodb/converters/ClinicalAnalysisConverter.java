@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -55,24 +54,7 @@ public class ClinicalAnalysisConverter extends AnnotableConverter<ClinicalAnalys
         validateProbandToUpdate(document);
         validatePanelsToUpdate(document);
         validateFilesToUpdate(document);
-        validateReportToUpdate(document);
-    }
-
-    public void validateReportToUpdate(Document document) {
-        Document report = document.get(ClinicalAnalysisDBAdaptor.QueryParams.REPORT.key(), Document.class);
-        if (report != null) {
-            List<Document> files = report.getList(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), Document.class);
-            if (CollectionUtils.isNotEmpty(files)) {
-                List<Document> filteredFiles = getReducedFileDocuments(files);
-                report.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.SUPPORTING_EVIDENCES.key(), filteredFiles);
-            }
-
-            files = report.getList(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), Document.class);
-            if (CollectionUtils.isNotEmpty(files)) {
-                List<Document> filteredFiles = getReducedFileDocuments(files);
-                report.put(ClinicalAnalysisDBAdaptor.ReportQueryParams.FILES.key(), filteredFiles);
-            }
-        }
+        validateReportedFilesToUpdate(document);
     }
 
     public void validateInterpretationToUpdate(Document document) {
@@ -164,6 +146,10 @@ public class ClinicalAnalysisConverter extends AnnotableConverter<ClinicalAnalys
 
     public void validateFilesToUpdate(Document document) {
         validateFilesToUpdate(document, ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
+    }
+
+    public void validateReportedFilesToUpdate(Document document) {
+        validateFilesToUpdate(document, ClinicalAnalysisDBAdaptor.QueryParams.REPORTED_FILES.key());
     }
 
     private static List<Document> getReducedFileDocuments(List<Document> files) {

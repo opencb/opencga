@@ -123,7 +123,7 @@ public class FileMetadataReaderTest extends AbstractManagerTest {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
             file = catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, ownerToken).first();
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, ownerToken).first();
         }
 
         assertTrue(file.getSize() > 0);
@@ -179,7 +179,7 @@ public class FileMetadataReaderTest extends AbstractManagerTest {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
             file = catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, ownerToken).first();
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, ownerToken).first();
         }
         assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -203,7 +203,7 @@ public class FileMetadataReaderTest extends AbstractManagerTest {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(bamFileUri)))) {
             file = catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, ownerToken).first();
+                    new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, ownerToken).first();
         }
 
         assertTrue(file.getSize() > 0);

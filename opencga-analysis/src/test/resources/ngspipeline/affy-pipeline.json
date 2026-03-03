@@ -1,0 +1,11 @@
+{
+  "name": "Example Pipeline",
+  "version": "1",
+  "description": "A sample bioinformatics pipeline configuration.",
+  "type": "affy",
+  "input": {
+    "chip": "" ,
+    "indexDir": "",
+    "dataDir": ""
+  }
+}

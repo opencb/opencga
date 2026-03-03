@@ -38,7 +38,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -149,7 +148,7 @@ public class RdInterpretationAnalysisToolTest {
         JacksonUtils.getDefaultObjectMapper().writerFor(RdInterpretationConfiguration.class).writeValue(updatedConfigPath.toFile(), interpretationConfiguration);
         InputStream inputStream = Files.newInputStream(updatedConfigPath);
         File opencgaFile = opencga.getCatalogManager().getFileManager().upload(clinicalTest.studyFqn, inputStream,
-                new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, false, clinicalTest.token).first();
+                new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, clinicalTest.token).first();
 
         toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, clinicalTest.studyFqn, new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)
@@ -197,7 +196,7 @@ public class RdInterpretationAnalysisToolTest {
         JacksonUtils.getDefaultObjectMapper().writerFor(RdInterpretationConfiguration.class).writeValue(updatedConfigPath.toFile(), interpretationConfiguration);
         InputStream inputStream = Files.newInputStream(updatedConfigPath);
         File opencgaFile = opencga.getCatalogManager().getFileManager().upload(clinicalTest.studyFqn, inputStream,
-                new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, false, clinicalTest.token).first();
+                new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, clinicalTest.token).first();
 
         toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, clinicalTest.studyFqn, new VariantSecondarySampleIndexParams()
                         .setFamilyIndex(true)

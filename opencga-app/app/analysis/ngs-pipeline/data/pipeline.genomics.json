@@ -1,0 +1,95 @@
+{
+  "name": "Example Pipeline",
+  "version": "1",
+  "description": "A sample bioinformatics pipeline configuration.",
+  "type": "genomics",
+  "input": {
+    "indexDir": "/home/imedina/soft/index-dir",
+    "samples": [
+      {
+        "id": "s1",
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
+        "somatic": false,
+        "role": "father"
+      },
+      {
+        "id": "s2",
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
+        "somatic": true,
+        "role": "mother"
+      },
+      {
+        "id": "son",
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
+        "somatic": false,
+        "role": "child"
+      }
+    ]
+  },
+  "steps": {
+    "qualityControl": {
+      "active": true,
+      "options": {
+      },
+      "tool": {
+        "id": "fastqc",
+        "parameters": {
+          "threads": 4
+        }
+      }
+    },
+    "alignment": {
+      "active": true,
+      "options": {
+        "clean": true,
+        "cram": false,
+        "qc": true
+      },
+      "tool": {
+        "id": "bwa",
+        "parameters": {
+          "t": 4
+        }
+      }
+    },
+    "variantCalling": {
+      "active": true,
+      "options": {
+        "clean": true,
+        "qc": true
+      },
+      "tools": [
+        {
+          "id": "gatk",
+          "options": {
+            "joint": true,
+            "mendelianError": false
+          },
+          "parameters": {
+          }
+        },
+        {
+          "id": "freebayes",
+          "active": false,
+          "parameters": {
+          }
+        },
+        {
+          "id": "mutect2",
+          "active": false,
+          "parameters": {
+          }
+        }
+      ]
+    }
+  }
+}

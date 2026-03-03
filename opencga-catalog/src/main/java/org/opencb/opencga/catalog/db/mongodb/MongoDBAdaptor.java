@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoException;
+import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
 import org.apache.commons.lang3.StringUtils;
@@ -101,12 +102,20 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         T execute(ClientSession session) throws CatalogException;
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
-        return runTransaction(body, null);
+    public <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
+        return runTransaction(body, null, null);
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException)
+    public <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException)
             throws CatalogException {
+        return runTransaction(inputBody, onException, null);
+    }
+
+    public <T> T runTransaction(TransactionBodyWithException<T> inputBody, Consumer<CatalogException> onException,
+                                   TransactionOptions transactionOptions) throws CatalogException {
+        if (transactionOptions == null) {
+            transactionOptions = TransactionOptions.builder().build();
+        }
         ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
         try {
             TransactionBodyWithException<T> body;
@@ -131,7 +140,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
                 } catch (CatalogException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
-            });
+            }, transactionOptions);
         } catch (CatalogDBRuntimeException e) {
             if (e.getCause() instanceof CatalogDBException) {
                 CatalogDBException cause = (CatalogDBException) e.getCause();

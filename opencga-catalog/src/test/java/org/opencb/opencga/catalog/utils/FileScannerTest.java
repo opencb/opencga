@@ -118,7 +118,7 @@ public class FileScannerTest extends AbstractManagerTest {
         DataResult<File> queryResult;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
             queryResult = catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, ownerToken);
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, ownerToken);
         }
         File file = queryResult.first();
 
@@ -143,11 +143,11 @@ public class FileScannerTest extends AbstractManagerTest {
         File file;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
             file = catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + "file1.txt"), false, true, true, ownerToken).first();
+                    new File().setPath(folder.getPath() + "file1.txt"), false, true, ownerToken).first();
         }
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(MongoBackupUtils.createDebugFile()))) {
             catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, ownerToken).first();
+                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, ownerToken).first();
         }
 
         // Create same file structure, and replace

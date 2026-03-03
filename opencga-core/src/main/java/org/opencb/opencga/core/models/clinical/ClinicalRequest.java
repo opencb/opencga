@@ -1,13 +1,24 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+
 import java.util.Map;
 
 public class ClinicalRequest {
 
+    @DataField(id = "id", description = "Unique identifier for the clinical request")
     private String id;
+
+    @DataField(id = "justification", description = "Justification for the clinical request")
     private String justification;
+
+    @DataField(id = "date", description = "Date of the clinical request")
     private String date;
+
+    @DataField(id = "responsible", description = "Responsible person for the clinical request")
     private ClinicalResponsible responsible;
+
+    @DataField(id = "attributes", description = "Additional attributes for the clinical request")
     private Map<String, Object> attributes;
 
     public ClinicalRequest() {

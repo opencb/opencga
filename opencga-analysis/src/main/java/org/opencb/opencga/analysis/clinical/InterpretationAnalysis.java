@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantFilter;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -134,10 +135,10 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 + SECONDARY_FINDINGS_FILENAME));
 
         for (ClinicalVariant primaryFinding : primaryFindings) {
-            primaryFinding.setFilters(query);
+            primaryFinding.setFilter(new ClinicalVariantFilter(query, GitRepositoryState.getInstance().getBuildVersion(), ""));
         }
         for (ClinicalVariant secondaryFinding : secondaryFindings) {
-            secondaryFinding.setFilters(query);
+            secondaryFinding.setFilter(new ClinicalVariantFilter(query, GitRepositoryState.getInstance().getBuildVersion(), ""));
         }
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()

@@ -24,12 +24,21 @@ public class CellBaseValidatorTest {
     public void testValidateFixVersion() throws IOException {
         CellBaseConfiguration c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "5.2", "3", null), "hsapiens", "grch38", true);
         Assert.assertEquals("v5.2", c.getVersion());
+        Assert.assertEquals("3", c.getDataRelease());
+
+        c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "6.7", "1", null), "hsapiens", "grch38", true);
+        Assert.assertEquals("v6.7", c.getVersion());
+        Assert.assertEquals("1", c.getDataRelease());
     }
 
     @Test
     public void testValidateUndefinedDataRelease() throws IOException {
         CellBaseConfiguration c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.2", null, null), "hsapiens", "grch38", true);
         Assert.assertEquals("v5.2", c.getVersion());
+        Assert.assertNotNull(c.getDataRelease());
+
+        c = CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v6.7", null, null), "hsapiens", "grch38", true);
+        Assert.assertEquals("v6.7", c.getVersion());
         Assert.assertNotNull(c.getDataRelease());
     }
 

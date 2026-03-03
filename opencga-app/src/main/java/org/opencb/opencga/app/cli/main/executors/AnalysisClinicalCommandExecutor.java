@@ -51,13 +51,23 @@ import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalReportConfiguration;
 import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
@@ -137,6 +147,15 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "load":
                 queryResponse = load();
+                break;
+            case "pipeline-affy-run":
+                queryResponse = runPipelineAffy();
+                break;
+            case "pipeline-genomics-run":
+                queryResponse = runPipelineGenomics();
+                break;
+            case "pipeline-prepare-run":
+                queryResponse = runPipelinePrepare();
                 break;
             case "rga-aggregation-stats":
                 queryResponse = aggregationStatsRga();
@@ -344,6 +363,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedMapIfNotEmpty(beanParams, "interpretation.defaultFilter", commandOptions.interpretationDefaultFilter, true);
+            putNestedIfNotEmpty(beanParams, "report.title", commandOptions.reportTitle, true);
+            putNestedIfNotEmpty(beanParams, "report.logo", commandOptions.reportLogo, true);
+            putNestedMapIfNotEmpty(beanParams, "report.library", commandOptions.reportLibrary, true);
 
             clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -387,12 +409,14 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "family.id", commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "panelLocked", commandOptions.panelLocked, true);
             putNestedIfNotEmpty(beanParams, "analyst.id", commandOptions.analystId, true);
-            putNestedIfNotEmpty(beanParams, "report.title", commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview", commandOptions.reportOverview, true);
-            putNestedIfNotEmpty(beanParams, "report.logo", commandOptions.reportLogo, true);
-            putNestedIfNotEmpty(beanParams, "report.signedBy", commandOptions.reportSignedBy, true);
-            putNestedIfNotEmpty(beanParams, "report.signature", commandOptions.reportSignature, true);
+            putNestedIfNotEmpty(beanParams, "report.recommendation", commandOptions.reportRecommendation, true);
+            putNestedIfNotEmpty(beanParams, "report.methodology", commandOptions.reportMethodology, true);
+            putNestedIfNotEmpty(beanParams, "report.limitations", commandOptions.reportLimitations, true);
+            putNestedIfNotEmpty(beanParams, "report.experimentalProcedure", commandOptions.reportExperimentalProcedure, true);
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
+            putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
+            putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
             putNestedIfNotEmpty(beanParams, "request.id", commandOptions.requestId, true);
             putNestedIfNotEmpty(beanParams, "request.justification", commandOptions.requestJustification, true);
             putNestedIfNotEmpty(beanParams, "request.date", commandOptions.requestDate, true);
@@ -719,6 +743,133 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), ClinicalAnalysisLoadParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().load(clinicalAnalysisLoadParams, queryParams);
+    }
+
+    private RestResponse<Job> runPipelineAffy() throws Exception {
+        logger.debug("Executing runPipelineAffy in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPipelineAffyCommandOptions commandOptions = analysisClinicalCommandOptions.runPipelineAffyCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        AffyClinicalPipelineWrapperParams affyClinicalPipelineWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/affy/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            affyClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), AffyClinicalPipelineWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "pipelineParams.chip", commandOptions.pipelineParamsChip, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            affyClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), AffyClinicalPipelineWrapperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPipelineAffy(affyClinicalPipelineWrapperParams, queryParams);
+    }
+
+    private RestResponse<Job> runPipelineGenomics() throws Exception {
+        logger.debug("Executing runPipelineGenomics in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPipelineGenomicsCommandOptions commandOptions = analysisClinicalCommandOptions.runPipelineGenomicsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        GenomicsClinicalPipelineWrapperParams genomicsClinicalPipelineWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/genomics/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            genomicsClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GenomicsClinicalPipelineWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            genomicsClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), GenomicsClinicalPipelineWrapperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPipelineGenomics(genomicsClinicalPipelineWrapperParams, queryParams);
+    }
+
+    private RestResponse<Job> runPipelinePrepare() throws Exception {
+        logger.debug("Executing runPipelinePrepare in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPipelinePrepareCommandOptions commandOptions = analysisClinicalCommandOptions.runPipelinePrepareCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        PrepareClinicalPipelineWrapperParams prepareClinicalPipelineWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/prepare/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            prepareClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PrepareClinicalPipelineWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "pipelineParams.referenceGenome", commandOptions.pipelineParamsReferenceGenome, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.indexes", commandOptions.pipelineParamsIndexes, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            prepareClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), PrepareClinicalPipelineWrapperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPipelinePrepare(prepareClinicalPipelineWrapperParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
@@ -1194,6 +1345,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("analystsAction", commandOptions.analystsAction);
+        queryParams.putIfNotNull("reportedFilesAction", commandOptions.reportedFilesAction);
         queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
@@ -1221,12 +1373,14 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "family.id", commandOptions.familyId, true);
             putNestedIfNotNull(beanParams, "locked", commandOptions.locked, true);
             putNestedIfNotEmpty(beanParams, "analyst.id", commandOptions.analystId, true);
-            putNestedIfNotEmpty(beanParams, "report.title", commandOptions.reportTitle, true);
             putNestedIfNotEmpty(beanParams, "report.overview", commandOptions.reportOverview, true);
-            putNestedIfNotEmpty(beanParams, "report.logo", commandOptions.reportLogo, true);
-            putNestedIfNotEmpty(beanParams, "report.signedBy", commandOptions.reportSignedBy, true);
-            putNestedIfNotEmpty(beanParams, "report.signature", commandOptions.reportSignature, true);
+            putNestedIfNotEmpty(beanParams, "report.recommendation", commandOptions.reportRecommendation, true);
+            putNestedIfNotEmpty(beanParams, "report.methodology", commandOptions.reportMethodology, true);
+            putNestedIfNotEmpty(beanParams, "report.limitations", commandOptions.reportLimitations, true);
+            putNestedIfNotEmpty(beanParams, "report.experimentalProcedure", commandOptions.reportExperimentalProcedure, true);
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
+            putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
+            putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
             putNestedIfNotEmpty(beanParams, "request.id", commandOptions.requestId, true);
             putNestedIfNotEmpty(beanParams, "request.justification", commandOptions.requestJustification, true);
             putNestedIfNotEmpty(beanParams, "request.date", commandOptions.requestDate, true);
@@ -1447,7 +1601,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("supportingEvidencesAction", commandOptions.supportingEvidencesAction);
+        queryParams.putIfNotNull("signaturesAction", commandOptions.signaturesAction);
+        queryParams.putIfNotNull("referencesAction", commandOptions.referencesAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -1465,15 +1620,20 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalReport.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "title", commandOptions.title, true);
             putNestedIfNotEmpty(beanParams, "overview", commandOptions.overview, true);
             putNestedIfNotEmpty(beanParams, "discussion.author", commandOptions.discussionAuthor, true);
             putNestedIfNotEmpty(beanParams, "discussion.date", commandOptions.discussionDate, true);
             putNestedIfNotEmpty(beanParams, "discussion.text", commandOptions.discussionText, true);
-            putNestedIfNotEmpty(beanParams, "logo", commandOptions.logo, true);
-            putNestedIfNotEmpty(beanParams, "signedBy", commandOptions.signedBy, true);
-            putNestedIfNotEmpty(beanParams, "signature", commandOptions.signature, true);
+            putNestedIfNotEmpty(beanParams, "recommendation", commandOptions.recommendation, true);
+            putNestedIfNotEmpty(beanParams, "methodology", commandOptions.methodology, true);
+            putNestedIfNotEmpty(beanParams, "limitations", commandOptions.limitations, true);
+            putNestedIfNotEmpty(beanParams, "experimentalProcedure", commandOptions.experimentalProcedure, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.author", commandOptions.conclusionAuthor, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.date", commandOptions.conclusionDate, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.text", commandOptions.conclusionText, true);
             putNestedIfNotEmpty(beanParams, "date", commandOptions.date, true);
+            putNestedIfNotNull(beanParams, "images", commandOptions.images, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             clinicalReport = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

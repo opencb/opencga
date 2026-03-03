@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -27,7 +28,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -52,6 +53,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
@@ -74,6 +76,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -489,6 +492,15 @@ public class StudyManager extends AbstractManager {
             /* CreateStudy */
             OpenCGAResult<Study> result = getStudyDBAdaptor(organizationId).insert(project, study, options);
 
+            try {
+                createDefaultFiles(study.getFqn(), token);
+            } catch (CatalogException e) {
+                // If we fail to create the default files, we will log the error, but we will not throw an exception.
+                logger.error("Could not create default files for study '{}'.", study.getFqn(), e);
+                result.setEvents(Collections.singletonList(new Event(Event.Type.WARNING,
+                        "Could not create default files for study '" + study.getFqn() + "'. " + e.getMessage())));
+            }
+
             auditManager.auditCreate(organizationId, userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -506,6 +518,30 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Error creating study '" + study.getId() + "'", e);
             }
         }
+    }
+
+    public void createDefaultFiles(String studyFqn, String token) throws CatalogException {
+        // Read file default_report_template.js from resources/clinical/report/template
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(ParamConstants.REPORT_TEMPLATE_FOLDER
+                + "/default_report_template.js");
+        if (inputStream == null) {
+            throw new CatalogIOException("Could not find default report template file in " + ParamConstants.RESOURCES_REPORT_TEMPLATE_FOLDER
+                    + "/default_report_template.js");
+        }
+        String defaultReportTemplate;
+        try {
+            defaultReportTemplate = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new CatalogIOException("Could not read default report template file in " + ParamConstants.RESOURCES_REPORT_TEMPLATE_FOLDER
+                    + "/default_report_template.js", e);
+        }
+        FileCreateParams createParams = new FileCreateParams()
+                .setContent(defaultReportTemplate)
+                .setPath(ParamConstants.RESOURCES_REPORT_TEMPLATE_FOLDER + "/default_report_template.js")
+                .setDescription("Default report template")
+                .setType(File.Type.FILE)
+                .setResource(true);
+        catalogManager.getFileManager().create(studyFqn, createParams, true, token);
     }
 
     public List<VariableSet> scanDefaultVariableSets(int release) throws CatalogException {

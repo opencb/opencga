@@ -86,6 +86,8 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;
 
+    public static final String OUTDIR_PARAM = "outdir";
+
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
@@ -555,15 +557,15 @@ public class JobManager extends ResourceManager<Job> {
      */
     static Map<String, String> extractFileParametersBySuffix(Map<String, Object> params) throws CatalogException {
         BiPredicate<String, Object> suffixFilter = (key, value) -> {
-            if (key.endsWith("File") || key.endsWith("Files") || key.endsWith("Dir")
-                    || key.endsWith("file") || key.endsWith("files") || key.endsWith("dir")) {
+            if (!key.equalsIgnoreCase(OUTDIR_PARAM) && (key.endsWith("File") || key.endsWith("Files") || key.endsWith("Dir")
+                    || key.endsWith("file") || key.endsWith("files") || key.endsWith("dir"))) {
                 return true;
             }
             return false;
         };
 
         Map<String, String> result = new LinkedHashMap<>();
-        extractPaths("", result, 0, 5, suffixFilter, "", params);
+        extractPaths("", result, 0, 10, suffixFilter, "", params);
 
         return result;
     }
@@ -585,7 +587,7 @@ public class JobManager extends ResourceManager<Job> {
         };
 
         Map<String, String> result = new LinkedHashMap<>();
-        extractPaths("", result, 0, 5, patternFilter, "", params);
+        extractPaths("", result, 0, 10, patternFilter, "", params);
 
 
         return result;

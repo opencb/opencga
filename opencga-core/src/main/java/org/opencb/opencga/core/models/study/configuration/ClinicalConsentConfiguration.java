@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.study.configuration;
 
 import java.util.List;
 
+@Deprecated
 public class ClinicalConsentConfiguration {
 
     private List<ClinicalConsent> consents;

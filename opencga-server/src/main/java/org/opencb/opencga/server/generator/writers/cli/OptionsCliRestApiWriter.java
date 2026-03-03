@@ -163,7 +163,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                 sb.append("        @ParametersDelegate\n");
                 sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                 sb.append("    \n");
-                if (restEndpoint.getMethod().equals("POST")) {
+                String bodyClassName = restEndpoint.getBodyClassName();
+                if (StringUtils.isNotEmpty(bodyClassName)) {
                     sb.append("        @Parameter(names = {\"--json-file\"}, description = \"File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.\", required = false, arity = 1)\n");
                     sb.append("        public String jsonFile;\n");
                     sb.append("    \n");

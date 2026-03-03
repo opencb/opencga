@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
@@ -51,7 +52,9 @@ public class InterpretationUtilsTest {
             assertEquals(1, (int) interpretationStats.getPrimaryFindings().getTierCount().get(tierName));
         }
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
-            if (value == ClinicalVariant.Status.NOT_REVIEWED || value == ClinicalVariant.Status.ARTIFACT) {
+            if (value == ClinicalVariant.Status.NOT_REVIEWED || value == ClinicalVariant.Status.ARTIFACT
+                    || value == ClinicalVariant.Status.VALIDATED || value == ClinicalVariant.Status.DISCARDED
+                    || value == ClinicalVariant.Status.REPORTED) {
                 assertEquals(0, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
             } else {
                 assertEquals(1, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
@@ -72,15 +75,6 @@ public class InterpretationUtilsTest {
                 assertEquals(2, (int) interpretationStats.getSecondaryFindings().getTierCount().get(tierName));
             }
         }
-        for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
-            if (value == ClinicalVariant.Status.REPORTED) {
-                assertEquals(2, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
-            } else if (value == ClinicalVariant.Status.ARTIFACT) {
-                assertEquals(0, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
-            } else {
-                assertEquals(1, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
-            }
-        }
         assertEquals(3, interpretationStats.getSecondaryFindings().getGeneCount().size());
         assertEquals(2, (int) interpretationStats.getSecondaryFindings().getGeneCount().get(GENE_NAMES.get(0)));
         assertEquals(2, (int) interpretationStats.getSecondaryFindings().getGeneCount().get(GENE_NAMES.get(1)));
@@ -90,7 +84,7 @@ public class InterpretationUtilsTest {
     private ClinicalVariant getClinicalVariant(int i) {
         String gene = GENE_NAMES.get(i % 3);
         String tier = TIER_NAMES.get(i % 4);
-        ClinicalVariant.Status status = Arrays.asList(ClinicalVariant.Status.values()).get(i % 5);
+        ClinicalVariant.Status status = Arrays.asList(ClinicalVariant.Status.values()).get(i % 8);
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setConsequenceTypes(Collections.singletonList(
                 new ConsequenceType(gene, gene, gene, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)));
@@ -104,6 +98,7 @@ public class InterpretationUtilsTest {
             variantEvidenceList.add(evidence);
         }
 
-        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, null, null, status, Collections.emptyList(), null);
+        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, status, Collections.emptyList(), Collections.emptyList(), null);
     }
 }

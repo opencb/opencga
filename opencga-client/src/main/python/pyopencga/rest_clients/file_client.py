@@ -407,11 +407,11 @@ class File(_ParentRestClient):
         :param str format: File format. Allowed values: ['VCF BCF GVCF TBI
             BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES
             COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF
-            IMAGE PLAIN BINARY NONE UNKNOWN']
+            IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN']
         :param str file_format: [DEPRECATED] File format. Allowed values:
             ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED
             TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
-            JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
+            JSON AVRO PARQUET PDF IMAGE PLAIN BINARY JAVASCRIPT NONE UNKNOWN']
         :param str bioformat: File bioformat. Allowed values:
             ['MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT
             MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX
@@ -422,7 +422,7 @@ class File(_ParentRestClient):
             OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF
             OTHER_PED VCF4 CVDB VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
-        :param str checksum: Expected MD5 file checksum.
+        :param str checksum: Expected SHA-256 file checksum.
         :param bool resource: Boolean field indicating whether the file is a
             resource or not.
         :param str study: Study [[organization@]project:]study where study and
@@ -568,6 +568,19 @@ class File(_ParentRestClient):
         """
 
         return self._post(category='files', resource='annotations/update', query_id=file, subcategory='annotationSets', second_query_id=annotation_set, data=data, **options)
+
+    def update_content(self, file, data=None, **options):
+        """
+        Overwrite the content of a file.
+        PATH: /{apiVersion}/files/{file}/content/update
+
+        :param dict data: File parameters. (REQUIRED)
+        :param str file: File id or name. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='files', resource='update', query_id=file, subcategory='content', data=data, **options)
 
     def download(self, file, **options):
         """

@@ -66,6 +66,8 @@ public class FamilyAnalysisTest extends GenericTest {
     private static String ORGANIZATION = "test";
     public final static String STUDY = ORGANIZATION + "@1000G:phase1";
 
+    private static boolean firstExecution = true;
+
     protected static Family family;
     protected static Family family2;
     protected static Family family3;
@@ -166,17 +168,18 @@ public class FamilyAnalysisTest extends GenericTest {
     }
 
     @Test
-    public void updateTest() throws CatalogException {
+    public void updateTest() throws Exception {
         FamilyUpdateParams updateParams = new FamilyUpdateParams();
 
         Family prevFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
         assertEquals(prevFamily.getPedigreeGraph().getBase64(), family.getPedigreeGraph().getBase64());
 
         QueryOptions queryOptions = new QueryOptions()
-                .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true)
-                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
-        Family updatedFamily = catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser)
-                .first();
+                .append(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+        catalogManager.getFamilyManager().update(studyId, family.getId(), updateParams, queryOptions, sessionIdUser);
+        // Wait for the async pedigree graph generation to finish before fetching the family again
+        catalogManager.getFamilyManager().asyncPedigreeWait();
+        Family updatedFamily = catalogManager.getFamilyManager().get(studyId, family.getId(), null, sessionIdUser).first();
 
         assertEquals(prevFamily.getPedigreeGraph().getBase64(), updatedFamily.getPedigreeGraph().getBase64());
         assertEquals(prevFamily.getVersion() + 1, updatedFamily.getVersion());
@@ -327,7 +330,7 @@ public class FamilyAnalysisTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(),
                 Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, QueryOptions.empty(), sessionIdUser);
 
         catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames.get(0)))),
@@ -356,6 +359,25 @@ public class FamilyAnalysisTest extends GenericTest {
                     new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleNames
                             .get(4)))), QueryOptions.empty(), sessionIdUser);
         }
+
+        if (firstExecution) {
+            try {
+                System.out.println("Sleeping for 2 minutes to allow downloading the Docker image that will calculate the pedigree graph");
+                Thread.sleep(5000); // Sleep for 2 minutes to allow downloading the Docker image that will calculate the pedigree graph
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            firstExecution = false;
+        } else {
+            try {
+                Thread.sleep(5000); // Sleep for 5 seconds to allow the async pedigree graph generation
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Fetch again as the pedigree graph is generated asynchronously
+        familyOpenCGAResult = familyManager.get(STUDY, family.getId(), QueryOptions.empty(), sessionIdUser);
 
         return familyOpenCGAResult;
     }
@@ -408,9 +430,15 @@ public class FamilyAnalysisTest extends GenericTest {
 
         List<Individual> members = Arrays.asList(granma, father, mother, child);
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
-        return familyOpenCGAResult;
+        try {
+            Thread.sleep(10000); // Sleep for 10 seconds to allow the async pedigree graph generation
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // Fetch again as the pedigree graph is generated asynchronously
+        return familyManager.get(STUDY, family.getId(), QueryOptions.empty(), sessionIdUser);
     }
 
     private static DataResult<Family> create2Member2GenerationDummyFamily(String familyName, String fatherSample, String childSample)
@@ -457,18 +485,23 @@ public class FamilyAnalysisTest extends GenericTest {
 
         Family family = new Family(familyName, familyName, null, null, members, "", numMembers, Collections.emptyList(), Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
+        familyManager.create(STUDY, family, null, INCLUDE_RESULT, sessionIdUser);
 
         catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(fatherSample))),
                 QueryOptions.empty(), sessionIdUser);
 
-
         catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
                 new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(childSample))),
                 QueryOptions.empty(), sessionIdUser);
 
-        return familyOpenCGAResult;
+        try {
+            Thread.sleep(5000); // Sleep for 5 seconds to allow the async pedigree graph generation
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // Fetch again as the pedigree graph is generated asynchronously
+        return familyManager.get(STUDY, family.getId(), QueryOptions.empty(), sessionIdUser);
     }
 
     public static void testBase64Image(PedigreeGraph pedigreeGraph, String resourceImage) throws IOException {
@@ -507,11 +540,13 @@ public class FamilyAnalysisTest extends GenericTest {
         assertEquals(expectedImage.getWidth(), actualImage.getWidth());
         assertEquals(expectedImage.getHeight(), actualImage.getHeight());
 
-        // Then, compare pixel by pixel (can be slow for large images, but robust)
-        for (int y = 0; y < expectedImage.getHeight(); y++) {
-            for (int x = 0; x < expectedImage.getWidth(); x++) {
-                assertEquals(expectedImage.getRGB(x, y), actualImage.getRGB(x, y));
-            }
-        }
+        // This code is commented because it can differ due to changes in docker opencga-ext-tools (OS, R version,...), and this
+        // docker is used by the R script that generates the image
+//        // Then, compare pixel by pixel (can be slow for large images, but robust)
+//        for (int y = 0; y < expectedImage.getHeight(); y++) {
+//            for (int x = 0; x < expectedImage.getWidth(); x++) {
+//                assertEquals(expectedImage.getRGB(x, y), actualImage.getRGB(x, y));
+//            }
+//        }
     }
 }

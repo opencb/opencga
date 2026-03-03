@@ -102,7 +102,7 @@ public class FileManager extends AnnotationSetManager<File> {
         INCLUDE_FILE_URI = keepFieldInQueryOptions(INCLUDE_FILE_IDS, FileDBAdaptor.QueryParams.URI.key());
         INCLUDE_FILE_URI_PATH = keepFieldsInQueryOptions(INCLUDE_FILE_URI, Arrays.asList(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 FileDBAdaptor.QueryParams.FORMAT.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -529,6 +529,87 @@ public class FileManager extends AnnotationSetManager<File> {
         return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
     }
 
+    public OpenCGAResult<File> updateContent(String studyStr, String fileId, String content, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileId", fileId)
+                .append("content", content)
+                .append("token", token);
+        try {
+
+            File file = internalGet(organizationId, study.getUid(), fileId, INCLUDE_FILE_URI_PATH, userId).first();
+            authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+
+            if (StringUtils.isEmpty(content)) {
+                throw new CatalogException("Missing content to be written to file.");
+            }
+            if (file.getType() != File.Type.FILE) {
+                throw new CatalogException("Cannot write content to a file of type '" + file.getType() + "'. Please, provide a file.");
+            }
+            // The file cannot exceed 5MB
+            if (file.getSize() > 5 * 1024 * 1024) {
+                throw new CatalogException("Cannot write content to a file larger than 5MB. The current size is " + file.getSize()
+                        + " bytes.");
+            }
+            // Can only write on files with the following formats
+            List<File.Format> allowedFormats = Arrays.asList(File.Format.TAB_SEPARATED_VALUES, File.Format.COMMA_SEPARATED_VALUES,
+                    File.Format.XML, File.Format.JSON, File.Format.PLAIN, File.Format.PED, File.Format.JAVASCRIPT, File.Format.NONE,
+                    File.Format.UNKNOWN);
+            if (file.getFormat() != null && !allowedFormats.contains(file.getFormat())) {
+                throw new CatalogException("Cannot write content to a file with format" + file.getFormat() + ". Supported formats: "
+                        + allowedFormats);
+            }
+            if (file.isExternal()) {
+                throw new CatalogException("Cannot write content to an external file.");
+            }
+            URI uri = file.getUri();
+
+            IOManager myIoManager;
+            try {
+                myIoManager = ioManagerFactory.get(uri);
+            } catch (IOException e) {
+                throw new CatalogException("Error accessing file: " + uri, e);
+            }
+
+            // Overwrite content of file
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))) {
+                myIoManager.copy(in, uri, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new CatalogException("Error writing content to file: " + uri, e);
+            }
+
+            // Recalculate size of file and update the database
+            try {
+                IOManager ioManager = ioManagerFactory.get(uri);
+                long fileSize = ioManager.getFileSize(uri);
+                String checksum = ioManager.calculateChecksum(uri);
+                ObjectMap params = new ObjectMap()
+                        .append(FileDBAdaptor.QueryParams.SIZE.key(), fileSize)
+                        .append(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
+                getFileDBAdaptor(organizationId).update(file.getUid(), params, null);
+                file.setSize(fileSize);
+                file.setChecksum(checksum);
+            } catch (IOException e) {
+                throw new CatalogException("Could not update the new size of the file: " + uri, e);
+            }
+
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(file), 1);
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, QueryOptions options,
                                             String token) throws CatalogException {
         return createFolder(studyStr, path, parents, description, "", options, token);
@@ -952,19 +1033,18 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr          study where the file will be uploaded.
-     * @param fileInputStream   Input stream of the file to be uploaded.
-     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
-     * @param overwrite         Overwrite the current file if any.
-     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param token             session id of the user performing the upload.
+     * @param studyStr        study where the file will be uploaded.
+     * @param fileInputStream Input stream of the file to be uploaded.
+     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite       Overwrite the current file if any.
+     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param token           session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String token) throws CatalogException {
-        return upload(studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
+                                      String token) throws CatalogException {
+        return upload(studyStr, fileInputStream, file, overwrite, parents, null, null, token);
     }
 
     /**
@@ -975,21 +1055,17 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file              File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite         Overwrite the current file if any.
      * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
-     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param expectedChecksum  Expected checksum to be checked
+     * @param expectedChecksum  Expected SHA-256 checksum to be checked
      * @param expectedSize      Expected file size
      * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+                                      String expectedChecksum, Long expectedSize, String token)
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-        if (StringUtils.isNotEmpty(expectedChecksum)) {
-            calculateChecksum = true;
-        }
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1001,7 +1077,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("file", file)
                 .append("overwrite", overwrite)
                 .append("parents", parents)
-                .append("calculateChecksum", calculateChecksum)
                 .append("expectedChecksum", expectedChecksum)
                 .append("expectedSize", expectedSize)
                 .append("token", token);
@@ -1081,15 +1156,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     }
                 }
 
-                if (calculateChecksum) {
-                    checksum = ioManager.calculateChecksum(tempFileUri);
-                    if (StringUtils.isNotEmpty(expectedChecksum)) {
-                        // Validate checksum
-                        if (!checksum.equals(expectedChecksum)) {
-                            throw new CatalogIOException("MD5 Checksum mismatch!"
-                                    + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
-                                    + " Error uploading file " + file.getPath());
-                        }
+                // Always calculate SHA-256 checksum for uploaded files
+                checksum = ioManager.calculateChecksum(tempFileUri);
+                if (StringUtils.isNotEmpty(expectedChecksum)) {
+                    // Validate checksum
+                    if (!checksum.equals(expectedChecksum)) {
+                        throw new CatalogIOException("SHA-256 Checksum mismatch!"
+                                + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
+                                + " Error uploading file " + file.getPath());
                     }
                 }
             } catch (Exception e) {
@@ -1116,7 +1190,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 } else {
                     ioManager.move(tempFileUri, file.getUri());
                 }
-                if (calculateChecksum && !checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
+                // Verify the checksum after moving the file
+                if (!checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
                     throw new CatalogIOException("Error moving file from " + tempFileUri + " to " + file.getUri());
                 }
 
@@ -3372,6 +3447,16 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<Long> count = getClinicalAnalysisDBAdaptor(organizationId).count(clinicalQuery);
         if (count.getNumMatches() > 0) {
             throw new CatalogException("The file " + file.getName() + " is part of " + count.getNumMatches() + " clinical analyses");
+        }
+
+        clinicalQuery = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.REPORTED_FILES_UID.key(), file.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+        count = getClinicalAnalysisDBAdaptor(organizationId).count(clinicalQuery);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogException("The file " + file.getName() + " is part of the reported files of " + count.getNumMatches()
+                    + " clinical analyses");
         }
 
 
