@@ -417,16 +417,15 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         // Read GT from per-file mgt (FILE_GENOTYPE_FIELD) for ALL samples.
         // In Stage 2, mgt is the only source of GT (written for all samples, not just MULTI).
         // Samples appearing in multiple file mgt maps get a primary GT and DISCREPANCY IssueEntries.
+        // Read from ALL file documents (not only output files) so genotypes are available even when
+        // STUDIES_FILES is excluded from the output projection.
         if (study != null && !excludeGenotypes) {
-            // sampleId -> { fileIndex -> genotype } — collected from all included files' mgt maps.
+            // sampleId -> { fileId -> genotype } — collected from all available files' mgt maps.
             Map<Integer, Map<Integer, String>> sampleFileGts = new HashMap<>();
 
-            for (int i = 0; i < includeFileIds.size(); i++) {
-                Integer fileId = includeFileIds.get(i);
-                Document fileDoc = files.get(fileId);
-                if (fileDoc == null) {
-                    continue;
-                }
+            for (Map.Entry<Integer, Document> fileEntry : files.entrySet()) {
+                Integer fileId = fileEntry.getKey();
+                Document fileDoc = fileEntry.getValue();
                 Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
                 if (mgt == null) {
                     continue;
@@ -435,7 +434,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     String genotype = genotypeToDataModelType(mgtEntry.getKey());
                     for (Integer sampleId : (List<Integer>) mgtEntry.getValue()) {
                         if (sampleNames.containsKey(sampleId)) {
-                            sampleFileGts.computeIfAbsent(sampleId, k -> new LinkedHashMap<>()).put(i, genotype);
+                            sampleFileGts.computeIfAbsent(sampleId, k -> new LinkedHashMap<>()).put(fileId, genotype);
                         }
                     }
                 }
@@ -443,7 +442,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
             for (Map.Entry<Integer, Map<Integer, String>> sampleEntry : sampleFileGts.entrySet()) {
                 Integer sampleId = sampleEntry.getKey();
-                Map<Integer, String> fileGts = sampleEntry.getValue();
+                Map<Integer, String> fileGts = sampleEntry.getValue(); // fileId -> genotype
                 String sampleName = getSampleName(studyId, sampleId);
                 Integer samplePosition = samplesPositionToReturn.get(sampleName);
                 if (samplePosition == null) {
@@ -453,7 +452,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     // Single file: just override the GT (may have been set from legacy study-level gt or default).
                     Map.Entry<Integer, String> entry = fileGts.entrySet().iterator().next();
                     sampleEntries.get(samplePosition).getData().set(0, entry.getValue());
-                    sampleEntries.get(samplePosition).setFileIndex(entry.getKey());
+                    int outputIdx = includeFileIds.indexOf(entry.getKey());
+                    if (outputIdx >= 0) {
+                        sampleEntries.get(samplePosition).setFileIndex(outputIdx);
+                    }
                     continue;
                 }
                 // Multiple files: select the primary file (the one with MAIN_ALT genotype; ties resolved by first).
@@ -463,11 +465,14 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                         primaryEntry = fg;
                     }
                 }
-                // Update the primary SampleEntry with the winner GT and its fileIndex
+                // Update the primary SampleEntry with the winner GT and its fileIndex (if in output)
                 sampleEntries.get(samplePosition).getData().set(0, primaryEntry.getValue());
-                sampleEntries.get(samplePosition).setFileIndex(primaryEntry.getKey());
+                int primaryOutputIdx = includeFileIds.indexOf(primaryEntry.getKey());
+                if (primaryOutputIdx >= 0) {
+                    sampleEntries.get(samplePosition).setFileIndex(primaryOutputIdx);
+                }
                 // Update the primary entry's extra FORMAT fields from the primary file
-                int primaryFileId = includeFileIds.get(primaryEntry.getKey());
+                int primaryFileId = primaryEntry.getKey();
                 String[] primaryExtraValues = multiFileExtraValues
                         .getOrDefault(sampleId, Collections.emptyMap()).get(primaryFileId);
                 if (primaryExtraValues != null) {
@@ -490,7 +495,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     List<String> issueData = new ArrayList<>(sampleDataKeys.size());
                     issueData.add(fg.getValue()); // GT
                     // Populate extra FORMAT fields from the secondary file's sampleData
-                    int secondaryFileId = includeFileIds.get(fg.getKey());
+                    int secondaryFileId = fg.getKey();
                     String[] secondaryExtraValues = multiFileExtraValues
                             .getOrDefault(sampleId, Collections.emptyMap()).get(secondaryFileId);
                     for (int j = 0; j < extraFields.size(); j++) {
@@ -500,7 +505,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                             issueData.add(UNKNOWN_FIELD);
                         }
                     }
-                    SampleEntry issueEntry = new SampleEntry(sampleName, fg.getKey(), issueData);
+                    int secondaryOutputIdx = includeFileIds.indexOf(secondaryFileId);
+                    SampleEntry issueEntry = new SampleEntry(sampleName, secondaryOutputIdx >= 0 ? secondaryOutputIdx : null, issueData);
                     issues.add(new IssueEntry(IssueType.DISCREPANCY, issueEntry, Collections.emptyMap()));
                 }
             }

@@ -1154,9 +1154,10 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
                         fe.setData(Collections.emptyMap());
                     }
                     v.getStudies().get(0).getFiles().removeIf(fe -> fe.getCall() == null);
-                    if (v.getStudies().get(0).getFiles().isEmpty()) {
-                        v.getStudies().get(0).getSamples().forEach(s -> s.setFileIndex(null));
-                    }
+                    // STUDIES_SECONDARY_ALTERNATES and STUDIES_FILES are not in the INCLUDE options,
+                    // so the DBAdaptor won't return them. Clear from SampleIndex full-data result.
+                    v.getStudies().get(0).setSecondaryAlternates(Collections.emptyList());
+                    v.getStudies().get(0).getSamples().forEach(s -> s.setFileIndex(null));
                     return v;
                 });
 

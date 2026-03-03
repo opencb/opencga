@@ -622,7 +622,10 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
          */
         private void addSecondaryAlternates(List<Variant> toReadFull) {
 //            StopWatch stopWatch = StopWatch.createStarted();
-            Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(parsedQuery.getInputOptions()));
+            Set<VariantField> userIncludeFields = VariantField.getIncludeFields(parsedQuery.getInputOptions());
+            boolean includeSecondaryAlternates = userIncludeFields.contains(VariantField.STUDIES_SECONDARY_ALTERNATES);
+            boolean includeFiles = userIncludeFields.contains(VariantField.STUDIES_FILES);
+            Set<VariantField> includeFields = new HashSet<>(userIncludeFields);
             includeFields.add(VariantField.STUDIES_SECONDARY_ALTERNATES);
             includeFields.add(VariantField.STUDIES_FILES);
 
@@ -653,11 +656,14 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 StudyEntry studyExtra = variantExtra.getStudies().get(0);
                 StudyEntry study = variant.getStudies().get(0);
 
-                study.setSecondaryAlternates(studyExtra.getSecondaryAlternates());
-
+                if (includeSecondaryAlternates) {
+                    study.setSecondaryAlternates(studyExtra.getSecondaryAlternates());
+                }
+                // Always merge file entries to carry the original call (context allele for multiallelic splits),
+                // mirroring the DBAdaptor's "extraFiles" behavior. Only set fileIndex when files are requested.
                 mergeFileEntries(study, studyExtra.getFiles(), (fe, newFe) -> {
                     fe.setCall(newFe.getCall());
-                });
+                }, includeFiles);
                 // merge sampleEntries
                 for (int i = 0; i < includeSamples.size(); i++) {
                     SampleEntry sample = study.getSample(i);
@@ -689,6 +695,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 filesMap.put(variant.toString(), fileEntries);
             }
 
+            boolean includeFiles = VariantField.getIncludeFields(parsedQuery.getInputOptions()).contains(VariantField.STUDIES_FILES);
             for (Variant variant : variants) {
                 List<FileEntry> fileEntries = filesMap.get(variant.toString());
                 if (fileEntries == null) {
@@ -700,13 +707,18 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 StudyEntry studyEntry = variant.getStudies().get(0);
                 mergeFileEntries(studyEntry, fileEntries, (fe, newFe) -> {
                     fe.setCall(newFe.getCall());
-                });
+                }, includeFiles);
             }
 //            logger.info(" # Fetch {} INDEL original call in {}", filesMap.size(), TimeUtils.durationToString(stopWatch));
         }
 
         private void mergeFileEntries(StudyEntry studyEntry, List<FileEntry> newFileEntries,
                                       BiConsumer<FileEntry, FileEntry> merge) {
+            mergeFileEntries(studyEntry, newFileEntries, merge, true);
+        }
+
+        private void mergeFileEntries(StudyEntry studyEntry, List<FileEntry> newFileEntries,
+                                      BiConsumer<FileEntry, FileEntry> merge, boolean setFileIndex) {
             if (studyEntry.getFiles() == null) {
                 studyEntry.setFiles(new ArrayList<>(newFileEntries.size()));
             }
@@ -715,7 +727,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 if (fileEntry == null) {
                     fileEntry = new FileEntry(newFileEntry.getFileId(), null, new HashMap<>());
                     studyEntry.getFiles().add(fileEntry);
-                    if (filesFromSample.contains(fileEntry.getFileId())) {
+                    if (setFileIndex && filesFromSample.contains(fileEntry.getFileId())) {
                         SampleEntry sampleEntry = studyEntry.getSample(sampleName);
                         if (sampleEntry.getFileIndex() == null) {
                             sampleEntry.setFileIndex(studyEntry.getFiles().size() - 1);
