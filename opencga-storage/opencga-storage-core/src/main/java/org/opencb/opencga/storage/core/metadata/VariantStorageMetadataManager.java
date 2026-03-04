@@ -2307,13 +2307,41 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         } else {
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
-                logger.info("Register new file '{}' with id {}", fileName, fileId);
-                FileMetadata fileMetadata = new FileMetadata()
-                        .setId(fileId)
-                        .setName(fileName)
-                        .setPath(filePath)
-                        .setType(type);
-                unsecureUpdateFileMetadata(studyId, fileMetadata);
+                // Re-check for concurrent registration of the same filename.
+                // fileIdCache does not cache null values, so this always hits the DB inside the lock.
+                Integer concurrentFileId = getFileIdOrDuplicated(studyId, fileName);
+                if (concurrentFileId != null) {
+                    if (concurrentFileId != DUPLICATED_NAME_ID) {
+                        FileMetadata existingFm = getFileMetadata(studyId, concurrentFileId);
+                        if (existingFm.getPath().equals(filePath)) {
+                            // Same file was registered concurrently — return the existing ID
+                            return concurrentFileId;
+                        }
+                        if (!existingFm.isDuplicatedName()) {
+                            logger.info("File '{}' already registered with a different path (concurrent registration).", fileName);
+                            markFileAsDuplicated(studyId, concurrentFileId);
+                        }
+                        fileIdCache.clear();
+                        fileNameCache.clear();
+                    }
+                    // Register new file with full path since name is duplicated
+                    logger.info("A file with name '{}' is already indexed (concurrent). Register with file path as file name", fileName);
+                    FileMetadata fm = new FileMetadata()
+                            .setId(fileId)
+                            .setName(filePath)
+                            .setPath(filePath)
+                            .setDuplicatedName(fileName)
+                            .setType(type);
+                    unsecureUpdateFileMetadata(studyId, fm);
+                } else {
+                    logger.info("Register new file '{}' with id {}", fileName, fileId);
+                    FileMetadata fileMetadata = new FileMetadata()
+                            .setId(fileId)
+                            .setName(fileName)
+                            .setPath(filePath)
+                            .setType(type);
+                    unsecureUpdateFileMetadata(studyId, fileMetadata);
+                }
             }
         }
 
