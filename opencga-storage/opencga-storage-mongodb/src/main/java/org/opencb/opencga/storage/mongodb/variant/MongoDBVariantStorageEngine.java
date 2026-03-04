@@ -37,7 +37,6 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -608,16 +607,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
-        if (isValidParam(originalQuery, SAMPLE_MENDELIAN_ERROR)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_MENDELIAN_ERROR, getStorageEngineId());
-        }
-        if (isValidParam(originalQuery, SAMPLE_DE_NOVO)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO, getStorageEngineId());
-        }
-        if (isValidParam(originalQuery, SAMPLE_DE_NOVO_STRICT)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO_STRICT, getStorageEngineId());
-        }
-
         Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = metadataManager.getStudyNames();
 
