@@ -47,15 +47,18 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.trash.DocumentToTrashVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -190,6 +193,229 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
 //        return variantsCollection.remove(mongoQuery, options);
 //    }
+
+    /**
+     * Remove specific samples from partially deleted files. For each variant containing a partially deleted file,
+     * the sample IDs are removed from the genotype map (mgt) and sample data fields. If a file doc ends up with
+     * no samples in the mgt, it is removed entirely.
+     *
+     * @param studyId           Study ID
+     * @param sampleIds         Set of sample IDs to remove
+     * @param partialFileIds    Set of file IDs that are partially deleted (some samples remain)
+     * @param timestamp         Timestamp of the operation
+     */
+    @SuppressWarnings("unchecked")
+    public void removeSamples(int studyId, Set<Integer> sampleIds, Set<Integer> partialFileIds, long timestamp) {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        boolean compressExtraParams = studyMetadata.getAttributes()
+                .getBoolean(EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+
+        for (Integer fileId : partialFileIds) {
+            // Get the file's sample list (ordered) BEFORE metadata update to know protobuf positions
+            LinkedHashSet<Integer> fileSampleIds = metadataManager.getSampleIdsFromFileId(studyId, fileId);
+            // Build the set of positions to keep (positions of non-removed samples)
+            List<Integer> fileSampleList = new ArrayList<>(fileSampleIds);
+            Set<Integer> positionsToRemove = new HashSet<>();
+            for (int i = 0; i < fileSampleList.size(); i++) {
+                if (sampleIds.contains(fileSampleList.get(i))) {
+                    positionsToRemove.add(i);
+                }
+            }
+
+            // Find all variants containing this file
+            Bson fileQuery = elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                    and(eq(STUDYID_FIELD, studyId), eq(FILEID_FIELD, fileId)));
+
+            List<Bson> updateQueries = new ArrayList<>();
+            List<Bson> updateUpdates = new ArrayList<>();
+
+            try (MongoDBIterator<Document> cursor = variantsCollection.nativeQuery()
+                    .find(fileQuery, null, new QueryOptions(MongoDBCollection.BATCH_SIZE, 200))) {
+                while (cursor.hasNext()) {
+                    Document doc = cursor.next();
+                    Object docId = doc.get("_id");
+                    List<Document> files = doc.getList(DocumentToVariantConverter.FILES_FIELD, Document.class);
+
+                    for (Document fileDoc : files) {
+                        if (fileDoc.getInteger(STUDYID_FIELD) != studyId
+                                || fileDoc.getInteger(FILEID_FIELD) != fileId) {
+                            continue;
+                        }
+
+                        // Remove sample IDs from each genotype entry in mgt.
+                        // Note: mgt only stores non-default genotypes (default is usually 0/0).
+                        // An empty mgt means all remaining samples have the default genotype —
+                        // we must still keep the file doc so those samples are present.
+                        Document mgt = fileDoc.get(FILE_GENOTYPE_FIELD, Document.class);
+                        Document newMgt = new Document();
+                        if (mgt != null) {
+                            for (Map.Entry<String, Object> entry : mgt.entrySet()) {
+                                String gt = entry.getKey();
+                                List<Integer> gtSamples = new ArrayList<>((List<Integer>) entry.getValue());
+                                gtSamples.removeIf(sampleIds::contains);
+                                if (!gtSamples.isEmpty()) {
+                                    newMgt.put(gt, gtSamples);
+                                }
+                            }
+                        }
+
+                        // Always update the file doc in place (partially deleted files always
+                        // have remaining samples — the file doc must be kept).
+                        Bson filter = and(eq("_id", docId),
+                                elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                                        and(eq(STUDYID_FIELD, studyId), eq(FILEID_FIELD, fileId))));
+
+                        List<Bson> setFields = new ArrayList<>();
+                        setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                + FILE_GENOTYPE_FIELD, newMgt));
+
+                        // Rewrite protobuf sampleData, removing positions for deleted samples
+                        Document sampleData = fileDoc.get(SAMPLE_DATA_FIELD, Document.class);
+                        if (sampleData != null) {
+                            Document newSampleData = rewriteSampleData(
+                                    sampleData, positionsToRemove, compressExtraParams);
+                            setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                    + SAMPLE_DATA_FIELD, newSampleData));
+                        }
+
+                        // Remove sample filterable data entries (sfd is keyed by sampleId)
+                        Document sfd = fileDoc.get(SAMPLE_FILTERABLE_DATA_FIELD, Document.class);
+                        if (sfd != null) {
+                            Document newSfd = removeSampleEntriesFromSfd(sfd, sampleIds);
+                            setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                    + SAMPLE_FILTERABLE_DATA_FIELD, newSfd));
+                        }
+
+                        setFields.add(getSetIndexNotSynchronized(timestamp));
+                        updateQueries.add(filter);
+                        updateUpdates.add(combine(setFields));
+                        break; // Found the file doc for this fileId
+                    }
+
+                    // Batch execute
+                    if (updateQueries.size() >= 500) {
+                        flushBulkUpdates(updateQueries, updateUpdates);
+                    }
+                }
+            }
+            // Final batch
+            flushBulkUpdates(updateQueries, updateUpdates);
+        }
+
+        // Cleanup: remove study entries from variants that no longer have any files for this study
+        Bson noFilesQuery = and(
+                elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                not(elemMatch(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, studyId)))
+        );
+        removeStudyFromVariants(studyId, noFilesQuery, timestamp);
+
+        // Purge empty variants
+        removeEmptyVariants();
+    }
+
+    /**
+     * Rewrite the sampleData document by removing protobuf values at the given positions.
+     * Each key in sampleData is a FORMAT field name (e.g., "gl", "dp"), and each value is a
+     * protobuf-encoded byte array containing one value per sample in file order.
+     */
+    private Document rewriteSampleData(Document sampleData, Set<Integer> positionsToRemove, boolean compressExtraParams) {
+        Document result = new Document();
+        for (Map.Entry<String, Object> entry : sampleData.entrySet()) {
+            if (!(entry.getValue() instanceof org.bson.types.Binary)) {
+                result.put(entry.getKey(), entry.getValue());
+                continue;
+            }
+            byte[] byteArray = ((org.bson.types.Binary) entry.getValue()).getData();
+            if (compressExtraParams && byteArray.length > 0) {
+                try {
+                    byteArray = CompressionUtils.decompress(byteArray);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } catch (java.util.zip.DataFormatException ignore) {
+                    // Not compressed
+                }
+            }
+            try {
+                if (byteArray.length == 0) {
+                    result.put(entry.getKey(), entry.getValue());
+                    continue;
+                }
+                VariantMongoDBProto.OtherFields otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
+                VariantMongoDBProto.OtherFields.Builder builder = VariantMongoDBProto.OtherFields.newBuilder();
+
+                if (otherFields.getIntValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getIntValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addIntValues(otherFields.getIntValues(i));
+                        }
+                    }
+                } else if (otherFields.getFloatValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getFloatValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addFloatValues(otherFields.getFloatValues(i));
+                        }
+                    }
+                } else if (otherFields.getStringValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getStringValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addStringValues(otherFields.getStringValues(i));
+                        }
+                    }
+                }
+
+                byte[] newBytes = builder.build().toByteArray();
+                if (compressExtraParams && newBytes.length > 50) {
+                    try {
+                        newBytes = CompressionUtils.compress(newBytes);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }
+                result.put(entry.getKey(), newBytes);
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw new UncheckedIOException(new IOException(e));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Remove sample ID entries from the sfd document (field → {sampleId → value}).
+     */
+    private Document removeSampleEntriesFromSfd(Document sfd, Set<Integer> sampleIds) {
+        Document result = new Document();
+        for (Map.Entry<String, Object> fieldEntry : sfd.entrySet()) {
+            if (fieldEntry.getValue() instanceof Document) {
+                Document fieldData = (Document) fieldEntry.getValue();
+                Document newFieldData = new Document();
+                for (Map.Entry<String, Object> e : fieldData.entrySet()) {
+                    try {
+                        int sid = Integer.parseInt(e.getKey());
+                        if (!sampleIds.contains(sid)) {
+                            newFieldData.put(e.getKey(), e.getValue());
+                        }
+                    } catch (NumberFormatException ex) {
+                        newFieldData.put(e.getKey(), e.getValue());
+                    }
+                }
+                if (!newFieldData.isEmpty()) {
+                    result.put(fieldEntry.getKey(), newFieldData);
+                }
+            } else {
+                result.put(fieldEntry.getKey(), fieldEntry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private void flushBulkUpdates(List<Bson> queries, List<Bson> updates) {
+        if (!queries.isEmpty()) {
+            variantsCollection.update(queries, updates, new QueryOptions());
+            queries.clear();
+            updates.clear();
+        }
+    }
 
     /**
      * Remove the given file from the database with all the samples it has.

@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.junit.Assume;
 import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -15,11 +14,6 @@ import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
  */
 @Category(MediumTests.class)
 public class MongoDBVariantStorageEngineSplitDataTest extends VariantStorageEngineSplitDataTest implements MongoDBVariantStorageTest {
-
-    @Override
-    public void testLoadAndRemoveSamples() throws Exception {
-        Assume.assumeTrue("removeSamples not implemented for MongoDB", false);
-    }
 
     /**
      * MongoDB's {@code index()} bypasses {@code load()} and calls {@code stage()} / {@code directLoad()} directly.

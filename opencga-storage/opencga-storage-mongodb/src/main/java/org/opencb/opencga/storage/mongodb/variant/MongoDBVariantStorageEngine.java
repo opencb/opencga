@@ -220,6 +220,84 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void removeSamples(String study, List<String> samples, URI outdir) throws StorageEngineException {
+        VariantStorageMetadataManager mm = getMetadataManager();
+        int studyId = mm.getStudyId(study);
+
+        // Resolve sample IDs
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        for (String sample : samples) {
+            sampleIds.add(mm.getSampleId(studyId, sample));
+        }
+        Set<Integer> sampleIdSet = new HashSet<>(sampleIds);
+
+        // Classify files: fully deleted (all samples removed) vs partially deleted
+        Set<Integer> affectedFileIds = mm.getFileIdsFromSampleIds(studyId, sampleIdSet, true);
+        List<String> fullyDeletedFiles = new ArrayList<>();
+        List<Integer> fullyDeletedFileIds = new ArrayList<>();
+        Set<Integer> partiallyDeletedFileIds = new LinkedHashSet<>();
+
+        for (Integer fileId : affectedFileIds) {
+            LinkedHashSet<Integer> samplesFromFile = mm.getSampleIdsFromFileId(studyId, fileId);
+            if (sampleIdSet.containsAll(samplesFromFile)) {
+                fullyDeletedFileIds.add(fileId);
+                fullyDeletedFiles.add(mm.getFileName(studyId, fileId));
+            } else {
+                partiallyDeletedFileIds.add(fileId);
+            }
+        }
+
+        TaskMetadata task = preRemove(study, fullyDeletedFiles, samples);
+        ObjectMap options = new ObjectMap(getOptions());
+        MongoDBSampleIndexDBAdaptor mongoSampleIndexDBAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+        int schemaVersion = mongoSampleIndexDBAdaptor.getSchemaLatest(study).getVersion();
+
+        Thread hook = mm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+
+            // 1. Remove fully deleted files (reuse existing logic)
+            if (!fullyDeletedFileIds.isEmpty()) {
+                getDBAdaptor().removeFiles(study, fullyDeletedFiles, task.getTimestamp(), new QueryOptions(options));
+            }
+
+            // 2. Remove samples from partially deleted files
+            if (!partiallyDeletedFileIds.isEmpty()) {
+                getDBAdaptor().removeSamples(studyId, sampleIdSet, partiallyDeletedFileIds, task.getTimestamp());
+            }
+
+            // 3. Metadata cleanup
+            postRemoveFiles(study, fullyDeletedFileIds, sampleIds, task.getId(), false);
+
+            // 4. Clear sample index for all removed samples
+            mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, sampleIdSet);
+
+            // 5. Rebuild sample index for remaining samples in partially deleted files
+            Set<String> samplesToRebuildIndex = new LinkedHashSet<>();
+            for (Integer fileId : partiallyDeletedFileIds) {
+                for (Integer sid : mm.getSampleIdsFromFileId(studyId, fileId)) {
+                    if (!sampleIdSet.contains(sid)) {
+                        samplesToRebuildIndex.add(mm.getSampleName(studyId, sid));
+                    }
+                }
+            }
+            if (!samplesToRebuildIndex.isEmpty()) {
+                List<Integer> rebuildIds = new ArrayList<>(samplesToRebuildIndex.size());
+                for (String s : samplesToRebuildIndex) {
+                    rebuildIds.add(mm.getSampleId(studyId, s));
+                }
+                mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, rebuildIds);
+                sampleIndex(study, new ArrayList<>(samplesToRebuildIndex), new ObjectMap(options).append("overwrite", true));
+            }
+        } catch (Exception e) {
+            postRemoveFiles(study, fullyDeletedFileIds, sampleIds, task.getId(), true);
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    @Override
     public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
