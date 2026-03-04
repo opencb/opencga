@@ -29,6 +29,7 @@ import static java.util.Collections.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.JSON_RAW;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.newVariantAnnotation;
 
@@ -134,7 +135,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         map.put(VariantField.STUDIES_SECONDARY_ALTERNATES, emptyList());
         map.put(VariantField.STUDIES_STUDY_ID, singletonList(STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        List<String> annotationFields = Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD);
+        List<String> annotationFields = Arrays.asList(ANNOTATION_FIELD + "." + JSON_RAW, ANNOT_ID, CUSTOM_ANNOTATION_FIELD, RELEASE_FIELD);
         map.put(VariantField.ANNOTATION, annotationFields);
         for (VariantField child : VariantField.ANNOTATION.getChildren()) {
             map.put(child, annotationFields);
@@ -228,6 +229,11 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                 this.returnStudies = new HashSet<>(returnStudies);
             }
         }
+    }
+
+    public DocumentToVariantConverter setIncludeFields(Set<VariantField> requestedFields) {
+        variantAnnotationConverter.setIncludeFields(requestedFields);
+        return this;
     }
 
     public ComplexTypeConverter<Variant, Document> asComplexTypeConverter() {

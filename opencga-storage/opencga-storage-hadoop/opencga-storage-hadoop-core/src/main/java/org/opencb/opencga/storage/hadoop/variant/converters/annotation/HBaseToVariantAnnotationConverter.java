@@ -16,12 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -40,6 +36,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -112,28 +109,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     }
 
     public HBaseToVariantAnnotationConverter setIncludeFields(Set<VariantField> allIncludeFields) {
-        List<String> list = new ArrayList<>();
-        if (allIncludeFields != null) {
-            for (VariantField annotationField : VariantField.values()) {
-                if (annotationField.getParent() == VariantField.ANNOTATION && !allIncludeFields.contains(annotationField)) {
-                    list.add(annotationField.fieldName().replace(VariantField.ANNOTATION.fieldName() + '.', ""));
-                }
-            }
-        }
-        String[] excludedAnnotationFields = list.toArray(new String[0]);
-        objectMapper.setAnnotationIntrospector(
-                new JacksonAnnotationIntrospector() {
-                    @Override
-                    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
-                        JsonIgnoreProperties.Value propertyIgnoralByName = super.findPropertyIgnoralByName(config, ac);
-                        if (!ac.getRawType().equals(VariantAnnotation.class)) {
-                            // Not a VariantAnnotation class. Return propertyIgnoralByName as is.
-                            return propertyIgnoralByName;
-                        }
-                        return JsonIgnoreProperties.Value.merge(propertyIgnoralByName,
-                                JsonIgnoreProperties.Value.forIgnoredProperties(excludedAnnotationFields));
-                    }
-                });
+        VariantAnnotationModelUtils.configureAnnotationFieldExclusion(objectMapper, allIncludeFields);
         return this;
     }
 

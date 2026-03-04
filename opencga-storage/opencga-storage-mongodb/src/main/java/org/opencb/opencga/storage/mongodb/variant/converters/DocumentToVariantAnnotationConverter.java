@@ -103,8 +103,9 @@ public class DocumentToVariantAnnotationConverter
 
     public static final String SEPARATOR = "#";
 
+    private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
-    private final ObjectReader reader;
+    private ObjectReader reader;
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantAnnotationConverter.class);
 
@@ -228,12 +229,26 @@ public class DocumentToVariantAnnotationConverter
     }
 
     public DocumentToVariantAnnotationConverter() {
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         writer = jsonObjectMapper.writerFor(VariantAnnotation.class);
         reader = jsonObjectMapper.readerFor(VariantAnnotation.class);
+    }
+
+    /**
+     * Configures this converter to skip annotation sub-fields not present in requestedFields during deserialization.
+     * Uses a copy of the base mapper so the writer is unaffected.
+     *
+     * @param requestedFields Set of fields to include; annotation children absent from this set will be excluded.
+     * @return this
+     */
+    public DocumentToVariantAnnotationConverter setIncludeFields(Set<VariantField> requestedFields) {
+        ObjectMapper readerMapper = jsonObjectMapper.copy();
+        VariantAnnotationModelUtils.configureAnnotationFieldExclusion(readerMapper, requestedFields);
+        reader = readerMapper.readerFor(VariantAnnotation.class);
+        return this;
     }
 
     @Override
@@ -549,18 +564,18 @@ public class DocumentToVariantAnnotationConverter
         }
     }
 
-    public static void combine(String gene, String biotype, int so, String flag, Collection<String> combinations) {
+    public static void combine(String gene, String biotype, Integer so, String flag, Collection<String> combinations) {
         biotype = biotypeToStorage(biotype);
         if (gene == null) {
             gene = "N";
         }
         flag = flagToStorage(flag);
-
+        String soStr = so == null ? "N" : String.valueOf(so);
 
         // GENE + BIOTYPE + SO + FLAG
-        combinations.add(gene + SEPARATOR + biotype + SEPARATOR + so + SEPARATOR + flag);
+        combinations.add(gene + SEPARATOR + biotype + SEPARATOR + soStr + SEPARATOR + flag);
         // BIOTYPE + SO + FLAG
-        combinations.add(biotype + SEPARATOR + so + SEPARATOR + flag);
+        combinations.add(biotype + SEPARATOR + soStr + SEPARATOR + flag);
     }
 
     public static String flagToStorage(String flag) {

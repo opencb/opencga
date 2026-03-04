@@ -555,6 +555,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
+
+        // JSON_RAW stores the full annotation blob, so MongoDB-level field exclusion doesn't apply to
+        // annotation sub-fields. Configure the Jackson reader to skip excluded fields during deserialization.
+        Set<VariantField> requestedFields = VariantQueryProjectionParser
+                .parseVariantQueryFields(query, options, metadataManager).getFields();
+        if (!requestedFields.containsAll(VariantField.ANNOTATION.getChildren())) {
+            converter.setIncludeFields(requestedFields);
+        }
+
         DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter.asComplexTypeConverter(), options);
 
         List<VariantAnnotation> annotations = result.getResults()
@@ -562,6 +571,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .map(Variant::getAnnotation)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
         return new DataResult<>(result.getTime(), result.getEvents(), annotations.size(), annotations, result.getNumMatches());
     }
 
