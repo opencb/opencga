@@ -457,11 +457,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             options = new QueryOptions(options);
         }
-        if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+        boolean doCount = options.getBoolean(QueryOptions.COUNT);
+        if (doCount && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Long> count = count(variantQuery);
             DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
             return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
-        } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+        } else if (!doCount && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
             return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
         }
@@ -476,6 +477,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         DataResult<Variant> result = variantsCollection.aggregate(pipeline, converter.asComplexTypeConverter(), options);
+        if (doCount) {
+            // The aggregate() path does not perform a separate count; do it explicitly so that numMatches is
+            // set to the total number of matching documents rather than just the (limited) result set size.
+            result.setNumMatches(count(variantQuery).first());
+        }
         return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
     }
 
