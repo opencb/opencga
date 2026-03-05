@@ -311,6 +311,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             clinicalAnalysis.setAnnotationSets(ParamUtils.defaultObject(clinicalAnalysis.getAnnotationSets(), Collections.emptyList()));
             clinicalAnalysis.setResponsible(ParamUtils.defaultObject(clinicalAnalysis.getResponsible(), ClinicalResponsible::new));
             clinicalAnalysis.setRequest(ParamUtils.defaultObject(clinicalAnalysis.getRequest(), ClinicalRequest::new));
+            clinicalAnalysis.setBatch(ParamUtils.defaultObject(clinicalAnalysis.getBatch(), Batch::new));
 
             // ----------  Check and init report fields
             validateAndInitReport(organizationId, study, clinicalAnalysis.getReport(), userId);

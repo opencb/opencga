@@ -229,6 +229,7 @@
 {"collections": ["clinical", "clinical_archive"], "fields": {"analyst.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"priority.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"flags.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"batch.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"qualityControl.summary": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}

@@ -77,6 +77,8 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
+        BATCH("batch", OBJECT, ""),
+        BATCH_ID("batch.id", TEXT, ""),
         VERSION("version", INTEGER, ""),
         RELEASE("release", INTEGER, ""),
         SNAPSHOT("snapshot", INTEGER, ""),

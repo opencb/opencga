@@ -141,6 +141,10 @@ public class ClinicalAnalysis extends Annotable {
             description = FieldConstants.CLINICAL_ANALYSIS_FLAGS)
     private List<FlagAnnotation> flags;
 
+    @DataField(id = "batch", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_BATCH)
+    private Batch batch;
+
     /**
      * String representing when the sample was created, this is automatically set by OpenCGA.
      *
@@ -225,7 +229,7 @@ public class ClinicalAnalysis extends Annotable {
                             Individual proband, Family family, List<Panel> panels, boolean panelLocked, boolean locked,
                             Interpretation interpretation, List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent,
                             List<ClinicalAnalyst> analysts, ClinicalReport report, ClinicalRequest request, ClinicalResponsible responsible,
-                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
+                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, Batch batch, String creationDate, String modificationDate,
                             String dueDate, int release, int version, List<ClinicalComment> comments,
                             ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
                             List<AnnotationSet> annotationSets, Map<String, Object> attributes, ClinicalStatus status) {
@@ -249,6 +253,7 @@ public class ClinicalAnalysis extends Annotable {
         this.responsible = responsible;
         this.priority = priority;
         this.flags = flags;
+        this.batch = batch;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.dueDate = dueDate;
@@ -287,6 +292,7 @@ public class ClinicalAnalysis extends Annotable {
         sb.append(", responsible=").append(responsible);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", batch=").append(batch);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -491,6 +497,15 @@ public class ClinicalAnalysis extends Annotable {
 
     public ClinicalAnalysis setFlags(List<FlagAnnotation> flags) {
         this.flags = flags;
+        return this;
+    }
+
+    public Batch getBatch() {
+        return batch;
+    }
+
+    public ClinicalAnalysis setBatch(Batch batch) {
+        this.batch = batch;
         return this;
     }
 

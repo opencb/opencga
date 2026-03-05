@@ -255,6 +255,7 @@ public class FieldConstants {
     public static final String CLINICAL_ANALYSIS_RESPONSIBLE = "Responsible of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_PRIORITY = "Priority of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_FLAGS = "List of flags for the clinical analysis.";
+    public static final String CLINICAL_ANALYSIS_BATCH = "Batch of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_DUE_DATE_DESCRIPTION = "Due date of the clinical analysis.";
     public static final String CLINICAL_ANALYSIS_COMMENTS = "List of Clinical Analysis comments.";
     public static final String CLINICAL_ANALYSIS_AUDIT = "List of Clinical Analysis audits.";

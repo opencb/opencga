@@ -68,6 +68,7 @@ public class ClinicalAnalysisUpdateParams {
     private List<ClinicalCommentParam> comments;
     private PriorityParam priority; // id
     private List<FlagValueParam> flags; // id
+    private Batch batch;
 
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -83,8 +84,8 @@ public class ClinicalAnalysisUpdateParams {
                                         ClinicalResponsible responsible, ClinicalAnalysisQualityControlUpdateParam qualityControl,
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
                                         String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
-                                        List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                                        StatusParam status) {
+                                        List<FlagValueParam> flags, Batch batch, List<AnnotationSet> annotationSets,
+                                        Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -108,6 +109,7 @@ public class ClinicalAnalysisUpdateParams {
         this.comments = comments;
         this.priority = priority;
         this.flags = flags;
+        this.batch = batch;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
@@ -135,7 +137,7 @@ public class ClinicalAnalysisUpdateParams {
                         : null,
                 report, request, responsible,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, batch, creationDate, modificationDate, dueDate,
                 1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, annotationSets, attributes,
@@ -168,6 +170,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", batch=").append(batch);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -373,6 +376,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
+        return this;
+    }
+
+    public Batch getBatch() {
+        return batch;
+    }
+
+    public ClinicalAnalysisUpdateParams setBatch(Batch batch) {
+        this.batch = batch;
         return this;
     }
 

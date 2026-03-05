@@ -66,6 +66,7 @@ public class ClinicalAnalysisCreateParams {
     private List<ClinicalCommentParam> comments;
     private PriorityParam priority;
     private List<FlagValueParam> flags;
+    private Batch batch;
 
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -82,8 +83,8 @@ public class ClinicalAnalysisCreateParams {
                                         ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
                                         String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
-                                        List<FlagValueParam> flags, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                                        StatusParam status) {
+                                        List<FlagValueParam> flags, Batch batch, List<AnnotationSet> annotationSets,
+                                        Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -107,6 +108,7 @@ public class ClinicalAnalysisCreateParams {
         this.qualityControl = qualityControl;
         this.priority = priority;
         this.flags = flags;
+        this.batch = batch;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.status = status;
@@ -146,6 +148,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getFlags() != null
                         ? clinicalAnalysis.getFlags().stream().map(FlagValueParam::of).collect(Collectors.toList())
                         : null,
+                clinicalAnalysis.getBatch(),
                 clinicalAnalysis.getAnnotationSets(),
                 clinicalAnalysis.getAttributes(), StatusParam.of(clinicalAnalysis.getStatus()));
     }
@@ -176,6 +179,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", batch=").append(batch);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -248,7 +252,7 @@ public class ClinicalAnalysisCreateParams {
                 individual, f, diseasePanelList, panelLocked != null ? panelLocked : false, false, primaryInterpretation,
                 new LinkedList<>(), consent != null ? consent.toClinicalConsentAnnotation() : null,
                 clinicalAnalystList, report, request, responsible, priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, batch, creationDate,
                 modificationDate, dueDate, 1, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
@@ -472,6 +476,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
+        return this;
+    }
+
+    public Batch getBatch() {
+        return batch;
+    }
+
+    public ClinicalAnalysisCreateParams setBatch(Batch batch) {
+        this.batch = batch;
         return this;
     }
 

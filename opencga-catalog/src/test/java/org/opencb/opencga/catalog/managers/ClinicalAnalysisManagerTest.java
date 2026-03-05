@@ -4353,4 +4353,55 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals("data/report_file3.txt", result.first().getReportedFiles().get(2).getPath());
     }
 
+    @Test
+    public void batchTest() throws CatalogException {
+        // 1. Create with batch set
+        createDummyFamily();
+        ClinicalAnalysis ca1 = new ClinicalAnalysis()
+                .setId("caBatch1")
+                .setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))))
+                .setBatch(new Batch("batch1", "First batch"));
+        ClinicalAnalysis result1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, ca1, true, INCLUDE_RESULT, ownerToken).first();
+        assertNotNull(result1.getBatch());
+        assertEquals("batch1", result1.getBatch().getId());
+        assertEquals("First batch", result1.getBatch().getDescription());
+
+        // 2. Create without batch — manager should auto-populate an empty Batch
+        ClinicalAnalysis ca2 = new ClinicalAnalysis()
+                .setId("caBatch2")
+                .setType(ClinicalAnalysis.Type.FAMILY)
+                .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
+                .setFamily(new Family().setId("family")
+                        .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
+        ClinicalAnalysis result2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, ca2, true, INCLUDE_RESULT, ownerToken).first();
+        assertNotNull(result2.getBatch());
+
+        // 3. Update batch
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setBatch(new Batch("batch2", "Second batch"));
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, "caBatch2", updateParams, QueryOptions.empty(), ownerToken);
+        ClinicalAnalysis updated = catalogManager.getClinicalAnalysisManager().get(studyFqn, "caBatch2", QueryOptions.empty(), ownerToken).first();
+        assertEquals("batch2", updated.getBatch().getId());
+        assertEquals("Second batch", updated.getBatch().getDescription());
+
+        // 4. Search by batch.id
+        Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.BATCH_ID.key(), "batch1");
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, search.getNumResults());
+        assertEquals("caBatch1", search.first().getId());
+
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.BATCH_ID.key(), "batch2");
+        search = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, search.getNumResults());
+        assertEquals("caBatch2", search.first().getId());
+
+        // Search by non-existing batch.id — expect no results
+        query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.BATCH_ID.key(), "nonExisting");
+        search = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(0, search.getNumResults());
+    }
+
 }

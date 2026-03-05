@@ -470,6 +470,8 @@ public class ParamConstants {
     public static final String CLINICAL_ANALYST_ID_DESCRIPTION = "Clinical Analysis analyst id";
     public static final String CLINICAL_PRIORITY_DESCRIPTION = "Clinical Analysis priority";
     public static final String CLINICAL_FLAGS_DESCRIPTION = "Clinical Analysis flags";
+    public static final String CLINICAL_BATCH_PARAM = "batch";
+    public static final String CLINICAL_BATCH_DESCRIPTION = "Clinical Analysis batch";
     public static final String CLINICAL_CREATION_DATE_DESCRIPTION = "Clinical Analysis " + CREATION_DATE_DESCRIPTION;
     public static final String CLINICAL_MODIFICATION_DATE_DESCRIPTION = "Clinical Analysis " + MODIFICATION_DATE_DESCRIPTION;
     public static final String CLINICAL_DUE_DATE_DESCRIPTION = "Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, "
