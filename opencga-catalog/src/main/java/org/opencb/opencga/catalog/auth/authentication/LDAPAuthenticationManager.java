@@ -174,7 +174,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         if (StringUtils.isEmpty(authUserId)) {
             // Direct bind mode: construct DN from dnFormat and bind directly with user credentials
+            logger.debug("Authenticating user '{}' using direct bind mode", userId);
             String userDn = String.format(dnFormat, Rdn.escapeValue(userId));
+            logger.debug("Constructed user DN: '{}'", userDn);
             claims.put(OPENCGA_DISTINGUISHED_NAME, userDn);
 
             Hashtable<String, Object> userEnv = getEnv(userDn, password);
@@ -187,10 +189,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             } finally {
                 closeDirContext(userCtx);
             }
+            logger.debug("Successfully authenticated user '{}' via direct bind", userId);
         } else {
             // Service-account mode: search for user DN via service account, then bind with user credentials
+            logger.debug("Authenticating user '{}' using service-account mode", userId);
             List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
             if (userInfoFromLDAP.isEmpty()) {
+                logger.error("User '{}' not found in LDAP under base '{}'", userId, usersSearch);
                 throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
             }
 
@@ -206,6 +211,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 }
             }
             String rdn = getDN(userInfoFromLDAP.get(0));
+            logger.debug("Resolved DN for user '{}': '{}'", userId, rdn);
             claims.put(OPENCGA_DISTINGUISHED_NAME, rdn);
 
             Hashtable<String, Object> userEnv = getEnv(rdn, password);
@@ -218,6 +224,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             } finally {
                 closeDirContext(userCtx);
             }
+            logger.debug("Successfully authenticated user '{}' via service-account mode", userId);
         }
 
         return new AuthenticationResponse(createToken(organizationId, userId, claims));
@@ -225,18 +232,21 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
+        logger.debug("Fetching users from remote LDAP group '{}' (groupsSearch: '{}')", group, groupsSearch);
         List<String> usersFromLDAP = getUsersFromLDAPGroup(group, groupsSearch);
+        logger.debug("Found {} user(s) in LDAP group '{}'", usersFromLDAP.size(), group);
         return getRemoteUserInformation(usersFromLDAP);
     }
 
     @Override
     public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
+        logger.debug("Retrieving remote user information for {} user(s): {}", userStringList.size(), userStringList);
         List<User> userList = new ArrayList<>(userStringList.size());
 
         List<Attributes> userAttrList = getUserInfoFromLDAP(userStringList, usersSearch);
 
         if (userAttrList.isEmpty()) {
-            logger.warn("No users were found. Nothing to do.");
+            logger.warn("No users were found in LDAP for the provided list: {}", userStringList);
             return Collections.emptyList();
         }
 
@@ -262,6 +272,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             userList.add(user);
         }
 
+        logger.debug("Successfully retrieved information for {} user(s) from LDAP", userList.size());
         return userList;
     }
 
@@ -269,6 +280,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     public List<String> getRemoteGroups(String token) throws CatalogException {
         if (StringUtils.isNotEmpty(isMemberOfKey)) {
             // Groups were stored in the token during authentication via isMemberOf attribute
+            logger.debug("Retrieving remote groups from token using isMemberOf approach (key: '{}')", isMemberOfKey);
             Object claim = jwtManager.getClaim(token, OPENCGA_REMOTE_GROUPS);
             if (claim == null) {
                 logger.warn("LDAP: Token does not contain '{}' claim. Token may have been issued before isMemberOf support was enabled."
@@ -286,6 +298,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                                 OPENCGA_REMOTE_GROUPS, element == null ? "null" : element.getClass().getSimpleName());
                     }
                 }
+                logger.debug("Retrieved {} group(s) from token via isMemberOf: {}", groups.size(), groups);
                 return groups;
             }
             logger.warn("LDAP: Token claim '{}' is not a List (found {}). Returning empty group list.",
@@ -293,6 +306,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             return Collections.emptyList();
         } else {
             // Search-based approach: use groupsSearch
+            logger.debug("Retrieving remote groups using search-based approach (groupsSearch: '{}')", groupsSearch);
             String userRdn = (String) jwtManager.getClaim(token, OPENCGA_DISTINGUISHED_NAME);
             if (userRdn == null) {
                 logger.warn("LDAP: Token does not contain '{}' claim. Cannot retrieve remote groups. Returning empty list.",
@@ -300,7 +314,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 return Collections.emptyList();
             }
             String opencgaUser = jwtManager.getUser(token);
-            return getGroupsFromLdapUser(opencgaUser, userRdn, groupsSearch);
+            logger.debug("Searching LDAP groups for user '{}' (DN: '{}')", opencgaUser, userRdn);
+            List<String> groups = getGroupsFromLdapUser(opencgaUser, userRdn, groupsSearch);
+            logger.debug("Found {} group(s) for user '{}': {}", groups.size(), opencgaUser, groups);
+            return groups;
         }
     }
 
@@ -343,6 +360,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private DirContext getDirContext(Hashtable<String, Object> env, int maxAttempts) throws CatalogAuthenticationException {
+        logger.debug("Opening LDAP DirContext connection to '{}' (maxAttempts: {})", host, maxAttempts);
         int count = 0;
         DirContext dctx = null;
         do {
@@ -388,6 +406,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             }
         } while (dctx == null);
 
+        logger.debug("Successfully opened LDAP DirContext connection to '{}'", host);
         return dctx;
     }
 
@@ -397,11 +416,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         try {
             String groupFilter = "(cn=" + groupName + ")";
+            logger.debug("Searching LDAP group with filter '{}' under base '{}'", groupFilter, groupBase);
             SearchControls sc = new SearchControls();
             sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
             NamingEnumeration<SearchResult> search = dirContext.search(groupBase, groupFilter, sc);
 
             if (!search.hasMore()) {
+                logger.warn("LDAP group '{}' not found under base '{}'", groupName, groupBase);
                 throw new CatalogException("Group '" + groupName + "' not found");
             }
             while (search.hasMore()) {
@@ -430,10 +451,12 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             }
             dirContext.close();
         } catch (NamingException | RuntimeException e) {
+            logger.error("Error retrieving users from LDAP group '{}': {}", groupName, e.getMessage());
             closeDirContextAndSuppress(dirContext, e);
             throw wrapException(e, "Could not retrieve users of the group" + groupName);
         }
 
+        logger.debug("Retrieved {} user(s) from LDAP group '{}': {}", users.size(), groupName, users);
         return new ArrayList<>(users);
     }
 
@@ -455,6 +478,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 userFilter = "(|(" + key + "=" + userFilter + "))";
             }
 
+            logger.debug("Searching LDAP users with filter '{}' under base '{}'", userFilter, userBase);
             SearchControls sc = new SearchControls();
             sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
             NamingEnumeration<SearchResult> search = dirContext.search(userBase, userFilter, sc);
@@ -463,10 +487,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             }
             dirContext.close();
         } catch (NamingException | RuntimeException e) {
+            logger.error("Error retrieving user information from LDAP (base: '{}', users: {}): {}",
+                    userBase, userList, e.getMessage());
             closeDirContextAndSuppress(dirContext, e);
             throw wrapException(e, "Could not retrieve user information");
         }
 
+        logger.debug("LDAP user search returned {} result(s) for {} user(s)", resultList.size(), userList.size());
         return resultList;
     }
 
@@ -526,6 +553,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         try {
             String userFilter = "(" + this.memberKey + "=" + user + ")";
+            logger.debug("Searching LDAP groups for user '{}' with filter '{}' under base '{}'", opencgaUser, userFilter, base);
 
             SearchControls sc = new SearchControls();
             sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -537,13 +565,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             }
             dirContext.close();
         } catch (NamingException | RuntimeException e) {
+            logger.error("Error retrieving LDAP groups for user '{}' (DN: '{}', base: '{}'): {}",
+                    opencgaUser, user, base, e.getMessage());
             closeDirContextAndSuppress(dirContext, e);
             throw wrapException(e, "Could not retrieve groups of user " + opencgaUser);
         }
+        logger.debug("Found {} group(s) for user '{}': {}", resultList.size(), opencgaUser, resultList);
         return resultList;
     }
 
     private List<String> getGroupsFromIsMemberOf(DirContext ctx, String userDn, String userId) {
+        logger.debug("Retrieving groups via '{}' attribute for user '{}' (DN: '{}')", isMemberOfKey, userId, userDn);
         List<String> groups = new ArrayList<>();
         NamingEnumeration<SearchResult> search = null;
         try {
@@ -586,6 +618,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 }
             }
         }
+        logger.debug("Found {} group(s) via '{}' for user '{}': {}", groups.size(), isMemberOfKey, userId, groups);
         return groups;
     }
 
@@ -618,6 +651,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             env.put(DirContext.SECURITY_AUTHENTICATION, "simple");
             env.put(DirContext.SECURITY_PRINCIPAL, user);
             env.put(DirContext.SECURITY_CREDENTIALS, password);
+            logger.debug("LDAP env configured with authenticated bind (principal: '{}')", user);
+        } else {
+            logger.debug("LDAP env configured with anonymous bind");
         }
 
         if (ldaps) {
@@ -667,6 +703,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 msg = e.getMessage();
             }
         }
+        logger.error("LDAP error: {}", msg, e);
         return new CatalogAuthenticationException("LDAP: " + msg, e);
     }
 
