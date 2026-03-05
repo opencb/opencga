@@ -57,7 +57,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTest;
+import org.opencb.opencga.storage.core.variant.gaps.FillGapsTest;
 
 import java.io.IOException;
 import java.net.URI;
