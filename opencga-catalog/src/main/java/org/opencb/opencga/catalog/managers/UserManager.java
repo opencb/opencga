@@ -959,6 +959,7 @@ public class UserManager extends AbstractManager {
 
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         List<Event> eventList = new LinkedList<>();
+        List<Exception> authFailures = new ArrayList<>();
         User user = null;
         if (userOpenCGAResult.getNumResults() == 1) {
             user = userOpenCGAResult.first();
@@ -1012,7 +1013,9 @@ public class UserManager extends AbstractManager {
                     authId = entry.getKey();
                     break;
                 } catch (NotImplementedException | CatalogAuthenticationException e) {
-                    logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                    logger.warn("Attempted authentication failed with {} for user '{}'", entry.getKey(), username);
+                    logger.debug("Authentication failure details for {} / '{}'", entry.getKey(), username, e);
+                    authFailures.add(e);
                 }
             }
 
@@ -1032,7 +1035,9 @@ public class UserManager extends AbstractManager {
         if (response == null) {
             auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            CatalogAuthenticationException ex = CatalogAuthenticationException.incorrectUserOrPassword();
+            authFailures.forEach(ex::addSuppressed);
+            throw ex;
         }
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
