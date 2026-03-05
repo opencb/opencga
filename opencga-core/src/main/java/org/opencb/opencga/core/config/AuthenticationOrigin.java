@@ -47,6 +47,7 @@ public class AuthenticationOrigin {
     public static final String LDAP_UID_KEY = "uidKey";
     public static final String LDAP_UID_FORMAT = "uidFormat";
     public static final String LDAP_SSL_INVALID_CERTIFICATES_ALLOWED = "sslInvalidCertificatesAllowed";
+    public static final String LDAP_IS_MEMBER_OF_KEY = "isMemberOfKey";
     public static final String READ_TIMEOUT = "readTimeout";
     public static final String CONNECTION_TIMEOUT = "connectionTimeout";
 
