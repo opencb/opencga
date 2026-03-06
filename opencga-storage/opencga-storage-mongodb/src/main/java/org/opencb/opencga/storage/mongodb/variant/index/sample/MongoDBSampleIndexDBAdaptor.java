@@ -131,7 +131,23 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
 
     @Override
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException {
-        return null;
+        MongoDBCollection collection = getCollection(study, schema.getVersion());
+        List<Bson> filters = new ArrayList<>();
+        filters.add(Filters.eq(DocumentToSampleIndexEntryConverter.SAMPLE_ID, sample));
+        MongoDBIterator<Document> mongoIterator = collection.iterator(
+                Filters.and(filters), new QueryOptions(QueryOptions.SORT, "_id"));
+        return Iterators.transform(mongoIterator, doc -> {
+            Map<String, TreeSet<SampleIndexVariant>> gtMap = converter.convertToGtVariantMap(doc, schema);
+            Map<String, List<Variant>> result = new HashMap<>();
+            for (Map.Entry<String, TreeSet<SampleIndexVariant>> entry : gtMap.entrySet()) {
+                List<Variant> variants = new ArrayList<>(entry.getValue().size());
+                for (SampleIndexVariant siv : entry.getValue()) {
+                    variants.add(siv.getVariant());
+                }
+                result.put(entry.getKey(), variants);
+            }
+            return result;
+        });
     }
 
     @Override

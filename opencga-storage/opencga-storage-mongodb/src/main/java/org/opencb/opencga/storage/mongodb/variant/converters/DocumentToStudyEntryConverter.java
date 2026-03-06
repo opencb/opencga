@@ -295,7 +295,21 @@ public class DocumentToStudyEntryConverter {
             fileIndexToAltSetKey.put(fileIndex, key);
         }
 
-        if (altSetKeyToAlts.size() == 1) {
+        // Check if there are files WITHOUT secondary alternates that have samples.
+        // If so, the merger is needed to extend their allele-specific FORMAT fields (e.g., AD).
+        boolean hasFilesWithoutAlts = false;
+        if (!fileIndexToAlts.isEmpty()) {
+            for (int fileIndex = 0; fileIndex < studyEntry.getFiles().size(); fileIndex++) {
+                if (!fileIndexToAlts.containsKey(fileIndex)) {
+                    hasFilesWithoutAlts = true;
+                    String emptyKey = "";
+                    altSetKeyToAlts.putIfAbsent(emptyKey, Collections.emptyList());
+                    fileIndexToAltSetKey.put(fileIndex, emptyKey);
+                }
+            }
+        }
+
+        if (altSetKeyToAlts.size() == 1 && !hasFilesWithoutAlts) {
             // All files share the same secondary alternates — no merge needed.
             studyEntry.setSecondaryAlternates(altSetKeyToAlts.values().iterator().next());
             return;

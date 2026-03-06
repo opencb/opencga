@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
@@ -36,7 +37,7 @@ import static org.junit.Assert.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Category(ShortTests.class)
-public class FillGapsTaskTest {
+public class HBaseFillGapsTaskTest {
 
     private VariantStorageMetadataManager metadataManager;
     private StudyMetadata studyMetadata;
@@ -75,7 +76,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void testGetOverlappingVariants() {
-        FillGapsTask a = new FillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask a = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice("17:29113:T:C", "17:29185:A:G", "17:29190-29189::AAAAAAAA", "17:29464:G:");
 
@@ -99,7 +100,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void testGetOverlappingVariants2() {
-        FillGapsTask a = new FillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask a = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice(
                 "2:182562574-182562573::T",
@@ -162,13 +163,13 @@ public class FillGapsTaskTest {
 
     @Test
     public void testOverlapsWith() {
-        assertTrue(FillGapsTask.overlapsWith(new Variant("1:100:T:-"), "1", 100, 100));
+        assertTrue(HBaseFillGapsTask.overlapsWith(new Variant("1:100:T:-"), "1", 100, 100));
 
         Variant variant = new Variant("1:100:-:T");
-        assertTrue(FillGapsTask.overlapsWith(variant, "1", variant.getStart(), variant.getEnd()));
+        assertTrue(HBaseFillGapsTask.overlapsWith(variant, "1", variant.getStart(), variant.getEnd()));
 
         variant = new Variant("1:100:-:TTTTT");
-        assertFalse(FillGapsTask.overlapsWith(variant, "1", 102, 102));
+        assertFalse(HBaseFillGapsTask.overlapsWith(variant, "1", 102, 102));
     }
 
     @Test
@@ -193,14 +194,14 @@ public class FillGapsTaskTest {
 
     private void isRegionAfterVariantStart(int start, int end, String variantString, boolean afterVariant, boolean overlaps) {
         Variant variant = new Variant(variantString);
-        assertEquals("isRegionAfterVariantStart", afterVariant, FillGapsTask.isRegionAfterVariantStart(start, end, variant));
-        assertEquals("overlapsWith", overlaps, FillGapsTask.overlapsWith(variant, variant.getChromosome(), start, end));
+        assertEquals("isRegionAfterVariantStart", afterVariant, HBaseFillGapsTask.isRegionAfterVariantStart(start, end, variant));
+        assertEquals("overlapsWith", overlaps, HBaseFillGapsTask.overlapsWith(variant, variant.getChromosome(), start, end));
     }
 
 
     @Test
     public void fillGapsAlreadyPresent() {
-        FillGapsTask task = new FillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask task = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant("1:100:A:T")));
         VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant("1:100:A:T"),
@@ -214,7 +215,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void fillGapsReferenceOverlapping() {
-        FillGapsTask task = new FillGapsTask(metadataManager, this.studyMetadata, false, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask task = new HBaseFillGapsTask(metadataManager, this.studyMetadata, false, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         Variant variant = fillGaps(task, VariantOverlappingStatus.REFERENCE, "1:100:A:T",
                 toSliceConverter.convert(Collections.emptyList()), toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:<*>"))));
@@ -253,7 +254,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void fillGapsMultipleOverlapping() {
-        FillGapsTask task = new FillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask task = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         Variant variant = fillGaps(task, VariantOverlappingStatus.MULTI, "1:100:A:T",
                 toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"), variantFile1("1:100:A:G"))));
@@ -274,7 +275,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void testFillGapsMultiAllelic() {
-        FillGapsTask task = new FillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask task = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, false, GenotypeClass.UNKNOWN_GENOTYPE);
 
         Variant variant = fillGaps(task, VariantOverlappingStatus.VARIANT, "1:100:A:T",
                 toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"))));
@@ -294,7 +295,7 @@ public class FillGapsTaskTest {
 
     @Test
     public void testFillGapsSkipMultiNewAllelic() {
-        FillGapsTask task = new FillGapsTask(metadataManager, this.studyMetadata, true, true, GenotypeClass.UNKNOWN_GENOTYPE);
+        HBaseFillGapsTask task = new HBaseFillGapsTask(metadataManager, this.studyMetadata, true, true, GenotypeClass.UNKNOWN_GENOTYPE);
 
         Variant variant = fillGaps(task, VariantOverlappingStatus.VARIANT, "1:100:A:T",
                 toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"))));
@@ -326,12 +327,12 @@ public class FillGapsTaskTest {
         assertEquals("1:100:A:C,G", studyEntry.getFiles().get(0).getCall().getVariantId());
     }
 
-    protected Variant fillGaps(FillGapsTask task,
+    protected Variant fillGaps(HBaseFillGapsTask task,
                                VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice) {
         return fillGaps(task, expected, variant, nonRefVcfSlice, VcfSliceProtos.VcfSlice.newBuilder().build());
     }
 
-    protected Variant fillGaps(FillGapsTask task,
+    protected Variant fillGaps(HBaseFillGapsTask task,
                                VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(variant)));
         VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(sample1, sample2)), put, file1, nonRefVcfSlice, refVcfSlice);

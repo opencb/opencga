@@ -47,8 +47,8 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.opencb.opencga.storage.hadoop.variant.gaps.HBaseFillGapsTask;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1007,7 +1007,7 @@ public class VariantSqlQueryParser {
                             key = buildSampleColumnKey(studyId, sampleId, sampleFile, new StringBuilder()).toString();
                         }
                         final String filter;
-                        if (FillGapsTask.isHomRefDiploid(genotype)) {
+                        if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
                             if (negated) {
                                 filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                             } else {

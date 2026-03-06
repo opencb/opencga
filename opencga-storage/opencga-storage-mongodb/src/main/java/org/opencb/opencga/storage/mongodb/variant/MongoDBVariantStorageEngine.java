@@ -28,15 +28,18 @@ import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -50,6 +53,8 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsFromFile;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsTask;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
@@ -62,6 +67,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -293,6 +300,105 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    @Override
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
+        List<String> samples = params.getSamples();
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
+        } else if (new HashSet<>(samples).size() != samples.size()) {
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with duplicated samples.");
+        }
+
+        VariantStorageMetadataManager mm = getMetadataManager();
+        StudyMetadata studyMetadata = mm.getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        Set<Integer> fileIds = new LinkedHashSet<>();
+        for (String sample : samples) {
+            Integer sampleId = mm.getSampleId(studyId, sample);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
+            }
+            sampleIds.add(sampleId);
+            List<Integer> sampleFiles = mm.getFileIdsFromSampleId(studyId, sampleId, true);
+            if (sampleFiles.size() > 1) {
+                throw new IllegalArgumentException("Unable to execute operation with more than one file per sample. Found "
+                        + sampleFiles.size() + " files for sample " + sample);
+            }
+            fileIds.addAll(sampleFiles);
+        }
+
+        // Resolve VCF file URIs — all files must exist on filesystem
+        List<URI> uris = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = mm.getFileMetadata(studyId, fileId);
+            Path filePath = Paths.get(fileMetadata.getPath());
+            if (!filePath.toFile().exists()) {
+                throw new StorageEngineException("File not found: " + filePath
+                        + ". MongoDB aggregateFamily requires the original VCF files to be accessible.");
+            }
+            uris.add(filePath.toUri());
+        }
+
+        String gapsGenotype = params.getGapsGenotype();
+        if (gapsGenotype == null || gapsGenotype.isEmpty()) {
+            gapsGenotype = "0/0";
+        }
+        logger.info("FillGaps: Study " + study + ", samples " + samples);
+
+        // Register cohort
+        int internalCohortId = mm.registerAggregateFamilySamplesCohort(
+                studyId, samples, params.isResume(), params.isResume());
+
+        // Reset family index status to NONE
+        for (Integer sampleId : sampleIds) {
+            mm.updateSampleMetadata(studyId, sampleId, sm -> {
+                Integer version = sm.getFamilyIndexVersion();
+                if (version != null) {
+                    logger.info("Updating family index status for sample '{}' to {}", sm.getName(), TaskMetadata.Status.NONE);
+                    sm.setFamilyIndexStatus(TaskMetadata.Status.NONE, version);
+                }
+            });
+        }
+
+        try {
+            MongoDBFillGapsFromFile fillGapsFromFile = new MongoDBFillGapsFromFile(
+                    getDBAdaptor(), mm, options != null ? options : new ObjectMap());
+            fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, gapsGenotype);
+
+            // Update loaded genotypes
+            MongoDBFillGapsTask tempTask = new MongoDBFillGapsTask(mm, studyMetadata, false, gapsGenotype);
+            tempTask.updateLoadedGenotypes();
+
+            mm.updateCohortMetadata(studyId, internalCohortId, cohort -> {
+                cohort.setStatusByType(TaskMetadata.Status.READY);
+            });
+            mm.removeExtraInternalCohorts(studyId, internalCohortId);
+
+            // Rebuild sample index for affected samples
+            MongoDBSampleIndexDBAdaptor sampleIndexAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+            int schemaVersion = sampleIndexAdaptor.getSchemaLatest(study).getVersion();
+            sampleIndexAdaptor.clearSampleIndex(studyId, schemaVersion, sampleIds);
+
+            List<String> sampleNames = new ArrayList<>(sampleIds.size());
+            for (Integer sampleId : sampleIds) {
+                sampleNames.add(mm.getSampleName(studyId, sampleId));
+            }
+            sampleIndex(study, sampleNames, new ObjectMap(options != null ? options : new ObjectMap())
+                    .append("overwrite", true));
+        } catch (Exception e) {
+            try {
+                mm.updateCohortMetadata(studyId, internalCohortId, cohort -> {
+                    cohort.setStatusByType(TaskMetadata.Status.ERROR);
+                });
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e instanceof StorageEngineException ? (StorageEngineException) e : new StorageEngineException(e.getMessage(), e);
         }
     }
 

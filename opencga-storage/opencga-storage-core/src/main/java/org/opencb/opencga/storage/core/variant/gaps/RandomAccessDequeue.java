@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.gaps;
+package org.opencb.opencga.storage.core.variant.gaps;
 
 import java.util.AbstractList;
 import java.util.ListIterator;
@@ -20,6 +20,7 @@ public class RandomAccessDequeue<T> extends AbstractList<T> {
         this(1000);
     }
 
+    @SuppressWarnings("unchecked")
     public RandomAccessDequeue(int size) {
         buffer = (T[]) new Object[size];
     }
@@ -165,6 +166,4 @@ public class RandomAccessDequeue<T> extends AbstractList<T> {
             }
         };
     }
-
-
 }

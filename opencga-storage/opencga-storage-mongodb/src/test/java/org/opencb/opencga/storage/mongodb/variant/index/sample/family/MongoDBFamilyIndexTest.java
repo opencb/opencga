@@ -1,7 +1,10 @@
 package org.opencb.opencga.storage.mongodb.variant.index.sample.family;
 
 import org.junit.experimental.categories.Category;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -14,6 +17,13 @@ import java.net.URI;
  */
 @Category(MediumTests.class)
 public class MongoDBFamilyIndexTest extends FamilyIndexTest implements MongoDBVariantStorageTest {
+
+    @Override
+    protected void fillGaps(Trio family, URI outputUri) throws Exception {
+        variantStorageEngine.aggregateFamily(study,
+                new VariantAggregateFamilyParams(null, family.toList(), null, false),
+                new ObjectMap(), outputUri);
+    }
 
     @Override
     protected void postLoad(URI outputUri) throws Exception {

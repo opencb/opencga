@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
+import org.opencb.opencga.storage.hadoop.variant.gaps.HBaseFillGapsTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -514,7 +514,7 @@ public class VariantHBaseQueryParser {
                                         new BinaryPrefixComparator(Bytes.toBytes(genotype)));
                                 filter.setFilterIfMissing(true);
                                 filter.setLatestVersionOnly(true);
-                                if (FillGapsTask.isHomRefDiploid(genotype)) {
+                                if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
                                     return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
                                 } else {
                                     return filter;

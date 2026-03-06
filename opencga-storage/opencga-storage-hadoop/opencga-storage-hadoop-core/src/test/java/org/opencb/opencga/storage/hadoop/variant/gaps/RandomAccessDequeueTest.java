@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.junit.Test;
+import org.opencb.opencga.storage.core.variant.gaps.RandomAccessDequeue;
 
 import java.util.ListIterator;
 

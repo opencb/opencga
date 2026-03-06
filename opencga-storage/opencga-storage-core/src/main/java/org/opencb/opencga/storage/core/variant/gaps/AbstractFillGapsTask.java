@@ -1,26 +1,18 @@
-package org.opencb.opencga.storage.hadoop.variant.gaps;
+package org.opencb.opencga.storage.core.variant.gaps;
 
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryMultiFileToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,74 +20,62 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus.*;
+import static org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus.*;
 
 /**
- * Created on 15/01/18.
+ * Abstract base class for filling gaps in variant data.
+ * Contains all backend-agnostic overlap-detection and variant-building logic.
+ * Backends extend this class and implement {@link #write} to persist the gap-filled data.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsTask {
+public abstract class AbstractFillGapsTask {
 
-    private final StudyEntryToHBaseConverter studyConverter;
     protected final StudyMetadata studyMetadata;
     private final Map<Integer, LinkedHashMap<String, Integer>> fileToSamplePositions = new HashMap<>();
     private Map<String, Integer> sampleIdMap = new HashMap<>();
     private final VariantMerger variantMerger;
     // fill-gaps-when-missing-gt
     private final boolean skipReferenceVariants;
-    private final boolean simplifiedNewMultiAllelicVariants;
+    protected final boolean simplifiedNewMultiAllelicVariants;
     private final Set<String> newGenotypes = new HashSet<>();
-    private final VariantStorageMetadataManager metadataManager;
+    protected final VariantStorageMetadataManager metadataManager;
 
-    private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
-    private final String gapsGenotype;
+    private Logger logger = LoggerFactory.getLogger(AbstractFillGapsTask.class);
+    protected final String gapsGenotype;
 
-    public FillGapsTask(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, boolean skipReferenceVariants,
-                        boolean simplifiedNewMultiAllelicVariants, String gapsGenotype) {
+    public AbstractFillGapsTask(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata,
+                                boolean skipReferenceVariants, boolean simplifiedNewMultiAllelicVariants,
+                                String gapsGenotype) {
         this.studyMetadata = studyMetadata;
         this.skipReferenceVariants = skipReferenceVariants;
-
         this.metadataManager = metadataManager;
-        studyConverter = new StudyEntryMultiFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
-                true,
-                null, // Do not update release
-                true, // Do not skip any genotype
-                false);
         variantMerger = new VariantMerger(false).configure(studyMetadata.getVariantHeader());
         this.simplifiedNewMultiAllelicVariants = simplifiedNewMultiAllelicVariants;
         this.gapsGenotype = gapsGenotype;
     }
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
-                                             Integer fileId,
-                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
-        return fillGaps(variant, missingSamples, put, fileId,
-                FillGapsRecordVcfSlice.listIterator(nonRefVcfSlice),
-                FillGapsRecordVcfSlice.listIterator(refVcfSlice));
-    }
+    /**
+     * Write the gap-filled variant data to the backend storage.
+     *
+     * @param variant        The variant with gap-filled data
+     * @param missingSamples Set of sample IDs that were missing
+     * @param status         The overlapping status that was determined
+     */
+    protected abstract void write(Variant variant, Set<Integer> missingSamples, VariantOverlappingStatus status);
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
-                                             Integer fileId,
-                                             VcfSliceProtos.VcfSlice nonRefVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator,
-                                             VcfSliceProtos.VcfSlice refVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> refIterator) {
-        return fillGaps(variant, missingSamples, put, fileId,
-                FillGapsRecordVcfSlice.listIterator(nonRefVcfSlice, nonRefIterator),
-                FillGapsRecordVcfSlice.listIterator(refVcfSlice, refIterator));
-    }
-
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples,
                                              Integer fileId,
                                              ListIterator<Variant> nonRefVariants) {
-        return fillGaps(variant, missingSamples, put, fileId,
+        return fillGaps(variant, missingSamples, fileId,
                 FillGapsRecordVariant.listIterator(nonRefVariants),
                 null);
     }
 
-    protected VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
-                Integer fileId,
-                ListIterator<FillGapsRecord> nonRefIterator,
-                ListIterator<FillGapsRecord> refIterator) {
+    protected VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples,
+                                                Integer fileId,
+                                                ListIterator<FillGapsRecord> nonRefIterator,
+                                                ListIterator<FillGapsRecord> refIterator) {
         final VariantOverlappingStatus overlappingStatus;
 
         // Three scenarios:
@@ -114,7 +94,6 @@ public class FillGapsTask {
             boolean isVariantAlreadyLoaded = getOverlappingVariants(variant, fileId, refIterator, overlappingRecords);
             if (isVariantAlreadyLoaded) {
                 String msg = "Found that the variant " + variant + " was already loaded in refVcfSlice!";
-//                throw new IllegalStateException(msg);
                 logger.warn(msg);
             }
         }
@@ -125,16 +104,13 @@ public class FillGapsTask {
                 // We are not reading reference blocks, so there gaps are expected and read as HOM_REF
                 return null;
             } else {
-                // There was a gap in the gVCF?
-//                logger.debug("Not overlap for fileId " + fileId + " in variant " + variant);
-
                 if (variant.getType().equals(VariantType.INDEL) && variant.getReference().isEmpty()) {
                     // May happen that the variant to fill is an insertion, and there is no overlapping
                     // Write HOM_REF genotype for this samples
-                    return processVariantFileGap(variant, missingSamples, put, fileId, "0/0");
+                    return processVariantFileGap(variant, missingSamples, fileId, "0/0");
                 } else {
                     // There was a gap in the original file
-                    return processVariantFileGap(variant, missingSamples, put, fileId, gapsGenotype);
+                    return processVariantFileGap(variant, missingSamples, fileId, gapsGenotype);
                 }
             }
         } else if (overlappingRecords.size() > 1) {
@@ -164,12 +140,7 @@ public class FillGapsTask {
             if (realVariants.size() == 1) {
                 record = realVariants.get(0);
             } else {
-//                String msg = "Found multiple overlaps for variant " + variant + " in file " + fileId;
-//                if (!quiet) {
-////                    throw new IllegalStateException(msg);
-//                    logger.warn(msg);
-//                }
-                return processMultipleOverlappings(variant, missingSamples, put, fileId);
+                return processMultipleOverlappings(variant, missingSamples, fileId);
             }
         } else {
             record = overlappingRecords.get(0);
@@ -177,14 +148,14 @@ public class FillGapsTask {
         Variant archiveVariant = record.convertToVariant(fileId, getSamplePosition(fileId), studyMetadata.getName());
 
         if (archiveVariant.getType() == VariantType.NO_VARIATION) {
-            overlappingStatus = processReferenceOverlap(missingSamples, put, variant, archiveVariant);
+            overlappingStatus = processReferenceOverlap(missingSamples, variant, archiveVariant);
         } else {
-            overlappingStatus = processVariantOverlap(variant, missingSamples, put, archiveVariant);
+            overlappingStatus = processVariantOverlap(variant, missingSamples, archiveVariant);
         }
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples, Put put,
+    protected VariantOverlappingStatus processReferenceOverlap(Set<Integer> missingSamples,
                                                                Variant variant, Variant archiveVariant) {
         VariantOverlappingStatus overlappingStatus = REFERENCE;
 
@@ -216,16 +187,14 @@ public class FillGapsTask {
             // Merge NO_VARIATION into the template variant
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
 
-            // Convert study information to PUT
-            studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
-
+            write(mergedVariant, missingSamples, overlappingStatus);
         } else {
-            studyConverter.convert(archiveVariant, put, missingSamples, overlappingStatus);
+            write(archiveVariant, missingSamples, overlappingStatus);
         }
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processVariantOverlap(Variant variant, Set<Integer> missingSamples, Put put,
+    protected VariantOverlappingStatus processVariantOverlap(Variant variant, Set<Integer> missingSamples,
                                                              Variant archiveVariant) {
         VariantOverlappingStatus overlappingStatus = VARIANT;
 
@@ -308,18 +277,18 @@ public class FillGapsTask {
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
         }
 
-        studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
+        write(mergedVariant, missingSamples, overlappingStatus);
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processVariantFileGap(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
-
-                                                             String gt) {
-        return processVariantFile(variant, missingSamples, put, fileId, GAP, gt);
+    protected VariantOverlappingStatus processVariantFileGap(Variant variant, Set<Integer> missingSamples,
+                                                             Integer fileId, String gt) {
+        return processVariantFile(variant, missingSamples, fileId, GAP, gt);
     }
 
-    private VariantOverlappingStatus processVariantFile(Variant variant, Set<Integer> missingSamples, Put put, Integer fileId,
-                                                        VariantOverlappingStatus overlappingStatus, String gt) {
+    private VariantOverlappingStatus processVariantFile(Variant variant, Set<Integer> missingSamples,
+                                                        Integer fileId, VariantOverlappingStatus overlappingStatus,
+                                                        String gt) {
         LinkedHashMap<String, Integer> samplePosition = getSamplePosition(fileId);
         List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
@@ -338,11 +307,11 @@ public class FillGapsTask {
                 .setSamplesPosition(samplePosition)
                 .setSamples(samplesData);
 
-        studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
+        write(builder.build(), missingSamples, overlappingStatus);
         return overlappingStatus;
     }
 
-    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put,
+    protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples,
                                                                    Integer fileId) {
         VariantOverlappingStatus overlappingStatus = MULTI;
 
@@ -354,37 +323,24 @@ public class FillGapsTask {
         }
 
         VariantBuilder builder = Variant.newBuilder(
-                    variant.getChromosome(),
-                    variant.getStart(),
-                    variant.getEnd(),
-                    variant.getReference(),
-                    variant.getAlternate())
+                variant.getChromosome(),
+                variant.getStart(),
+                variant.getEnd(),
+                variant.getReference(),
+                variant.getAlternate())
                 .addAlternate("<*>")
                 .setStudyId(String.valueOf(studyMetadata.getId()))
                 .setFileId(fileId.toString())
-                // add overlapping variants at attributes
                 .setSampleDataKeys("GT")
                 .setSamplesPosition(samplePosition)
                 .setSamples(samplesData);
 
-
-//        processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, builder.build());
-        studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
-
+        write(builder.build(), missingSamples, overlappingStatus);
         return overlappingStatus;
     }
 
     protected boolean hasMainAlternate(String gt) {
         return StringUtils.contains(gt, '1');
-    }
-
-    public boolean getOverlappingVariants(Variant variant, int fileId,
-                                          VcfSliceProtos.VcfSlice vcfSlice, ListIterator<VcfSliceProtos.VcfRecord> iterator,
-                                          List<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> overlappingRecords) {
-        return getOverlappingVariants(variant, fileId, FillGapsRecordVcfSlice.listIterator(vcfSlice, iterator),
-                overlappingRecords.stream()
-                        .map(p -> new FillGapsRecordVcfSlice(p.getLeft(), p.getRight()))
-                        .collect(Collectors.toList()));
     }
 
     public boolean getOverlappingVariants(Variant variant, int fileId,
@@ -406,11 +362,6 @@ public class FillGapsTask {
                     resetIteratorIndex = Math.max(iterator.previousIndex() - 1, firstIndex);
                 }
 
-//                if (skipReferenceVariants && hasAllReferenceGenotype(vcfSlice, vcfRecord)) {
-//                    // Skip this variant
-//                    continue;
-//                }
-
                 // If the same variant is present for this file in the VcfSlice, the variant is already loaded
                 if (isVariantAlreadyLoaded(variant, record, start, end, reference, alternate)) {
                     // Variant already loaded. Nothing to do!
@@ -425,7 +376,6 @@ public class FillGapsTask {
                 }
                 // Shouldn't happen that the first VcfRecord from the iterator is beyond the variant to process,
                 // and is not the first VcfRecord from the slice.
-                // If so, there may be a bug, or the variants or the VcfSlice is not sorted
                 if (firstIndex != 0 && firstIndex == iterator.previousIndex()) {
                     // This should never happen
                     throw new IllegalStateException("Variants not in order!"
@@ -433,11 +383,6 @@ public class FillGapsTask {
                             + record.getChromosome() + ':' + start + '-' + end + ':' + reference + ':' + alternate
                             + " is after the current variant to process for file " + fileId
                     );
-//                    // Something weird happened. Go back to the first position
-//                    while (iterator.hasPrevious()) {
-//                        iterator.previous();
-//                    }
-//                    firstIndex = 0;
                 } else {
                     break;
                 }
@@ -449,8 +394,6 @@ public class FillGapsTask {
         }
         // Send back the iterator
         if (resetIteratorIndex != null) {
-//            logger.info("Reset from " + iterator.nextIndex() + " to " + resetIteratorIndex
-//                    + ". fileId : " + fileId + " variant " + variant);
             while (iterator.nextIndex() > resetIteratorIndex) {
                 iterator.previous();
             }
@@ -458,8 +401,9 @@ public class FillGapsTask {
         return isAlreadyPresent;
     }
 
+    // ─── Inner types ─────────────────────────────────────────────────────────
 
-    protected interface FillGapsRecord {
+    public interface FillGapsRecord {
         String getAlternate();
         String getReference();
         int getEnd();
@@ -471,98 +415,7 @@ public class FillGapsTask {
         Variant convertToVariant(Integer fileId, LinkedHashMap<String, Integer> samplePosition, String studyName);
     }
 
-    protected static class FillGapsRecordVcfSlice implements FillGapsRecord {
-        private final VcfSliceProtos.VcfSlice vcfSlice;
-        private final VcfSliceProtos.VcfRecord vcfRecord;
-
-        public FillGapsRecordVcfSlice(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord) {
-            this.vcfSlice = vcfSlice;
-            this.vcfRecord = vcfRecord;
-        }
-
-        public static ListIterator<FillGapsRecord> listIterator(VcfSliceProtos.VcfSlice vcfSlice) {
-            if (vcfSlice == null) {
-                return null;
-            } else {
-                return listIterator(vcfSlice, vcfSlice.getRecordsList().listIterator());
-            }
-        }
-
-        public static ListIterator<FillGapsRecord> listIterator(VcfSliceProtos.VcfSlice vcfSlice,
-                                                                ListIterator<VcfSliceProtos.VcfRecord> it) {
-            if (vcfSlice == null) {
-                return null;
-            } else {
-                return new ListIteratorTransformer<>(
-                        r -> new FillGapsRecordVcfSlice(vcfSlice, r),
-                        r -> ((FillGapsRecordVcfSlice) r).vcfRecord, it);
-            }
-        }
-
-
-        @Override
-        public String getAlternate() {
-            return vcfRecord.getAlternate();
-        }
-        @Override
-        public String getReference() {
-            return vcfRecord.getReference();
-        }
-
-        @Override
-        public int getEnd() {
-            return VcfRecordProtoToVariantConverter.getEnd(vcfRecord, vcfSlice.getPosition());
-        }
-
-        @Override
-        public int getStart() {
-            return VcfRecordProtoToVariantConverter.getStart(vcfRecord, vcfSlice.getPosition());
-        }
-
-        @Override
-        public  String getChromosome() {
-            return vcfSlice.getChromosome();
-        }
-
-        @Override
-        public String getCall() {
-            String call = vcfRecord.getCall();
-            if (call.isEmpty()) {
-                return null;
-            } else {
-                return call.substring(0, call.lastIndexOf(':'));
-            }
-        }
-
-        @Override
-        public boolean isNoVariant() {
-            return vcfRecord.getType() == VariantProto.VariantType.NO_VARIATION;
-        }
-
-        @Override
-        public Variant convertToVariant(Integer fileId, LinkedHashMap<String, Integer> samplePosition, String studyName) {
-            VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
-                    samplePosition, fileId.toString(), studyName);
-            return converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
-        }
-
-        @Override
-        public boolean hasAnyReferenceGenotype() {
-            return hasAnyReferenceGenotype(vcfSlice, vcfRecord);
-        }
-
-        protected static boolean hasAnyReferenceGenotype(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord) {
-            for (VcfSliceProtos.VcfSample vcfSample : vcfRecord.getSamplesList()) {
-                String gt = vcfSlice.getFields().getGts(vcfSample.getGtIndex());
-                if (isHomRefDiploid(gt)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    protected static class FillGapsRecordVariant implements FillGapsRecord {
+    public static class FillGapsRecordVariant implements FillGapsRecord {
 
         private final Variant variant;
 
@@ -613,15 +466,11 @@ public class FillGapsTask {
 
         @Override
         public boolean hasAnyReferenceGenotype() {
-//            return variant.getStudies().get(0).getSamples()
-//                    .stream()
-//                    .map(s -> s.getData().get(0))
-//                    .anyMatch(FillGapsTask::isHomRefDiploid);
             // FIXME: Is this correct?
             return variant.getStudies().get(0).getSamples()
                     .stream()
                     .map(s -> s.getData().get(0))
-                    .allMatch(FillGapsTask::isHomRefDiploid);
+                    .allMatch(AbstractFillGapsTask::isHomRefDiploid);
         }
 
         @Override
@@ -634,13 +483,13 @@ public class FillGapsTask {
         }
     }
 
-    private static final class ListIteratorTransformer<I, E> implements ListIterator<E> {
+    public static final class ListIteratorTransformer<I, E> implements ListIterator<E> {
 
         private final Function<I, E> in;
         private final Function<E, I> out;
         private final ListIterator<I> it;
 
-        private ListIteratorTransformer(Function<I, E> in, Function<E, I> out, ListIterator<I> it) {
+        public ListIteratorTransformer(Function<I, E> in, Function<E, I> out, ListIterator<I> it) {
             this.in = in;
             this.out = out;
             this.it = it;
@@ -692,10 +541,10 @@ public class FillGapsTask {
         }
     }
 
+    // ─── Private helpers ─────────────────────────────────────────────────────
+
     /**
      * Check if this VcfRecord is already loaded in the variant that is being processed.
-     *
-     * If so, the variant does not have a gap for this file. Nothing to do!
      */
     private boolean isVariantAlreadyLoaded(Variant variant, FillGapsRecord record,
                                            int start, int end, String reference, String alternate) {
@@ -715,17 +564,7 @@ public class FillGapsTask {
         return gt.equals("0/0") || gt.equals("0|0");
     }
 
-    protected static boolean hasAllReferenceGenotype(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord) {
-        for (VcfSliceProtos.VcfSample vcfSample : vcfRecord.getSamplesList()) {
-            String gt = vcfSlice.getFields().getGts(vcfSample.getGtIndex());
-            if (!isHomRefDiploid(gt)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected Integer getSampleId(String sampleName) {
+    public Integer getSampleId(String sampleName) {
         return sampleIdMap.computeIfAbsent(sampleName, s -> metadataManager.getSampleId(studyMetadata.getId(), sampleName));
     }
 
@@ -742,30 +581,27 @@ public class FillGapsTask {
     /**
      * Checks if the given region is entirely or partially (overlapping) after the variant start.
      *
-     * @param start Start of a region
-     * @param end   End of a region (might be before the start if the region represented an insertion)
+     * @param start   Start of a region
+     * @param end     End of a region (might be before the start if the region represented an insertion)
      * @param variant Variant to check
-     * @return  if the region is after the variant
+     * @return if the region is after the variant
      */
     public static boolean isRegionAfterVariantStart(int start, int end, Variant variant) {
-        // Get region max position. In the region represents an insertion, the start might be after the end
         int regionMaxPos = Math.max(start, end);
         int variantMinPos = Math.min(variant.getStart(), variant.getEnd());
         return regionMaxPos > variantMinPos;
     }
 
     public static boolean overlapsWith(Variant variant, String chromosome, int start, int end) {
-//        return variant.overlapWith(chromosome, start, end, true);
         if (!StringUtils.equals(variant.getChromosome(), chromosome)) {
-            return false; // Different Chromosome
+            return false;
         } else {
             return variant.getStart() <= end && variant.getEnd() >= start
-                    // Insertions in the same position won't match previous statement.
                     || variant.getStart() == start && variant.getEnd() == end;
         }
     }
 
-    protected void updateLoadedGenotypes() throws StorageEngineException {
+    public void updateLoadedGenotypes() throws StorageEngineException {
         Set<String> loadedGenotypes = new LinkedHashSet<>(studyMetadata.getAttributes()
                 .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
         if (!loadedGenotypes.containsAll(newGenotypes)) {

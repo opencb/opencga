@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.gaps;
+package org.opencb.opencga.storage.core.variant.gaps;
 
 /**
  * Created on 02/02/18.

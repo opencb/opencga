@@ -17,6 +17,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -50,7 +51,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
     protected final StudyMetadata studyMetadata;
-    protected final FillGapsTask fillGapsTask;
+    protected final HBaseFillGapsTask fillGapsTask;
     protected final SortedSet<Integer> fileIds;
     protected final Map<Integer, byte[]> fileToNonRefColumnMap;
     protected final Map<Integer, LinkedHashSet<Integer>> fileToSampleIds;
@@ -111,7 +112,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         }
 
         fillGapsTask =
-                new FillGapsTask(metadataManager, studyMetadata, skipReferenceVariants, simplifiedNewMultiAllelicVariants, gapsGenotype);
+                new HBaseFillGapsTask(metadataManager, studyMetadata, skipReferenceVariants, simplifiedNewMultiAllelicVariants, gapsGenotype);
         rowKeyFactory = new ArchiveRowKeyFactory(configuration);
     }
 
@@ -349,7 +350,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         }
 
         // If any of the genotypes is HOM_REF, the variant won't be completely loaded, so there may be a gap.
-        return !FillGapsTask.FillGapsRecordVcfSlice.hasAnyReferenceGenotype(slice, vcfRecord);
+        return !HBaseFillGapsTask.FillGapsRecordVcfSlice.hasAnyReferenceGenotype(slice, vcfRecord);
     }
 
     public Map<String, Long> takeStats() {

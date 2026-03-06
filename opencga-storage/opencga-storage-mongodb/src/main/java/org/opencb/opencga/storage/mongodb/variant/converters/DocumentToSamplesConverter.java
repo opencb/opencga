@@ -78,7 +78,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     /**
      * Converts Integer FORMAT fields.
      */
-    static final ComplexTypeConverter<String, Integer> INTEGER_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+    public static final ComplexTypeConverter<String, Integer> INTEGER_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
         @Override
         public String convertToDataModelType(Integer anInt) {
             return anInt == 0 ? UNKNOWN_FIELD : Integer.toString(anInt > 0 ? anInt - 1 : anInt);
@@ -98,7 +98,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     /**
      * Converts Float FORMAT fields.
      */
-    static final ComplexTypeConverter<String, Integer> FLOAT_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+    public static final ComplexTypeConverter<String, Integer> FLOAT_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
         @Override
         public String convertToDataModelType(Integer anInt) {
             return anInt == 0 ? UNKNOWN_FIELD : Double.toString((anInt > 0 ? anInt - 1 : anInt) / 1000.0);
