@@ -284,7 +284,7 @@ public class MongoDBFillGapsFromFile {
 
         // Build a study entry with ALL file samples in metadata order for the samples converter.
         // Non-gap-filled samples get the default genotype (excluded from mgt) and null extra fields.
-        StudyEntry orderedStudy = new StudyEntry(filledStudy.getStudyId(), Collections.emptyList());
+        StudyEntry orderedStudy = new StudyEntry(filledStudy.getStudyId());
         orderedStudy.setSampleDataKeys(new ArrayList<>(filledStudy.getSampleDataKeys()));
         Integer gtIdx = orderedStudy.getSampleDataKeyPosition("GT");
         int numFields = orderedStudy.getSampleDataKeys().size();

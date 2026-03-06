@@ -1656,6 +1656,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
         lazyVariantQueryExecutorsList.clear();
+        lazyVariantAggregationExecutorsList.clear();
     }
 }
 
