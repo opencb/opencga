@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.IssueEntry;
 import org.opencb.biodata.models.variant.avro.IssueType;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -210,8 +211,18 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         final Set<Integer> loadedSamples;
         List<String> extraFields;
         List<String> sampleDataKeys;
+
+        // Read includeFiles list from studyEntry
+        if (study.getFiles() != null && !study.getFiles().isEmpty()) {
+            includeFileIds = new ArrayList<>(study.getFiles().size());
+            for (FileEntry file : study.getFiles()) {
+                int fileId = metadataManager.getFileIdOrFail(studyId, file.getFileId());
+                includeFileIds.add(fileId);
+            }
+        } else {
+            includeFileIds = Collections.emptyList();
+        }
         if (fileDocuments != null) {
-            includeFileIds = new ArrayList<>(fileDocuments.size());
             files = new HashMap<>(fileDocuments.size());
             loadedSamples = new HashSet<>();
             filesWithSamplesData = new HashSet<>();
@@ -219,9 +230,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 int fileId = fileObject.get(DocumentToStudyEntryConverter.FILEID_FIELD, Number.class).intValue();
                 if (fileId < 0) {
                     fileId = -fileId;
-                }
-                if (includeFiles.get(studyId).contains(fileId)) {
-                    includeFileIds.add(fileId);
                 }
                 files.put(fileId, fileObject);
 
@@ -236,7 +244,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         } else {
             files = Collections.emptyMap();
-            includeFileIds = Collections.emptyList();
             filesWithSamplesData = Collections.emptySet();
             loadedSamples = Collections.emptySet();
         }

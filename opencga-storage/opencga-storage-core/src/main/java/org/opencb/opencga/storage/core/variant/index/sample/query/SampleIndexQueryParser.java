@@ -1079,14 +1079,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        // For multi-file samples without a specific FILE constraint, the sample index only has
-        // file-level data (FILTER, QUAL) for files where the sample carries a non-ref genotype.
-        // A global FILTER/QUAL query (e.g. FILTER=PASS) could match a file where the sample is
-        // hom-ref (0/0), which isn't represented in the sample index. Applying such a filter here
-        // would incorrectly exclude valid variants, so we must leave FILTER/QUAL to the DBAdaptor.
-        boolean canFilterByFileFields = !multiFileSample || !sampleFilesFilter.isEmpty();
-
-        if (canFilterByFileFields && isValidParam(query, FILTER)) {
+        if (isValidParam(query, FILTER)) {
             IndexField<String> filterIndexField = schema.getFileIndex()
                     .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.FILTER);
             if (filterIndexField != null) {
@@ -1099,7 +1092,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        if (canFilterByFileFields && isValidParam(query, QUAL)) {
+        if (isValidParam(query, QUAL)) {
             IndexField<String> qualIndexField = schema.getFileIndex()
                     .getCustomField(FieldConfiguration.Source.FILE, StudyEntry.QUAL);
             if (qualIndexField != null) {

@@ -153,7 +153,7 @@ public class DocumentToStudyEntryConverter {
         int studyId = ((Number) studyDocument.get(STUDYID_FIELD)).intValue();
         StudyEntry study = new StudyEntry(getStudyName(studyId));
 
-        // Ordered map: fileId → per-file secondary alternates (only files that have any)
+        // Ordered map: fileIndex → per-file secondary alternates (only files that have any)
         Map<Integer, List<AlternateCoordinate>> fileIndexToAlts = new LinkedHashMap<>();
 
         if (fileDocuments != null) {
@@ -161,6 +161,8 @@ public class DocumentToStudyEntryConverter {
             // Files that are not in returnedFiles (e.g. because they were filtered out by the query) are collected here as "extra files"
             // with no attributes and only originalCall if available, to be added to the study if no other file is returned.
             List<FileEntry> extraFiles = new ArrayList<>();
+            // Secondary alternates for extra files, indexed by position in extraFiles
+            Map<Integer, List<AlternateCoordinate>> extraFileIndexToAlts = new LinkedHashMap<>();
 
             for (Document fileDocument : fileDocuments) {
                 int fid = ((Number) fileDocument.get(FILEID_FIELD)).intValue();
@@ -182,7 +184,17 @@ public class DocumentToStudyEntryConverter {
                     // Always return originalCall when context allele is missing
                     if (call != null) {
                         FileEntry fileEntry = new FileEntry(getFileName(studyId, resolvedFid), call, Collections.emptyMap());
+                        int extraFileIndex = extraFiles.size();
                         extraFiles.add(fileEntry);
+                        // Collect secondary alternates even for non-returned files
+                        List<Document> altDocs = (List<Document>) fileDocument.get(ALTERNATES_FIELD);
+                        if (altDocs != null && !altDocs.isEmpty()) {
+                            List<AlternateCoordinate> alts = new ArrayList<>(altDocs.size());
+                            for (Document altDoc : altDocs) {
+                                alts.add(convertToAlternateCoordinate(altDoc));
+                            }
+                            extraFileIndexToAlts.put(extraFileIndex, alts);
+                        }
                     }
                     continue;
                 }
@@ -226,6 +238,7 @@ public class DocumentToStudyEntryConverter {
                 study.setFiles(files);
             } else {
                 study.setFiles(extraFiles);
+                fileIndexToAlts = extraFileIndexToAlts;
             }
         }
 
@@ -332,9 +345,6 @@ public class DocumentToStudyEntryConverter {
                         continue;
                     }
                     Integer thisFileIndex = sampleEntry.getFileIndex();
-                    if (thisFileIndex == null) {
-                        System.out.println("Sample " + sampleName + " has no file index; skipping alternate merge for this sample");
-                    }
                     if (thisFileIndex != fileIndex) {
                         // This sample is not from this file. Search in issues.
                         for (IssueEntry issue : studyEntry.getIssues()) {

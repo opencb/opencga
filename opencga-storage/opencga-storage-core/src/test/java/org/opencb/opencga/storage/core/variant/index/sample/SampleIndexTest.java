@@ -1147,18 +1147,17 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
                         .append("includeAllFromSampleIndex", true),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(VariantField.ID, VariantField.STUDIES_SAMPLES)),
                 SampleIndexOnlyVariantQueryExecutor.class,
-                v -> {
-                    assertEquals(v.toString(), 1, v.getStudies().get(0).getFiles().size());
-                    for (FileEntry fe : v.getStudies().get(0).getFiles()) {
+                ev -> {
+                    assertEquals(ev.toString(), 1, ev.getStudies().get(0).getFiles().size());
+                    for (FileEntry fe : ev.getStudies().get(0).getFiles()) {
                         assertNotNull(fe.getData().get(StudyEntry.FILTER));
                         fe.setData(Collections.emptyMap());
                     }
-                    v.getStudies().get(0).getFiles().removeIf(fe -> fe.getCall() == null);
-                    // STUDIES_SECONDARY_ALTERNATES and STUDIES_FILES are not in the INCLUDE options,
-                    // so the DBAdaptor won't return them. Clear from SampleIndex full-data result.
-                    v.getStudies().get(0).setSecondaryAlternates(Collections.emptyList());
-                    v.getStudies().get(0).getSamples().forEach(s -> s.setFileIndex(null));
-                    return v;
+                    ev.getStudies().get(0).getFiles().removeIf(fe -> fe.getCall() == null);
+                    if (ev.getStudies().get(0).getFiles().isEmpty()) {
+                        ev.getStudies().get(0).getSamples().forEach(s -> s.setFileIndex(null));
+                    }
+                    return ev;
                 });
 
         testSampleIndexOnlyVariantQueryExecutor(

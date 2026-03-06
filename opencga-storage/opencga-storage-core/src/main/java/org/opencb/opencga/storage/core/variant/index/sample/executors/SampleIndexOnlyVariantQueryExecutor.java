@@ -622,10 +622,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
          */
         private void addSecondaryAlternates(List<Variant> toReadFull) {
 //            StopWatch stopWatch = StopWatch.createStarted();
-            Set<VariantField> userIncludeFields = VariantField.getIncludeFields(parsedQuery.getInputOptions());
-            boolean includeSecondaryAlternates = userIncludeFields.contains(VariantField.STUDIES_SECONDARY_ALTERNATES);
-            boolean includeFiles = userIncludeFields.contains(VariantField.STUDIES_FILES);
-            Set<VariantField> includeFields = new HashSet<>(userIncludeFields);
+            Set<VariantField> includeFields = new HashSet<>(VariantField.getIncludeFields(parsedQuery.getInputOptions()));
             includeFields.add(VariantField.STUDIES_SECONDARY_ALTERNATES);
             includeFields.add(VariantField.STUDIES_FILES);
 
@@ -656,14 +653,13 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
                 StudyEntry studyExtra = variantExtra.getStudies().get(0);
                 StudyEntry study = variant.getStudies().get(0);
 
-                if (includeSecondaryAlternates) {
-                    study.setSecondaryAlternates(studyExtra.getSecondaryAlternates());
-                }
+                study.setSecondaryAlternates(studyExtra.getSecondaryAlternates());
+
                 // Always merge file entries to carry the original call (context allele for multiallelic splits),
                 // mirroring the DBAdaptor's "extraFiles" behavior. Only set fileIndex when files are requested.
                 mergeFileEntries(study, studyExtra.getFiles(), (fe, newFe) -> {
                     fe.setCall(newFe.getCall());
-                }, includeFiles);
+                });
                 // merge sampleEntries
                 for (int i = 0; i < includeSamples.size(); i++) {
                     SampleEntry sample = study.getSample(i);
