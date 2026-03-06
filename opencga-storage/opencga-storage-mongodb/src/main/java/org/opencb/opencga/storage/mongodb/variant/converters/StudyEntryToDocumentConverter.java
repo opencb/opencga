@@ -42,19 +42,9 @@ public class StudyEntryToDocumentConverter {
         Document studyObject = new Document(STUDYID_FIELD, studyId);
 
         // Alternate alleles — stored per-file (not at study level)
-        List<Document> alternates = new LinkedList<>();
-        if (!studyEntry.getSecondaryAlternates().isEmpty()) {   // assuming secondaryAlternates doesn't contain the primary alternate
-            for (AlternateCoordinate coordinate : studyEntry.getSecondaryAlternates()) {
-                Document alt = new Document();
-                alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
-                alt.put(ALTERNATES_REF, coordinate.getReference() != null ? coordinate.getReference() : variant.getReference());
-                alt.put(ALTERNATES_ALT, coordinate.getAlternate());
-                alt.put(ALTERNATES_START, coordinate.getStart() != null ? coordinate.getStart() : variant.getStart());
-                alt.put(ALTERNATES_END, coordinate.getEnd() != null ? coordinate.getEnd() : variant.getEnd());
-                alt.put(ALTERNATES_TYPE, coordinate.getType() != null ? coordinate.getType().toString() : variant.getType().toString());
-                alternates.add(alt);
-            }
-        }
+        List<Document> alternates = studyEntry.getSecondaryAlternates().isEmpty()
+                ? Collections.emptyList()
+                : convertAlternates(variant, studyEntry.getSecondaryAlternates());
 
         final List<Document> fileDocuments;
         if (!files.isEmpty()) {
@@ -83,13 +73,21 @@ public class StudyEntryToDocumentConverter {
     }
 
     protected Document convertFileDocument(int studyId, StudyEntry studyEntry, FileEntry file) {
+        return convertFileDocument(studyId, file, includeSrc);
+    }
+
+    /**
+     * Build a file Document from a {@link FileEntry} (attrs + call).
+     * This static method is reusable outside the normal load pipeline (e.g. gap-filling).
+     */
+    public static Document convertFileDocument(int studyId, FileEntry file, boolean includeSrc) {
         int fileId = Integer.parseInt(file.getFileId());
         Document fileObject = new Document(FILEID_FIELD, fileId);
         // Store the study ID inside each file document so that root-level files[] can be
         // filtered back to the originating study during reads.
         fileObject.put(STUDYID_FIELD, studyId);
         // Attributes
-        if (file.getData().size() > 0) {
+        if (file.getData() != null && file.getData().size() > 0) {
             Document attrs = null;
             for (Map.Entry<String, String> entry : file.getData().entrySet()) {
                 String stringValue = entry.getValue();
@@ -132,13 +130,32 @@ public class StudyEntryToDocumentConverter {
                 fileObject.put(ATTRIBUTES_FIELD, attrs);
             }
         }
-        OriginalCall call = studyEntry.getFile(Integer.toString(fileId)).getCall();
+        OriginalCall call = file.getCall();
         if (call != null) {
             fileObject.append(ORI_FIELD,
                     new Document("s", call.getVariantId())
                             .append("i", call.getAlleleIndex()));
         }
         return fileObject;
+    }
+
+    /**
+     * Convert a list of {@link AlternateCoordinate} to MongoDB Documents.
+     * Reusable outside the normal load pipeline (e.g. gap-filling).
+     */
+    public static List<Document> convertAlternates(Variant variant, List<AlternateCoordinate> secondaryAlternates) {
+        List<Document> alternates = new ArrayList<>(secondaryAlternates.size());
+        for (AlternateCoordinate coordinate : secondaryAlternates) {
+            Document alt = new Document();
+            alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
+            alt.put(ALTERNATES_REF, coordinate.getReference() != null ? coordinate.getReference() : variant.getReference());
+            alt.put(ALTERNATES_ALT, coordinate.getAlternate());
+            alt.put(ALTERNATES_START, coordinate.getStart() != null ? coordinate.getStart() : variant.getStart());
+            alt.put(ALTERNATES_END, coordinate.getEnd() != null ? coordinate.getEnd() : variant.getEnd());
+            alt.put(ALTERNATES_TYPE, coordinate.getType() != null ? coordinate.getType().toString() : variant.getType().toString());
+            alternates.add(alt);
+        }
+        return alternates;
     }
 
 }

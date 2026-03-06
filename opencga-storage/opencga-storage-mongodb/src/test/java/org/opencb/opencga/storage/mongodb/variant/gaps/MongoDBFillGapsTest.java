@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant.gaps;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -49,7 +50,7 @@ public class MongoDBFillGapsTest extends FillGapsTest implements MongoDBVariantS
         Set<Integer> study2FileIds = new HashSet<>(metadataManager.getIndexedFiles(studyId2));
 
         for (Variant variant : dbAdaptor) {
-            org.opencb.biodata.models.variant.StudyEntry study2Entry = variant.getStudy(referenceStudy);
+            StudyEntry study2Entry = variant.getStudy(referenceStudy);
             if (study2Entry == null) {
                 continue;
             }
