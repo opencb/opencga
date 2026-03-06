@@ -483,7 +483,14 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
             NamingEnumeration<SearchResult> search = dirContext.search(userBase, userFilter, sc);
             while (search.hasMore()) {
-                resultList.add(search.next().getAttributes());
+                SearchResult result = search.next();
+                Attributes attrs = result.getAttributes();
+                if (attrs.get(dnKey) == null) {
+                    logger.debug("DN attribute '{}' not found in LDAP response; injecting from getNameInNamespace(): '{}'",
+                            dnKey, result.getNameInNamespace());
+                    attrs.put(dnKey, result.getNameInNamespace());
+                }
+                resultList.add(attrs);
             }
             dirContext.close();
         } catch (NamingException | RuntimeException e) {
