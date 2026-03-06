@@ -77,7 +77,7 @@ public class VariantMongoDBQueryParser {
     public static final String OVERLAPPED_FILES_ONLY = "overlappedFilesOnly";
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
     public static final JsonWriterSettings JSON_WRITER_SETTINGS = JsonWriterSettings.builder()
-            .outputMode(JsonMode.SHELL)
+                    .outputMode(JsonMode.SHELL)
             .indent(false).build();
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
@@ -773,12 +773,8 @@ public class VariantMongoDBQueryParser {
             boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
             if (!useFileElemMatch) {
-                // FILTER/QUAL are stored per file entry. When multiple studies share the same
-                // variants collection, a flat query like "files.attrs.FILTER=PASS" can match
-                // file entries from other studies. Use $elemMatch with the study ID to scope
-                // the condition to the correct study.
-                // When a sample is in the query, also scope to that sample's files (matching
-                // HBase behaviour where includeFiles is inferred from the queried sample).
+                // FILTER/QUAL are per file entry. Use $elemMatch with study ID to scope correctly.
+                // When a sample is in the query, also scope to that sample's files.
                 String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
                 List<Bson> fileAttrFilters = new ArrayList<>();
                 if (isValidParam(query, FILTER)) {
@@ -791,10 +787,21 @@ public class VariantMongoDBQueryParser {
                     if (defaultStudy != null) {
                         fileAttrFilters.add(eq(DocumentToStudyEntryConverter.STUDYID_FIELD, defaultStudy.getId()));
                     }
-                    if (queriedSampleFileIdSet != null && !queriedSampleFileIdSet.isEmpty()) {
-                        fileAttrFilters.add(in(DocumentToStudyEntryConverter.FILEID_FIELD, queriedSampleFileIdSet));
+                    if (sampleGenotypeConditions != null && !sampleGenotypeConditions.isEmpty()) {
+                        // Tie FILTER/QUAL to genotype in the same file entry (matches HBase/Phoenix).
+                        List<Bson> perSampleFilters = new ArrayList<>(sampleGenotypeConditions.size());
+                        for (Bson gtCond : sampleGenotypeConditions.values()) {
+                            List<Bson> combined = new ArrayList<>(fileAttrFilters);
+                            combined.add(gtCond);
+                            perSampleFilters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(combined)));
+                        }
+                        addAll(filters, preGenotypesQuery.getOperation(), perSampleFilters);
+                    } else {
+                        if (queriedSampleFileIdSet != null && !queriedSampleFileIdSet.isEmpty()) {
+                            fileAttrFilters.add(in(DocumentToStudyEntryConverter.FILEID_FIELD, queriedSampleFileIdSet));
+                        }
+                        filters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileAttrFilters)));
                     }
-                    filters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileAttrFilters)));
                 }
             } else {
                 List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
