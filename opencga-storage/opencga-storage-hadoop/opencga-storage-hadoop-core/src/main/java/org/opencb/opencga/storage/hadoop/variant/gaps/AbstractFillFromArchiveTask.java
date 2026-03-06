@@ -111,8 +111,8 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
             }
         }
 
-        fillGapsTask =
-                new HBaseFillGapsTask(metadataManager, studyMetadata, skipReferenceVariants, simplifiedNewMultiAllelicVariants, gapsGenotype);
+        fillGapsTask = new HBaseFillGapsTask(metadataManager, studyMetadata, skipReferenceVariants, simplifiedNewMultiAllelicVariants,
+                gapsGenotype);
         rowKeyFactory = new ArchiveRowKeyFactory(configuration);
     }
 

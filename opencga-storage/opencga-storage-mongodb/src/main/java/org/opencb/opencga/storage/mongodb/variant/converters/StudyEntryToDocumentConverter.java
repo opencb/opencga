@@ -79,6 +79,11 @@ public class StudyEntryToDocumentConverter {
     /**
      * Build a file Document from a {@link FileEntry} (attrs + call).
      * This static method is reusable outside the normal load pipeline (e.g. gap-filling).
+     *
+     * @param studyId    study identifier
+     * @param file       file entry to convert
+     * @param includeSrc whether to include the src attribute
+     * @return file Document ready for storage
      */
     public static Document convertFileDocument(int studyId, FileEntry file, boolean includeSrc) {
         int fileId = Integer.parseInt(file.getFileId());
@@ -142,6 +147,10 @@ public class StudyEntryToDocumentConverter {
     /**
      * Convert a list of {@link AlternateCoordinate} to MongoDB Documents.
      * Reusable outside the normal load pipeline (e.g. gap-filling).
+     *
+     * @param variant              variant providing default chromosome/start/end
+     * @param secondaryAlternates  list of secondary alternate coordinates
+     * @return list of Documents representing the alternates
      */
     public static List<Document> convertAlternates(Variant variant, List<AlternateCoordinate> secondaryAlternates) {
         List<Document> alternates = new ArrayList<>(secondaryAlternates.size());
