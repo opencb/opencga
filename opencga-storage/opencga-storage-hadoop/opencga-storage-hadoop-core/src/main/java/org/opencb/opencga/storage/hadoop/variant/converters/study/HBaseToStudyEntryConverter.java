@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.*;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
 /**

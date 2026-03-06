@@ -249,6 +249,12 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
         return iterator.localLimitSkip(options);
     }
 
+    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
+        return iteratorByGt(study, sample, schemaFactory.getSchema(study, sample, false));
+    }
+
+    public abstract Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException;
+
     public long count(SampleIndexQuery query) {
         if (query.getSamplesMap().size() == 1 && query.getMendelianErrorSet().isEmpty()) {
             String sample = query.getSamplesMap().keySet().iterator().next();

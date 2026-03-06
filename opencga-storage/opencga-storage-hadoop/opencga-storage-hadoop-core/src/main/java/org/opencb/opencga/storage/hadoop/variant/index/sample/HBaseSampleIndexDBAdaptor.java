@@ -165,10 +165,7 @@ public class HBaseSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         });
     }
 
-    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
-        return iteratorByGt(study, sample, schemaFactory.getSchema(study, sample, false));
-    }
-
+    @Override
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         HBaseToSampleIndexConverter converter = newConverter(schema);

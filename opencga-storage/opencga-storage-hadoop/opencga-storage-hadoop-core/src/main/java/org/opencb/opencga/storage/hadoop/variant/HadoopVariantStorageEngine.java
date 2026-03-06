@@ -144,10 +144,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     // Last time (in millis from epoch) that the list of "pendingVariantsToSearchIndex" was updated. Timestamp at operation start!
     public static final String LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS = "lastPendingVariantsToSearchIndexUpdateTs";
 
-    // Study attributes
-    // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
-    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
-
     public static final int FILL_GAPS_MAX_SAMPLES = 100;
 
     protected Configuration conf = null;

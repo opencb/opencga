@@ -14,8 +14,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
-import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.family.SampleFamilyIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleGenotypeIndexer;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
@@ -213,6 +213,11 @@ public class LocalSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         }
 
         return CloseableIterator.wrap(entries.iterator());
+    }
+
+    @Override
+    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

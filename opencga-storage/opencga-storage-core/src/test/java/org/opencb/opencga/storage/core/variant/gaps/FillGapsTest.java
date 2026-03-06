@@ -1,13 +1,8 @@
 package org.opencb.opencga.storage.core.variant.gaps;
 
 import com.google.common.collect.BiMap;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
@@ -16,13 +11,11 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -30,20 +23,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -52,10 +39,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.ALL;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_NON_REF_FILTER;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
 
 /**
  * Created on 27/10/17.
@@ -65,32 +48,13 @@ import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.re
 @StorageEngineTest
 public abstract class FillGapsTest extends VariantStorageBaseTest {
 
+    private static final Logger log = LoggerFactory.getLogger(FillGapsTest.class);
+
     public static void fillGaps(VariantStorageEngine variantStorageEngine, StudyMetadata studyMetadata,
                                 Collection<String> sampleIds) throws Exception {
-//        fillGapsMR(variantStorageEngine, studyMetadata, sampleIds, true);
-//        fillGapsMR(variantStorageEngine, studyMetadata, sampleIds, false);
-//        fillGapsLocal(variantStorageEngine, studyMetadata, sampleIds);
-//        fillLocalMRDriver(variantStorageEngine, studyMetadata, sampleIds);
-//        fillGapsLocalFromArchive(variantStorageEngine, studyMetadata, sampleIds, false);
-//        fillGapsLocalFromFile(variantStorageEngine, studyMetadata, sampleIds);
         variantStorageEngine.aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(new ArrayList<>(sampleIds), false), new ObjectMap("local", false), newOutputUri());
-        //        variantStorageEngine.fillGaps(studyMetadata.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
     }
 
-    public static void fillGapsLocalFromFile(HadoopVariantStorageEngine variantStorageEngine, StudyMetadata studyMetadata,
-                                             Collection<String> samples) throws Exception {
-        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
-        List<Integer> sampleIds = metadataManager.getSampleIds(studyMetadata.getId(), samples);
-        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
-        List<URI> uris = new ArrayList<>();
-        for (Integer fileId : fileIds) {
-            uris.add(Paths.get(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getPath()).toUri());
-        }
-        FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(variantStorageEngine.getDBAdaptor().getHBaseManager(),
-                metadataManager, variantStorageEngine.getOptions());
-
-        fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, newOutputUri(), variantStorageEngine.getVariantTableName(), "0/0");
-    }
 
     @Test
     public void testFillGapsVcfFiles() throws Exception {
@@ -114,18 +78,17 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         testFillGapsPlatinumFiles(studyMetadata, true);
     }
 
-    @Test
-    public void testFillGapsPlatinumFilesMultiFileBatch() throws Exception {
-        StudyMetadata studyMetadata = loadPlatinum(new ObjectMap(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 2)
-                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12877, 12880);
-        testFillGapsPlatinumFiles(studyMetadata, true);
+    protected abstract void logVariansStatus(VariantDBAdaptor dbAdaptor) throws Exception;
+    
+    protected void logVariansStatus(StudyMetadata studyMetadata, VariantDBAdaptor dbAdaptor) throws Exception {
+        logVariansStatus(studyMetadata, dbAdaptor, newOutputUri());
     }
+
+    protected abstract void logVariansStatus(StudyMetadata studyMetadata, VariantDBAdaptor dbAdaptor, URI outputUri) throws Exception;
 
     public void testFillGapsPlatinumFiles(StudyMetadata studyMetadata, boolean checkNewMissingGenotypes) throws Exception {
 
-        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
-
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         BiMap<Integer, String> samplesMap = metadataManager.getIndexedSamplesMap(studyMetadata.getId()).inverse();
         List<Integer> sampleIds = new ArrayList<>(samplesMap.keySet());
         sampleIds.sort(Integer::compareTo);
@@ -134,21 +97,21 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         List<String> subSamples = samples.subList(0, samples.size() / 2);
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        logVariansStatus(studyMetadata, dbAdaptor);
         checkFillGaps(studyMetadata, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
         subSamples = samples.subList(samples.size() / 2, samples.size());
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        logVariansStatus(studyMetadata, dbAdaptor);
         checkFillGaps(studyMetadata, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
         subSamples = samples;
         System.out.println("subSamples = " + subSamples);
         fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        logVariansStatus(studyMetadata, dbAdaptor);
         checkFillGaps(studyMetadata, dbAdaptor, subSamples);
         checkSampleIndexTable(dbAdaptor);
 
@@ -177,17 +140,21 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         checkConflictingFiles(studyMetadata);
     }
 
+
     @Test
     public void testFillMissingFilterNonRef() throws Exception {
-        StudyMetadata studyMetadata = load(new QueryOptions(VariantStorageOptions.GVCF.key(), true)
-                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
-                .append(HadoopVariantStorageOptions.ARCHIVE_NON_REF_FILTER.key(), "FORMAT:DP<6"), Arrays.asList(
+        testFillMissingFilterNonRef(new ObjectMap());
+    }
+
+    public void testFillMissingFilterNonRef(ObjectMap options) throws Exception {
+        StudyMetadata studyMetadata = load(new QueryOptions(options)
+                .append(VariantStorageOptions.GVCF.key(), true), Arrays.asList(
                 getResourceUri("gaps/file1.genome.vcf"),
                 getResourceUri("gaps/file2.genome.vcf")));
 
         variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(true, false), new ObjectMap());
-        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        logVariansStatus(studyMetadata, dbAdaptor, newOutputUri());
 
         for (String file : Arrays.asList("file1.genome.vcf", "file2.genome.vcf")) {
             AtomicInteger refVariants = new AtomicInteger();
@@ -241,18 +208,18 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
     }
 
     public void checkConflictingFiles(StudyMetadata studyMetadata) throws Exception {
-        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+        VariantStorageEngine variantStorageEngine = this.variantStorageEngine;
 
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         BiMap<Integer, String> samplesMap = metadataManager.getIndexedSamplesMap(studyMetadata.getId()).inverse();
         List<Integer> sampleIds = new ArrayList<>(samplesMap.keySet());
         sampleIds.sort(Integer::compareTo);
         List<String> samples = sampleIds.stream().map(samplesMap::get).collect(Collectors.toList());
 
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        logVariansStatus(studyMetadata, dbAdaptor);
 
         fillGaps(variantStorageEngine, studyMetadata, samples);
-        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        logVariansStatus(studyMetadata, dbAdaptor);
         checkFillGaps(studyMetadata, dbAdaptor, samples, Collections.singleton("1:10020:A:T"));
         checkSampleIndexTable(dbAdaptor);
 
@@ -278,15 +245,14 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
 
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
-        ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
-                .append(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 2);
+        testFillMissingPlatinumFiles(new ObjectMap());
+    }
 
+    public void testFillMissingPlatinumFiles(ObjectMap indexOptions) throws Exception {
         // Load files 12877 , 12878
-        StudyMetadata studyMetadata = loadPlatinum(options, 12877, 12878);
-        assertFalse(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        HadoopVariantStorageEngine variantStorageEngine = ((HadoopVariantStorageEngine) this.variantStorageEngine);
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        StudyMetadata studyMetadata = loadPlatinum(indexOptions, 12877, 12878);
+        assertFalse(studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkFillMissing(dbAdaptor);
         checkSampleIndexTable(dbAdaptor);
         assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1")), new HashSet<>(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key())));
@@ -295,32 +261,31 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         sampleIds.sort(Integer::compareTo);
 
         // Fill missing
-        options.put(HadoopVariantStorageOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.key(), true); // This is the default
-        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), options);
-        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), indexOptions);
+        logVariansStatus(dbAdaptor);
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        assertTrue(studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878");
         checkSampleIndexTable(dbAdaptor);
         assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1", "0/2")), new HashSet<>(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key())));
 
         // Load file 12879
-        studyMetadata = loadPlatinum(options, 12879, 12879);
+        studyMetadata = loadPlatinum(indexOptions, 12879, 12879);
 
-        assertFalse(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        assertFalse(studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, Arrays.asList(3), "NA12877", "NA12878");
         checkSampleIndexTable(dbAdaptor);
 
         // Load file 12880
-        studyMetadata = loadPlatinum(options, 12880, 12880);
+        studyMetadata = loadPlatinum(indexOptions, 12880, 12880);
         checkFillMissing(dbAdaptor, Arrays.asList(3, 4), "NA12877", "NA12878");
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), options);
-        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), indexOptions);
+        logVariansStatus(dbAdaptor);
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
+        assertTrue(studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880", "NA12881");
         checkSampleIndexTable(dbAdaptor);
 
@@ -329,14 +294,14 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         checkNewMissingPositions(dbAdaptor);
 
         // Remove last file
-        VariantHbaseTestUtils.removeFile(variantStorageEngine, "1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", studyMetadata, Collections.emptyMap(), outputUri);
-        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+        variantStorageEngine.removeFile(studyMetadata.getName(), "1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", outputUri);
+        logVariansStatus(dbAdaptor);
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), options);
-        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
+        variantStorageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), indexOptions);
+        logVariansStatus(dbAdaptor);
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
         checkQueryGenotypes(dbAdaptor);
         checkSampleIndexTable(dbAdaptor);
@@ -346,11 +311,11 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
     public void testFillGapsCorpasome() throws Exception {
         URI fileUri = getResourceUri("quartet.variants.annotated.partial.vcf.gz");
         StudyMetadata study = load(new ObjectMap(), Collections.singletonList(fileUri));
-//        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+//        printVariants((VariantDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         variantStorageEngine.aggregateFamily(study.getName(), new VariantAggregateFamilyParams()
                 .setSamples(Arrays.asList("ISDBM322015", "ISDBM322016", "ISDBM322017", "ISDBM322018")), new ObjectMap(), newOutputUri());
-//        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+//        printVariants((VariantDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         load(new ObjectMap(VariantStorageOptions.STUDY.key(), STUDY_NAME_2),
                 Collections.singletonList(fileUri));
@@ -361,14 +326,14 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
     @Test
     public void testFillGapsGiabChinesse() throws Exception {
         ObjectMap options = new ObjectMap(VariantStorageOptions.GVCF.key(), true)
-                .append(HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE.key(), 1000000)
+            //    .append(HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE.key(), 1000000)
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         loadGIAB(options);
-        VariantHbaseTestUtils.printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+        logVariansStatus(variantStorageEngine.getDBAdaptor());
 
         variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
                 .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap(), newOutputUri());
-        VariantHbaseTestUtils.printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+        logVariansStatus(variantStorageEngine.getDBAdaptor());
 
         options.put(VariantStorageOptions.STUDY.key(), STUDY_NAME_2);
         loadGIAB(options);
@@ -376,32 +341,7 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         checkInputValuesAreUnmodified(STUDY_NAME, STUDY_NAME_2);
     }
 
-    private void checkInputValuesAreUnmodified(String aggregatedStudy, String referenceStudy) throws Exception {
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-
-        int studyId1 = dbAdaptor.getMetadataManager().getStudyId(aggregatedStudy);
-        int studyId2 = dbAdaptor.getMetadataManager().getStudyId(referenceStudy);
-
-        dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
-            table.getScanner(new Scan()).iterator().forEachRemaining(r -> {
-                Variant variant = VariantPhoenixKeyFactory.extractVariantFromResult(r);
-
-                NavigableMap<byte[], byte[]> cells = r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES);
-                for (Map.Entry<byte[], byte[]> entry : cells.entrySet()) {
-                    String columnKey = Bytes.toString(entry.getKey());
-                    Integer studyId = VariantPhoenixSchema.extractStudyId(columnKey, false);
-                    if (studyId != null && studyId == studyId2) {
-                        String otherColumnKey = columnKey.replaceFirst(VariantPhoenixSchema.buildStudyColumnsPrefix(studyId2),
-                                VariantPhoenixSchema.buildStudyColumnsPrefix(studyId1));
-                        byte[] thisCell = entry.getValue();
-                        byte[] otherCell = cells.get(Bytes.toBytes(otherColumnKey));
-                        assertArrayEquals(variant.toString() + " study1ColumnKey " + otherColumnKey + ", study2ColumnKey " + columnKey,
-                                thisCell, otherCell);
-                    }
-                }
-            });
-        });
-    }
+    protected abstract void checkInputValuesAreUnmodified(String aggregatedStudy, String referenceStudy) throws Exception;
 
     private void loadGIAB(ObjectMap options) throws Exception {
         load(options, Collections.singletonList(getResourceUri("giab_chinesse/HG005_GRCh38_1_22_v4.2.1_benchmark.partial.vcf.gz")), newOutputUri(), false);
@@ -418,15 +358,15 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         load(extraParams, Collections.singletonList(getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
         load(extraParams, Collections.singletonList(getResourceUri("impact/HG006_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
         load(extraParams, Collections.singletonList(getResourceUri("impact/HG007_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz")), uri, false);
-        VariantHbaseTestUtils.printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+        logVariansStatus((VariantDBAdaptor) variantStorageEngine.getDBAdaptor());
 
         variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
                 .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap(), newOutputUri());
-        VariantHbaseTestUtils.printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+        logVariansStatus((VariantDBAdaptor) variantStorageEngine.getDBAdaptor());
 
     }
 
-    public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
+    public void checkNewMultiAllelicVariants(VariantDBAdaptor dbAdaptor) {
         Variant v = dbAdaptor.get(new VariantQuery().id("1:10297:C:G").unknownGenotype("?").includeSample(ALL), null).first();
         assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
         assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12877", "GT"));
@@ -438,7 +378,7 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12878", "GT"));
     }
 
-    public void checkNewMissingPositions(VariantHadoopDBAdaptor dbAdaptor) {
+    public void checkNewMissingPositions(VariantDBAdaptor dbAdaptor) {
         Variant v;
         v = dbAdaptor.get(new VariantQuery().id("1:10821:T:A").includeSample(ALL).unknownGenotype("?"), null).first();
         assertEquals(0, v.getStudies().get(0).getSecondaryAlternates().size());
@@ -454,7 +394,7 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         return loadPlatinum(extraParams, 12877, 12877 + max - 1);
     }
 
-    private StudyMetadata loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {
+    protected StudyMetadata loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {
 
         List<URI> inputFiles = new LinkedList<>();
 
@@ -466,7 +406,7 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         return load(extraParams, inputFiles, newOutputUri());
     }
 
-    private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
+    protected StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
         return load(extraParams, inputFiles, newOutputUri());
     }
 
@@ -476,14 +416,13 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
 
     private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles, URI outputUri, boolean printVariants) throws Exception {
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
-        HadoopVariantStorageEngine engine = getVariantStorageEngine();
-        VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
+        VariantStorageEngine engine = getVariantStorageEngine();
+        VariantDBAdaptor dbAdaptor = engine.getDBAdaptor();
 
         ObjectMap options = engine.getOptions();
         options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         options.put(VariantStorageOptions.GVCF.key(), true);
-        options.put(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true);
-        options.put(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 1);
+//        options.put(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 1);
         options.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         options.putAll(extraParams);
         List<StoragePipelineResult> index = engine.index(inputFiles, outputUri, true, true, true);
@@ -494,17 +433,17 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
 
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         if (printVariants) {
-            VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, outputUri);
+            logVariansStatus(studyMetadata, dbAdaptor, outputUri);
         }
 
         return studyMetadata;
     }
 
-    protected void checkFillGaps(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, List<String> samples) {
+    protected void checkFillGaps(StudyMetadata studyMetadata, VariantDBAdaptor dbAdaptor, List<String> samples) {
         checkFillGaps(studyMetadata, dbAdaptor, samples, Collections.singleton("1:10178:-:C"));
     }
 
-    protected void checkFillGaps(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, List<String> samples, Set<String> variantsWithGaps) {
+    protected void checkFillGaps(StudyMetadata studyMetadata, VariantDBAdaptor dbAdaptor, List<String> samples, Set<String> variantsWithGaps) {
         for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSample(samples), new QueryOptions())) {
             boolean anyUnknown = false;
             boolean allUnknown = true;
@@ -525,15 +464,15 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         }
     }
 
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, String... processedSamples) {
+    protected void checkFillMissing(VariantDBAdaptor dbAdaptor, String... processedSamples) {
         checkFillMissing(dbAdaptor, Arrays.asList(), processedSamples);
     }
 
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
+    protected void checkFillMissing(VariantDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
         Set<Integer> newFilesSet = new HashSet<>(newFiles);
         Set<String> samplesSet = new HashSet<>(Arrays.asList(processedSamples));
         StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(STUDY_NAME);
-        boolean missingGenotypesUpdated = studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+        boolean missingGenotypesUpdated = studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
 
         for (Variant variant : dbAdaptor) {
             StudyEntry studyEntry = variant.getStudies().get(0);
@@ -552,7 +491,7 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         }
     }
 
-    private void checkQueryGenotypes(VariantHadoopDBAdaptor dbAdaptor) {
+    private void checkQueryGenotypes(VariantDBAdaptor dbAdaptor) {
         StudyMetadata sc = dbAdaptor.getMetadataManager().getStudyMetadata(STUDY_NAME);
         List<Variant> allVariants = dbAdaptor.get(new VariantQuery().includeSample(ALL), new QueryOptions()).getResults();
 
@@ -566,9 +505,8 @@ public abstract class FillGapsTest extends VariantStorageBaseTest {
         }
     }
 
-    protected void checkSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
+    protected void checkSampleIndexTable(VariantDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = variantStorageEngine.getSampleIndexDBAdaptor();
 
         for (String study : metadataManager.getStudies(null).keySet()) {
             StudyMetadata sc = metadataManager.getStudyMetadata(study);

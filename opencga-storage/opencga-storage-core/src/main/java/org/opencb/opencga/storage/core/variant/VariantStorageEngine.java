@@ -100,6 +100,9 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> implements VariantIterable {
 
+    // Study attributes
+    // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
+    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private final List<VariantQueryExecutor> lazyVariantQueryExecutorsList = new ArrayList<>();
     private final List<VariantAggregationExecutor> lazyVariantAggregationExecutorsList = new ArrayList<>();

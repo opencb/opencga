@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -126,6 +127,11 @@ public class MongoDBSampleIndexDBAdaptor extends SampleIndexDBAdaptor {
         MongoDBIterator<Document> mongoIterator = collection.iterator(Filters.and(filters), new QueryOptions(QueryOptions.SORT, "_id"));
         Iterator<SampleIndexEntry> iterator = Iterators.transform(mongoIterator, converter::convertToDataModelType);
         return CloseableIterator.wrap(iterator, mongoIterator);
+    }
+
+    @Override
+    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException {
+        return null;
     }
 
     @Override

@@ -501,7 +501,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         
         */
 
-        boolean missingUpdated = studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
+        boolean missingUpdated = studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
         String defaultGenotype = missingUpdated ? "0/0" : "?/?";
 
         List<String> errors = new ArrayList<>();
