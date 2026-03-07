@@ -20,7 +20,14 @@ public interface InterpretationFindingsDBAdaptor {
         INTERPRETATION_ID("interpretationId", TEXT, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, "");
+        DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
+
+        CHROMOSOME("chromosome", TEXT_ARRAY, ""),
+        TYPE("type", TEXT_ARRAY, ""),
+        LOCATION("location", TEXT_ARRAY, ""),
+        GENE_ID("annotation.consequenceTypes.geneId", TEXT_ARRAY, ""),
+        GENE_NAME("annotation.consequenceTypes.geneName", TEXT_ARRAY, ""),
+        HGVS("annotation.hgvs", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
 

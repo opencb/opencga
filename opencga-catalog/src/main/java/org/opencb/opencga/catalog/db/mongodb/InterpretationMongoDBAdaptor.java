@@ -17,8 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Variable;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +34,7 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
@@ -1008,8 +1011,34 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
         return nativeIterator(query, options);
     }
 
+    /**
+     * Extract params prefixed with {@code prefix+"."} from the query, but only those that are NOT
+     * already handled as a direct InterpretationDBAdaptor.QueryParam (e.g. primaryFindings.id).
+     * The extracted params are removed from the original query and returned with the prefix stripped.
+     */
+    private Query extractFindingsNestedQuery(Query query, String prefix) {
+        Query findingsQuery = new Query();
+        List<String> keysToRemove = new ArrayList<>();
+        String projectionKey = prefix + ".";
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith(projectionKey)) {
+                if (InterpretationDBAdaptor.QueryParams.getParam(key) == null) {
+                    findingsQuery.put(key.substring(projectionKey.length()), entry.getValue());
+                    keysToRemove.add(key);
+                }
+            }
+        }
+        keysToRemove.forEach(query::remove);
+        return findingsQuery;
+    }
+
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException {
+        Query primaryFindingsQuery = extractFindingsNestedQuery(query, "primaryFindings");
+        Query secondaryFindingsQuery = extractFindingsNestedQuery(query, "secondaryFindings");
+        Query findingsShortcutQuery = extractFindingsNestedQuery(query, "findings");
+
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -1022,10 +1051,146 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                 QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key(), QueryParams.STUDY_UID.key(),
                 LAST_OF_VERSION));
 
-        logger.debug("Interpretation query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
-        return collection.iterator(clientSession, bson, null, null, qOptions);
+
+        if (primaryFindingsQuery.isEmpty() && secondaryFindingsQuery.isEmpty() && findingsShortcutQuery.isEmpty()) {
+            logger.debug("Interpretation query : {}", bson.toBsonDocument());
+            return collection.iterator(clientSession, bson, null, null, qOptions);
+        } else {
+            Bson mainProjection = MongoDBQueryUtils.getProjection(qOptions);
+
+            logger.debug("Interpretation query : {}", bson.toBsonDocument());
+
+            if (!primaryFindingsQuery.isEmpty()) {
+                Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(primaryFindingsQuery);
+                List<Variable<String>> let = new ArrayList<>();
+                let.add(new Variable<>("intId", "$id"));
+                let.add(new Variable<>("studyUid", "$studyUid"));
+                let.add(new Variable<>("primaryFindings", "$primaryFindings"));
+
+                List<Bson> pipeline = new ArrayList<>();
+                pipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                        new Document("$expr", new Document("$and", Arrays.asList(
+                                new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+                                new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+                                new Document("$gt", Arrays.asList(
+                                        new Document("$size", new Document("$filter",
+                                                new Document("input", "$$primaryFindings")
+                                                        .append("as", "f")
+                                                        .append("cond", new Document("$and", Arrays.asList(
+                                                                new Document("$eq", Arrays.asList("$$f.id", "$id")),
+                                                                new Document("$eq", Arrays.asList("$$f.version", "$version"))
+                                                        )))
+                                        )),
+                                        0
+                                ))
+                        ))),
+                        findingsBsonQuery
+                ))));
+                pipeline.add(Aggregates.limit(1));
+                pipeline.add(Aggregates.project(Projections.include("_id")));
+
+                for (Bson bsonPipeline : pipeline) {
+                    logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+                }
+
+                collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,
+                        deleteInterpretationCollection);
+                return collection.leftJoinFind(clientSession, bson, mainProjection,
+                        OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+                        let, pipeline, "_matchedPrimaryFindings", true, null, qOptions);
+            }
+
+            if (!secondaryFindingsQuery.isEmpty()) {
+                Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(secondaryFindingsQuery);
+                List<Variable<String>> let = new ArrayList<>();
+                let.add(new Variable<>("intId", "$id"));
+                let.add(new Variable<>("studyUid", "$studyUid"));
+                let.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+
+                List<Bson> pipeline = new ArrayList<>();
+                pipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                        new Document("$expr", new Document("$and", Arrays.asList(
+                                new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+                                new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+                                new Document("$gt", Arrays.asList(
+                                        new Document("$size", new Document("$filter",
+                                                new Document("input", "$$secondaryFindings")
+                                                        .append("as", "f")
+                                                        .append("cond", new Document("$and", Arrays.asList(
+                                                                new Document("$eq", Arrays.asList("$$f.id", "$id")),
+                                                                new Document("$eq", Arrays.asList("$$f.version", "$version"))
+                                                        )))
+                                        )),
+                                        0
+                                ))
+                        ))),
+                        findingsBsonQuery
+                ))));
+                pipeline.add(Aggregates.limit(1));
+                pipeline.add(Aggregates.project(Projections.include("_id")));
+
+                for (Bson bsonPipeline : pipeline) {
+                    logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+                }
+
+                return collection.leftJoinFind(clientSession, bson, mainProjection,
+                        OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+                        let, pipeline, "_matchedSecondaryFindings", true, null, qOptions);
+            }
+
+            // findingsShortcutQuery is non-empty (OR shortcut across both arrays)
+            Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(findingsShortcutQuery);
+            List<Variable<String>> let = new ArrayList<>();
+            let.add(new Variable<>("intId", "$id"));
+            let.add(new Variable<>("studyUid", "$studyUid"));
+            let.add(new Variable<>("primaryFindings", "$primaryFindings"));
+            let.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+
+            List<Bson> pipeline = new ArrayList<>();
+            pipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                    new Document("$expr", new Document("$and", Arrays.asList(
+                            new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+                            new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+                            new Document("$or", Arrays.asList(
+                                    new Document("$gt", Arrays.asList(
+                                            new Document("$size", new Document("$filter",
+                                                    new Document("input", "$$primaryFindings")
+                                                            .append("as", "f")
+                                                            .append("cond", new Document("$and", Arrays.asList(
+                                                                    new Document("$eq", Arrays.asList("$$f.id", "$id")),
+                                                                    new Document("$eq", Arrays.asList("$$f.version", "$version"))
+                                                            )))
+                                            )),
+                                            0
+                                    )),
+                                    new Document("$gt", Arrays.asList(
+                                            new Document("$size", new Document("$filter",
+                                                    new Document("input", "$$secondaryFindings")
+                                                            .append("as", "f")
+                                                            .append("cond", new Document("$and", Arrays.asList(
+                                                                    new Document("$eq", Arrays.asList("$$f.id", "$id")),
+                                                                    new Document("$eq", Arrays.asList("$$f.version", "$version"))
+                                                            )))
+                                            )),
+                                            0
+                                    ))
+                            ))
+                    ))),
+                    findingsBsonQuery
+            ))));
+            pipeline.add(Aggregates.limit(1));
+            pipeline.add(Aggregates.project(Projections.include("_id")));
+
+            for (Bson bsonPipeline : pipeline) {
+                logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+            }
+
+            return collection.leftJoinFind(clientSession, bson, mainProjection,
+                    OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+                    let, pipeline, "_matchedFindings", true, null, qOptions);
+        }
     }
 
     /**
@@ -1187,46 +1352,6 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                     case ANALYST:
                     case ANALYST_ID:
                         addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case FINDINGS_ID:
-                        List<Bson> idQueryList = new ArrayList<>();
-                        String idPrimaryKey = FINDINGS_ID.key().replace("findings", PRIMARY_FINDINGS.key());
-                        String idSecondaryKey = FINDINGS_ID.key().replace("findings", SECONDARY_FINDINGS.key());
-                        addAutoOrQuery(idPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), idQueryList);
-                        addAutoOrQuery(idSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), idQueryList);
-                        andBsonList.add(Filters.or(idQueryList));
-                        break;
-                    case FINDINGS_HGVS:
-                        List<Bson> hgvsQueryList = new ArrayList<>();
-                        String hgvsPrimaryKey = FINDINGS_HGVS.key().replace("findings", PRIMARY_FINDINGS.key());
-                        String hgvsSecondaryKey = FINDINGS_HGVS.key().replace("findings", SECONDARY_FINDINGS.key());
-                        addAutoOrQuery(hgvsPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), hgvsQueryList);
-                        addAutoOrQuery(hgvsSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), hgvsQueryList);
-                        andBsonList.add(Filters.or(hgvsQueryList));
-                        break;
-                    case FINDINGS_TYPE:
-                        List<Bson> typeQueryList = new ArrayList<>();
-                        String typePrimaryKey = FINDINGS_TYPE.key().replace("findings", PRIMARY_FINDINGS.key());
-                        String typeSecondaryKey = FINDINGS_TYPE.key().replace("findings", SECONDARY_FINDINGS.key());
-                        addAutoOrQuery(typePrimaryKey, queryParam.key(), queryCopy, queryParam.type(), typeQueryList);
-                        addAutoOrQuery(typeSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), typeQueryList);
-                        andBsonList.add(Filters.or(typeQueryList));
-                        break;
-                    case FINDINGS_GENE_ID:
-                        List<Bson> geneQueryList = new ArrayList<>();
-                        String genePrimaryKey = FINDINGS_GENE_ID.key().replace("findings", PRIMARY_FINDINGS.key());
-                        String geneSecondaryKey = FINDINGS_GENE_ID.key().replace("findings", SECONDARY_FINDINGS.key());
-                        addAutoOrQuery(genePrimaryKey, queryParam.key(), queryCopy, queryParam.type(), geneQueryList);
-                        addAutoOrQuery(geneSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), geneQueryList);
-                        andBsonList.add(Filters.or(geneQueryList));
-                        break;
-                    case FINDINGS_CHROMOSOME:
-                        List<Bson> chromosomeQueryList = new ArrayList<>();
-                        String chrPrimaryKey = FINDINGS_CHROMOSOME.key().replace("findings", PRIMARY_FINDINGS.key());
-                        String chrSecondaryKey = FINDINGS_CHROMOSOME.key().replace("findings", SECONDARY_FINDINGS.key());
-                        addAutoOrQuery(chrPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), chromosomeQueryList);
-                        addAutoOrQuery(chrSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), chromosomeQueryList);
-                        andBsonList.add(Filters.or(chromosomeQueryList));
                         break;
                     case PRIMARY_FINDINGS:
                     case PRIMARY_FINDINGS_ID:

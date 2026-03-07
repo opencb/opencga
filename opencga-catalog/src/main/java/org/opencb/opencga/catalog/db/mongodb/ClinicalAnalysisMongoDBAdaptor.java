@@ -1046,6 +1046,27 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 options);
     }
 
+    /**
+     * Extract params prefixed with {@code prefix+"."} from the query, but only those that are NOT
+     * already handled as a direct InterpretationDBAdaptor.QueryParam (e.g. primaryFindings.id).
+     */
+    private Query extractFindingsNestedQuery(Query query, String prefix) {
+        Query findingsQuery = new Query();
+        List<String> keysToRemove = new ArrayList<>();
+        String projectionKey = prefix + ".";
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            String key = entry.getKey();
+            if (key.startsWith(projectionKey)) {
+                if (InterpretationDBAdaptor.QueryParams.getParam(key) == null) {
+                    findingsQuery.put(key.substring(projectionKey.length()), entry.getValue());
+                    keysToRemove.add(key);
+                }
+            }
+        }
+        keysToRemove.forEach(query::remove);
+        return findingsQuery;
+    }
+
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(clientSession, query, options, null);
@@ -1059,6 +1080,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query nestedQuery = extractNestedQuery(query, INTERPRETATION.key());
+        // Also extract findings-related params from the interpretation nested query
+        Query primaryFindingsQuery = extractFindingsNestedQuery(nestedQuery, "primaryFindings");
+        Query secondaryFindingsQuery = extractFindingsNestedQuery(nestedQuery, "secondaryFindings");
+        Query findingsShortcutQuery = extractFindingsNestedQuery(nestedQuery, "findings");
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
         if (options != null) {
@@ -1077,11 +1102,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         MongoDBCollection collection = getQueryCollection(query, clinicalCollection, archiveClinicalCollection, deletedClinicalCollection);
 
-        if (nestedQuery.isEmpty()) {
+        if (nestedQuery.isEmpty() && primaryFindingsQuery.isEmpty()
+                && secondaryFindingsQuery.isEmpty() && findingsShortcutQuery.isEmpty()) {
             logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
             return collection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            filterQueryOptionsToIncludeKeys(qOptions, Collections.singletonList(INTERPRETATION.key()));
+            qOptions = filterQueryOptionsToIncludeKeys(qOptions, Collections.singletonList(INTERPRETATION.key()));
             Bson mainProjection = MongoDBQueryUtils.getProjection(qOptions);
             Bson nestedBsonQuery = dbAdaptorFactory.getInterpretationDBAdaptor().parseQuery(nestedQuery);
             QueryOptions nestedOptions = extractNestedOptions(options, INTERPRETATION.key());
@@ -1097,6 +1123,142 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     ))),
                     nestedBsonQuery)
             )));
+
+//            // If findings query is present, add nested $lookup: interpretation -> findings
+//            if (!primaryFindingsQuery.isEmpty()) {
+//                Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(primaryFindingsQuery);
+//
+//                List<Variable<String>> findingsLet = new ArrayList<>();
+//                findingsLet.add(new Variable<>("intId", "$id"));
+//                findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+//                findingsLet.add(new Variable<>("primaryFindings", "$primaryFindings"));
+//
+//                List<Bson> findingsPipeline = new ArrayList<>();
+//                findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+//                        new Document("$expr", new Document("$and", Arrays.asList(
+//                                new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+//                                new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+//                                new Document("$gt", Arrays.asList(
+//                                        new Document("$size", new Document("$filter",
+//                                                new Document("input", "$$primaryFindings")
+//                                                        .append("as", "f")
+//                                                        .append("cond", new Document("$and", Arrays.asList(
+//                                                                new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                        )))
+//                                        )),
+//                                        0
+//                                ))
+//                        ))),
+//                        findingsBsonQuery
+//                ))));
+//                findingsPipeline.add(Aggregates.limit(1));
+//                findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+//
+//                pipeline.add(Aggregates.lookup(
+//                        OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+//                        findingsLet, findingsPipeline, "_matchedPrimaryFindings"
+//                ));
+//                pipeline.add(Aggregates.match(
+//                        new Document("_matchedPrimaryFindings.0", new Document("$exists", true))
+//                ));
+//                pipeline.add(Aggregates.project(Projections.exclude("_matchedPrimaryFindings")));
+//            }
+//
+//            if (!secondaryFindingsQuery.isEmpty()) {
+//                Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(secondaryFindingsQuery);
+//
+//                List<Variable<String>> findingsLet = new ArrayList<>();
+//                findingsLet.add(new Variable<>("intId", "$id"));
+//                findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+//                findingsLet.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+//
+//                List<Bson> findingsPipeline = new ArrayList<>();
+//                findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+//                        new Document("$expr", new Document("$and", Arrays.asList(
+//                                new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+//                                new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+//                                new Document("$gt", Arrays.asList(
+//                                        new Document("$size", new Document("$filter",
+//                                                new Document("input", "$$secondaryFindings")
+//                                                        .append("as", "f")
+//                                                        .append("cond", new Document("$and", Arrays.asList(
+//                                                                new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                        )))
+//                                        )),
+//                                        0
+//                                ))
+//                        ))),
+//                        findingsBsonQuery
+//                ))));
+//                findingsPipeline.add(Aggregates.limit(1));
+//                findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+//
+//                pipeline.add(Aggregates.lookup(
+//                        OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+//                        findingsLet, findingsPipeline, "_matchedSecondaryFindings"
+//                ));
+//                pipeline.add(Aggregates.match(
+//                        new Document("_matchedSecondaryFindings.0", new Document("$exists", true))
+//                ));
+//                pipeline.add(Aggregates.project(Projections.exclude("_matchedSecondaryFindings")));
+//            }
+
+            if (!findingsShortcutQuery.isEmpty()) {
+                Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(findingsShortcutQuery);
+
+                List<Variable<String>> findingsLet = new ArrayList<>();
+                findingsLet.add(new Variable<>("intId", "$id"));
+                findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+//                findingsLet.add(new Variable<>("primaryFindings", "$primaryFindings"));
+//                findingsLet.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+
+                List<Bson> findingsPipeline = new ArrayList<>();
+                findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                        new Document("$expr", new Document("$and", Arrays.asList(
+                                new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+                                new Document("$eq", Arrays.asList("$studyUid", "$$studyUid"))
+//                                new Document("$or", Arrays.asList(
+//                                        new Document("$gt", Arrays.asList(
+//                                                new Document("$size", new Document("$filter",
+//                                                        new Document("input", "$$primaryFindings")
+//                                                                .append("as", "f")
+//                                                                .append("cond", new Document("$and", Arrays.asList(
+//                                                                        new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                        new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                                )))
+//                                                )),
+//                                                0
+//                                        )),
+//                                        new Document("$gt", Arrays.asList(
+//                                                new Document("$size", new Document("$filter",
+//                                                        new Document("input", "$$secondaryFindings")
+//                                                                .append("as", "f")
+//                                                                .append("cond", new Document("$and", Arrays.asList(
+//                                                                        new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                        new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                                )))
+//                                                )),
+//                                                0
+//                                        ))
+//                                ))
+                        ))),
+                        findingsBsonQuery
+                ))));
+                findingsPipeline.add(Aggregates.limit(1));
+                findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+
+                pipeline.add(Aggregates.lookup(
+                        OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+                        findingsLet, findingsPipeline, "_matchedFindings"
+                ));
+                pipeline.add(Aggregates.match(
+                        new Document("_matchedFindings.0", new Document("$exists", true))
+                ));
+                pipeline.add(Aggregates.project(Projections.exclude("_matchedFindings")));
+            }
+
             logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
             for (Bson bsonPipeline : pipeline) {
                 logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
@@ -1188,6 +1350,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     private OpenCGAResult<String> distinctWithLeftJoin(String field, Query query, Query nestedQuery, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
+        // Also extract findings-related params from the nested interpretation query
+//        Query primaryFindingsQuery = extractFindingsNestedQuery(nestedQuery, "primaryFindings");
+//        Query secondaryFindingsQuery = extractFindingsNestedQuery(nestedQuery, "secondaryFindings");
+        Query findingsShortcutQuery = extractFindingsNestedQuery(nestedQuery, "findings");
+
         Bson bson = parseQuery(query, userId);
         Bson nestedBsonQuery = dbAdaptorFactory.getInterpretationDBAdaptor().parseQuery(nestedQuery);
 
@@ -1203,6 +1370,138 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                 ))),
                 nestedBsonQuery)
         )));
+
+//        // If findings query is present, add nested $lookup: interpretation -> findings
+//        if (!primaryFindingsQuery.isEmpty()) {
+//            Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(primaryFindingsQuery);
+//
+//            List<Variable<String>> findingsLet = new ArrayList<>();
+//            findingsLet.add(new Variable<>("intId", "$id"));
+//            findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+//            findingsLet.add(new Variable<>("primaryFindings", "$primaryFindings"));
+//
+//            List<Bson> findingsPipeline = new ArrayList<>();
+//            findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+//                    new Document("$expr", new Document("$and", Arrays.asList(
+//                            new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+//                            new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+//                            new Document("$gt", Arrays.asList(
+//                                    new Document("$size", new Document("$filter",
+//                                            new Document("input", "$$primaryFindings")
+//                                                    .append("as", "f")
+//                                                    .append("cond", new Document("$and", Arrays.asList(
+//                                                            new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                            new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                    )))
+//                                    )),
+//                                    0
+//                            ))
+//                    ))),
+//                    findingsBsonQuery
+//            ))));
+//            findingsPipeline.add(Aggregates.limit(1));
+//            findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+//
+//            pipeline.add(Aggregates.lookup(
+//                    OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+//                    findingsLet, findingsPipeline, "_matchedPrimaryFindings"
+//            ));
+//            pipeline.add(Aggregates.match(
+//                    new Document("_matchedPrimaryFindings.0", new Document("$exists", true))
+//            ));
+//        }
+//
+//        if (!secondaryFindingsQuery.isEmpty()) {
+//            Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(secondaryFindingsQuery);
+//
+//            List<Variable<String>> findingsLet = new ArrayList<>();
+//            findingsLet.add(new Variable<>("intId", "$id"));
+//            findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+//            findingsLet.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+//
+//            List<Bson> findingsPipeline = new ArrayList<>();
+//            findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+//                    new Document("$expr", new Document("$and", Arrays.asList(
+//                            new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+//                            new Document("$eq", Arrays.asList("$studyUid", "$$studyUid")),
+//                            new Document("$gt", Arrays.asList(
+//                                    new Document("$size", new Document("$filter",
+//                                            new Document("input", "$$secondaryFindings")
+//                                                    .append("as", "f")
+//                                                    .append("cond", new Document("$and", Arrays.asList(
+//                                                            new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                            new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                    )))
+//                                    )),
+//                                    0
+//                            ))
+//                    ))),
+//                    findingsBsonQuery
+//            ))));
+//            findingsPipeline.add(Aggregates.limit(1));
+//            findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+//
+//            pipeline.add(Aggregates.lookup(
+//                    OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+//                    findingsLet, findingsPipeline, "_matchedSecondaryFindings"
+//            ));
+//            pipeline.add(Aggregates.match(
+//                    new Document("_matchedSecondaryFindings.0", new Document("$exists", true))
+//            ));
+//        }
+
+        if (!findingsShortcutQuery.isEmpty()) {
+            Bson findingsBsonQuery = dbAdaptorFactory.getFindingsDBAdaptor().parseQuery(findingsShortcutQuery);
+
+            List<Variable<String>> findingsLet = new ArrayList<>();
+            findingsLet.add(new Variable<>("intId", "$id"));
+            findingsLet.add(new Variable<>("studyUid", "$studyUid"));
+            findingsLet.add(new Variable<>("primaryFindings", "$primaryFindings"));
+            findingsLet.add(new Variable<>("secondaryFindings", "$secondaryFindings"));
+
+            List<Bson> findingsPipeline = new ArrayList<>();
+            findingsPipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                    new Document("$expr", new Document("$and", Arrays.asList(
+                            new Document("$eq", Arrays.asList("$_interpretationId", "$$intId")),
+                            new Document("$eq", Arrays.asList("$studyUid", "$$studyUid"))
+//                            new Document("$or", Arrays.asList(
+//                                    new Document("$gt", Arrays.asList(
+//                                            new Document("$size", new Document("$filter",
+//                                                    new Document("input", "$$primaryFindings")
+//                                                            .append("as", "f")
+//                                                            .append("cond", new Document("$and", Arrays.asList(
+//                                                                    new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                    new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                            )))
+//                                            )),
+//                                            0
+//                                    )),
+//                                    new Document("$gt", Arrays.asList(
+//                                            new Document("$size", new Document("$filter",
+//                                                    new Document("input", "$$secondaryFindings")
+//                                                            .append("as", "f")
+//                                                            .append("cond", new Document("$and", Arrays.asList(
+//                                                                    new Document("$eq", Arrays.asList("$$f.id", "$id")),
+//                                                                    new Document("$eq", Arrays.asList("$$f.version", "$version"))
+//                                                            )))
+//                                            )),
+//                                            0
+//                                    ))
+//                            ))
+                    ))),
+                    findingsBsonQuery
+            ))));
+            findingsPipeline.add(Aggregates.limit(1));
+            findingsPipeline.add(Aggregates.project(Projections.include("_id")));
+
+            pipeline.add(Aggregates.lookup(
+                    OrganizationMongoDBAdaptorFactory.FINDINGS_COLLECTION,
+                    findingsLet, findingsPipeline, "_matchedFindings"
+            ));
+            pipeline.add(Aggregates.match(
+                    new Document("_matchedFindings.0", new Document("$exists", true))
+            ));
+        }
 
         // Add group stage to get distinct values
         pipeline.add(Aggregates.group(null, Accumulators.addToSet("distinctValues", "$" + field)));
@@ -1227,9 +1526,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         // Group to get distinct values
         mainPipeline.add(Aggregates.group(null, Accumulators.addToSet("distinctValues", "$" + field)));
 
-        logger.debug("Clinical analysis distinct query : {}", bson.toBsonDocument());
+        logger.info("Clinical analysis distinct query : {}", bson.toBsonDocument());
         for (Bson bsonPipeline : pipeline) {
-            logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+            logger.info("Pipeline stage : {}", bsonPipeline.toBsonDocument());
         }
 
         DataResult<Document> result = collection.aggregate(mainPipeline, null);

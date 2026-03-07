@@ -5,11 +5,13 @@ import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationFindingsDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationFindingConverter;
@@ -313,7 +315,9 @@ public class InterpretationFindingsMongoDBAdaptor extends CatalogMongoDBAdaptor 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
 
-        convertIdToPrivateId(queryCopy);
+        if (queryCopy.containsKey(QueryParams.ID.key())) {
+            convertIdToPrivateId(queryCopy);
+        }
         versionedMongoDBAdaptor.generateIdVersionQuery(queryCopy, andBsonList, PRIVATE_ID);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
@@ -334,6 +338,41 @@ public class InterpretationFindingsMongoDBAdaptor extends CatalogMongoDBAdaptor 
                         break;
                     case VERSION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case CHROMOSOME:
+                    case TYPE:
+                    case GENE_ID:
+                    case GENE_NAME:
+                    case HGVS:
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case LOCATION:
+                        String locations = queryCopy.getString(QueryParams.LOCATION.key());
+                        MongoDBQueryUtils.LogicalOperator operator = MongoDBQueryUtils.checkOperator(locations);
+                        String separator = operator == null || operator == MongoDBQueryUtils.LogicalOperator.OR
+                                ? MongoDBQueryUtils.OR : MongoDBQueryUtils.AND;
+                        List<Region> regions = new LinkedList<>();
+                        for (String location : locations.split(separator)) {
+                            Region region = Region.parseRegion(location);
+                            region.normalizeChromosome();
+                            regions.add(region);
+                        }
+                        List<Bson> locationFilters = new ArrayList<>();
+                        for (Region region : regions) {
+                            locationFilters.add(Filters.and(
+                                    Filters.eq("chromosome", region.getChromosome()),
+                                    Filters.lte("start", region.getEnd()),
+                                    Filters.gte("end", region.getStart())
+                            ));
+                        }
+                        if (operator == null || operator == MongoDBQueryUtils.LogicalOperator.OR) {
+                            andBsonList.add(Filters.or(locationFilters));
+                        } else {
+                            andBsonList.add(Filters.and(locationFilters));
+                        }
+                        break;
+                    case INTERPRETATION_ID:
+                        addAutoOrQuery(INTERPRETATION_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());
