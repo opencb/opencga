@@ -1,17 +1,22 @@
 package org.opencb.opencga.storage.core.variant.walker;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.storage.core.StorageEngineTest;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.io.IOException;
 import java.net.URI;
@@ -242,6 +247,60 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
             // Ensure uri exists
             assertTrue(uri + " not found!", Paths.get(uri).toFile().exists());
         }
+    }
+
+    @Test
+    public void testWalkJsonSparse() throws Exception {
+        URI outdir = newOutputUri();
+
+        // Use 'cat' to pass through the JSON_SPARSE output unchanged
+        String cmd = "cat";
+
+        List<URI> uris = variantStorageEngine.walkData(
+                outdir.resolve("walker_sparse.txt.gz"),
+                VariantWriterFactory.VariantOutputFormat.JSON_SPARSE,
+                new Query(), new QueryOptions(), cmd);
+
+        assertNotNull(uris);
+        assertTrue("Expected at least 1 output file", uris.size() >= 1);
+        for (URI uri : uris) {
+            assertTrue(uri + " not found!", Paths.get(uri).toFile().exists());
+        }
+
+        // Read stdout output — first line is metadata, remaining are variant JSON
+        List<String> lines = new StringDataReader(Paths.get(uris.get(0))).stream().collect(Collectors.toList());
+        assertFalse("Output should not be empty", lines.isEmpty());
+
+        // Parse variants from the output (skip the first metadata line)
+        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        int variantCount = 0;
+        for (int i = 1; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            Variant variant = objectMapper.readValue(line, Variant.class);
+            assertNotNull(variant);
+            assertNotNull(variant.getStudies());
+            assertFalse(variant.getStudies().isEmpty());
+            // Sparse output clears samplesPosition
+            assertNull("samplesPosition should be null in sparse output",
+                    variant.getStudies().get(0).getSamplesPosition());
+            for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
+                assertNotNull(sample.getSampleId());
+                assertNotNull(sample.getFileIndex());
+                assertNotNull(sample.getData());
+                assertFalse(sample.getData().isEmpty());
+                String gt = sample.getData().get(0);
+                assertNotNull(gt);
+                assertFalse("HOM_REF genotype in sparse walker output: " + gt,
+                        GenotypeClass.HOM_REF.test(gt));
+                assertFalse("MISS genotype in sparse walker output: " + gt,
+                        GenotypeClass.MISS.test(gt));
+            }
+            variantCount++;
+        }
+        assertTrue("Expected variant data in sparse output", variantCount > 0);
     }
 
     @Test

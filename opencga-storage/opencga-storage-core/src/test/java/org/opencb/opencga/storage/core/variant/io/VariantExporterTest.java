@@ -19,9 +19,13 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -116,6 +120,72 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
             numVariants++;
         }
         assertEquals(expectedVariants.size(), numVariants);
+    }
+
+    @Test
+    public void exportJsonSparseTest() throws Exception {
+        URI output = newOutputUri().resolve("variant.sparse.json");
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE, null,
+                new VariantQuery().includeSampleAll(), new QueryOptions());
+
+        System.out.println("output = " + output);
+        assertTrue(Paths.get(output).toFile().exists());
+
+        List<Variant> sparseVariants = new ArrayList<>();
+        for (Variant variant : new VariantJsonReader(null, output.getPath())) {
+            sparseVariants.add(variant);
+            assertNotNull(variant.getStudies());
+            assertFalse(variant.getStudies().isEmpty());
+            // Sparse output clears samplesPosition
+            assertNull(variant.getStudies().get(0).getSamplesPosition());
+            for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
+                assertNotNull(sample.getSampleId());
+                assertNotNull(sample.getFileIndex());
+                assertNotNull(variant.getStudies().get(0).getFile(sample.getFileIndex()));
+                assertNotNull(sample.getData());
+                assertFalse(sample.getData().isEmpty());
+                String gt = sample.getData().get(0);
+                assertNotNull(gt);
+                assertFalse("HOM_REF genotype in sparse output: " + gt,
+                        GenotypeClass.HOM_REF.test(gt));
+                assertFalse("MISS genotype in sparse output: " + gt,
+                        GenotypeClass.MISS.test(gt));
+            }
+        }
+        assertTrue("No variants in sparse output", sparseVariants.size() > 0);
+
+        // Export regular JSON (with sampleId) and apply VariantSparseFilterTask manually.
+        // Compare: native sparse output must match task-based output.
+        URI jsonOutput = newOutputUri().resolve("variant.full.json");
+        variantStorageEngine.exportData(jsonOutput, VariantOutputFormat.JSON, null,
+                new VariantQuery().includeSampleAll().includeSampleId(true), new QueryOptions());
+
+        List<Variant> fullVariants = new ArrayList<>();
+        for (Variant variant : new VariantJsonReader(null, jsonOutput.getPath())) {
+            fullVariants.add(variant);
+        }
+        new VariantSparseFilterTask().apply(fullVariants);
+
+        assertEquals("Number of variants should match", fullVariants.size(), sparseVariants.size());
+        for (int i = 0; i < sparseVariants.size(); i++) {
+            Variant sparse = sparseVariants.get(i);
+            Variant fromTask = fullVariants.get(i);
+            assertEquals("Variant mismatch at " + i, sparse.toString(), fromTask.toString());
+            for (int s = 0; s < sparse.getStudies().size(); s++) {
+                StudyEntry sparseStudy = sparse.getStudies().get(s);
+                StudyEntry taskStudy = fromTask.getStudies().get(s);
+                assertEquals("Sample count mismatch at variant " + sparse,
+                        sparseStudy.getSamples().size(), taskStudy.getSamples().size());
+                for (int j = 0; j < sparseStudy.getSamples().size(); j++) {
+                    SampleEntry sparseSample = sparseStudy.getSamples().get(j);
+                    SampleEntry taskSample = taskStudy.getSamples().get(j);
+                    assertEquals("SampleId mismatch at variant " + sparse + " sample " + j,
+                            sparseSample.getSampleId(), taskSample.getSampleId());
+                    assertEquals("GT mismatch at variant " + sparse + " sample " + j,
+                            sparseSample.getData().get(0), taskSample.getData().get(0));
+                }
+            }
+        }
     }
 
     @Test

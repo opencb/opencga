@@ -124,6 +124,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
@@ -321,6 +323,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON_SPARSE) {
+            query.put(VariantQueryUtils.SPARSE_SAMPLES.key(), true);
+            query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+        }
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
         int studyId;
         if (variantQuery.getStudyQuery().getDefaultStudy() == null) {

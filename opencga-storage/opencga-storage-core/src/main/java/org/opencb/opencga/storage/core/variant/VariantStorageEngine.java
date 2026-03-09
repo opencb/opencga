@@ -64,6 +64,7 @@ import org.opencb.opencga.storage.core.variant.walker.LocalVariantWalker;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -340,8 +341,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException {
+        if (format.inPlain() == VariantOutputFormat.JSON_SPARSE) {
+            query.put(SPARSE_SAMPLES.key(), true);
+            query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+        }
         LocalVariantWalker walker = new LocalVariantWalker(getMetadataManager(),
-                new VariantWriterFactory(getMetadataManager()), ioConnectorProvider);
+                new VariantWriterFactory(getMetadataManager()), ioConnectorProvider, supportsNativeSparseFilter());
         try (VariantDBIterator iterator = iterator(query, queryOptions)) {
             return walker.walk(outputFile, format, query, queryOptions, iterator, commandLine, getOptions());
         } catch (StorageEngineException e) {
@@ -361,6 +366,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new VariantExporter(this, metadataFactory, ioConnectorProvider);
+    }
+
+    /**
+     * Whether this storage engine natively supports sparse sample filtering in its converter.
+     * When true, the walker and exporter skip the {@link VariantSparseFilterTask} post-processing step,
+     * relying on the backend converter to filter samples directly.
+     *
+     * @return false by default; backends should override to return true if they handle sparse filtering natively.
+     */
+    public boolean supportsNativeSparseFilter() {
+        return false;
     }
 
     /**

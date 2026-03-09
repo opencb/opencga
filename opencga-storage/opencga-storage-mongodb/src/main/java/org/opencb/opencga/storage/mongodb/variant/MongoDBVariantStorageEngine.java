@@ -44,7 +44,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -58,6 +60,7 @@ import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsTask;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.io.MongoDBVariantExporter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
@@ -110,6 +113,16 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected VariantImporter newVariantImporter() throws StorageEngineException {
         return new MongoVariantImporter(getDBAdaptor());
+    }
+
+    @Override
+    protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
+        return new MongoDBVariantExporter(this, metadataFactory, ioConnectorProvider);
+    }
+
+    @Override
+    public boolean supportsNativeSparseFilter() {
+        return true;
     }
 
     @Override

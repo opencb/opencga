@@ -30,6 +30,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.query.ResourceId;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -71,6 +72,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
     private String unknownGenotype;
     private List<String> expectedExtraFields;
     private boolean includeSampleId = false;
+    private boolean sparse = false;
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(DocumentToSamplesConverter.class.getName());
 
@@ -254,8 +256,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
         }
         sampleDataKeys = getSampleDataKeys(excludeGenotypes, extraFields);
-        List<SampleEntry> sampleEntries = new ArrayList<>(samplesPositionToReturn.size());
-
 
         // An array of genotypes is initialized with the most common one
 //        String defaultGenotype = mongoGenotypes.getString("def");
@@ -268,8 +268,43 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             defaultGenotype = UNKNOWN_GENOTYPE;
         }
 
+        // In sparse mode, pre-scan mgt maps to identify samples with variant data.
+        // Reduce samplesPositionToReturn so all downstream phases only process sparse samples.
+        LinkedHashMap<String, Integer> effectiveSamplesPosition;
+        if (sparse && !excludeGenotypes) {
+            Set<Integer> sparseSampleIds = new HashSet<>();
+            for (Map.Entry<Integer, Document> fileEntry : files.entrySet()) {
+                Document fileDoc = fileEntry.getValue();
+                Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
+                if (mgt == null) {
+                    continue;
+                }
+                for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
+                    String genotype = genotypeToDataModelType(mgtEntry.getKey());
+                    if (!GenotypeClass.HOM_REF.test(genotype) && !GenotypeClass.MISS.test(genotype)) {
+                        for (Integer sid : (List<Integer>) mgtEntry.getValue()) {
+                            if (sampleNames.containsKey(sid)) {
+                                sparseSampleIds.add(sid);
+                            }
+                        }
+                    }
+                }
+            }
+            effectiveSamplesPosition = new LinkedHashMap<>();
+            for (Map.Entry<String, Integer> entry : samplesPositionToReturn.entrySet()) {
+                Integer sid = sampleIds.get(entry.getKey());
+                if (sparseSampleIds.contains(sid)) {
+                    effectiveSamplesPosition.put(entry.getKey(), effectiveSamplesPosition.size());
+                }
+            }
+        } else {
+            effectiveSamplesPosition = samplesPositionToReturn;
+        }
+
+        List<SampleEntry> sampleEntries = new ArrayList<>(effectiveSamplesPosition.size());
+
         // Add the samples to the file
-        for (String sampleName : samplesPositionToReturn.keySet()) {
+        for (String sampleName : effectiveSamplesPosition.keySet()) {
             Integer sampleId = sampleIds.get(sampleName);
 
             String[] values;
@@ -293,7 +328,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             Integer fileId = includeFileIds.get(fileIndex);
             for (Integer sampleId : getSamplesInFile(studyId, fileId)) {
                 String sampleName = getSampleName(studyId, sampleId);
-                Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                Integer samplePosition = effectiveSamplesPosition.get(sampleName);
                 if (samplePosition != null) {
                     sampleEntries.get(samplePosition).setFileIndex(fileIndex);
                 }
@@ -377,7 +412,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                         }
                         for (Integer sampleId : getSamplesInFile(studyId, fid)) {
                             String sampleName = getSampleName(studyId, sampleId);
-                            Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                            Integer samplePosition = effectiveSamplesPosition.get(sampleName);
                             if (samplePosition == null) {
                                 // The sample on this position is not returned. Skip this value.
                                 supplier.get();
@@ -406,7 +441,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     for (int i = 0; i < extraFields.size(); i++) {
                         for (Integer sampleId : getSamplesInFile(studyId, fid)) {
                             String sampleName = getSampleName(studyId, sampleId);
-                            Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                            Integer samplePosition = effectiveSamplesPosition.get(sampleName);
                             if (samplePosition != null) {
                                 if (sampleEntries.get(samplePosition).getData().get(extraFieldPosition) == null) {
                                     sampleEntries.get(samplePosition).getData().set(extraFieldPosition, UNKNOWN_FIELD);
@@ -464,7 +499,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 Integer sampleId = sampleEntry.getKey();
                 Map<Integer, String> fileGts = sampleEntry.getValue(); // fileId -> genotype
                 String sampleName = getSampleName(studyId, sampleId);
-                Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                Integer samplePosition = effectiveSamplesPosition.get(sampleName);
                 if (samplePosition == null) {
                     continue;
                 }
@@ -532,7 +567,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             }
         }
 
-        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, sampleEntries, excludeGenotypes);
+        fillStudyEntryFields(study, sparse ? null : samplesPositionToReturn, extraFields, sampleEntries, excludeGenotypes);
         return sampleEntries;
     }
 
@@ -638,6 +673,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public void setIncludeSampleId(boolean includeSampleId) {
         this.includeSampleId = includeSampleId;
+    }
+
+    public void setSparse(boolean sparse) {
+        this.sparse = sparse;
     }
 
     private StudyMetadata getStudyMetadata(int studyId) {

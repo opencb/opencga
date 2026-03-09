@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.Logger;
@@ -45,6 +46,7 @@ public class LocalVariantWalker {
     private final VariantStorageMetadataManager metadataManager;
     private final VariantWriterFactory writerFactory;
     private final IOConnectorProvider ioConnectorProvider;
+    private final boolean nativeSparse;
 
     // Configured for each walk
     private String commandLine;
@@ -68,6 +70,7 @@ public class LocalVariantWalker {
     private boolean headerWritten;
     private int processCount;
     private VariantMetadata metadata;
+    private VariantSparseFilterTask sparseFilterTask;
     private final Map<String, Long> counters = new LinkedHashMap<>();
     private final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
     private final LinkedList<String> stderrBuffer = new LinkedList<>();
@@ -75,10 +78,12 @@ public class LocalVariantWalker {
 
     public LocalVariantWalker(VariantStorageMetadataManager metadataManager,
                               VariantWriterFactory writerFactory,
-                              IOConnectorProvider ioConnectorProvider) {
+                              IOConnectorProvider ioConnectorProvider,
+                              boolean nativeSparse) {
         this.metadataManager = metadataManager;
         this.writerFactory = writerFactory;
         this.ioConnectorProvider = ioConnectorProvider;
+        this.nativeSparse = nativeSparse;
     }
 
     /**
@@ -108,6 +113,8 @@ public class LocalVariantWalker {
         this.headerWritten = false;
         this.processCount = 0;
         this.currentChromosome = null;
+        this.sparseFilterTask = (this.format == VariantOutputFormat.JSON_SPARSE && !nativeSparse)
+                ? new VariantSparseFilterTask() : null;
         this.counters.clear();
         this.throwables.clear();
         this.stderrBuffer.clear();
@@ -147,6 +154,9 @@ public class LocalVariantWalker {
                 }
 
                 currentChromosome = variant.getChromosome();
+                if (sparseFilterTask != null) {
+                    sparseFilterTask.apply(Collections.singletonList(variant));
+                }
                 variantDataWriter.write(variant);
                 stdin.flush();
                 processedBytes = stdin.size();
