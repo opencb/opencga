@@ -57,12 +57,12 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
                             .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
 
 
-//            inputUri = VariantStorageBaseTest.getResourceUri("variant-test-unusual-contigs.vcf");
-//            VariantStorageBaseTest.runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
-//                    new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
-//                            .append(VariantStorageOptions.ANNOTATE.key(), false)
-//                            .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
-//            );
+            inputUri = VariantStorageBaseTest.getResourceUri("variant-test-unusual-contigs.vcf");
+            VariantStorageBaseTest.runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
+                    new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                            .append(VariantStorageOptions.ANNOTATE.key(), false)
+                            .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+            );
             loaded = true;
         }
     }

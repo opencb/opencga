@@ -85,6 +85,23 @@ public class VariantStringIdConverterTest {
     }
 
     @Test
+    public void chromosomeWithColon() {
+        // Chromosome names may contain ':' per VCF spec
+        Variant v = new Variant("5C:COLON", 10000, 10000, "A", "G");
+        String id = converter.buildId(v);
+        assertEquals("5C:COLON:     10000:A:G", id);
+        assertEquals(v, converter.buildVariant(id, 10000, "A", "G"));
+    }
+
+    @Test
+    public void chromosomeWithMultipleColons() {
+        // Chromosome with multiple ':' characters
+        Variant v = new Variant("1C_!#$%&*+./:;=?@^_|~-!#$%&*+./:;=?@^_|~-ALL", 10000, 10000, "C", "G");
+        String id = converter.buildId(v);
+        assertEquals(v, converter.buildVariant(id, 10000, "C", "G"));
+    }
+
+    @Test
     public void bnd() {
         // INS
         Variant v = new Variant("1:1000:A:A[3:123[");
