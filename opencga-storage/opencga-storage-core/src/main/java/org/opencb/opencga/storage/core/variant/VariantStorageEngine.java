@@ -60,9 +60,11 @@ import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleInde
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.walker.LocalVariantWalker;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -338,7 +340,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException {
-        throw new UnsupportedOperationException();
+        LocalVariantWalker walker = new LocalVariantWalker(getMetadataManager(),
+                new VariantWriterFactory(getMetadataManager()), ioConnectorProvider);
+        try (VariantDBIterator iterator = iterator(query, queryOptions)) {
+            return walker.walk(outputFile, format, query, queryOptions, iterator, commandLine, getOptions());
+        } catch (StorageEngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageEngineException("Error walking variant data", e);
+        }
     }
 
     /**
