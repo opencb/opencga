@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
@@ -28,10 +29,17 @@ public class SampleToDocumentConverter {
     private final Map<String, Integer> sampleIdsMap;
     /** Set of extra-field indices (into extraFields list) that are filterable (Number="1" or "."). */
     private final Set<Integer> filterableFieldIndices;
+    private final boolean excludeGenotypes;
 
     public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap) {
+        this(studyMetadata, sampleIdsMap, false);
+    }
+
+    public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap,
+                                     boolean excludeGenotypes) {
         this.studyMetadata = studyMetadata;
         this.sampleIdsMap = sampleIdsMap;
+        this.excludeGenotypes = excludeGenotypes;
         List<String> defGenotype = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
         this.defaultGenotype = new HashSet<>(defGenotype);
 
@@ -98,15 +106,16 @@ public class SampleToDocumentConverter {
 
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
-        boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
                 .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
-        // Classify samples by genotype
+        // Classify samples by genotype.
+        // When excludeGenotypes is true (INCLUDE_GENOTYPE=NO) or the VCF has no GT field (gtIdx==null),
+        // all samples are assigned NA genotype. This ensures mgt always contains valid genotype data
+        // for query, stats, and retrieval.
         int sampleIdx = 0;
-        Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
+        Integer gtIdx = excludeGenotypes ? null : studyEntry.getSampleDataKeyPosition("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (SampleEntry sampleEntry : studyEntry.getSamples()) {
             String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
@@ -116,7 +125,7 @@ public class SampleToDocumentConverter {
             }
             String genotype;
             if (gtIdx == null) {
-                genotype = ".";
+                genotype = GenotypeClass.NA_GT_VALUE;
             } else {
                 genotype = sampleEntry.getData().get(gtIdx);
             }
@@ -130,13 +139,15 @@ public class SampleToDocumentConverter {
         // Build the per-file mgt map (FILE_GENOTYPE_FIELD) for ALL samples.
         // The study-level "gt" field is no longer written; all GT data lives in the root-level files[].mgt.
         // This document is extracted by StudyEntryToDocumentConverter and stored on the file document directly.
-        if (!excludeGenotypes && !genotypeCodes.isEmpty()) {
+        if (!genotypeCodes.isEmpty()) {
             for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
                 if (!defaultGenotype.contains(entry.getKey())) {
                     mgt.append(DocumentToSamplesConverter.genotypeToStorageType(entry.getKey()), entry.getValue());
                 }
             }
-            mongoSamples.append(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, mgt);
+            if (!mgt.isEmpty()) {
+                mongoSamples.append(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, mgt);
+            }
         }
 
 

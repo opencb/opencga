@@ -348,8 +348,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
 
 //            Map<String, Set<Integer>> chromosomeInLoadedFiles = getChromosomeInLoadedFiles();
+            boolean excludeGenotypes = YesNoAuto.parse(options, VariantStorageOptions.INCLUDE_GENOTYPE.key()) == YesNoAuto.NO;
             MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyMetadata, fileIds,
-                    resume, ignoreOverlapping, release);
+                    resume, ignoreOverlapping, release, excludeGenotypes);
 
             // Writer -- MongoDBVariantDirectLoader
             MongoDBVariantDirectLoader directLoader = new MongoDBVariantDirectLoader(dbAdaptor, studyMetadata, fileId, resume,
@@ -742,8 +743,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         boolean ignoreOverlapping = studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
                 MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
         int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
+        boolean excludeGenotypes = YesNoAuto.parse(options, VariantStorageOptions.INCLUDE_GENOTYPE.key()) == YesNoAuto.NO;
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyMetadata, fileIds, resume,
-                ignoreOverlapping, release);
+                ignoreOverlapping, release, excludeGenotypes);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(), stageCollection, dbAdaptor.getStudiesCollection(),
                 studyMetadata, fileIds, resume, cleanWhileLoading, progressLogger);

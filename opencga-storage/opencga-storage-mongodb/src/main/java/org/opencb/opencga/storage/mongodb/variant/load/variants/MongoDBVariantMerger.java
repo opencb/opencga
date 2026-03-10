@@ -254,14 +254,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final int release;
 
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata, List<Integer> fileIds,
-                                boolean resume, boolean ignoreOverlapping, int release) {
+                                boolean resume, boolean ignoreOverlapping, int release, boolean excludeGenotypes) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
         this.studyMetadata = Objects.requireNonNull(studyMetadata);
         this.fileIds = Objects.requireNonNull(fileIds);
 
         studyId = studyMetadata.getId();
         studyIdStr = String.valueOf(studyId);
-        excludeGenotypes = getExcludeGenotypes(studyMetadata);
+        this.excludeGenotypes = excludeGenotypes;
         format = buildFormat(studyMetadata);
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds, dbAdaptor.getMetadataManager()));
         this.release = release;
@@ -274,7 +274,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         indexedFiles = dbAdaptor.getMetadataManager().getIndexedFiles(studyMetadata.getId());
         checkOverlappings = !ignoreOverlapping && (fileIds.size() > 1 || !indexedFiles.isEmpty());
-        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(this.studyMetadata, sampleIdsMap);
+        SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(this.studyMetadata, sampleIdsMap, excludeGenotypes);
         studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
         variantConverter = new VariantToDocumentConverter(studyConverter, null, null);
         samplesPositionMap = new HashMap<>();
@@ -1196,8 +1196,4 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return indexedFiles;
     }
 
-    public static boolean getExcludeGenotypes(StudyMetadata studyMetadata) {
-        return studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
-    }
 }

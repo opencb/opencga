@@ -9,12 +9,14 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD;
 
 /**
@@ -40,9 +42,11 @@ public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSo
                 Document document = it.next();
                 List<Document> files = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
                 for (Document file : files) {
-                    assertFalse(file.containsKey(FILE_GENOTYPE_FIELD));
+                    // Somatic files (no GT field) store "NA" genotype in mgt for all samples
+                    Document mgt = file.get(FILE_GENOTYPE_FIELD, Document.class);
+                    assertNotNull(mgt);
+                    assertEquals(Collections.singleton(GenotypeClass.NA_GT_VALUE), mgt.keySet());
                 }
-//                System.out.println("dbObject = " + document);
             }
         }
     }

@@ -276,7 +276,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             for (Map.Entry<Integer, Document> fileEntry : files.entrySet()) {
                 Document fileDoc = fileEntry.getValue();
                 Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
-                if (mgt == null) {
+                if (mgt == null || mgt.isEmpty()) {
+                    // No mgt or empty mgt — all samples have default genotype (0/0), skip in sparse mode
                     continue;
                 }
                 for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
@@ -309,6 +310,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
             String[] values;
             values = new String[sampleDataKeys.size()];
+            Arrays.fill(values, UNKNOWN_FIELD);
             if (!excludeGenotypes) {
                 if (loadedSamples.contains(sampleId)) {
                     values[0] = defaultGenotype;

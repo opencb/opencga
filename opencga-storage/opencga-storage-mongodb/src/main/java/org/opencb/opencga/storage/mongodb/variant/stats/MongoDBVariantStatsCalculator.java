@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantCo
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 
 /**
@@ -110,6 +111,9 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             int thisStudyId = file.getInteger(DocumentToStudyEntryConverter.STUDYID_FIELD);
             if (studyId == thisStudyId) {
                 Document gt = file.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
+                if (gt == null) {
+                    continue;
+                }
                 // Make a Set from the lists of genotypes for fast indexOf
                 for (Map.Entry<String, Object> entry : gt.entrySet()) {
                     gtsMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).addAll((Collection) entry.getValue());
@@ -141,8 +145,10 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             addGt(gtStrCount, defaultGenotype, unknownGenotypes);
 
             Map<Genotype, Integer> gtCountMap = new HashMap<>(gtStrCount.size());
-            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str),
-                    (key, value) -> value == null ? count : value + count));
+            gtStrCount.forEach((str, count) -> {
+                Genotype gt = GenotypeClass.NA_GT_VALUE.equals(str) ? null : new Genotype(str);
+                gtCountMap.compute(gt, (key, value) -> value == null ? count : value + count);
+            });
 
             VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap, multiAllelic);
             stats.setCohortId(cohort.getName());
