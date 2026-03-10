@@ -1338,6 +1338,7 @@
                         org/opencb/opencga/storage/variant/**,
                         org/opencb/opencga/storage/datamanagers/**,
                         org/opencb/opencga/storage/hadoop/variant/models/protobuf/**,
+                        org/opencb/opencga/storage/mongodb/variant/protobuf/**,
                         org/opencb/opencga/storage/server/grpc/**,
                         org/opencb/opencga/storage/server/grpc/**,
                         org/opencb/opencga/storage/lib/**,
