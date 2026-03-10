@@ -26,6 +26,14 @@ import java.util.List;
  */
 public class VariantSparseFilterTask implements Task<Variant, Variant> {
 
+    /**
+     * Returns true if the given genotype should be included in sparse output.
+     * Sparse mode keeps only non-HOM_REF and non-MISS genotypes.
+     */
+    public static boolean includeInSparse(String gt) {
+        return gt != null && !GenotypeClass.HOM_REF.test(gt) && !GenotypeClass.MISS.test(gt);
+    }
+
     @Override
     public List<Variant> apply(List<Variant> batch) {
         for (Variant variant : batch) {
@@ -41,10 +49,7 @@ public class VariantSparseFilterTask implements Task<Variant, Variant> {
                         }
                         if (hasGt) {
                             if (sample.getData() != null && !sample.getData().isEmpty()) {
-                                String gt = sample.getData().get(0);
-                                if (gt != null
-                                        && !GenotypeClass.HOM_REF.test(gt)
-                                        && !GenotypeClass.MISS.test(gt)) {
+                                if (includeInSparse(sample.getData().get(0))) {
                                     sparseSamples.add(sample);
                                 }
                             }

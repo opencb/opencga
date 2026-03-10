@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask.includeInSparse;
 
 
 /**
@@ -636,10 +637,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 }
                 if (hasGt) {
                     if (sample.getData() != null && !sample.getData().isEmpty()) {
-                        String gt = sample.getData().get(0);
-                        if (gt != null
-                                && !HOM_REF.test(gt)
-                                && !MISS.test(gt)) {
+                        if (includeInSparse(sample.getData().get(0))) {
                             sparseSamples.add(sample);
                         }
                     }

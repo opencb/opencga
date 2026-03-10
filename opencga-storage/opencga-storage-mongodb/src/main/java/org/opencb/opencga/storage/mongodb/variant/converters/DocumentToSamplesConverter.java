@@ -30,7 +30,6 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.query.ResourceId;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -47,6 +46,7 @@ import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.MAIN_ALT;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask.includeInSparse;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 
 /**
@@ -283,7 +283,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 }
                 for (Map.Entry<String, Object> mgtEntry : mgt.entrySet()) {
                     String genotype = genotypeToDataModelType(mgtEntry.getKey());
-                    if (!GenotypeClass.HOM_REF.test(genotype) && !GenotypeClass.MISS.test(genotype)) {
+                    if (includeInSparse(genotype)) {
                         for (Integer sid : (List<Integer>) mgtEntry.getValue()) {
                             if (sampleNames.containsKey(sid)) {
                                 sparseSampleIds.add(sid);
