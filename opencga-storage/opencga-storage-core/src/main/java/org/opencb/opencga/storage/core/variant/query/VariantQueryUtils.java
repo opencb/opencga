@@ -359,6 +359,24 @@ public final class VariantQueryUtils {
         return params;
     }
 
+    /**
+     * Validates that a query is compatible with JSON_SPARSE output format.
+     * Throws if the user explicitly set {@code includeGenotype=false}, which
+     * conflicts with sparse filtering that relies on genotype information.
+     *
+     * @param query the variant query
+     */
+    public static void validateSparseQuery(Query query) {
+        if (isValidParam(query, VariantQueryParam.INCLUDE_GENOTYPE)
+                && !query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            throw new VariantQueryException(
+                    "Cannot use '" + VariantQueryParam.INCLUDE_GENOTYPE.key() + "=false' with JSON_SPARSE output format."
+                            + " Sparse filtering requires genotype information when available.");
+        }
+        query.put(SPARSE_SAMPLES.key(), true);
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+    }
+
     public static void validateAnnotationQuery(Query query) {
         if (query == null) {
             return;

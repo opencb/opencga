@@ -256,13 +256,25 @@ public class VariantExporter {
 
     private Iterator<Variant> toVariantsIterator(URI variantsFile) {
         VariantStudyMetadata metadata = new VariantFileMetadata("", variantsFile.getPath()).toVariantStudyMetadata("");
+        int[] lineNumber = {0};
         return new VariantVcfReader(metadata, variantsFile.getPath(),
                 (variantStudyMetadata, s) -> {
-                    String[] split = s.split("\t");
+                    lineNumber[0]++;
+                    String[] split = s.split("\t", -1);
                     if (split.length < 5) {
-                        throw new IllegalArgumentException("Not enough fields provided (min 5)");
+                        throw new IllegalArgumentException(
+                                "Not enough fields provided (min 5). Found " + split.length
+                                        + " at line " + lineNumber[0] + ": '" + s + "'");
                     }
-                    return Collections.singletonList(new Variant(split[0], Integer.valueOf(split[1]), split[3], split[4]));
+                    String pos = split[1];
+                    if (pos.contains("-")) {
+                        String[] posRange = pos.split("-");
+                        int start = Integer.parseInt(posRange[0]);
+                        int end = Integer.parseInt(posRange[1]);
+                        return Collections.singletonList(new Variant(split[0], start, end, split[3], split[4]));
+                    } else {
+                        return Collections.singletonList(new Variant(split[0], Integer.valueOf(pos), split[3], split[4]));
+                    }
                 }).iterator();
     }
 

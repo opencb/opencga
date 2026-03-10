@@ -64,6 +64,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
@@ -124,8 +125,6 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
@@ -321,11 +320,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    public boolean supportsNativeSparseFilter() {
+        return true;
+    }
+
+    @Override
     public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
         if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON_SPARSE) {
-            query.put(VariantQueryUtils.SPARSE_SAMPLES.key(), true);
-            query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+            VariantQueryUtils.validateSparseQuery(query);
         }
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
         int studyId;

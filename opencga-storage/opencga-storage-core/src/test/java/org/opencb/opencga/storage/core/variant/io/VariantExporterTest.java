@@ -26,6 +26,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -52,18 +55,37 @@ import static org.junit.Assert.*;
 @StorageEngineTest
 public abstract class VariantExporterTest extends VariantStorageBaseTest {
 
+    public static boolean loaded = false;
+    protected static final String SOMATIC_STUDY = "somatic_study";
+
     @Before
-    public void setUp() throws Exception {
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
-                new QueryOptions()
+    public void before() throws Exception {
+        if (!loaded) {
+            runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
+                    new QueryOptions()
 //                        .append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), "GL,DS")
-                        .append(VariantStorageOptions.ANNOTATE.key(), false));
+                            .append(VariantStorageOptions.ANNOTATE.key(), false));
+
+            // Load somatic VCF (no GT field) as a second study
+            URI somaticInputUri = getResourceUri("variant-test-somatic.vcf");
+            runDefaultETL(somaticInputUri, variantStorageEngine, newStudyMetadata(SOMATIC_STUDY),
+                    new QueryOptions()
+                            .append(VariantStorageOptions.ANNOTATE.key(), false)
+                            .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
+
+            loaded = true;
+        }
+    }
+
+    protected static StudyMetadata newStudyMetadata(String studyName) {
+        return new StudyMetadata(-1, studyName);
     }
 
 
     @Test
     public void exportStudyTest() throws Exception {
-        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, null, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, null,
+                new Query(VariantQueryParam.STUDY.key(), STUDY_NAME), new QueryOptions());
         // It may happen that the VcfExporter closes the StandardOutput.
         // Check System.out is not closed
         System.out.println(getClass().getSimpleName() + ": System out not closed!");
@@ -103,7 +125,10 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
             for (Variant v : variantStorageEngine) {
                 if (i++ % 5 == 0) {
                     expectedVariants.add(v.toString());
-                    out.println(v.getChromosome() + "\t"+v.getStart()+"\t.\t"+v.getReference()+"\t"+v.getAlternate()+"");
+                    String pos = v.isSV() || v.isSymbolic()
+                            ? v.getStart() + "-" + v.getEnd()
+                            : String.valueOf(v.getStart());
+                    out.println(v.getChromosome() + "\t" + pos + "\t.\t" + v.getReference() + "\t" + v.getAlternate());
                 }
             }
         }
@@ -136,20 +161,22 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
             sparseVariants.add(variant);
             assertNotNull(variant.getStudies());
             assertFalse(variant.getStudies().isEmpty());
-            // Sparse output clears samplesPosition
-            assertNull(variant.getStudies().get(0).getSamplesPosition());
-            for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
-                assertNotNull(sample.getSampleId());
-                assertNotNull(sample.getFileIndex());
-                assertNotNull(variant.getStudies().get(0).getFile(sample.getFileIndex()));
-                assertNotNull(sample.getData());
-                assertFalse(sample.getData().isEmpty());
-                String gt = sample.getData().get(0);
-                assertNotNull(gt);
-                assertFalse("HOM_REF genotype in sparse output: " + gt,
-                        GenotypeClass.HOM_REF.test(gt));
-                assertFalse("MISS genotype in sparse output: " + gt,
-                        GenotypeClass.MISS.test(gt));
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                // Sparse output clears samplesPosition
+                assertNull(studyEntry.getSamplesPosition());
+                for (SampleEntry sample : studyEntry.getSamples()) {
+                    assertNotNull(sample.getSampleId());
+                    assertNotNull(sample.getFileIndex());
+                    assertNotNull(studyEntry.getFile(sample.getFileIndex()));
+                    assertNotNull(sample.getData());
+                    assertFalse(sample.getData().isEmpty());
+                    String gt = sample.getData().get(0);
+                    assertNotNull(gt);
+                    assertFalse("HOM_REF genotype in sparse output: " + gt,
+                            GenotypeClass.HOM_REF.test(gt));
+                    assertFalse("MISS genotype in sparse output: " + gt,
+                            GenotypeClass.MISS.test(gt));
+                }
             }
         }
         assertTrue("No variants in sparse output", sparseVariants.size() > 0);
@@ -189,9 +216,46 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void exportJsonSparseSomaticTest() throws Exception {
+        URI output = newOutputUri().resolve("variant.somatic.sparse.json");
+        // Export only the somatic study (which has no GT field in the original VCF)
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE, null,
+                new VariantQuery().study(SOMATIC_STUDY).includeSampleAll(), new QueryOptions());
+
+        System.out.println("output = " + output);
+        assertTrue(Paths.get(output).toFile().exists());
+
+        List<Variant> sparseVariants = new ArrayList<>();
+        for (Variant variant : new VariantJsonReader(null, output.getPath())) {
+            sparseVariants.add(variant);
+            assertNotNull(variant.getStudies());
+            assertFalse(variant.getStudies().isEmpty());
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            // Sparse output clears samplesPosition
+            assertNull(studyEntry.getSamplesPosition());
+            // All samples should be kept — somatic data has actual variant data for every sample
+            assertFalse("Somatic sparse output should have samples", studyEntry.getSamples().isEmpty());
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                assertNotNull("sampleId should be present", sample.getSampleId());
+                assertNotNull("fileIndex should be present", sample.getFileIndex());
+            }
+        }
+        assertTrue("No variants in somatic sparse output", sparseVariants.size() > 0);
+    }
+
+    @Test(expected = VariantQueryException.class)
+    public void exportJsonSparseWithIncludeGenotypeFalseTest() throws Exception {
+        URI output = newOutputUri().resolve("variant.sparse.nogenotype.json");
+        Query query = new VariantQuery().includeSampleAll();
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), false);
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE, null, query, new QueryOptions());
+    }
+
+    @Test
     public void exportTpedTest() throws Exception {
         URI output = newOutputUri().resolve("variant" + VariantExporter.TPED_FILE_EXTENSION);
-        variantStorageEngine.exportData(output, VariantOutputFormat.TPED, null, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(output, VariantOutputFormat.TPED, null,
+                new Query(VariantQueryParam.STUDY.key(), STUDY_NAME), new QueryOptions());
 
         System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());

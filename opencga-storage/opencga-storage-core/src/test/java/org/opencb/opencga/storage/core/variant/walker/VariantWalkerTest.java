@@ -3,8 +3,10 @@ package org.opencb.opencga.storage.core.variant.walker;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -15,8 +17,10 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +42,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.WALK
 public abstract class VariantWalkerTest extends VariantStorageBaseTest {
 
     protected static boolean loaded = false;
+    protected static final String SOMATIC_STUDY = "somatic_study";
     private static String dockerImage;
 
     @BeforeClass
@@ -68,6 +73,14 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
                             .append(VariantStorageOptions.ANNOTATE.key(), false)
                             .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
             );
+
+            // Load somatic VCF (no GT field) as a second study
+            URI somaticInputUri = VariantStorageBaseTest.getResourceUri("variant-test-somatic.vcf");
+            VariantStorageBaseTest.runDefaultETL(somaticInputUri, getVariantStorageEngine(),
+                    new StudyMetadata(-1, SOMATIC_STUDY),
+                    new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                            .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
+
             loaded = true;
         }
     }
@@ -267,16 +280,21 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
             assertTrue(uri + " not found!", Paths.get(uri).toFile().exists());
         }
 
-        // Read stdout output — first line is metadata, remaining are variant JSON
+        // Read stdout output — metadata headers may appear multiple times (process restarts),
+        // remaining lines are variant JSON
         List<String> lines = new StringDataReader(Paths.get(uris.get(0))).stream().collect(Collectors.toList());
         assertFalse("Output should not be empty", lines.isEmpty());
 
-        // Parse variants from the output (skip the first metadata line)
         ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         int variantCount = 0;
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
+        int metadataCount = 0;
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
             if (line.isEmpty()) {
+                continue;
+            }
+            if (isMetadataLine(objectMapper, line)) {
+                metadataCount++;
                 continue;
             }
             Variant variant = objectMapper.readValue(line, Variant.class);
@@ -300,7 +318,66 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
             }
             variantCount++;
         }
+        assertTrue("Expected at least one metadata header", metadataCount >= 1);
         assertTrue("Expected variant data in sparse output", variantCount > 0);
+    }
+
+    @Test
+    public void testWalkJsonSparseSomatic() throws Exception {
+        URI outdir = newOutputUri();
+
+        String cmd = "cat";
+
+        List<URI> uris = variantStorageEngine.walkData(
+                outdir.resolve("walker_somatic_sparse.txt.gz"),
+                VariantWriterFactory.VariantOutputFormat.JSON_SPARSE,
+                new VariantQuery().study(SOMATIC_STUDY).includeSampleAll(), new QueryOptions(), cmd);
+
+        assertNotNull(uris);
+        assertTrue("Expected at least 1 output file", uris.size() >= 1);
+
+        List<String> lines = new StringDataReader(Paths.get(uris.get(0))).stream().collect(Collectors.toList());
+        assertFalse("Output should not be empty", lines.isEmpty());
+
+        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        int variantCount = 0;
+        int metadataCount = 0;
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (isMetadataLine(objectMapper, line)) {
+                metadataCount++;
+                continue;
+            }
+            Variant variant = objectMapper.readValue(line, Variant.class);
+            assertNotNull(variant.getStudies());
+            assertFalse(variant.getStudies().isEmpty());
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            assertNull("samplesPosition should be null in sparse output",
+                    studyEntry.getSamplesPosition());
+            // Somatic has no GT — all samples with file data should be present
+            assertFalse("Somatic sparse output should have samples", studyEntry.getSamples().isEmpty());
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                assertNotNull(sample.getSampleId());
+                assertNotNull(sample.getFileIndex());
+            }
+            variantCount++;
+        }
+        assertTrue("Expected at least one metadata header", metadataCount >= 1);
+        assertTrue("Expected variant data in somatic sparse output", variantCount > 0);
+    }
+
+    @Test(expected = VariantQueryException.class)
+    public void testWalkJsonSparseWithIncludeGenotypeFalse() throws Exception {
+        URI outdir = newOutputUri();
+        Query query = new Query();
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), false);
+        variantStorageEngine.walkData(
+                outdir.resolve("walker_sparse_nogenotype.txt.gz"),
+                VariantWriterFactory.VariantOutputFormat.JSON_SPARSE,
+                query, new QueryOptions(), "cat");
     }
 
     @Test
@@ -346,6 +423,19 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         dockerImages.run();
         assertEquals(0, dockerImages.getExitValue());
         assertEquals(2, dockerImages.getOutput().split("\n").length);
+    }
+
+    /**
+     * Check if a JSON line is a VariantMetadata header rather than a Variant.
+     * Metadata headers are emitted at each process restart and may appear multiple times.
+     */
+    private static boolean isMetadataLine(ObjectMapper objectMapper, String line) {
+        try {
+            objectMapper.readValue(line, VariantMetadata.class);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }

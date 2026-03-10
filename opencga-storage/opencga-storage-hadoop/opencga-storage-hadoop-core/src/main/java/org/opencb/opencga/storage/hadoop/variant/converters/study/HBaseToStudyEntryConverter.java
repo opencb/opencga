@@ -626,10 +626,28 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
 
         if (configuration.getSparse()) {
+            boolean hasGt = studyEntry.getSampleDataKeys() != null
+                    && !studyEntry.getSampleDataKeys().isEmpty()
+                    && "GT".equals(studyEntry.getSampleDataKeys().get(0));
             List<SampleEntry> sparseSamples = new ArrayList<>(numSamples);
-            studyEntry.getSamples().stream()
-                    .filter(Objects::nonNull)
-                    .forEach(sparseSamples::add);
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                if (sample == null || sample.getFileIndex() == null) {
+                    continue;
+                }
+                if (hasGt) {
+                    if (sample.getData() != null && !sample.getData().isEmpty()) {
+                        String gt = sample.getData().get(0);
+                        if (gt != null
+                                && !HOM_REF.test(gt)
+                                && !MISS.test(gt)) {
+                            sparseSamples.add(sample);
+                        }
+                    }
+                } else {
+                    // No GT field — keep all samples with file data
+                    sparseSamples.add(sample);
+                }
+            }
             studyEntry.setSamplesPosition(null);
             studyEntry.setSamples(sparseSamples);
         }

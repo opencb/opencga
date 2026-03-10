@@ -16,14 +16,4 @@ public class HadoopVariantExporterBaseTest extends VariantExporterTest implement
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
 
-    private static boolean loaded = false;
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        if (!loaded) {
-            super.setUp();
-            loaded = true;
-        }
-    }
 }

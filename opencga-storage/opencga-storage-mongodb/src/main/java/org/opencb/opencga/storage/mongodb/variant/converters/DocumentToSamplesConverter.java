@@ -270,8 +270,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         // In sparse mode, pre-scan mgt maps to identify samples with variant data.
         // Reduce samplesPositionToReturn so all downstream phases only process sparse samples.
+        // This works for both normal (GT present) and somatic/excludeGenotypes data (mgt has "NA" keys).
         LinkedHashMap<String, Integer> effectiveSamplesPosition;
-        if (sparse && !excludeGenotypes) {
+        if (sparse) {
             Set<Integer> sparseSampleIds = new HashSet<>();
             for (Map.Entry<Integer, Document> fileEntry : files.entrySet()) {
                 Document fileDoc = fileEntry.getValue();

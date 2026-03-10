@@ -281,8 +281,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 break;
             case JSON_SPARSE:
-                query.put(SPARSE_SAMPLES.key(), true);
-                query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+                validateSparseQuery(query);
                 break;
             default:
                 break;
@@ -342,8 +341,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                        String commandLine)
             throws StorageEngineException {
         if (format.inPlain() == VariantOutputFormat.JSON_SPARSE) {
-            query.put(SPARSE_SAMPLES.key(), true);
-            query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+            validateSparseQuery(query);
         }
         LocalVariantWalker walker = new LocalVariantWalker(getMetadataManager(),
                 new VariantWriterFactory(getMetadataManager()), ioConnectorProvider, supportsNativeSparseFilter());
