@@ -112,8 +112,9 @@ public class VariantWriterFactory {
             List<Integer> studyIds = VariantQueryProjectionParser.getIncludeStudies(query, QueryOptions.empty(),
                     variantStorageMetadataManager);
             if (studyIds.size() > 1) {
-                throw new IllegalArgumentException("Cannot export more than one study at a time with '" + outputFormat
-                        + "' output format. Please use the '" + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
+                throw new IllegalArgumentException("Cannot export more than one study at a time with '"
+                        + outputFormat + "' output format. Please use the '"
+                        + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
             }
             // if (studyIds.isEmpty()) { no studies, this is ok }
             if (studyIds.size() == 1) {

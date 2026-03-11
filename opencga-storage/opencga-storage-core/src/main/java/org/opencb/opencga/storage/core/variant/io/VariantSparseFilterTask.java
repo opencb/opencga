@@ -29,6 +29,8 @@ public class VariantSparseFilterTask implements Task<Variant, Variant> {
     /**
      * Returns true if the given genotype should be included in sparse output.
      * Sparse mode keeps only non-HOM_REF and non-MISS genotypes.
+     * @param gt genotype string
+     * @return true if the genotype should be included
      */
     public static boolean includeInSparse(String gt) {
         return gt != null && !GenotypeClass.HOM_REF.test(gt) && !GenotypeClass.MISS.test(gt);
