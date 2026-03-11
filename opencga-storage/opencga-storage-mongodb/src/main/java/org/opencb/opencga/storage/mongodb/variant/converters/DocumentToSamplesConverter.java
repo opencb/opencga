@@ -225,7 +225,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             includeFileIds = Collections.emptyList();
         }
         if (fileDocuments != null) {
-            files = new HashMap<>(fileDocuments.size());
+            files = new LinkedHashMap<>(fileDocuments.size());
             loadedSamples = new HashSet<>();
             filesWithSamplesData = new HashSet<>();
             for (Document fileObject : fileDocuments) {
