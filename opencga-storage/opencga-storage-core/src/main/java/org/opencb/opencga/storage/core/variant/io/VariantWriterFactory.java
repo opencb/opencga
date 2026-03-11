@@ -95,7 +95,6 @@ public class VariantWriterFactory {
      * @param query        the variant query, modified in-place to add defaults
      * @throws IllegalArgumentException if the query selects multiple studies for a single-study format,
      *                                  or if the study filter does not match the included study
-     * @throws VariantQueryException    if {@code includeGenotype=false} is used with JSON_SPARSE
      */
     public void validateQuery(VariantOutputFormat outputFormat, Query query) {
         switch (outputFormat.inPlain()) {
