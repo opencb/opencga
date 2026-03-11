@@ -64,7 +64,6 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
@@ -327,9 +326,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
                               Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
-        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON_SPARSE) {
-            VariantQueryUtils.validateSparseQuery(query);
-        }
+        new VariantWriterFactory(getMetadataManager()).validateQuery(format, query);
+
         ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
         int studyId;
         if (variantQuery.getStudyQuery().getDefaultStudy() == null) {

@@ -118,7 +118,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         List<URI> uris = variantStorageEngine.walkData(
                 outdir.resolve("walker_json.txt.gz"),
                 VariantWriterFactory.VariantOutputFormat.JSON,
-                new Query(), new QueryOptions(), cmd);
+                new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
 
         assertNotNull(uris);
         assertTrue("Expected at least 1 output file", uris.size() >= 1);
@@ -140,7 +140,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         List<URI> uris = variantStorageEngine.walkData(
                 outdir.resolve("walker_vcf.txt.gz"),
                 VariantWriterFactory.VariantOutputFormat.VCF,
-                new Query(), new QueryOptions(), cmd);
+                new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
 
         assertNotNull(uris);
         assertTrue("Expected at least 1 output file", uris.size() >= 1);
@@ -171,7 +171,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
             List<URI> result = variantStorageEngine.walkData(
                     outdir.resolve("walker_restart.txt.gz"),
                     VariantWriterFactory.VariantOutputFormat.VCF,
-                    new Query(), new QueryOptions(), cmd);
+                    new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
 
             assertNotNull(result);
             assertTrue("Expected at least 1 output file", result.size() >= 1);
@@ -201,7 +201,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
             variantStorageEngine.walkData(
                     outdir.resolve("walker_error.txt.gz"),
                     VariantWriterFactory.VariantOutputFormat.JSON,
-                    new Query(), new QueryOptions(), cmd);
+                    new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
             fail("Expected StorageEngineException for failing process");
         } catch (Exception e) {
             // Expected — StorageEngineException from local walker, RuntimeException from Hadoop MR
@@ -249,7 +249,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
 
 //        variantStorageEngine.walkData(outdir.resolve("variant3.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdDocker);
 //        variantStorageEngine.walkData(outdir.resolve("variant2.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdBash);
-        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant1.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmd);
+        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant1.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
 //        variantStorageEngine.walkData(outdir.resolve("variant5.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython1);
 //        variantStorageEngine.walkData(outdir.resolve("variant8.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython2);
 //        variantStorageEngine.walkData(outdir.resolve("variant6.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), cmdPython);
@@ -272,7 +272,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         List<URI> uris = variantStorageEngine.walkData(
                 outdir.resolve("walker_sparse.txt.gz"),
                 VariantWriterFactory.VariantOutputFormat.JSON_SPARSE,
-                new Query(), new QueryOptions(), cmd);
+                new VariantQuery().study(STUDY_NAME), new QueryOptions(), cmd);
 
         assertNotNull(uris);
         assertTrue("Expected at least 1 output file", uris.size() >= 1);
@@ -385,7 +385,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         URI outdir = newOutputUri();
 
         String cmdPython1 = "python variant_walker.py walker_example Echo --length 30";
-        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new VariantQuery().study(STUDY_NAME), new QueryOptions(), dockerImage, cmdPython1);
         assertEquals(3, uris.size());
         for (URI uri : uris) {
             // Ensure uri exists
@@ -406,7 +406,7 @@ public abstract class VariantWalkerTest extends VariantStorageBaseTest {
         String cmdPython1 = "python variant_walker.py walker_example Echo";
         // Force multiple restarts
         variantStorageEngine.getOptions().put(WALKER_DOCKER_MAX_BYTES_PER_MAP.key(), 2*1024);
-        List<URI> result = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+        List<URI> result = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new VariantQuery().study(STUDY_NAME), new QueryOptions(), dockerImage, cmdPython1);
 
         // Check that output has only one header
         boolean inHeader = true;

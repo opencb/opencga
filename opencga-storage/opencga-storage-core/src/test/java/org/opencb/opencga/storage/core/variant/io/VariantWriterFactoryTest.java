@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -31,8 +32,12 @@ import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,10 +45,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.JSON_GZ;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.STATS_GZ;
+import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
  * Created on 07/12/16.
@@ -74,6 +78,101 @@ public class VariantWriterFactoryTest {
     public void checkBadOutputTest() throws Exception {
         thrown.expect(IllegalArgumentException.class);
         VariantWriterFactory.checkOutput("path/", JSON_GZ);
+    }
+
+    private static final String STUDY1 = "study1";
+    private static final String STUDY2 = "study2";
+
+    @Before
+    public void setUp() {
+        DummyVariantStorageEngine.clear();
+    }
+
+    private VariantWriterFactory buildFactory(String... studies) throws Exception {
+        DummyVariantDBAdaptor dbAdaptor = new DummyVariantDBAdaptor("opencga");
+        VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
+        mm.getAndUpdateProjectMetadata(new ObjectMap());
+        for (String study : studies) {
+            mm.createStudy(study);
+        }
+        return new VariantWriterFactory(mm);
+    }
+
+    // --- validateQuery: VCF format ---
+
+    @Test
+    public void validateQueryVcfSetsDefaultUnknownGenotype() throws Exception {
+        Query query = new VariantQuery().study(STUDY1);
+        buildFactory(STUDY1).validateQuery(VCF, query);
+        assertEquals("./.", query.getString(UNKNOWN_GENOTYPE.key()));
+    }
+
+    @Test
+    public void validateQueryVcfPreservesExistingUnknownGenotype() throws Exception {
+        Query query = new VariantQuery().study(STUDY1);
+        query.put(UNKNOWN_GENOTYPE.key(), "0/0");
+        buildFactory(STUDY1).validateQuery(VCF, query);
+        assertEquals("0/0", query.getString(UNKNOWN_GENOTYPE.key()));
+    }
+
+    @Test
+    public void validateQueryVcfMultipleIncludeStudiesThrows() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage(containsString(INCLUDE_STUDY.key()));
+        // Two studies in DB, no INCLUDE_STUDY filter → both are included
+        buildFactory(STUDY1, STUDY2).validateQuery(VCF, new Query());
+    }
+
+    @Test
+    public void validateQueryVcfNoStudyFilterWithTwoStudiesThrows() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage(containsString(STUDY1));
+        // Include only study1, but no STUDY filter — variants from study2 would appear with no study1 data
+        buildFactory(STUDY1, STUDY2).validateQuery(VCF, new VariantQuery().includeStudy(STUDY1));
+    }
+
+    @Test
+    public void validateQueryVcfMismatchedStudyFilterThrows() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage(containsString(STUDY1));
+        thrown.expectMessage(containsString(STUDY2));
+        // Include study1 in output but filter by study2 — study1 data missing for study2-only variants
+        buildFactory(STUDY1, STUDY2).validateQuery(VCF, new VariantQuery().includeStudy(STUDY1).study(STUDY2));
+    }
+
+    @Test
+    public void validateQueryVcfMatchingStudyFilterOk() throws Exception {
+        // Include study1 and filter by study1 — consistent, no exception
+        Query query = new VariantQuery().includeStudy(STUDY1).study(STUDY1);
+        buildFactory(STUDY1, STUDY2).validateQuery(VCF, query);
+        assertEquals("./.", query.getString(UNKNOWN_GENOTYPE.key()));
+    }
+
+    // --- validateQuery: JSON_SPARSE format ---
+
+    @Test
+    public void validateQuerySparseSetsSparseFlags() throws Exception {
+        Query query = new VariantQuery();
+        buildFactory(STUDY1).validateQuery(JSON_SPARSE, query);
+        assertTrue(query.getBoolean(VariantQueryUtils.SPARSE_SAMPLES.key()));
+        assertTrue(query.getBoolean(INCLUDE_SAMPLE_ID.key()));
+    }
+
+    @Test
+    public void validateQuerySparseWithIncludeGenotypeFalseThrows() throws Exception {
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage(containsString(VariantQueryParam.INCLUDE_GENOTYPE.key()));
+        Query query = new VariantQuery();
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), false);
+        buildFactory(STUDY1).validateQuery(JSON_SPARSE, query);
+    }
+
+    // --- validateQuery: multi-study formats skip the study count check ---
+
+    @Test
+    public void validateQueryJsonMultiStudyOk() throws Exception {
+        // JSON is multi-study, so no study restriction is applied even with two studies
+        buildFactory(STUDY1, STUDY2).validateQuery(JSON, new Query());
     }
 
     @Test

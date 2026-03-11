@@ -149,8 +149,8 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void exportJsonSparseTest() throws Exception {
-        URI output = newOutputUri().resolve("variant.sparse.json");
-        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE, null,
+        URI output = newOutputUri().resolve("variant.sparse.json.gz");
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE_GZ, null,
                 new VariantQuery().includeSampleAll(), new QueryOptions());
 
         System.out.println("output = " + output);
@@ -217,9 +217,9 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void exportJsonSparseSomaticTest() throws Exception {
-        URI output = newOutputUri().resolve("variant.somatic.sparse.json");
+        URI output = newOutputUri().resolve("variant.somatic.sparse.json.gz");
         // Export only the somatic study (which has no GT field in the original VCF)
-        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE, null,
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_SPARSE_GZ, null,
                 new VariantQuery().study(SOMATIC_STUDY).includeSampleAll(), new QueryOptions());
 
         System.out.println("output = " + output);
@@ -238,9 +238,11 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
             for (SampleEntry sample : studyEntry.getSamples()) {
                 assertNotNull("sampleId should be present", sample.getSampleId());
                 assertNotNull("fileIndex should be present", sample.getFileIndex());
+                assertNotNull("sample data should be present", sample.getData());
+                assertFalse("sample data should not be empty", sample.getData().isEmpty());
             }
         }
-        assertTrue("No variants in somatic sparse output", sparseVariants.size() > 0);
+        assertFalse("No variants in somatic sparse output", sparseVariants.isEmpty());
     }
 
     @Test(expected = VariantQueryException.class)

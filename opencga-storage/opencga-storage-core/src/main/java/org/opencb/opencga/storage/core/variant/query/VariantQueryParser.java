@@ -257,19 +257,7 @@ public class VariantQueryParser {
         StudyMetadata defaultStudy = getDefaultStudy(query);
         studyQuery.setDefaultStudy(defaultStudy);
         if (isValidParam(query, STUDY)) {
-            ParsedQuery<NegatableValue<ResourceId>> studies = splitValue(query, STUDY)
-                    .map(studyName -> {
-                        boolean negated = false;
-                        if (isNegated(studyName)) {
-                            studyName = removeNegation(studyName);
-                            negated = true;
-                        }
-                        int studyId = metadataManager.getStudyId(studyName);
-                        studyName = metadataManager.getStudyName(studyId);
-                        return new NegatableValue<>(new ResourceId(ResourceId.Type.STUDY, studyId, studyName), negated);
-                    });
-
-            studyQuery.setStudies(studies);
+            studyQuery.setStudies(parseStudiesQuery(query));
         }
         if (isValidParam(query, FILE)) {
             ParsedQuery<NegatableValue<ResourceId>> files = splitValue(query, FILE)
@@ -321,6 +309,23 @@ public class VariantQueryParser {
             logger.warn("Slow parsed query in {}", TimeUtils.durationToString(stopWatch));
         }
         return variantQuery;
+    }
+
+    public ParsedQuery<NegatableValue<ResourceId>> parseStudiesQuery(VariantQuery query) {
+        if (isValidParam(query, STUDY)) {
+            return splitValue(query, STUDY)
+                    .map(studyName -> {
+                        boolean negated = false;
+                        if (isNegated(studyName)) {
+                            studyName = removeNegation(studyName);
+                            negated = true;
+                        }
+                        int studyId = metadataManager.getStudyId(studyName);
+                        studyName = metadataManager.getStudyName(studyId);
+                        return new NegatableValue<>(new ResourceId(ResourceId.Type.STUDY, studyId, studyName), negated);
+                    });
+        }
+        return null;
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {

@@ -273,37 +273,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (metadataFactory == null) {
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
+        new VariantWriterFactory(getMetadataManager()).validateQuery(outputFormat, query);
+
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        switch (outputFormat.inPlain()) {
-            case VCF:
-                if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
-                    query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-                }
-                break;
-            case JSON_SPARSE:
-                validateSparseQuery(query);
-                break;
-            default:
-                break;
-        }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
-        if (!outputFormat.isMultiStudyOutput()) {
-            if (parsedVariantQuery.getProjection().getStudies().size() > 1) {
-                throw new IllegalArgumentException("Cannot export more than one study at a time with output format " + outputFormat
-                        + ". Please use the '" + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
-            }
-        }
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                               String dockerImage, String commandLine)
             throws IOException, StorageEngineException {
-        if (format == VariantOutputFormat.VCF || format == VariantOutputFormat.VCF_GZ) {
-            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
-                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-            }
-        }
         commandLine = commandLine.replace("'", "'\"'\"'");
 
         String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
@@ -340,11 +319,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException {
-        if (format.inPlain() == VariantOutputFormat.JSON_SPARSE) {
-            validateSparseQuery(query);
-        }
+        VariantWriterFactory writerFactory = new VariantWriterFactory(getMetadataManager());
+        writerFactory.validateQuery(format, query);
+
         LocalVariantWalker walker = new LocalVariantWalker(getMetadataManager(),
-                new VariantWriterFactory(getMetadataManager()), ioConnectorProvider, supportsNativeSparseFilter());
+                writerFactory, ioConnectorProvider, supportsNativeSparseFilter());
         try (VariantDBIterator iterator = iterator(query, queryOptions)) {
             return walker.walk(outputFile, format, query, queryOptions, iterator, commandLine, getOptions());
         } catch (StorageEngineException e) {
