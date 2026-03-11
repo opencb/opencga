@@ -351,9 +351,16 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
 
 
         thrown.expect(StoragePipelineException.class);
-        thrown.expect(hasCause(isA(Exception.class)));
-        thrown.expect(hasCause(hasCause(isA(IllegalArgumentException.class))));
-        thrown.expect(hasCause(hasCause(hasMessage(containsString("Already loaded variant 20:238441:T:C")))));
+        // IAE depth varies by backend: MongoDB wraps via tee's RuntimeException (depth 2),
+        // Hadoop wraps via ParallelTaskRunner's ExecutionException (depth 3).
+        thrown.expect(anyOf(
+                hasCause(hasCause(isA(IllegalArgumentException.class))),
+                hasCause(hasCause(hasCause(isA(IllegalArgumentException.class))))
+        ));
+        thrown.expect(anyOf(
+                hasCause(hasCause(hasMessage(containsString("Already loaded variant 20:238441:T:C")))),
+                hasCause(hasCause(hasCause(hasMessage(containsString("Already loaded variant 20:238441:T:C")))))
+        ));
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20-21.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
     }
