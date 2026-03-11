@@ -13,10 +13,6 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageEngin
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
     @After
     public void tearDown() throws Exception {
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
