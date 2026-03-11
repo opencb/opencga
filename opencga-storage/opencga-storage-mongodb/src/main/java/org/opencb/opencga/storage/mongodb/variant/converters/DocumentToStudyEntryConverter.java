@@ -341,6 +341,7 @@ public class DocumentToStudyEntryConverter {
             perFileStudy.setSecondaryAlternates(alts);
             perFileStudy.setSampleDataKeys(studyEntry.getSampleDataKeys());
             perFileStudy.setSamples(new ArrayList<>());
+            perFileStudy.setSamplesPosition(new HashMap<>());
 
             // Add samples from all files that carry this alternate set.
             for (Map.Entry<Integer, String> fe : fileIndexToAltSetKey.entrySet()) {

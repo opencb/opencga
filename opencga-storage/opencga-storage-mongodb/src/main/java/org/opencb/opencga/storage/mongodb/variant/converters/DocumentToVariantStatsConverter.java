@@ -122,12 +122,15 @@ public class DocumentToVariantStatsConverter {
                 stats.setRefAlleleCount(Math.round(stats.getRefAlleleFreq() * alleleNumber));
                 stats.setAltAlleleCount(Math.round(stats.getAltAlleleFreq() * alleleNumber));
             }
+        } else if (alleleNumber == 0) {
+            stats.setRefAlleleCount(0);
+            stats.setAltAlleleCount(0);
         } else if (stats.getGenotypeCount().isEmpty()) {
             // Aggregated files usually don't have Genotype Count
-            if (variant.getReference().equals(stats.getMafAllele())) {
+            if (variant != null && variant.getReference().equals(stats.getMafAllele())) {
                 stats.setRefAlleleFreq(stats.getMaf());
                 stats.setAltAlleleFreq(1 - stats.getMaf());
-            } else {
+            } else if (variant != null) {
                 stats.setAltAlleleFreq(stats.getMaf());
                 stats.setRefAlleleFreq(1 - stats.getMaf());
             }
