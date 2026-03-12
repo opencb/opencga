@@ -71,6 +71,9 @@ public class AlleleTyperResult {
         @JsonProperty("gene")
         private String gene;
 
+        @JsonProperty("diplotype")
+        private String diplotype;
+
         @JsonProperty("alleleCalls")
         private List<AlleleCall> alleleCalls;
 
@@ -80,8 +83,9 @@ public class AlleleTyperResult {
         public StarAlleleResult() {
         }
 
-        public StarAlleleResult(String gene, List<AlleleCall> alleleCalls, List<String> variants) {
+        public StarAlleleResult(String gene, String diplotype, List<AlleleCall> alleleCalls, List<String> variants) {
             this.gene = gene;
+            this.diplotype = diplotype;
             this.alleleCalls = alleleCalls;
             this.variants = variants;
         }
@@ -92,6 +96,14 @@ public class AlleleTyperResult {
 
         public void setGene(String gene) {
             this.gene = gene;
+        }
+
+        public String getDiplotype() {
+            return diplotype;
+        }
+
+        public void setDiplotype(String diplotype) {
+            this.diplotype = diplotype;
         }
 
         public List<AlleleCall> getAlleleCalls() {

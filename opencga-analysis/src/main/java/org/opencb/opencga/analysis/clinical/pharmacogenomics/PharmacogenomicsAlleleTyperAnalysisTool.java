@@ -70,8 +70,8 @@ public class PharmacogenomicsAlleleTyperAnalysisTool extends OperationTool {
     private void alleleTyper() throws IOException, CatalogException {
         // Perform allele typing using the pharmacogenomics manager
         boolean annotate = Boolean.TRUE.equals(analysisParams.getAnnotate());
-        List<AlleleTyperResult> results = pharmacogenomicsManager.alleleTyper(study, genotypingContent, translationContent, annotate,
-                token);
+        List<AlleleTyperResult> results = pharmacogenomicsManager.alleleTyper(study, analysisParams.getGenotypingContent(),
+                analysisParams.getTranslationContent(), analysisParams.getCnvContent(), annotate, token);
 
         // Save the results to the output directory
         Path resultsPath = getOutDir().resolve(RESULTS_DIR);

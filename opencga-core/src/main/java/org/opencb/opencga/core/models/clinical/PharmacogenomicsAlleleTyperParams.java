@@ -29,12 +29,16 @@ public class PharmacogenomicsAlleleTyperParams {
     @JsonProperty("translationContent")
     private String translationContent;
 
+    @JsonProperty("cnvContent")
+    private String cnvContent;
+
     public PharmacogenomicsAlleleTyperParams() {
     }
 
-    public PharmacogenomicsAlleleTyperParams(String genotypingContent, String translationContent) {
+    public PharmacogenomicsAlleleTyperParams(String genotypingContent, String translationContent, String cnvContent) {
         this.genotypingContent = genotypingContent;
         this.translationContent = translationContent;
+        this.cnvContent = cnvContent;
     }
 
     public String getGenotypingContent() {
@@ -55,11 +59,21 @@ public class PharmacogenomicsAlleleTyperParams {
         return this;
     }
 
+    public String getCnvContent() {
+        return cnvContent;
+    }
+
+    public PharmacogenomicsAlleleTyperParams setCnvContent(String cnvContent) {
+        this.cnvContent = cnvContent;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "PharmacogenomicsAlleleTyperParams{" +
                 "genotypingContent=" + (genotypingContent != null ? genotypingContent.length() + " chars" : "null") +
                 ", translationContent=" + (translationContent != null ? translationContent.length() + " chars" : "null") +
+                ", cnvContent=" + (cnvContent != null ? cnvContent.length() + " chars" : "null") +
                 '}';
     }
 }

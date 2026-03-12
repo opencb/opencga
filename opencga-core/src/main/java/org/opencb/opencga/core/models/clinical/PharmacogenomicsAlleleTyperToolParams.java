@@ -33,6 +33,9 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
     @JsonProperty("translationContent")
     private String translationContent;
 
+    @JsonProperty("cnvContent")
+    private String cnvContent;
+
     @JsonProperty("translationFile")
     private String translationFile;
 
@@ -46,13 +49,14 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
     }
 
     public PharmacogenomicsAlleleTyperToolParams(String genotypingContent, String genotypingFile, String translationContent,
-                                                 String translationFile, Boolean annotate, String outdir) {
-        this.genotypingContent = genotypingContent;
-        this.genotypingFile = genotypingFile;
-        this.translationContent = translationContent;
-        this.translationFile = translationFile;
-        this.annotate = annotate;
-        this.outdir = outdir;
+                String translationFile, Boolean annotate, String outdir) {
+            this.genotypingContent = genotypingContent;
+            this.genotypingFile = genotypingFile;
+            this.translationContent = translationContent;
+            this.cnvContent = cnvContent;
+            this.translationFile = translationFile;
+            this.annotate = annotate;
+            this.outdir = outdir;
     }
 
     @Override
@@ -61,6 +65,7 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
         sb.append("genotypingContent='").append(genotypingContent).append('\'');
         sb.append(", genotypingFile='").append(genotypingFile).append('\'');
         sb.append(", translationContent='").append(translationContent).append('\'');
+        sb.append(", cnvContent='").append(cnvContent).append('\'');
         sb.append(", translationFile='").append(translationFile).append('\'');
         sb.append(", annotate=").append(annotate);
         sb.append(", outdir='").append(outdir).append('\'');
@@ -92,6 +97,15 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
 
     public PharmacogenomicsAlleleTyperToolParams setTranslationContent(String translationContent) {
         this.translationContent = translationContent;
+        return this;
+    }
+
+    public String getCnvContent() {
+        return cnvContent;
+    }
+
+    public PharmacogenomicsAlleleTyperToolParams setCnvContent(String cnvContent) {
+        this.cnvContent = cnvContent;
         return this;
     }
 
