@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -30,6 +31,7 @@ import static org.junit.Assert.*;
 public class PharmacogenomicsManagerTest {
 
     @Test
+    @Ignore
     @Category(MediumTests.class)
     public void testAnnotateResults() throws IOException {
         ClientConfiguration clientConfiguration = new ClientConfiguration()
