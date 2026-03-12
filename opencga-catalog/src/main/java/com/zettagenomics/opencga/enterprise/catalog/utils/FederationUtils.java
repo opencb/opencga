@@ -7,9 +7,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.JwtUtils;
@@ -37,6 +39,8 @@ public class FederationUtils {
 
     private static final Pattern STUDY_PATTERN = Pattern.compile(".*/studies/([^/]+)/.+$");
     private static final Pattern PROJECT_PATTERN = Pattern.compile(".*/projects/([^/]+)/.+$");
+    private static final QueryOptions INCLUDE_ORG_FEDERATION = new QueryOptions(QueryOptions.INCLUDE,
+            OrganizationDBAdaptor.QueryParams.FEDERATION.key());
 
     public FederationUtils() {
     }
@@ -233,4 +237,19 @@ public class FederationUtils {
         throw new CatalogException("Federation server id '" + federationId + "' not found in the organization.");
     }
 
+    public static void validateFederationId(String organizationId, String federationId, DBAdaptorFactory dbAdaptorFactory)
+            throws CatalogParameterException {
+        ParamUtils.checkParameter(organizationId, "organizationId");
+        ParamUtils.checkParameter(federationId, "federationId");
+        Organization organization = null;
+        try {
+            organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(INCLUDE_ORG_FEDERATION).first();
+        } catch (CatalogDBException e) {
+            throw new CatalogParameterException("Organization " + organizationId + " not found", e);
+        }
+        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getClients())
+                || organization.getFederation().getClients().stream().noneMatch(f -> f.getId().equals(federationId))) {
+            throw new CatalogParameterException("Organization " + organizationId + " is not federated with " + federationId);
+        }
+    }
 }
