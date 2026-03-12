@@ -106,10 +106,17 @@ public class PharmacogenomicsManager {
     }
 
     /**
-     * Annotate star alleles with CellBase pharmacogenomics data.
-     * Skips annotation if no CellBase configuration is found for the project.
+     * Annotate results with both CellBase (star-allele level) and CPIC (diplotype level) data.
      */
     public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
+        annotateCellBaseResults(results, cellBaseClient);
+        annotateCpicResults(results);
+    }
+
+    /**
+     * Annotate star alleles with CellBase pharmacogenomics data.
+     */
+    private void annotateCellBaseResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
         logger.info("Annotating star alleles with CellBase pharmacogenomics data");
         StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
         long startTime = System.currentTimeMillis();
@@ -129,7 +136,36 @@ public class PharmacogenomicsManager {
             }
         }
         double annotationTime = (System.currentTimeMillis() - startTime) / 1000.0d;
-        logger.info("Star allele annotation completed for {} samples in {} s", results.size(), annotationTime);
+        logger.info("CellBase star-allele annotation completed for {} samples in {} s", results.size(), annotationTime);
+    }
+
+    /**
+     * Annotate diplotypes with CPIC data (diplotype info, per-allele details, drug recommendations).
+     */
+    public void annotateCpicResults(List<AlleleTyperResult> results) throws IOException {
+        logger.info("Annotating diplotypes with CPIC data");
+        CpicAnnotator cpicAnnotator = new CpicAnnotator();
+        long startTime = System.currentTimeMillis();
+        for (AlleleTyperResult result : results) {
+            if (result == null || result.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
+                String gene = starAlleleResult.getGene();
+                if (gene == null || gene.isEmpty() || starAlleleResult.getAlleleCalls() == null) {
+                    continue;
+                }
+                try {
+                    starAlleleResult.setDiplotypeAnnotation(
+                            cpicAnnotator.annotate(gene, starAlleleResult.getAlleleCalls()));
+                } catch (IOException e) {
+                    logger.warn("CPIC annotation failed for gene {} in sample {}: {}",
+                            gene, result.getSampleId(), e.getMessage());
+                }
+            }
+        }
+        double annotationTime = (System.currentTimeMillis() - startTime) / 1000.0d;
+        logger.info("CPIC diplotype annotation completed for {} samples in {} s", results.size(), annotationTime);
     }
 
     /**

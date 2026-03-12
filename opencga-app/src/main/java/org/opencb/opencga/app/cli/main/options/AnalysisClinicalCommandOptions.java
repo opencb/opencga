@@ -1054,6 +1054,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--translation-content"}, description = "The body web service translationContent parameter", required = false, arity = 1)
         public String translationContent;
     
+        @Parameter(names = {"--cnv-content"}, description = "The body web service cnvContent parameter", required = false, arity = 1)
+        public String cnvContent;
+    
     }
 
     @Parameters(commandNames = {"pharmacogenomics-allele-typer-run"}, commandDescription ="pharmacogenomics-allele-typer-analysis")
@@ -1100,6 +1103,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--translation-content"}, description = "The body web service translationContent parameter", required = false, arity = 1)
         public String translationContent;
+    
+        @Parameter(names = {"--cnv-content"}, description = "The body web service cnvContent parameter", required = false, arity = 1)
+        public String cnvContent;
     
         @Parameter(names = {"--translation-file"}, description = "The body web service translationFile parameter", required = false, arity = 1)
         public String translationFile;
@@ -1153,6 +1159,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--allele-typer-file"}, description = "The body web service alleleTyperFile parameter", required = false, arity = 1)
         public String alleleTyperFile;
+    
+        @Parameter(names = {"--annotate"}, description = "The body web service annotate parameter", required = false, arity = 1)
+        public Boolean annotate;
     
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;

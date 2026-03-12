@@ -41,25 +41,26 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
 
         this.pharmacogenomicsManager = new PharmacogenomicsManager(getCatalogManager());
 
-        // Build the CellBase client from the project's CellBase configuration
-        CellBaseValidator cellBaseValidator = pharmacogenomicsManager.buildCellBaseValidator(this.study, getToken());
-        if (cellBaseValidator == null) {
-            throw new IllegalArgumentException("No CellBase configuration found for study '" + this.study + "'");
+        // Build the CellBase client only when annotation is requested (default: true)
+        boolean annotate = !Boolean.FALSE.equals(analysisParams.getAnnotate());
+        if (annotate) {
+            CellBaseValidator cellBaseValidator = pharmacogenomicsManager.buildCellBaseValidator(this.study, getToken());
+            if (cellBaseValidator == null) {
+                logger.warn("No CellBase configuration found for study '{}'. CellBase annotation will be skipped.", this.study);
+            } else {
+                this.cellBaseClient = cellBaseValidator.getCellBaseClient();
+            }
         }
-        this.cellBaseClient = cellBaseValidator.getCellBaseClient();
 
         // Sanity check
         if (StringUtils.isEmpty(analysisParams.getAlleleTyperContent()) && StringUtils.isEmpty(analysisParams.getAlleleTyperFile())) {
             throw new IllegalArgumentException("Allele typer content and file are empty. Please, set one of these parameters.");
         }
         if (StringUtils.isNotEmpty(analysisParams.getAlleleTyperContent())) {
-            // Use alleleTyperContent: deserialize the allele typer content (JSON) into a list of AlleleTyperResult
             ObjectMapper objectMapper = new ObjectMapper();
             this.alleleTyperResults = objectMapper.readValue(analysisParams.getAlleleTyperContent(),
                     new TypeReference<List<AlleleTyperResult>>() {});
         } else {
-            // Use alleleTyperFile: call the file manager to get the OpenCGA Catalog file and its URI, then read the file content
-            // and deserialize it into alleleTyperResults
             File opencgaFile = getCatalogManager().getFileManager()
                     .get(study, analysisParams.getAlleleTyperFile(), QueryOptions.empty(), token).first();
             Path filePath = Paths.get(opencgaFile.getUri());
@@ -74,8 +75,11 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
     }
 
     private void annotateResults() throws IOException {
-        // Annotate the allele typer results using the pharmacogenomics manager
-        pharmacogenomicsManager.annotateResults(alleleTyperResults, cellBaseClient);
+        boolean annotate = !Boolean.FALSE.equals(analysisParams.getAnnotate());
+        if (annotate) {
+            // Annotate with CellBase (star-allele level) + CPIC (diplotype level)
+            pharmacogenomicsManager.annotateResults(alleleTyperResults, cellBaseClient);
+        }
 
         // Save the results to the output directory
         Path resultsPath = getOutDir().resolve(PharmacogenomicsAlleleTyperAnalysisTool.RESULTS_DIR);

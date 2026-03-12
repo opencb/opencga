@@ -1,82 +1,54 @@
 package org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic;
 
-import java.util.Map;
-
+/**
+ * Drug recommendation retrieved from the CPIC /recommendation endpoint.
+ * Example: GET https://api.cpicpgx.org/v1/recommendation?lookupkey=cs.{"CYP2C9":"1.0"}
+ * Only the most clinically relevant fields are retained.
+ */
 public class CpicDrugRecommendation {
-    private Integer id;
-    private String  guidelineid;
-    private String  drugid;          // e.g. "RxNorm:202433"
-    private String  drugnamesource;  // human-readable drug name
 
-    // Gene-keyed maps (support multi-gene guidelines)
-    private Map<String, String> implications;  // per-gene implication text
-    private Map<String, String> phenotypes;    // e.g. {"CYP2C9": "Intermediate Metabolizer"}
-    private Map<String, String> activityscore; // e.g. {"CYP2C9": "1.0"}
-    private Map<String, String> allelestatus;  // used for HLA-type genes
-    private Map<String, String> lookupkey;     // the key used to match this rec
-
-    private String recommendation;  // dosing recommendation text
+    private String source;            // always "CPIC"
+    private String drugid;            // e.g. "RxNorm:202433"
+    private String drugnamesource;    // human-readable drug name, e.g. "warfarin"
+    private String drugrecommendation;
+    private String classification;    // "Strong", "Moderate", "Optional", etc.
+    private String population;        // "general", "pediatrics", etc.
     private String comments;
-    private String population;      // "general", "pediatrics", etc.
-    private String classification;  // "Strong", "Moderate", "Optional", etc.
 
     public CpicDrugRecommendation() {
     }
 
-    public CpicDrugRecommendation(Integer id, String guidelineid, String drugid, String drugnamesource, Map<String, String> implications,
-                                  Map<String, String> phenotypes, Map<String, String> activityscore, Map<String, String> allelestatus,
-                                  Map<String, String> lookupkey, String recommendation, String comments, String population,
-                                  String classification) {
-        this.id = id;
-        this.guidelineid = guidelineid;
+    public CpicDrugRecommendation(String source, String drugid, String drugnamesource, String drugrecommendation,
+                                  String classification, String population, String comments) {
+        this.source = source;
         this.drugid = drugid;
         this.drugnamesource = drugnamesource;
-        this.implications = implications;
-        this.phenotypes = phenotypes;
-        this.activityscore = activityscore;
-        this.allelestatus = allelestatus;
-        this.lookupkey = lookupkey;
-        this.recommendation = recommendation;
-        this.comments = comments;
-        this.population = population;
+        this.drugrecommendation = drugrecommendation;
         this.classification = classification;
+        this.population = population;
+        this.comments = comments;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CpicDrugRecommendation{");
-        sb.append("id=").append(id);
-        sb.append(", guidelineid='").append(guidelineid).append('\'');
+        sb.append("source='").append(source).append('\'');
         sb.append(", drugid='").append(drugid).append('\'');
         sb.append(", drugnamesource='").append(drugnamesource).append('\'');
-        sb.append(", implications=").append(implications);
-        sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", activityscore=").append(activityscore);
-        sb.append(", allelestatus=").append(allelestatus);
-        sb.append(", lookupkey=").append(lookupkey);
-        sb.append(", recommendation='").append(recommendation).append('\'');
-        sb.append(", comments='").append(comments).append('\'');
-        sb.append(", population='").append(population).append('\'');
+        sb.append(", drugrecommendation='").append(drugrecommendation).append('\'');
         sb.append(", classification='").append(classification).append('\'');
+        sb.append(", population='").append(population).append('\'');
+        sb.append(", comments='").append(comments).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public Integer getId() {
-        return id;
+    public String getSource() {
+        return source;
     }
 
-    public CpicDrugRecommendation setId(Integer id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getGuidelineid() {
-        return guidelineid;
-    }
-
-    public CpicDrugRecommendation setGuidelineid(String guidelineid) {
-        this.guidelineid = guidelineid;
+    public CpicDrugRecommendation setSource(String source) {
+        this.source = source;
         return this;
     }
 
@@ -98,66 +70,21 @@ public class CpicDrugRecommendation {
         return this;
     }
 
-    public Map<String, String> getImplications() {
-        return implications;
+    public String getDrugrecommendation() {
+        return drugrecommendation;
     }
 
-    public CpicDrugRecommendation setImplications(Map<String, String> implications) {
-        this.implications = implications;
+    public CpicDrugRecommendation setDrugrecommendation(String drugrecommendation) {
+        this.drugrecommendation = drugrecommendation;
         return this;
     }
 
-    public Map<String, String> getPhenotypes() {
-        return phenotypes;
+    public String getClassification() {
+        return classification;
     }
 
-    public CpicDrugRecommendation setPhenotypes(Map<String, String> phenotypes) {
-        this.phenotypes = phenotypes;
-        return this;
-    }
-
-    public Map<String, String> getActivityscore() {
-        return activityscore;
-    }
-
-    public CpicDrugRecommendation setActivityscore(Map<String, String> activityscore) {
-        this.activityscore = activityscore;
-        return this;
-    }
-
-    public Map<String, String> getAllelestatus() {
-        return allelestatus;
-    }
-
-    public CpicDrugRecommendation setAllelestatus(Map<String, String> allelestatus) {
-        this.allelestatus = allelestatus;
-        return this;
-    }
-
-    public Map<String, String> getLookupkey() {
-        return lookupkey;
-    }
-
-    public CpicDrugRecommendation setLookupkey(Map<String, String> lookupkey) {
-        this.lookupkey = lookupkey;
-        return this;
-    }
-
-    public String getRecommendation() {
-        return recommendation;
-    }
-
-    public CpicDrugRecommendation setRecommendation(String recommendation) {
-        this.recommendation = recommendation;
-        return this;
-    }
-
-    public String getComments() {
-        return comments;
-    }
-
-    public CpicDrugRecommendation setComments(String comments) {
-        this.comments = comments;
+    public CpicDrugRecommendation setClassification(String classification) {
+        this.classification = classification;
         return this;
     }
 
@@ -170,12 +97,12 @@ public class CpicDrugRecommendation {
         return this;
     }
 
-    public String getClassification() {
-        return classification;
+    public String getComments() {
+        return comments;
     }
 
-    public CpicDrugRecommendation setClassification(String classification) {
-        this.classification = classification;
+    public CpicDrugRecommendation setComments(String comments) {
+        this.comments = comments;
         return this;
     }
 }

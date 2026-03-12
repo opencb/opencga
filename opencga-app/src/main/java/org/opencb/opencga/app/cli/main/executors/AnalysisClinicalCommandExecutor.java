@@ -852,6 +852,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "genotypingContent", commandOptions.genotypingContent, true);
             putNestedIfNotEmpty(beanParams, "translationContent", commandOptions.translationContent, true);
+            putNestedIfNotEmpty(beanParams, "cnvContent", commandOptions.cnvContent, true);
 
             pharmacogenomicsAlleleTyperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -893,6 +894,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "genotypingContent", commandOptions.genotypingContent, true);
             putNestedIfNotEmpty(beanParams, "genotypingFile", commandOptions.genotypingFile, true);
             putNestedIfNotEmpty(beanParams, "translationContent", commandOptions.translationContent, true);
+            putNestedIfNotEmpty(beanParams, "cnvContent", commandOptions.cnvContent, true);
             putNestedIfNotEmpty(beanParams, "translationFile", commandOptions.translationFile, true);
             putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
@@ -936,6 +938,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "alleleTyperContent", commandOptions.alleleTyperContent, true);
             putNestedIfNotEmpty(beanParams, "alleleTyperFile", commandOptions.alleleTyperFile, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             pharmacogenomicsAnnotationAnalysisToolParams = JacksonUtils.getDefaultObjectMapper().copy()

@@ -332,7 +332,7 @@ public class AlleleTyperTest {
     private void compareGeneResults(String geneName, Map<String, Map<String, String>> obtainedResults) {
         System.out.println("\n=== " + geneName + " Results Comparison ===");
         System.out.println(String.format("%-15s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Match"));
-        System.out.println("-".repeat(130));
+        System.out.println(new String(new char[130]).replace('\0', '-'));
 
         int totalSamples = 0;
         int exactMatches = 0;
@@ -380,7 +380,7 @@ public class AlleleTyperTest {
         }
 
         if (totalSamples > 0) {
-            System.out.println("-".repeat(130));
+            System.out.println(new String(new char[130]).replace('\0', '-'));
             int totalCorrect = exactMatches + bothNoTranslation;
             System.out.println(String.format("Total: %d, Exact matches: %d, No translation: %d, Accuracy: %.1f%%",
                     totalSamples, exactMatches, bothNoTranslation, 100.0 * totalCorrect / totalSamples));

@@ -30,15 +30,20 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
     @JsonProperty("alleleTyperFile")
     private String alleleTyperFile;
 
+    @JsonProperty("annotate")
+    private Boolean annotate;
+
     @JsonProperty("outdir")
     private String outdir;
 
     public PharmacogenomicsAnnotationAnalysisToolParams() {
     }
 
-    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent, String alleleTyperFile, String outdir) {
+    public PharmacogenomicsAnnotationAnalysisToolParams(String alleleTyperContent, String alleleTyperFile, Boolean annotate,
+                                                       String outdir) {
         this.alleleTyperContent = alleleTyperContent;
         this.alleleTyperFile = alleleTyperFile;
+        this.annotate = annotate;
         this.outdir = outdir;
     }
 
@@ -47,6 +52,7 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("PharmacogenomicsAnnotationAnalysisToolParams{");
         sb.append("alleleTyperContent='").append(alleleTyperContent).append('\'');
         sb.append(", alleleTyperFile='").append(alleleTyperFile).append('\'');
+        sb.append(", annotate=").append(annotate);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -67,6 +73,15 @@ public class PharmacogenomicsAnnotationAnalysisToolParams extends ToolParams {
 
     public PharmacogenomicsAnnotationAnalysisToolParams setAlleleTyperFile(String alleleTyperFile) {
         this.alleleTyperFile = alleleTyperFile;
+        return this;
+    }
+
+    public Boolean getAnnotate() {
+        return annotate;
+    }
+
+    public PharmacogenomicsAnnotationAnalysisToolParams setAnnotate(Boolean annotate) {
+        this.annotate = annotate;
         return this;
     }
 

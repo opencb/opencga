@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.clinical.pharmacogenomics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicDiplotypeAnnotation;
 
 import java.util.List;
 
@@ -80,6 +81,9 @@ public class AlleleTyperResult {
         @JsonProperty("variants")
         private List<String> variants;
 
+        @JsonProperty("diplotypeAnnotation")
+        private CpicDiplotypeAnnotation diplotypeAnnotation;
+
         public StarAlleleResult() {
         }
 
@@ -120,6 +124,14 @@ public class AlleleTyperResult {
 
         public void setVariants(List<String> variants) {
             this.variants = variants;
+        }
+
+        public CpicDiplotypeAnnotation getDiplotypeAnnotation() {
+            return diplotypeAnnotation;
+        }
+
+        public void setDiplotypeAnnotation(CpicDiplotypeAnnotation diplotypeAnnotation) {
+            this.diplotypeAnnotation = diplotypeAnnotation;
         }
     }
 
