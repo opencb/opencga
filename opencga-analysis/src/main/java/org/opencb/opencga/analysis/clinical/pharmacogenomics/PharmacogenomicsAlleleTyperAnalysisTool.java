@@ -1,17 +1,21 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAlleleTyperToolParams;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Tool(id = PharmacogenomicsAlleleTyperAnalysisTool.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, type = Tool.Type.ANALYSIS,
@@ -26,6 +30,8 @@ public class PharmacogenomicsAlleleTyperAnalysisTool extends OperationTool {
     protected final PharmacogenomicsAlleleTyperToolParams analysisParams = new PharmacogenomicsAlleleTyperToolParams();
 
     private PharmacogenomicsManager pharmacogenomicsManager;
+    private String genotypingContent;
+    private String translationContent;
 
     @Override
     protected void check() throws Exception {
@@ -33,14 +39,26 @@ public class PharmacogenomicsAlleleTyperAnalysisTool extends OperationTool {
 
         this.pharmacogenomicsManager = new PharmacogenomicsManager(getCatalogManager());
 
-        String genotypingContent = analysisParams.getGenotypingContent();
-        if (StringUtils.isEmpty(genotypingContent)) {
-            throw new IllegalArgumentException("Genotyping content is empty");
+        // Resolve genotyping: prefer inline content, fall back to catalog file
+        if (StringUtils.isNotEmpty(analysisParams.getGenotypingContent())) {
+            genotypingContent = analysisParams.getGenotypingContent();
+        } else if (StringUtils.isNotEmpty(analysisParams.getGenotypingFile())) {
+            File opencgaFile = getCatalogManager().getFileManager()
+                    .get(study, analysisParams.getGenotypingFile(), QueryOptions.empty(), token).first();
+            genotypingContent = new String(Files.readAllBytes(Paths.get(opencgaFile.getUri())), StandardCharsets.UTF_8);
+        } else {
+            throw new IllegalArgumentException("Genotyping content and file are empty. Please, set one of these parameters.");
         }
 
-        String translationContent = analysisParams.getTranslationContent();
-        if (StringUtils.isEmpty(translationContent)) {
-            throw new IllegalArgumentException("Translation content is empty");
+        // Resolve translation: prefer inline content, fall back to catalog file
+        if (StringUtils.isNotEmpty(analysisParams.getTranslationContent())) {
+            translationContent = analysisParams.getTranslationContent();
+        } else if (StringUtils.isNotEmpty(analysisParams.getTranslationFile())) {
+            File opencgaFile = getCatalogManager().getFileManager()
+                    .get(study, analysisParams.getTranslationFile(), QueryOptions.empty(), token).first();
+            translationContent = new String(Files.readAllBytes(Paths.get(opencgaFile.getUri())), StandardCharsets.UTF_8);
+        } else {
+            throw new IllegalArgumentException("Translation content and file are empty. Please, set one of these parameters.");
         }
     }
 

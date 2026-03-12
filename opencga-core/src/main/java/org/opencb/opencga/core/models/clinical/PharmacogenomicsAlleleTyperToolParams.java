@@ -27,11 +27,17 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
     @JsonProperty("genotypingContent")
     private String genotypingContent;
 
+    @JsonProperty("genotypingFile")
+    private String genotypingFile;
+
     @JsonProperty("translationContent")
     private String translationContent;
 
     @JsonProperty("cnvContent")
     private String cnvContent;
+
+    @JsonProperty("translationFile")
+    private String translationFile;
 
     @JsonProperty("annotate")
     private Boolean annotate;
@@ -42,21 +48,25 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
     public PharmacogenomicsAlleleTyperToolParams() {
     }
 
-    public PharmacogenomicsAlleleTyperToolParams(String genotypingContent, String translationContent, String cnvContent,
-                                                  Boolean annotate, String outdir) {
-        this.genotypingContent = genotypingContent;
-        this.translationContent = translationContent;
-        this.cnvContent = cnvContent;
-        this.annotate = annotate;
-        this.outdir = outdir;
+    public PharmacogenomicsAlleleTyperToolParams(String genotypingContent, String genotypingFile, String translationContent,
+                String translationFile, Boolean annotate, String outdir) {
+            this.genotypingContent = genotypingContent;
+            this.genotypingFile = genotypingFile;
+            this.translationContent = translationContent;
+            this.cnvContent = cnvContent;
+            this.translationFile = translationFile;
+            this.annotate = annotate;
+            this.outdir = outdir;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PharmacogenomicsAlleleTyperToolParams{");
         sb.append("genotypingContent='").append(genotypingContent).append('\'');
+        sb.append(", genotypingFile='").append(genotypingFile).append('\'');
         sb.append(", translationContent='").append(translationContent).append('\'');
         sb.append(", cnvContent='").append(cnvContent).append('\'');
+        sb.append(", translationFile='").append(translationFile).append('\'');
         sb.append(", annotate=").append(annotate);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -69,6 +79,15 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
 
     public PharmacogenomicsAlleleTyperToolParams setGenotypingContent(String genotypingContent) {
         this.genotypingContent = genotypingContent;
+        return this;
+    }
+
+    public String getGenotypingFile() {
+        return genotypingFile;
+    }
+
+    public PharmacogenomicsAlleleTyperToolParams setGenotypingFile(String genotypingFile) {
+        this.genotypingFile = genotypingFile;
         return this;
     }
 
@@ -87,6 +106,15 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
 
     public PharmacogenomicsAlleleTyperToolParams setCnvContent(String cnvContent) {
         this.cnvContent = cnvContent;
+        return this;
+    }
+
+    public String getTranslationFile() {
+        return translationFile;
+    }
+
+    public PharmacogenomicsAlleleTyperToolParams setTranslationFile(String translationFile) {
+        this.translationFile = translationFile;
         return this;
     }
 
