@@ -103,3 +103,6 @@ venv
 # Java annotation processor (APT)
 .factorypath
 .portpatch_states/
+
+# Claude Code
+.claude/
