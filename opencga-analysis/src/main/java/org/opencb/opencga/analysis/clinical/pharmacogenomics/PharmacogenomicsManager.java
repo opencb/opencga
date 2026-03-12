@@ -109,7 +109,8 @@ public class PharmacogenomicsManager {
      * Annotate results with both CellBase (star-allele level) and CPIC (diplotype level) data.
      */
     public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
-        annotateCellBaseResults(results, cellBaseClient);
+        // TODO: re-enable CellBase annotation when ready
+        // annotateCellBaseResults(results, cellBaseClient);
         annotateCpicResults(results);
     }
 
@@ -152,12 +153,12 @@ public class PharmacogenomicsManager {
             }
             for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
                 String gene = starAlleleResult.getGene();
-                if (gene == null || gene.isEmpty() || starAlleleResult.getAlleleCalls() == null) {
+                String diplotype = starAlleleResult.getDiplotype();
+                if (gene == null || gene.isEmpty() || diplotype == null || diplotype.isEmpty()) {
                     continue;
                 }
                 try {
-                    starAlleleResult.setDiplotypeAnnotation(
-                            cpicAnnotator.annotate(gene, starAlleleResult.getAlleleCalls()));
+                    starAlleleResult.setDiplotypeAnnotation(cpicAnnotator.annotate(gene, diplotype));
                 } catch (IOException e) {
                     logger.warn("CPIC annotation failed for gene {} in sample {}: {}",
                             gene, result.getSampleId(), e.getMessage());

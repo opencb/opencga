@@ -12,18 +12,18 @@ public class CpicDiplotypeAnnotation {
     private String diplotype;                         // e.g. "*1/*6"
     private CpicDiplotypeInfo diplotypeInfo;          // from /diplotype endpoint
     private List<CpicAlleleAnnotation> alleles;       // from /allele endpoint, one per allele
-    private List<CpicDrugRecommendation> recommendations; // flat list from /recommendation endpoint
+    private List<CpicDrug> drugs;                         // from /pair endpoint, each with nested recommendations
 
     public CpicDiplotypeAnnotation() {
     }
 
     public CpicDiplotypeAnnotation(String gene, String diplotype, CpicDiplotypeInfo diplotypeInfo,
-                                   List<CpicAlleleAnnotation> alleles, List<CpicDrugRecommendation> recommendations) {
+                                   List<CpicAlleleAnnotation> alleles, List<CpicDrug> drugs) {
         this.gene = gene;
         this.diplotype = diplotype;
         this.diplotypeInfo = diplotypeInfo;
         this.alleles = alleles;
-        this.recommendations = recommendations;
+        this.drugs = drugs;
     }
 
     @Override
@@ -33,7 +33,7 @@ public class CpicDiplotypeAnnotation {
         sb.append(", diplotype='").append(diplotype).append('\'');
         sb.append(", diplotypeInfo=").append(diplotypeInfo);
         sb.append(", alleles=").append(alleles);
-        sb.append(", recommendations=").append(recommendations);
+        sb.append(", drugs=").append(drugs);
         sb.append('}');
         return sb.toString();
     }
@@ -74,12 +74,12 @@ public class CpicDiplotypeAnnotation {
         return this;
     }
 
-    public List<CpicDrugRecommendation> getRecommendations() {
-        return recommendations;
+    public List<CpicDrug> getDrugs() {
+        return drugs;
     }
 
-    public CpicDiplotypeAnnotation setRecommendations(List<CpicDrugRecommendation> recommendations) {
-        this.recommendations = recommendations;
+    public CpicDiplotypeAnnotation setDrugs(List<CpicDrug> drugs) {
+        this.drugs = drugs;
         return this;
     }
 }

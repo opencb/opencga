@@ -1,14 +1,10 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
-import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
@@ -422,7 +418,7 @@ public class AlleleTyperTest {
 
     @Test
     @Category(MediumTests.class)
-    public void testGenerateAnnotatedJsonLines() throws IOException {
+    public void testCpicAnnotationAndExport() throws IOException {
         if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
             System.out.println("Skipping test: input files not found");
             return;
@@ -439,34 +435,36 @@ public class AlleleTyperTest {
         List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
         System.out.println("AlleleTyper produced " + results.size() + " sample results");
 
-        // 2. Annotate with CellBase pharmacogenomics
-        ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .setVersion("v6.7")
-                .setDefaultSpecies("hsapiens")
-                .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient(clientConfiguration);
-        StarAlleleAnnotator annotator = new StarAlleleAnnotator(cellBaseClient);
+        // 2. Annotate with CPIC
+        PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
+        manager.annotateCpicResults(results);
 
+        // 3. Print summary of CPIC annotations
+        int annotatedGenes = 0;
+        int totalRecommendations = 0;
         for (AlleleTyperResult result : results) {
-            if (result == null || result.getAlleleTyperResults() == null) {
+            if (result.getAlleleTyperResults() == null) {
                 continue;
             }
-            for (AlleleTyperResult.StarAlleleResult starAlleleResult : result.getAlleleTyperResults()) {
-                String gene = starAlleleResult.getGene();
-                if (gene == null || gene.isEmpty() || starAlleleResult.getAlleleCalls() == null) {
-                    continue;
-                }
-                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
-                    StarAlleleAnnotation annotation = annotator.annotate(gene, alleleCall.getAllele());
-                    alleleCall.setAnnotation(annotation);
-                    System.out.println("  Annotated " + gene + " " + alleleCall.getAllele()
-                            + " -> " + annotation.getDrugs().size() + " drugs");
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                if (star.getDiplotypeAnnotation() != null) {
+                    annotatedGenes++;
+                    int drugCount = star.getDiplotypeAnnotation().getDrugs() != null
+                            ? star.getDiplotypeAnnotation().getDrugs().size() : 0;
+                    totalRecommendations += drugCount;
+                    System.out.println("  " + result.getSampleId() + " " + star.getGene()
+                            + " " + star.getDiplotype()
+                            + " -> phenotype=" + (star.getDiplotypeAnnotation().getDiplotypeInfo() != null
+                                ? star.getDiplotypeAnnotation().getDiplotypeInfo().getGeneresult() : "N/A")
+                            + ", " + drugCount + " drugs");
                 }
             }
         }
+        System.out.println("\nCPIC annotation summary: " + annotatedGenes + " gene/sample pairs annotated, "
+                + totalRecommendations + " total drugs");
 
-        // 3. Export one JSON file per sample
-        Path outputDir = Paths.get("/tmp/pgx_annotated_results");
+        // 4. Export one JSON file per sample
+        Path outputDir = Paths.get("/tmp/pgx_cpic_annotated_results");
         java.nio.file.Files.createDirectories(outputDir);
         com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
         objectMapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
@@ -477,7 +475,7 @@ public class AlleleTyperTest {
             java.nio.file.Files.write(samplePath, json);
             totalSize += json.length;
         }
-        System.out.println("\nAnnotated results written to: " + outputDir + " (" + results.size() + " files)");
+        System.out.println("\nCPIC annotated results written to: " + outputDir + " (" + results.size() + " files)");
         System.out.println("Total serialized size: " + String.format("%.2f", totalSize / 1024.0) + " KB");
     }
 

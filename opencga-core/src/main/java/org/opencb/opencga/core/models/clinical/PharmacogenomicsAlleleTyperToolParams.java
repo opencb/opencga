@@ -49,7 +49,7 @@ public class PharmacogenomicsAlleleTyperToolParams extends ToolParams {
     }
 
     public PharmacogenomicsAlleleTyperToolParams(String genotypingContent, String genotypingFile, String translationContent,
-                String translationFile, Boolean annotate, String outdir) {
+                String cnvContent, String translationFile, Boolean annotate, String outdir) {
             this.genotypingContent = genotypingContent;
             this.genotypingFile = genotypingFile;
             this.translationContent = translationContent;
