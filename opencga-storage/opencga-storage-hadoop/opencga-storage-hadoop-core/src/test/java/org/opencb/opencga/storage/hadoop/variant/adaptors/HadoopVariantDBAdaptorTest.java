@@ -45,7 +45,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
 /**

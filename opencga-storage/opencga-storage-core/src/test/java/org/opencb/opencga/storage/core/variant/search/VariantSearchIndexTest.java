@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
@@ -36,6 +37,7 @@ import static org.junit.Assert.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
     private int i = 0;

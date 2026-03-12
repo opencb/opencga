@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
 

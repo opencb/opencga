@@ -1,15 +1,15 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.util.Arrays;
@@ -17,6 +17,8 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineNumericSampleTest extends VariantStorageBaseTest {
 
     public static final List<String> SAMPLES = Arrays.asList("SAMPLE_1", "1", "2", "4");

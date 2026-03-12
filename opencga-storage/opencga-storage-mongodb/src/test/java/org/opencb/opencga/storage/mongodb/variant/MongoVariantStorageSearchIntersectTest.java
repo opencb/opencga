@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -38,7 +38,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearchIntersectTest implements MongoDBVariantStorageTest {
 
     @Before
@@ -60,15 +60,16 @@ public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearch
                 instanceof SearchIndexVariantQueryExecutor);
         assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55"), new QueryOptions(VariantField.SUMMARY, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true))
+        String study = STUDY_NAME;
+        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true))
+        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, true))
+        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
+        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), 3).append(INCLUDE_STUDY.key(), 3).append(GENE.key(), "ASDF"), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
+        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study).append(GENE.key(), "ASDF"), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
                 instanceof SearchIndexVariantQueryExecutor);
     }
 }

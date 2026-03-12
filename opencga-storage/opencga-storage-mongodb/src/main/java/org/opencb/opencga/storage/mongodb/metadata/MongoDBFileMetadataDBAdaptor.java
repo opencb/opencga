@@ -43,6 +43,8 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 
 //    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
+    private static final String VARIANT_METADATA_FIELD = "_variantFileMetadata";
+
     private final DocumentToVariantFileMetadataConverter variantFileMetadataConverter;
     private final MongoDBCollection collectionStudies;
 
@@ -78,27 +80,30 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
         }
     }
 
-    @Override
-    public void addIndexedFiles(int studyId, List<Integer> fileIds) {
-        collectionStudies.update(Filters.eq("_id", studyId), Updates.addEachToSet("indexedFiles", fileIds), new QueryOptions(UPSERT, true));
-    }
-
-    @Override
-    public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {
-        collectionStudies.update(Filters.eq("_id", studyId), Updates.pullAll("indexedFiles", new ArrayList<>(fileIds)),
-                new QueryOptions(UPSERT, true));
-    }
+//    @Override
+//    public void addIndexedFiles(int studyId, List<Integer> fileIds) {
+//        collectionStudies.update(Filters.eq("_id", studyId), Updates.addEachToSet("indexedFiles", fileIds),
+//              new QueryOptions(UPSERT, true));
+//    }
+//
+//    @Override
+//    public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {
+//        collectionStudies.update(Filters.eq("_id", studyId), Updates.pullAll("indexedFiles", new ArrayList<>(fileIds)),
+//                new QueryOptions(UPSERT, true));
+//    }
 
     @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
-        Document document = collectionStudies.find(Filters.eq("_id", studyId), null).first();
-        if (document != null) {
-            List list = document.get("indexedFiles", List.class);
-            if (list != null) {
-                return new LinkedHashSet<>(list);
-            }
-        }
-        return new LinkedHashSet<>();
+        // FIXME! Default implementation is very inefficient
+        return FileMetadataDBAdaptor.super.getIndexedFiles(studyId, includePartial);
+//        Document document = collectionStudies.find(Filters.eq("_id", studyId), null).first();
+//        if (document != null) {
+//            List list = document.get("indexedFiles", List.class);
+//            if (list != null) {
+//                return new LinkedHashSet<>(list);
+//            }
+//        }
+//        return new LinkedHashSet<>();
     }
 
     @Override
@@ -116,16 +121,15 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
         }
         Document document = variantFileMetadataConverter.convertToStorageType(studyId, metadata);
         Document query = new Document("_id", document.getString("_id"));
-        List<Bson> updates = new ArrayList<>(document.size());
-        document.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
-        collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
+
+        collection.update(query, Updates.set(VARIANT_METADATA_FIELD, document), new QueryOptions(UPSERT, true));
     }
 
     @Override
     public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) {
         Bson filter = parseQuery(query);
         return Iterators.transform(collection.nativeQuery().find(filter, options),
-                variantFileMetadataConverter::convertToDataModelType);
+                doc-> variantFileMetadataConverter.convertToDataModelType(doc.get(VARIANT_METADATA_FIELD, Document.class)));
     }
 
 //    @Override
@@ -188,10 +192,11 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     public void removeVariantFileMetadata(int study, int file) {
         String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
 
-        DataResult deleteResult = collection.remove(Filters.eq("_id", id), null);
+        DataResult deleteResult = collection.update(Filters.eq("_id", id),
+                Updates.unset(VARIANT_METADATA_FIELD), new QueryOptions());
 
-        if (deleteResult.getNumDeleted() != 1) {
-            throw new IllegalArgumentException("Unable to delete VariantSource " + id);
+        if (deleteResult.getNumMatches() != 1) {
+            throw new IllegalArgumentException("Unable to delete VariantFileMetadata " + id);
         }
 
     }

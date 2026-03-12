@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -105,12 +106,9 @@ public final class ClientConfiguration {
                 switch (variable.toUpperCase()) {
                     case "OPENCGA_CLIENT_REST_URL":
                     case "OPENCGA_CLIENT_REST_HOST":
-                        if (configuration.getRest().getHosts().size() == 0) {
-                            configuration.getRest().getHosts().add(new HostConfig("default", variable));
-                        } else {
-                            int defaultHostIndex = configuration.getRest().getDefaultHostIndex();
-                            configuration.getRest().getHosts().get(defaultHostIndex).setUrl(envVariables.get(variable));
-                        }
+                        configuration.getRest().setHosts(Arrays.asList(new HostConfig("default", envVariables.get(variable))));
+                        configuration.getRest().setDefaultHost("default");
+                        configuration.getRest().setDefaultHostIndex(0);
                         break;
                     case "TLS_ALLOW_INVALID_CERTIFICATES":
                         configuration.getRest()

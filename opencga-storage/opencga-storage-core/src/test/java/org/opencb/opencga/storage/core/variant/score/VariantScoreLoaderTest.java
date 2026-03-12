@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -31,6 +32,7 @@ import static org.junit.Assert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 @Ignore
+@StorageEngineTest
 public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
 
     private Set<String> scoredVariants1;

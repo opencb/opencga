@@ -189,6 +189,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                     .setIncludeSampleId(true)
                     .setProjection(
                             new VariantQueryProjection(
+                                    metadataManager,
                                     metadataManager.getStudyMetadata(studyId),
                                     samples,
                                     new ArrayList<>(fileIdsFromSampleIds)))

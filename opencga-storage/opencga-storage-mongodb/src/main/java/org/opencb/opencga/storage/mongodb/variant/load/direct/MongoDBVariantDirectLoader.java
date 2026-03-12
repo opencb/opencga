@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantCo
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.StageWriteOperations;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
 
@@ -80,7 +81,7 @@ public class MongoDBVariantDirectLoader implements DataWriter<MongoDBOperations>
             }
         }
 
-        stageLoader.write(map);
+        stageLoader.write(new StageWriteOperations(map));
 
         variantsLoader.write(batch);
 

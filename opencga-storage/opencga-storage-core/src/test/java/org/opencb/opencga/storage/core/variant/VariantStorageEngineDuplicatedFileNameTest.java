@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
@@ -17,6 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 @Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineDuplicatedFileNameTest extends VariantStorageBaseTest {
 
     @Test

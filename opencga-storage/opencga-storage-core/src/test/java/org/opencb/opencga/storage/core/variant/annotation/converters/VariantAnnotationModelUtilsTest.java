@@ -27,7 +27,7 @@ public class VariantAnnotationModelUtilsTest extends TestCase {
         ct.setHgvs(variantAnnotation.getHgvs());
         ct.setGeneId(null);
         variantAnnotation.setConsequenceTypes(Arrays.asList(ct, new ConsequenceType()));
-        Set<String> xrefs = new VariantAnnotationModelUtils().extractXRefs(variantAnnotation);
+        Set<String> xrefs = VariantAnnotationModelUtils.extractXRefs(variantAnnotation);
 
         assertEquals(7, xrefs.size());
         // Default fields

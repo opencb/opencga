@@ -36,10 +36,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantStatsConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -80,7 +77,7 @@ public class MongoVariantImporter extends VariantImporter {
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded variants");
         ParallelTaskRunner.Task<Variant, Document> converterTask =
-                new VariantToDocumentConverter(studyConfigurations, metadata, progressLogger);
+                new VariantMultiStudyToDocumentConverter(studyConfigurations, metadata, progressLogger);
 
         DataWriter<Document> writer = new MongoDBVariantDocumentDBWriter(variantsCollection);
 
@@ -98,18 +95,19 @@ public class MongoVariantImporter extends VariantImporter {
     /**
      * Simple TaskMetadata for converting Variants into MongoDB Documents.
      */
-    private static class VariantToDocumentConverter implements ParallelTaskRunner.Task<Variant, Document> {
-        private final DocumentToVariantConverter variantConverter;
+    private static class VariantMultiStudyToDocumentConverter implements ParallelTaskRunner.Task<Variant, Document> {
+        private final VariantToDocumentConverter variantConverter;
         // Remap input studyId and fileId to internal numerical Ids.
         private final Map<String, String> studiesIdRemap;
         private final Map<String, String> fileIdRemap;
         private ProgressLogger progressLogger;
 
-        VariantToDocumentConverter(List<StudyConfiguration> studies, VariantMetadata metadata, ProgressLogger progressLogger) {
-            DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studies);
-            DocumentToStudyVariantEntryConverter studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
+        VariantMultiStudyToDocumentConverter(List<StudyConfiguration> studies, VariantMetadata metadata, ProgressLogger progressLogger) {
+            // TODO: FIXME
+            SampleToDocumentConverter samplesConverter = new SampleToDocumentConverter(null, null);
+            StudyEntryToDocumentConverter studyConverter = new StudyEntryToDocumentConverter(samplesConverter, false);
             DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter();
-            variantConverter = new DocumentToVariantConverter(studyConverter, statsConverter);
+            variantConverter = new VariantToDocumentConverter(studyConverter, statsConverter, null);
             this.studiesIdRemap = new HashMap<>();
             this.fileIdRemap = new HashMap<>();
             VariantMetadataManager metadataManager = new VariantMetadataManager().setVariantMetadata(metadata);

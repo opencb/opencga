@@ -1,10 +1,17 @@
 package org.opencb.opencga.storage.core.variant.annotation.converters;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +48,40 @@ public class VariantAnnotationModelUtils {
      */
     private static final Pattern HGVS_PATTERN = Pattern.compile("\\([^()]*\\)");
 
-    public Set<String> extractXRefs(VariantAnnotation variantAnnotation) {
+    public VariantAnnotationModelUtils() {
+    }
+
+    /**
+     * Configures the given ObjectMapper to ignore VariantAnnotation fields not present in requestedFields during deserialization.
+     * If requestedFields is null, no fields are excluded.
+     *
+     * @param objectMapper    The ObjectMapper to configure (modified in place).
+     * @param requestedFields Set of fields to include; annotation children absent from this set will be excluded.
+     */
+    public static void configureAnnotationFieldExclusion(ObjectMapper objectMapper, Set<VariantField> requestedFields) {
+        List<String> list = new ArrayList<>();
+        if (requestedFields != null) {
+            for (VariantField annotationField : VariantField.values()) {
+                if (annotationField.getParent() == VariantField.ANNOTATION && !requestedFields.contains(annotationField)) {
+                    list.add(annotationField.fieldName().replace(VariantField.ANNOTATION.fieldName() + '.', ""));
+                }
+            }
+        }
+        String[] excludedAnnotationFields = list.toArray(new String[0]);
+        objectMapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+            @Override
+            public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
+                JsonIgnoreProperties.Value propertyIgnoralByName = super.findPropertyIgnoralByName(config, ac);
+                if (!ac.getRawType().equals(VariantAnnotation.class)) {
+                    return propertyIgnoralByName;
+                }
+                return JsonIgnoreProperties.Value.merge(propertyIgnoralByName,
+                        JsonIgnoreProperties.Value.forIgnoredProperties(excludedAnnotationFields));
+            }
+        });
+    }
+
+    public static Set<String> extractXRefs(VariantAnnotation variantAnnotation) {
         Set<String> xrefs = new HashSet<>(100);
 
         if (variantAnnotation == null) {

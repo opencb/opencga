@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 
 import java.io.BufferedReader;
 import java.net.URI;
@@ -13,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@Ignore
+@StorageEngineTest
 public abstract class VariantStorageEngineDuplicatedTest extends VariantStorageBaseTest {
 
     @Test

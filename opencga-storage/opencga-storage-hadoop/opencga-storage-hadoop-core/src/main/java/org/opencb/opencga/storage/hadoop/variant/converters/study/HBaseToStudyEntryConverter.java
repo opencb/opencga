@@ -32,15 +32,16 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.*;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask.includeInSparse;
 
 
 /**
@@ -82,7 +84,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<Integer, LinkedHashSet<Integer>> indexedFiles = new ConcurrentHashMap<>();
     private final Map<Integer, Set<Integer>> filesFromReturnedSamples = new ConcurrentHashMap<>();
     private final Map<Integer, List<String>> fixedFormatsMap = new ConcurrentHashMap<>();
-    private Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
+    private final Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
 
     private final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private HBaseVariantConverterConfiguration configuration;
@@ -270,6 +272,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     private List<String> getSampleDataKeys(int studyId, List<String> fixedSampleDataKeys) {
+        // Prefer pre-resolved keys from projection (already handles null/all/none/specific — no literal "ALL"/"NONE")
+        if (configuration.getProjection() != null) {
+            VariantQueryProjection.StudyVariantQueryProjection study = configuration.getProjection().getStudy(studyId);
+            if (study != null && study.getSampleDataKeys() != null) {
+                return study.getSampleDataKeys();
+            }
+        }
+        // Fallback for MR-path callers that have no projection (sampleDataKeys comes from Hadoop config)
         if (configuration.getSampleDataKeys() == null) {
             return fixedSampleDataKeys;
         } else {
@@ -422,7 +432,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
 
         if (configuration.getProjection() != null
-                && !configuration.getProjection().getStudy(studyMetadata.getId()).getFiles().contains(fileId)) {
+                && !configuration.getProjection().getStudy(studyMetadata.getId()).getFileIds().contains(fileId)) {
             if (call != null && !call.isEmpty()) {
                 OriginalCall originalCall = parseOriginalCall(call);
                 filesOnlyCall.add(new FileEntry(fileName, originalCall, Collections.emptyMap()));
@@ -430,7 +440,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return;
         }
 
-        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        List<String> fixedAttributes = VariantQueryParser.getFixedAttributes(studyMetadata);
         HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
         OriginalCall originalCall = null;
         VariantOverlappingStatus overlappingStatus =
@@ -617,10 +627,25 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
 
         if (configuration.getSparse()) {
+            boolean hasGt = studyEntry.getSampleDataKeys() != null
+                    && !studyEntry.getSampleDataKeys().isEmpty()
+                    && "GT".equals(studyEntry.getSampleDataKeys().get(0));
             List<SampleEntry> sparseSamples = new ArrayList<>(numSamples);
-            studyEntry.getSamples().stream()
-                    .filter(Objects::nonNull)
-                    .forEach(sparseSamples::add);
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                if (sample == null || sample.getFileIndex() == null) {
+                    continue;
+                }
+                if (hasGt) {
+                    if (sample.getData() != null && !sample.getData().isEmpty()) {
+                        if (includeInSparse(sample.getData().get(0))) {
+                            sparseSamples.add(sample);
+                        }
+                    }
+                } else {
+                    // No GT field — keep all samples with file data
+                    sparseSamples.add(sample);
+                }
+            }
             studyEntry.setSamplesPosition(null);
             studyEntry.setSamples(sparseSamples);
         }
@@ -1011,7 +1036,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 return metadataManager.getSamplesPosition(studyMetadata);
             } else {
-                List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSamples();
+                List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSampleIds();
                 return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds), false);
             }
         });
@@ -1026,14 +1051,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 return new HashSet<>(metadataManager.getIndexedSamples(id));
             } else {
-                return new HashSet<>(configuration.getProjection().getStudy(id).getSamples());
+                return new HashSet<>(configuration.getProjection().getStudy(id).getSampleIds());
             }
         });
     }
 
     private List<String> getFixedSampleDataKeys(StudyMetadata studyMetadata) {
         return fixedFormatsMap.computeIfAbsent(studyMetadata.getId(),
-                (s) -> HBaseToVariantConverter.getFixedFormat(studyMetadata));
+                (s) -> VariantQueryParser.getFixedFormat(studyMetadata));
     }
 
     private Set<Integer> getFilesFromReturnedSamples(int studyId) {
@@ -1058,7 +1083,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             if (configuration.getProjection() == null) {
                 samplesSet = null;
             } else {
-                samplesSet = new HashSet<>(configuration.getProjection().getStudy(studyId).getSamples());
+                samplesSet = new HashSet<>(configuration.getProjection().getStudy(studyId).getSampleIds());
             }
             for (Integer sample : sampleIds) {
                 if (samplesSet == null || samplesSet.contains(sample)) {

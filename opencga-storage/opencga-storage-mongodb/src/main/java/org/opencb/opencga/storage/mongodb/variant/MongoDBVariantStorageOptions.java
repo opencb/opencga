@@ -41,6 +41,9 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
     EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
     DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0"));
 
+    /** File-metadata attribute key listing which FORMAT fields have queryable sfd data. */
+    public static final String SFD_FIELDS_KEY = "sfd.fields";
+
     private final String key;
     private final Object value;
 

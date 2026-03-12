@@ -7,7 +7,6 @@ import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 
@@ -214,7 +213,7 @@ public class VariantRowFilterFactory {
                                         ? VariantQueryUtils.QueryOperation.OR
                                         : VariantQueryUtils.QueryOperation.AND,
                                         VariantQueryParser.preProcessGenotypesFilter(filterValues.getValues(),
-                                                VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES));
+                                                VariantQueryUtils.DEFAULT_LOADED_GENOTYPES));
                             }
                             List<Predicate<VariantRow.SampleColumn>> filterPredicates = new ArrayList<>(filterValues.size());
                             for (String filterSubValue : filterValues.getValues()) {

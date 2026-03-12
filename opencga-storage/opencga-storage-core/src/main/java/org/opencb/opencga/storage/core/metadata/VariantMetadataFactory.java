@@ -64,7 +64,7 @@ public class VariantMetadataFactory {
 
         for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
             StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
-            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFiles();
+            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFileIds();
             if (fileIds != null && !fileIds.isEmpty()) {
                 if (fileIds.size() < 50) {
                     Query query = new Query()

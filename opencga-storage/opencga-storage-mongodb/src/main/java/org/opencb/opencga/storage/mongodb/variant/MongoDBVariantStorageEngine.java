@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,12 +28,15 @@ import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -42,7 +44,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -50,8 +55,12 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.annotation.MongoDBVariantAnnotationManager;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsFromFile;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsTask;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.io.MongoDBVariantExporter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
@@ -61,6 +70,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -105,9 +116,21 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
+        return new MongoDBVariantExporter(this, metadataFactory, ioConnectorProvider);
+    }
+
+    @Override
+    public boolean supportsNativeSparseFilter() {
+        return true;
+    }
+
+    @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions());
+        ObjectMap options = new ObjectMap(getOptions());
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, options,
+                getSampleIndexDBAdaptor());
     }
 
     @Override
@@ -118,45 +141,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
-        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider);
+        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioConnectorProvider, getSampleIndexDBAdaptor()
+                .newSampleAnnotationIndexer(this));
     }
 
     @Override
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = metadataManager.getStudyId(study);
-        for (List<String> trio : trios) {
-            Integer father = metadataManager.getSampleId(studyId, trio.get(0));
-            Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
-            Integer child = metadataManager.getSampleId(studyId, trio.get(2));
-            metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
-                if (father != null && father > 0) {
-                    sampleMetadata.setFather(father);
-                }
-                if (mother != null && mother > 0) {
-                    sampleMetadata.setMother(mother);
-                }
-            });
-        }
-        return new DataResult<List<String>>().setResults(trios);
-    }
-
-    @Override
-    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
+                                                     SearchIndexMetadata indexMetadata, long updateStartTimestamp)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         int deletedVariants;
         VariantSearchLoadResult searchIndex;
-        long timeStamp = System.currentTimeMillis();
 
-        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(indexMetadata)) {
             // First remove trashed variants.
             ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
-            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
-                deletedVariants = variantSearchManager.delete(dbName, removedVariants, progressLogger);
-                getDBAdaptor().cleanTrash(timeStamp);
+            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(updateStartTimestamp)) {
+                deletedVariants = variantSearchManager.delete(indexMetadata, removedVariants, progressLogger);
+                getDBAdaptor().cleanTrash(updateStartTimestamp);
             } catch (StorageEngineException | IOException | RuntimeException e) {
                 throw e;
             } catch (Exception e) {
@@ -164,20 +167,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
 
             // Then, load new variants.
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
         } else {
             //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
             deletedVariants = 0;
             logger.debug("Skip removed variants!");
 
             // Try to index the rest of variants. This method will fail if the search engine is not alive
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
 
             // If the variants were loaded correctly, the trash can be clean up.
-            getDBAdaptor().cleanTrash(timeStamp);
+            getDBAdaptor().cleanTrash(updateStartTimestamp);
         }
 
-        return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
+        return new VariantSearchLoadResult(
+                searchIndex.getNumProcessedVariants(),
+                searchIndex.getNumLoadedVariants(),
+                deletedVariants,
+                searchIndex.getNumInsertedVariants(),
+                searchIndex.getNumLoadedVariantsPartialStatsUpdate());
     }
 
     @Override
@@ -191,16 +199,219 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = scm.getStudyId(study);
 
+        // Collect samples in the removed files and which ones still have other indexed files.
+        Set<Integer> otherIndexedFiles = new HashSet<>(scm.getIndexedFiles(studyId));
+        otherIndexedFiles.removeAll(fileIds);
+        Set<Integer> allRemovedSampleIds = new HashSet<>();
+        List<String> samplesToRebuildIndex = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            for (Integer sampleId : scm.getFileMetadata(studyId, fileId).getSamples()) {
+                allRemovedSampleIds.add(sampleId);
+                // Sample is still present in the study via other files — its sample-index needs rebuilding.
+                if (scm.getSampleMetadata(studyId, sampleId).getFiles().stream().anyMatch(otherIndexedFiles::contains)) {
+                    samplesToRebuildIndex.add(scm.getSampleName(studyId, sampleId));
+                }
+            }
+        }
+
+        MongoDBSampleIndexDBAdaptor mongoSampleIndexDBAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+        int schemaVersion = mongoSampleIndexDBAdaptor.getSchemaLatest(study).getVersion();
+
         Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFiles(study, files, task.getTimestamp(), new QueryOptions(options));
             postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), false);
+            // Clear sample index for ALL samples in removed files to remove stale data.
+            if (!allRemovedSampleIds.isEmpty()) {
+                mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, allRemovedSampleIds);
+            }
+            // Rebuild sample index for samples that still have data after the removal.
+            if (!samplesToRebuildIndex.isEmpty()) {
+                sampleIndex(study, samplesToRebuildIndex, new ObjectMap(options).append("overwrite", true));
+            }
         } catch (Exception e) {
             postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), true);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    @Override
+    public void removeSamples(String study, List<String> samples, URI outdir) throws StorageEngineException {
+        VariantStorageMetadataManager mm = getMetadataManager();
+        int studyId = mm.getStudyId(study);
+
+        // Resolve sample IDs
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        for (String sample : samples) {
+            sampleIds.add(mm.getSampleId(studyId, sample));
+        }
+        Set<Integer> sampleIdSet = new HashSet<>(sampleIds);
+
+        // Classify files: fully deleted (all samples removed) vs partially deleted
+        Set<Integer> affectedFileIds = mm.getFileIdsFromSampleIds(studyId, sampleIdSet, true);
+        List<String> fullyDeletedFiles = new ArrayList<>();
+        List<Integer> fullyDeletedFileIds = new ArrayList<>();
+        Set<Integer> partiallyDeletedFileIds = new LinkedHashSet<>();
+
+        for (Integer fileId : affectedFileIds) {
+            LinkedHashSet<Integer> samplesFromFile = mm.getSampleIdsFromFileId(studyId, fileId);
+            if (sampleIdSet.containsAll(samplesFromFile)) {
+                fullyDeletedFileIds.add(fileId);
+                fullyDeletedFiles.add(mm.getFileName(studyId, fileId));
+            } else {
+                partiallyDeletedFileIds.add(fileId);
+            }
+        }
+
+        TaskMetadata task = preRemove(study, fullyDeletedFiles, samples);
+        ObjectMap options = new ObjectMap(getOptions());
+        MongoDBSampleIndexDBAdaptor mongoSampleIndexDBAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+        int schemaVersion = mongoSampleIndexDBAdaptor.getSchemaLatest(study).getVersion();
+
+        Thread hook = mm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
+        try {
+            Runtime.getRuntime().addShutdownHook(hook);
+
+            // 1. Remove fully deleted files (reuse existing logic)
+            if (!fullyDeletedFileIds.isEmpty()) {
+                getDBAdaptor().removeFiles(study, fullyDeletedFiles, task.getTimestamp(), new QueryOptions(options));
+            }
+
+            // 2. Remove samples from partially deleted files
+            if (!partiallyDeletedFileIds.isEmpty()) {
+                getDBAdaptor().removeSamples(studyId, sampleIdSet, partiallyDeletedFileIds, task.getTimestamp());
+            }
+
+            // 3. Metadata cleanup
+            postRemoveFiles(study, fullyDeletedFileIds, sampleIds, task.getId(), false);
+
+            // 4. Clear sample index for all removed samples
+            mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, sampleIdSet);
+
+            // 5. Rebuild sample index for remaining samples in partially deleted files
+            Set<String> samplesToRebuildIndex = new LinkedHashSet<>();
+            for (Integer fileId : partiallyDeletedFileIds) {
+                for (Integer sid : mm.getSampleIdsFromFileId(studyId, fileId)) {
+                    if (!sampleIdSet.contains(sid)) {
+                        samplesToRebuildIndex.add(mm.getSampleName(studyId, sid));
+                    }
+                }
+            }
+            if (!samplesToRebuildIndex.isEmpty()) {
+                List<Integer> rebuildIds = new ArrayList<>(samplesToRebuildIndex.size());
+                for (String s : samplesToRebuildIndex) {
+                    rebuildIds.add(mm.getSampleId(studyId, s));
+                }
+                mongoSampleIndexDBAdaptor.clearSampleIndex(studyId, schemaVersion, rebuildIds);
+                sampleIndex(study, new ArrayList<>(samplesToRebuildIndex), new ObjectMap(options).append("overwrite", true));
+            }
+        } catch (Exception e) {
+            postRemoveFiles(study, fullyDeletedFileIds, sampleIds, task.getId(), true);
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    @Override
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
+        List<String> samples = params.getSamples();
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
+        } else if (new HashSet<>(samples).size() != samples.size()) {
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with duplicated samples.");
+        }
+
+        VariantStorageMetadataManager mm = getMetadataManager();
+        StudyMetadata studyMetadata = mm.getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        Set<Integer> fileIds = new LinkedHashSet<>();
+        for (String sample : samples) {
+            Integer sampleId = mm.getSampleId(studyId, sample);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
+            }
+            sampleIds.add(sampleId);
+            List<Integer> sampleFiles = mm.getFileIdsFromSampleId(studyId, sampleId, true);
+            if (sampleFiles.size() > 1) {
+                throw new IllegalArgumentException("Unable to execute operation with more than one file per sample. Found "
+                        + sampleFiles.size() + " files for sample " + sample);
+            }
+            fileIds.addAll(sampleFiles);
+        }
+
+        // Resolve VCF file URIs — all files must exist on filesystem
+        List<URI> uris = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = mm.getFileMetadata(studyId, fileId);
+            Path filePath = Paths.get(fileMetadata.getPath());
+            if (!filePath.toFile().exists()) {
+                throw new StorageEngineException("File not found: " + filePath
+                        + ". MongoDB aggregateFamily requires the original VCF files to be accessible.");
+            }
+            uris.add(filePath.toUri());
+        }
+
+        String gapsGenotype = params.getGapsGenotype();
+        if (gapsGenotype == null || gapsGenotype.isEmpty()) {
+            gapsGenotype = "0/0";
+        }
+        logger.info("FillGaps: Study " + study + ", samples " + samples);
+
+        // Register cohort
+        int internalCohortId = mm.registerAggregateFamilySamplesCohort(
+                studyId, samples, params.isResume(), params.isResume());
+
+        // Reset family index status to NONE
+        for (Integer sampleId : sampleIds) {
+            mm.updateSampleMetadata(studyId, sampleId, sm -> {
+                Integer version = sm.getFamilyIndexVersion();
+                if (version != null) {
+                    logger.info("Updating family index status for sample '{}' to {}", sm.getName(), TaskMetadata.Status.NONE);
+                    sm.setFamilyIndexStatus(TaskMetadata.Status.NONE, version);
+                }
+            });
+        }
+
+        try {
+            MongoDBFillGapsFromFile fillGapsFromFile = new MongoDBFillGapsFromFile(
+                    getDBAdaptor(), mm, options != null ? options : new ObjectMap());
+            fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, gapsGenotype);
+
+            // Update loaded genotypes
+            MongoDBFillGapsTask tempTask = new MongoDBFillGapsTask(mm, studyMetadata, false, gapsGenotype);
+            tempTask.updateLoadedGenotypes();
+
+            mm.updateCohortMetadata(studyId, internalCohortId, cohort -> {
+                cohort.setStatusByType(TaskMetadata.Status.READY);
+            });
+            mm.removeExtraInternalCohorts(studyId, internalCohortId);
+
+            // Rebuild sample index for affected samples
+            MongoDBSampleIndexDBAdaptor sampleIndexAdaptor = (MongoDBSampleIndexDBAdaptor) getSampleIndexDBAdaptor();
+            int schemaVersion = sampleIndexAdaptor.getSchemaLatest(study).getVersion();
+            sampleIndexAdaptor.clearSampleIndex(studyId, schemaVersion, sampleIds);
+
+            List<String> sampleNames = new ArrayList<>(sampleIds.size());
+            for (Integer sampleId : sampleIds) {
+                sampleNames.add(mm.getSampleName(studyId, sampleId));
+            }
+            sampleIndex(study, sampleNames, new ObjectMap(options != null ? options : new ObjectMap())
+                    .append("overwrite", true));
+        } catch (Exception e) {
+            try {
+                mm.updateCohortMetadata(studyId, internalCohortId, cohort -> {
+                    cohort.setStatusByType(TaskMetadata.Status.ERROR);
+                });
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e instanceof StorageEngineException ? (StorageEngineException) e : new StorageEngineException(e.getMessage(), e);
         }
     }
 
@@ -257,7 +468,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
-
+        if (doLoad) {
+            createStudyIfNeeded();
+        }
         Map<URI, MongoDBVariantStoragePipeline> storageResultMap = new LinkedHashMap<>();
         Map<URI, StoragePipelineResult> resultsMap = new LinkedHashMap<>();
         LinkedList<StoragePipelineResult> results = new LinkedList<>();
@@ -441,6 +654,19 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public MongoDBSampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        MongoDataStoreManager mongoManager = getMongoDataStoreManager();
+        MongoCredentials credentials = getMongoCredentials();
+        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        return new MongoDBSampleIndexDBAdaptor(db, getMetadataManager());
+    }
+
+    @Override
+    protected VariantQueryParser getVariantQueryParser() throws StorageEngineException {
+        return new MongoDBVariantQueryParser(getCellBaseUtils(), getMetadataManager());
+    }
+
+    @Override
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
         List<VariantQueryExecutor> executors = new ArrayList<>();
 
@@ -500,16 +726,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
-        if (isValidParam(originalQuery, SAMPLE_MENDELIAN_ERROR)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_MENDELIAN_ERROR, getStorageEngineId());
-        }
-        if (isValidParam(originalQuery, SAMPLE_DE_NOVO)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO, getStorageEngineId());
-        }
-        if (isValidParam(originalQuery, SAMPLE_DE_NOVO_STRICT)) {
-            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DE_NOVO_STRICT, getStorageEngineId());
-        }
-
         Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = metadataManager.getStudyNames();
 

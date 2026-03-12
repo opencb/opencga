@@ -62,7 +62,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private final Map<String, Integer> cohortsSize = new HashMap<>();
     private final VariantSearchIdGenerator idGenerator;
 
-    private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
     private final boolean functionQueryStats;
 
     public static VariantSearchToVariantConverter converterSimpleStats(SearchIndexMetadata searchIndexMetadata) {
@@ -1001,7 +1000,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
-        Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variant.getAnnotation());
+        Set<String> xrefs = VariantAnnotationModelUtils.extractXRefs(variant.getAnnotation());
         xrefs.add(variantSearchModel.getId());
         if (variant.getNames() != null && !variant.getNames().isEmpty()) {
             variant.getNames().forEach(name -> {

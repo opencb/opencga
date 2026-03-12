@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -76,6 +77,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     private static final int QUERIES_LIM = 50;
@@ -99,7 +101,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private String het;
     private String het1;
     private String het2;
-    protected int fileId = 1;
+    protected static int fileId;
     protected List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
     protected Set<String> cohorts = new HashSet<>(Arrays.asList("ALL", "cohort1", "cohort2"));
 
@@ -137,7 +139,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(fileMetadata);
             fileIndexed = true;
-            Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
+            fileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
             //Calculate stats
             if (getOtherParams().getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), true)) {
@@ -145,7 +147,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
-                Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
+                Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples().iterator();
 
                 /** Create cohorts **/
                 HashSet<String> cohort1 = new HashSet<>();
@@ -545,6 +547,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         List<Variant> result = query(new Query(ID.key(), variants), new QueryOptions()).getResults();
 
         assertTrue(variants.size() > 0);
+        assertTrue(normalizedVariants.size() > 0);
         List<String> expectedList = variants.stream().map(Object::toString).sorted().collect(Collectors.toList());
         List<String> actualList = result.stream().map(Object::toString).sorted().collect(Collectors.toList());
         for (String expected : expectedList) {
@@ -1558,7 +1561,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         int lastStart = 0;
         for (Variant variant : queryResult.getResults()) {
             assertEquals("1", variant.getChromosome());
-            assertTrue(lastStart <= variant.getStart());
+            assertTrue("lastStart = " + lastStart + " thisVariant: " + variant, lastStart <= variant.getStart());
             lastStart = variant.getStart();
         }
 
@@ -2308,17 +2311,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
             for (Variant variant : queryResult.getResults()) {
                 assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            }
+            queryResult = query(new VariantQuery().includeSample(sampleNames.get(0)), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
+            for (Variant variant : queryResult.getResults()) {
+                for (FileEntry file : variant.getStudies().get(0).getFiles()) {
+                    // If any file entry is present, it must contain a call and no data.
+                    assertNotNull(file.getCall());
+                    assertEquals(0, file.getData().size());
+                }
                 assertThat(new HashSet<>(variant.getStudies().get(0).getSampleDataKeys()), is(FORMAT));
             }
         }
     }
 
     @Test
+
     public void testReturnNoneFiles() {
         queryResult = query(new Query(INCLUDE_FILE.key(), VariantQueryUtils.NONE).append(INCLUDE_SAMPLE.key(), ALL), new QueryOptions());
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
         for (Variant variant : queryResult.getResults()) {
             if (variant.getLengthReference() == 0 || variant.getLengthAlternate() == 0) {
+                // Always return originalCall when context allele is missing
                 assertThat(variant.getStudies().get(0).getFiles(), is(not(Collections.emptyList())));
                 assertThat(variant.getStudies().get(0).getFiles().get(0).getCall(), is(not(nullValue())));
             } else {

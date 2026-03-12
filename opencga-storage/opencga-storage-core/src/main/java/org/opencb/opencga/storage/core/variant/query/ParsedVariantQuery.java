@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,32 +30,35 @@ public class ParsedVariantQuery {
     private List<Event> events = new ArrayList<>();
 
     private VariantQueryProjection projection;
-
     private final VariantStudyQuery studyQuery;
+    private final VariantAnnotationQuery annotationQuery;
+
     private Integer limit;
     private int skip;
     private boolean count;
+    private boolean sort;
+    private boolean sortAscending;
     private int approximateCountSamplingSize;
     private List<Region> geneRegions;
     private List<Region> regions;
-    private List<List<String>> clinicalCombination;
-    private List<String> clinicalCombinationList;
+    private List<VariantType> type;
     private VariantQuerySource source;
-    //    private VariantAnnotationQuery annotationQuery;
 
 
     public ParsedVariantQuery() {
         this.inputQuery = new Query();
         this.inputOptions = new QueryOptions();
         this.query = new VariantQuery();
-        studyQuery = new VariantStudyQuery();
+        this.studyQuery = new VariantStudyQuery();
+        this.annotationQuery = new VariantAnnotationQuery();
     }
 
     public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
         this.inputQuery = inputQuery;
         this.inputOptions = inputOptions;
         this.query = new VariantQuery(inputQuery);
-        studyQuery = new VariantStudyQuery();
+        this.studyQuery = new VariantStudyQuery();
+        this.annotationQuery = new VariantAnnotationQuery();
     }
 
     public ParsedVariantQuery(ParsedVariantQuery other) {
@@ -70,9 +74,8 @@ public class ParsedVariantQuery {
         this.approximateCountSamplingSize = other.approximateCountSamplingSize;
         this.geneRegions = new ArrayList<>(other.geneRegions);
         this.regions = new ArrayList<>(other.regions);
-        this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
-        this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
         this.source = other.source;
+        this.annotationQuery = new VariantAnnotationQuery(other.annotationQuery);
     }
 
     public Query getInputQuery() {
@@ -159,6 +162,15 @@ public class ParsedVariantQuery {
         return this;
     }
 
+    public List<VariantType> getType() {
+        return type;
+    }
+
+    public ParsedVariantQuery setType(List<VariantType> type) {
+        this.type = type;
+        return this;
+    }
+
     public List<String> getConsequenceTypes() {
         return VariantQueryUtils.parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()));
     }
@@ -202,6 +214,25 @@ public class ParsedVariantQuery {
         return this;
     }
 
+    public boolean isSort() {
+        return sort;
+    }
+
+    public boolean isSortAscending() {
+        return sort && sortAscending;
+    }
+
+    public boolean isSortDescending() {
+        return sort && !sortAscending;
+    }
+
+    public ParsedVariantQuery setSort(boolean sort, boolean sortAscending) {
+        this.sort = sort;
+        this.sortAscending = sortAscending;
+        return this;
+    }
+
+
     public int getApproximateCountSamplingSize() {
         return approximateCountSamplingSize;
     }
@@ -224,21 +255,25 @@ public class ParsedVariantQuery {
     }
 
     public List<List<String>> getClinicalCombinations() {
-        return clinicalCombination;
+        return annotationQuery.clinicalCombination;
     }
 
     public ParsedVariantQuery setClinicalCombination(List<List<String>> clinicalCombination) {
-        this.clinicalCombination = clinicalCombination;
+        this.annotationQuery.setClinicalCombination(clinicalCombination);
         return this;
     }
 
     public List<String> getClinicalCombinationsList() {
-        return clinicalCombinationList;
+        return annotationQuery.clinicalCombinationList;
     }
 
     public ParsedVariantQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
-        this.clinicalCombinationList = clinicalCombinationList;
+        this.annotationQuery.setClinicalCombinationList(clinicalCombinationList);
         return this;
+    }
+
+    public VariantAnnotationQuery getAnnotationQuery() {
+        return annotationQuery;
     }
 
     public VariantQuerySource getSource() {
@@ -251,7 +286,8 @@ public class ParsedVariantQuery {
     }
 
     public static class VariantStudyQuery {
-        private ParsedQuery<String> studies;
+        private ParsedQuery<NegatableValue<ResourceId>> studies;
+        private ParsedQuery<NegatableValue<ResourceId>> files;
         private ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes;
 //        // SAMPLE : [ KEY OP VALUE ] *
         private ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery;
@@ -259,22 +295,52 @@ public class ParsedVariantQuery {
 //        private Values<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleFilters;
         private StudyMetadata defaultStudy;
 
+        private boolean includeSampleId = false;
+
         public VariantStudyQuery() {
         }
 
-        public VariantStudyQuery(VariantStudyQuery studyQuery) {
-            this.studies = studyQuery.studies;
-            this.genotypes = studyQuery.genotypes;
-            this.sampleDataQuery = studyQuery.sampleDataQuery;
-            this.defaultStudy = studyQuery.defaultStudy;
+        public VariantStudyQuery(ParsedQuery<NegatableValue<ResourceId>> studies,
+                                 ParsedQuery<NegatableValue<ResourceId>> files,
+                                 ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes,
+                                 ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery,
+                                 StudyMetadata defaultStudy) {
+            this.studies = studies;
+            this.files = files;
+            this.genotypes = genotypes;
+            this.sampleDataQuery = sampleDataQuery;
+            this.defaultStudy = defaultStudy;
         }
 
-        public ParsedQuery<String> getStudies() {
+        public VariantStudyQuery(VariantStudyQuery other) {
+            this(
+                    other.studies,
+                    other.files,
+                    other.genotypes,
+                    other.sampleDataQuery,
+                    other.defaultStudy
+            );
+        }
+
+        /**
+         * Value of {@link VariantQueryParam#STUDY}.
+         * @return List of studies to be used in the query
+         */
+        public ParsedQuery<NegatableValue<ResourceId>> getStudies() {
             return studies;
         }
 
-        public VariantStudyQuery setStudies(ParsedQuery<String> studies) {
+        public VariantStudyQuery setStudies(ParsedQuery<NegatableValue<ResourceId>> studies) {
             this.studies = studies;
+            return this;
+        }
+
+        public ParsedQuery<NegatableValue<ResourceId>> getFiles() {
+            return files;
+        }
+
+        public VariantStudyQuery setFiles(ParsedQuery<NegatableValue<ResourceId>> files) {
+            this.files = files;
             return this;
         }
 
@@ -327,6 +393,59 @@ public class ParsedVariantQuery {
             }
         }
 
+        public boolean isIncludeSampleId() {
+            return includeSampleId;
+        }
+
+        public VariantStudyQuery setIncludeSampleId(boolean includeSampleId) {
+            this.includeSampleId = includeSampleId;
+            return this;
+        }
+    }
+
+    public static class VariantAnnotationQuery {
+
+        private List<List<String>> clinicalCombination;
+        private List<String> clinicalCombinationList;
+        private ConsequenceTypeCombinations consequenceTypeCombinations;
+
+        public VariantAnnotationQuery() {
+        }
+
+        public VariantAnnotationQuery(VariantAnnotationQuery other) {
+            this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
+            this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
+            this.consequenceTypeCombinations = other.consequenceTypeCombinations == null
+                    ? null
+                    : new ConsequenceTypeCombinations(other.consequenceTypeCombinations);
+        }
+
+        public List<List<String>> getClinicalCombination() {
+            return clinicalCombination;
+        }
+
+        public VariantAnnotationQuery setClinicalCombination(List<List<String>> clinicalCombination) {
+            this.clinicalCombination = clinicalCombination;
+            return this;
+        }
+
+        public List<String> getClinicalCombinationList() {
+            return clinicalCombinationList;
+        }
+
+        public VariantAnnotationQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
+            this.clinicalCombinationList = clinicalCombinationList;
+            return this;
+        }
+
+        public ConsequenceTypeCombinations getGeneCombinations() {
+            return consequenceTypeCombinations;
+        }
+
+        public VariantAnnotationQuery setGeneCombinations(ConsequenceTypeCombinations consequenceTypeCombinations) {
+            this.consequenceTypeCombinations = consequenceTypeCombinations;
+            return this;
+        }
     }
 
     public static class VariantQueryXref {
@@ -388,5 +507,100 @@ public class ParsedVariantQuery {
             sb.append('}');
             return sb.toString();
         }
+    }
+
+    public static class ConsequenceTypeCombinations {
+        private final List<ConsequenceTypeCombination> combinations;
+        private final Type type;
+
+        public ConsequenceTypeCombinations(List<ConsequenceTypeCombination> combinations, Type type) {
+            this.combinations = combinations;
+            this.type = type;
+        }
+
+        public ConsequenceTypeCombinations(List<ConsequenceTypeCombination> combinations) {
+            this.combinations = combinations;
+            this.type = getType(combinations.get(0));
+        }
+
+        public ConsequenceTypeCombinations(ConsequenceTypeCombinations other) {
+            this.combinations = new ArrayList<>(other.combinations);
+            this.type = other.type;
+        }
+
+        public List<ConsequenceTypeCombination> getCombinations() {
+            return combinations;
+        }
+
+        public Type getType() {
+            return type;
+        }
+
+        public static Type getType(ConsequenceTypeCombination c) {
+            String type = "";
+            if (c.gene != null) {
+                type += "GENE";
+            }
+            if (c.biotype != null) {
+                type += (type.isEmpty() ? "" : "_") + "BIOTYPE";
+            }
+            if (c.so != null) {
+                type += (type.isEmpty() ? "" : "_") + "SO";
+            }
+            if (c.flag != null) {
+                type += (type.isEmpty() ? "" : "_") + "FLAG";
+            }
+            return ConsequenceTypeCombinations.Type.valueOf(type);
+        }
+
+        public enum Type {
+            GENE_BIOTYPE_SO_FLAG,
+            GENE_BIOTYPE_SO,
+            GENE_BIOTYPE_FLAG,
+            GENE_BIOTYPE,
+            GENE_SO_FLAG,
+            GENE_SO,
+            GENE_FLAG,
+//            GENE,
+            BIOTYPE_SO_FLAG,
+            BIOTYPE_SO,
+            BIOTYPE_FLAG,
+//            BIOTYPE,
+            SO_FLAG,
+//            SO,
+//            FLAG
+        }
+    }
+
+    public static class ConsequenceTypeCombination {
+
+        private final String gene;
+        private final String biotype;
+        private final String so;
+        private final String flag;
+
+        public ConsequenceTypeCombination(String gene, String biotype, String so, String flag) {
+            this.gene = gene;
+            this.biotype = biotype;
+            this.so = so;
+            this.flag = flag;
+        }
+
+        public String getGene() {
+            return gene;
+        }
+
+        public String getBiotype() {
+            return biotype;
+        }
+
+        public String getSo() {
+            return so;
+        }
+
+        public String getFlag() {
+            return flag;
+        }
+
     }
 }

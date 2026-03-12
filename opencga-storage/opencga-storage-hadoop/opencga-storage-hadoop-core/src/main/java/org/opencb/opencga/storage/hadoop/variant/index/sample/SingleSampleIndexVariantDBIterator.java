@@ -9,8 +9,12 @@ import org.apache.hadoop.hbase.client.Table;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.genotype.HBaseToSampleIndexConverter;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -28,7 +32,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     protected int count = 0;
 
     public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexSchema schema,
-                                              SampleIndexDBAdaptor dbAdaptor) {
+                                              HBaseSampleIndexDBAdaptor dbAdaptor) {
         Collection<LocusQuery> locusQueries;
         if (CollectionUtils.isEmpty(query.getLocusQueries())) {
             // If no regions are defined, get a list of one null element to initialize the stream.

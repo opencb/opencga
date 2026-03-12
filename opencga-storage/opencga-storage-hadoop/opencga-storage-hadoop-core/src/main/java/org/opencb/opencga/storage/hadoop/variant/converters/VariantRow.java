@@ -22,7 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;

@@ -48,10 +48,10 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,7 +167,7 @@ public class VariantMapReduceUtil {
             // These might be needed even if they don't belong to the query
             for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
                 int studyId = study.getId();
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds())) {
                     metadataManager.getFileMetadata(studyId, fileId);
                 }
             }
@@ -186,7 +186,7 @@ public class VariantMapReduceUtil {
                 // Remove extra fields from the query
                 HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
                         .fromVariantsTable(variantTable, job.getConfiguration());
-                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
+                HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
                 SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),
@@ -296,7 +296,7 @@ public class VariantMapReduceUtil {
                 // Remove extra fields from the query
                 HBaseVariantTableNameGenerator tableNameGenerator = HBaseVariantTableNameGenerator
                         .fromVariantsTable(variantTable, job.getConfiguration());
-                SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
+                HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(null, tableNameGenerator, metadataManager);
                 SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
                 setSampleIndexConfiguration(job,
                         sampleIndexQuery.getSchema().getConfiguration(),

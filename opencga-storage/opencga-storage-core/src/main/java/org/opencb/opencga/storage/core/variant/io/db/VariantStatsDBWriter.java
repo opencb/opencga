@@ -70,7 +70,7 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
     }
 
     protected int writeStats(List<VariantStatsWrapper> batch) {
-        return dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options).getNumResults();
+        return dbAdaptor.updateStats(batch, studyMetadata, timestamp, options).getNumResults();
     }
 
     public VariantStatsDBWriter setProgressLogger(ProgressLogger progressLogger) {

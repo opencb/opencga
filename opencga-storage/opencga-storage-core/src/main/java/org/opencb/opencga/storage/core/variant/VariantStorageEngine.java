@@ -54,9 +54,18 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexMendelianErrorQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.walker.LocalVariantWalker;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantSparseFilterTask;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -94,6 +103,9 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
  */
 public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdaptor> implements VariantIterable {
 
+    // Study attributes
+    // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
+    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
     private final AtomicReference<VariantSearchManager> variantSearchManager = new AtomicReference<>();
     private final List<VariantQueryExecutor> lazyVariantQueryExecutorsList = new ArrayList<>();
     private final List<VariantAggregationExecutor> lazyVariantAggregationExecutorsList = new ArrayList<>();
@@ -261,38 +273,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (metadataFactory == null) {
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
+        new VariantWriterFactory(getMetadataManager()).validateQuery(outputFormat, query);
+
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        switch (outputFormat.inPlain()) {
-            case VCF:
-                if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
-                    query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-                }
-                break;
-            case JSON_SPARSE:
-                query.put(SPARSE_SAMPLES.key(), true);
-                query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
-                break;
-            default:
-                break;
-        }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
-        if (!outputFormat.isMultiStudyOutput()) {
-            if (parsedVariantQuery.getProjection().getStudies().size() > 1) {
-                throw new IllegalArgumentException("Cannot export more than one study at a time with output format " + outputFormat
-                        + ". Please use the '" + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
-            }
-        }
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                               String dockerImage, String commandLine)
             throws IOException, StorageEngineException {
-        if (format == VariantOutputFormat.VCF || format == VariantOutputFormat.VCF_GZ) {
-            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
-                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-            }
-        }
         commandLine = commandLine.replace("'", "'\"'\"'");
 
         String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
@@ -329,7 +319,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                                        String commandLine)
             throws StorageEngineException {
-        throw new UnsupportedOperationException();
+        VariantWriterFactory writerFactory = new VariantWriterFactory(getMetadataManager());
+        writerFactory.validateQuery(format, query);
+
+        LocalVariantWalker walker = new LocalVariantWalker(getMetadataManager(),
+                writerFactory, ioConnectorProvider, supportsNativeSparseFilter());
+        try (VariantDBIterator iterator = iterator(query, queryOptions)) {
+            return walker.walk(outputFile, format, query, queryOptions, iterator, commandLine, getOptions());
+        } catch (StorageEngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageEngineException("Error walking variant data", e);
+        }
     }
 
     /**
@@ -342,6 +343,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new VariantExporter(this, metadataFactory, ioConnectorProvider);
+    }
+
+    /**
+     * Whether this storage engine natively supports sparse sample filtering in its converter.
+     * When true, the walker and exporter skip the {@link VariantSparseFilterTask} post-processing step,
+     * relying on the backend converter to filter samples directly.
+     *
+     * @return false by default; backends should override to return true if they handle sparse filtering natively.
+     */
+    public boolean supportsNativeSparseFilter() {
+        return false;
     }
 
     /**
@@ -544,7 +556,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider);
+        SampleAnnotationIndexer constructor;
+        if (getSampleIndexDBAdaptor() == null) {
+            constructor = null;
+        } else {
+            constructor = getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this);
+        }
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider, constructor);
     }
 
     /**
@@ -625,6 +643,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException("Unsupported deleteStats");
     }
 
+    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported getSampleIndexDBAdaptor");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
@@ -636,7 +658,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleGenotypeIndexer(this)
+                .buildSampleIndex(study, samples, options);
     }
 
     /**
@@ -650,7 +674,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException in an error occurs
      */
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported sampleIndex annotate");
+        options = getMergedOptions(options);
+        getSampleIndexDBAdaptor().newSampleAnnotationIndexer(this)
+                .updateSampleAnnotation(study, samples, options);
     }
 
     /**
@@ -664,7 +690,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return List of trios used to index. Empty if there was nothing to do.
      */
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported familyIndex");
+        options = getMergedOptions(options);
+        return getSampleIndexDBAdaptor().newSampleFamilyIndexer(this)
+                .load(study, trios, options);
     }
 
     /**
@@ -753,12 +781,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (!configuration.getSearch().isActive()) {
             throw new StorageEngineException("Search is not active!");
         }
-
-        Query query = copy(inputQuery);
-        QueryOptions queryOptions = copy(inputQueryOptions);
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForLoading();
@@ -851,7 +873,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         long updateTimestamp = System.currentTimeMillis();
-        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateTimestamp);
+        return secondaryIndex(copy(inputQuery), copy(inputQueryOptions), overwrite, indexMetadata, updateTimestamp);
     }
 
     protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
@@ -1382,6 +1404,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
+        executors.add(new SampleIndexMendelianErrorQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SampleIndexOnlyVariantQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SampleIndexVariantQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
         return executors;
@@ -1454,23 +1482,28 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new VariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
+    @Deprecated
     public DataResult distinct(Query query, String field) throws StorageEngineException {
         return getDBAdaptor().distinct(query, field);
     }
 
+    @Deprecated
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
         return getDBAdaptor().rank(query, field, numResults, asc);
     }
 
+    @Deprecated
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
         return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
                 region, regionIntervalSize);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, field, options);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, fields, options);
     }
@@ -1527,6 +1560,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         try {
             executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
+            executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);
@@ -1625,6 +1659,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
         lazyVariantQueryExecutorsList.clear();
+        lazyVariantAggregationExecutorsList.clear();
     }
 }
 
