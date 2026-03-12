@@ -1673,7 +1673,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
             // Execute allele typing
             List<AlleleTyperResult> results = manager.alleleTyper(study, params.getGenotypingContent(),
-                    params.getTranslationContent(), false, token);
+                    params.getTranslationContent(), params.getCnvContent(), false, token);
 
             // Return results
             return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), results.size(), results, results.size()));

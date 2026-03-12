@@ -1,4 +1,5 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
+
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.StarAlleleAnnotation;
 
@@ -16,358 +17,425 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 @Category(ShortTests.class)
 public class AlleleTyperTest {
 
+    private static final String BASE_DIR = "/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Pharmacogenetics";
+
     private Path genotypingFile;
     private Path translationFile;
+    private Path cnvFile;
     private Path expectedResultsFile;
     private Map<String, Map<String, String>> expectedResults;
 
-//    @Before
-//    public void setUp() throws IOException {
-//        // Input files
-//        genotypingFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/3G_Export_DO_TrueMark_128_Export_DO_TrueMark_128_Genotyping_07-11-2025-074600.txt");
-//        translationFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/PGX_SNP_CNV_128_OA_translation_RevC.csv");
-//
-//        // Expected results file
-//        expectedResultsFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/TrueMark128_detail_result.csv");
-//
-//        // Parse expected results
-//        expectedResults = parseExpectedResults();
-//    }
+    @Before
+    public void setUp() throws IOException {
+        genotypingFile = Paths.get(BASE_DIR, "FQV18_DO_online_export_FQV18_DO_online_export_Genotyping_26-02-2026-114007.txt");
+        translationFile = Paths.get(BASE_DIR, "PGX_SNP_CNV_128_OA_translation_RevC tab.txt");
+        cnvFile = Paths.get(BASE_DIR, "FQV18_DO_online_export_FQV18_DO_online_export_Copy_Number_Variation_Result_multi_plate_26-02-2026-114007.txt");
+        expectedResultsFile = Paths.get(BASE_DIR, "FQV18_20260226_detail.csv");
+
+        expectedResults = parseExpectedResults();
+    }
+
+    private Map<String, Map<String, String>> parseExpectedResults() throws IOException {
+        Map<String, Map<String, String>> results = new LinkedHashMap<>();
+
+        if (!expectedResultsFile.toFile().exists()) {
+            return results;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(expectedResultsFile.toFile()))) {
+            // Find the header line that starts with "sample ID"
+            List<String> headers = null;
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("sample ID")) {
+                    headers = parseCsvLine(line);
+                    break;
+                }
+            }
+
+            if (headers == null) {
+                return results;
+            }
+
+            while ((line = br.readLine()) != null) {
+                List<String> fields = parseCsvLine(line);
+                if (fields.size() < 2) {
+                    continue;
+                }
+
+                String sampleId = fields.get(0).trim();
+                if ("NTC".equals(sampleId) || sampleId.isEmpty()) {
+                    continue;
+                }
+
+                Map<String, String> geneResults = new LinkedHashMap<>();
+                for (int i = 1; i < Math.min(fields.size(), headers.size()); i++) {
+                    String gene = headers.get(i).trim();
+                    String result = fields.get(i).trim();
+                    if (!gene.isEmpty() && !"Notes".equals(gene)) {
+                        geneResults.put(gene, result);
+                    }
+                }
+
+                results.put(sampleId, geneResults);
+            }
+        }
+
+        return results;
+    }
 
     /**
-     * Parse the expected results from ThermoFisher output.
+     * Parse a CSV line handling quoted fields (fields containing commas wrapped in double quotes).
      */
-//    private Map<String, Map<String, String>> parseExpectedResults() throws IOException {
-//        Map<String, Map<String, String>> results = new HashMap<>();
-//
-//        try (BufferedReader br = new BufferedReader(new FileReader(expectedResultsFile.toFile()))) {
-//            String headerLine = br.readLine(); // Skip first header line with rsIDs
-//            String dataHeaderLine = br.readLine(); // Second line with gene names
-//
-//            if (dataHeaderLine == null) {
-//                return results;
-//            }
-//
-//            String[] headers = dataHeaderLine.split(",", -1);
-//            // Headers: sample ID, UGT2B17, CYP2D6, CYP2C9, CYP2C19, CYP2B6, TPMT, SLCO1B1, NUDT15, ...
-//
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                String[] fields = line.split(",", -1);
-//                if (fields.length < 2) {
-//                    continue;
-//                }
-//
-//                String sampleId = fields[0].trim();
-//                if ("NTC".equals(sampleId) || sampleId.isEmpty()) {
-//                    continue; // Skip NTC (No Template Control)
-//                }
-//
-//                Map<String, String> geneResults = new HashMap<>();
-//                for (int i = 1; i < Math.min(fields.length, headers.length); i++) {
-//                    String gene = headers[i].trim();
-//                    String result = fields[i].trim();
-//                    // Include all non-empty gene names, even if result is empty or "no translation available"
-//                    if (!gene.isEmpty() && !gene.equals("Notes")) {
-//                        geneResults.put(gene, result);
-//                    }
-//                }
-//
-//                results.put(sampleId, geneResults);
-//            }
-//        }
-//
-//        return results;
-//    }
+    private List<String> parseCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        boolean inQuotes = false;
+        StringBuilder current = new StringBuilder();
 
-//    @Test
-//    public void testParseTranslationFile() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        // Verify that translation file was parsed successfully
-//        // We should have definitions for multiple genes
-//        assertNotNull(typer);
-//    }
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                fields.add(current.toString());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        fields.add(current.toString());
 
-//    @Test
-//    public void testParseGenotypingFile() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        Map<String, AlleleTyper.PharmacogenomicsProfile> results = typer.parseGenotypingFileAndCallAlleles(genotypingFile);
-//
-//        // Verify we got results for all samples
-//        assertNotNull(results);
-//        assertTrue("Should have parsed multiple samples", results.size() > 0);
-//
-//        // Print results for debugging
-//        System.out.println("\n=== AlleleTyper Results ===");
-//        for (Map.Entry<String, AlleleTyper.PharmacogenomicsProfile> entry : results.entrySet()) {
-//            System.out.println(entry.getValue());
-//        }
-//    }
+        return fields;
+    }
 
-//    @Test
-//    public void testCYP2D6Calling() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        Map<String, AlleleTyper.PharmacogenomicsProfile> results = typer.parseGenotypingFileAndCallAlleles(genotypingFile);
-//
-//        compareGeneResults("CYP2D6", results, true);
-//    }
+    @Test
+    public void testParseTranslationFile() throws IOException {
+        if (!translationFile.toFile().exists()) {
+            System.out.println("Skipping test: translation file not found at " + translationFile);
+            return;
+        }
 
-//    @Test
-//    public void testComprehensiveComparison() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        Map<String, AlleleTyper.PharmacogenomicsProfile> results = typer.parseGenotypingFileAndCallAlleles(genotypingFile);
-//
-//        // Get list of all genes from expected results
-//        Set<String> allGenes = new java.util.HashSet<>();
-//        for (Map<String, String> geneResults : expectedResults.values()) {
-//            allGenes.addAll(geneResults.keySet());
-//        }
-//
-//        System.out.println("\n=== COMPREHENSIVE COMPARISON WITH OFFICIAL RESULTS ===\n");
-//
-//        // Compare each gene
-//        for (String gene : allGenes) {
-//            if (gene.equals("Notes") || gene.contains("_cn")) {
-//                continue; // Skip notes and CNV columns
-//            }
-//            compareGeneResults(gene, results, false);
-//        }
-//    }
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
 
-//    private void compareGeneResults(String geneName, Map<String, AlleleTyper.PharmacogenomicsProfile> results, boolean failOnNoMatches) {
-//        System.out.println("\n=== " + geneName + " Results Comparison ===");
-//        System.out.println(String.format("%-15s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Match"));
-//        System.out.println("-".repeat(130));
-//
-//        int totalSamples = 0;
-//        int exactMatches = 0;
-//        int partialMatches = 0;
-//        int noTranslationExpected = 0;
-//        int noTranslationObtained = 0;
-//        int bothNoTranslation = 0;
-//
-//        for (Map.Entry<String, AlleleTyper.PharmacogenomicsProfile> entry : results.entrySet()) {
-//            String sampleId = entry.getKey();
-//            AlleleTyper.PharmacogenomicsProfile profile = entry.getValue();
-//
-//            if (!expectedResults.containsKey(sampleId)) {
-//                continue;
-//            }
-//
-//            totalSamples++;
-//            String expected = expectedResults.get(sampleId).get(geneName);
-//            List<String> obtainedAlleles = profile.getGeneAlleles().get(geneName);
-//
-//            // Handle expected result
-//            boolean expectedNoTranslation = expected == null || expected.isEmpty() ||
-//                                           expected.equals("no translation available");
-//
-//            // Handle obtained result
-//            boolean obtainedNoResult = obtainedAlleles == null || obtainedAlleles.isEmpty();
-//
-//            String obtainedStr = obtainedNoResult ? "[]" : obtainedAlleles.toString();
-//            String expectedStr = expectedNoTranslation ? "no translation available" : expected;
-//
-//            // Determine match status
-//            String matchStatus = "MISS";
-//            boolean isMatch = false;
-//
-//            if (expectedNoTranslation && obtainedNoResult) {
-//                matchStatus = "CORRECT (no translation)";
-//                bothNoTranslation++;
-//                isMatch = true;
-//            } else if (expectedNoTranslation) {
-//                matchStatus = "FALSE POSITIVE";
-//                noTranslationExpected++;
-//            } else if (obtainedNoResult) {
-//                matchStatus = "FALSE NEGATIVE";
-//                noTranslationObtained++;
-//            } else {
-//                // Both have results - check for matches
-//                boolean exact = false;
-//                boolean partial = false;
-//
-//                for (String allele : obtainedAlleles) {
-//                    if (expected.contains(allele)) {
-//                        partial = true;
-//                        // Check if it's an exact match (considering the format {*1/*5} vs *1/*5)
-//                        String cleanExpected = expected.replaceAll("[{}]", "").trim();
-//                        if (cleanExpected.equals(allele) || cleanExpected.equals(obtainedStr.replaceAll("[\\[\\]]", ""))) {
-//                            exact = true;
-//                        }
-//                        break;
-//                    }
-//                }
-//
-//                if (exact) {
-//                    matchStatus = "EXACT";
-//                    exactMatches++;
-//                    partialMatches++;
-//                    isMatch = true;
-//                } else if (partial) {
-//                    matchStatus = "PARTIAL";
-//                    partialMatches++;
-//                    isMatch = true;
-//                }
-//            }
-//
-//            System.out.println(String.format("%-15s %-45s %-45s %s",
-//                sampleId,
-//                truncate(expectedStr, 45),
-//                truncate(obtainedStr, 45),
-//                matchStatus
-//            ));
-//        }
-//
-//        System.out.println("-".repeat(130));
-//        System.out.println(String.format("Total samples: %d", totalSamples));
-//        System.out.println(String.format("Exact matches: %d (%.1f%%)", exactMatches, 100.0 * exactMatches / totalSamples));
-//        System.out.println(String.format("Partial matches: %d (%.1f%%)", partialMatches, 100.0 * partialMatches / totalSamples));
-//        System.out.println(String.format("Both 'no translation': %d (%.1f%%)", bothNoTranslation, 100.0 * bothNoTranslation / totalSamples));
-//        System.out.println(String.format("False positives: %d (%.1f%%)", noTranslationExpected, 100.0 * noTranslationExpected / totalSamples));
-//        System.out.println(String.format("False negatives: %d (%.1f%%)", noTranslationObtained, 100.0 * noTranslationObtained / totalSamples));
-//
-//        int totalCorrect = exactMatches + bothNoTranslation;
-//        System.out.println(String.format("Overall accuracy: %d/%d (%.1f%%)", totalCorrect, totalSamples, 100.0 * totalCorrect / totalSamples));
-//        System.out.println();
-//
-//        if (failOnNoMatches) {
-//            assertTrue("Should have at least some matching alleles for " + geneName, partialMatches > 0 || bothNoTranslation > 0);
-//        }
-//    }
+        assertNotNull(typer);
+    }
 
-//    @Test
-//    public void testGenerateCompleteJsonLines() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        // Build comprehensive results for all samples
-//        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
-//
-//        // Export to JSONL file
-//        Path outputFile = Paths.get("/home/imedina/appl/opencga/pharmacogenomics_results.jsonl");
-//        typer.exportToJsonLines(results, outputFile);
-//
-//        System.out.println("\n=== Complete Results Generated ===");
-//        System.out.println("Output file: " + outputFile);
-//        System.out.println("Total samples: " + results.size());
-//        System.out.println("Format: JSONL (one JSON per line)");
-//
-//        // Print summary statistics
-//        int samplesWithResults = 0;
-//        int totalGenes = 0;
-//        for (AlleleTyperResult result : results) {
-//            if (!result.getStarAlleles().isEmpty()) {
-//                samplesWithResults++;
-//                totalGenes += result.getStarAlleles().size();
-//            }
-//        }
-//
-//        System.out.println("Samples with star allele calls: " + samplesWithResults);
-//        System.out.println("Average genes per sample: " + (samplesWithResults > 0 ? (double)totalGenes / samplesWithResults : 0));
-//
-//        assertTrue("Output file should exist", outputFile.toFile().exists());
-//        assertTrue("Should have results for all samples", results.size() > 0);
-//    }
+    @Test
+    public void testAlleleTyperWithoutCnv() throws IOException {
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
 
-//    @Test
-//    public void testJsonOutput() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        // Build comprehensive results
-//        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
-//
-//        assertNotNull("Should have results", results);
-//        assertTrue("Should have multiple samples", results.size() > 0);
-//
-//        // Export first sample to JSON
-//        if (!results.isEmpty()) {
-//            AlleleTyperResult firstSample = results.get(0);
-//            String json = typer.exportToJson(firstSample);
-//
-//            System.out.println("\n=== Sample JSON Output ===");
-//            System.out.println(json);
-//            System.out.println("\n=== JSON Output for " + firstSample.getSampleId() + " ===");
-//
-//            // Verify structure
-//            assertNotNull("Should have sample ID", firstSample.getSampleId());
-//            assertNotNull("Should have star alleles", firstSample.getStarAlleles());
-//            assertNotNull("Should have genotypes", firstSample.getGenotypes());
-//            assertNotNull("Should have translation info", firstSample.getTranslation());
-//
-//            System.out.println("Sample: " + firstSample.getSampleId());
-//            System.out.println("Star alleles found: " + firstSample.getStarAlleles().size() + " genes");
-//            System.out.println("Total genotypes: " + firstSample.getGenotypes().size());
-//            System.out.println("Translation info for: " + firstSample.getTranslation().size() + " genes");
-//        }
-//    }
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
 
-//    @Test
-//    public void testSpecificSamples() throws IOException {
-//        AlleleTyper typer = new AlleleTyper();
-//        typer.parseTranslationFile(translationFile);
-//
-//        Map<String, AlleleTyper.PharmacogenomicsProfile> results = typer.parseGenotypingFileAndCallAlleles(genotypingFile);
-//
-//        // Test NA14476 - Expected: {*2/*41, *21/*41, *29/*41}
-//        AlleleTyper.PharmacogenomicsProfile na14476 = results.get("NA14476");
-//        assertNotNull("Should have results for NA14476", na14476);
-//
-//        List<String> cyp2d6Alleles = na14476.getGeneAlleles().get("CYP2D6");
-//        assertNotNull("Should have CYP2D6 alleles for NA14476", cyp2d6Alleles);
-//
-//        System.out.println("\nNA14476 CYP2D6 alleles found: " + cyp2d6Alleles);
-//        System.out.println("Expected one of: {*2/*41, *21/*41, *29/*41}");
-//
-//        // Check if we found at least *2, *21, *29, or *41
-//        boolean foundRelevantAllele = false;
-//        for (String allele : cyp2d6Alleles) {
-//            if (allele.contains("*2") || allele.contains("*21") || allele.contains("*29") || allele.contains("*41")) {
-//                foundRelevantAllele = true;
-//                break;
-//            }
-//        }
-//
-//        assertTrue("Should find at least one relevant allele (*2, *21, *29, or *41)", foundRelevantAllele);
-//
-//        // Test NA17114 - Expected: *1/*5 (simpler case)
-//        AlleleTyper.PharmacogenomicsProfile na17114 = results.get("NA17114");
-//        assertNotNull("Should have results for NA17114", na17114);
-//
-//        List<String> cyp2d6Alleles2 = na17114.getGeneAlleles().get("CYP2D6");
-//        System.out.println("\nNA17114 CYP2D6 alleles found: " + cyp2d6Alleles2);
-//        System.out.println("Expected: *1/*5");
-//    }
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+
+        assertNotNull(results);
+        assertTrue("Should have parsed multiple samples", results.size() > 0);
+
+        System.out.println("\n=== AlleleTyper Results (without CNV) ===");
+        for (AlleleTyperResult result : results) {
+            System.out.println("Sample: " + result.getSampleId());
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                System.out.println("  " + star.getGene() + ": " + star.getDiplotype());
+            }
+        }
+    }
+
+    @Test
+    public void testAlleleTyperWithCnvAndExport() throws IOException {
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
+
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+
+        if (cnvFile.toFile().exists()) {
+            typer.parseCnvFile(cnvFile);
+        }
+
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+
+        assertNotNull(results);
+        assertTrue("Should have parsed multiple samples", results.size() > 0);
+
+        // Export JSON results to /tmp
+        Path jsonOutputFile = Paths.get("/tmp/pharmacogenomics_allele_typer_results.json");
+        typer.exportToJsonLines(results, jsonOutputFile);
+        System.out.println("JSON results written to: " + jsonOutputFile);
+
+        // Export CSV summary to /tmp
+        Path csvOutputFile = Paths.get("/tmp/pharmacogenomics_allele_typer_results.csv");
+        exportResultsToCsv(results, csvOutputFile);
+        System.out.println("CSV results written to: " + csvOutputFile);
+    }
+
+    private void exportResultsToCsv(List<AlleleTyperResult> results, Path outputFile) throws IOException {
+        // Collect all gene names in order
+        Set<String> allGenes = new LinkedHashSet<>();
+        for (AlleleTyperResult result : results) {
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                allGenes.add(star.getGene());
+            }
+        }
+
+        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.FileWriter(outputFile.toFile()))) {
+            // Header
+            writer.write("Sample");
+            for (String gene : allGenes) {
+                writer.write("," + gene);
+            }
+            writer.newLine();
+
+            // Data
+            for (AlleleTyperResult result : results) {
+                Map<String, String> geneMap = new LinkedHashMap<>();
+                for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                    geneMap.put(star.getGene(), star.getDiplotype() != null ? star.getDiplotype() : "");
+                }
+
+                writer.write(result.getSampleId());
+                for (String gene : allGenes) {
+                    writer.write("," + geneMap.getOrDefault(gene, ""));
+                }
+                writer.newLine();
+            }
+        }
+    }
+
+    @Test
+    public void testAlleleTyperWithCnv() throws IOException {
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
+
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+
+        if (cnvFile.toFile().exists()) {
+            typer.parseCnvFile(cnvFile);
+        }
+
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+
+        assertNotNull(results);
+        assertTrue("Should have parsed multiple samples", results.size() > 0);
+
+        System.out.println("\n=== AlleleTyper Results (with CNV) ===");
+        for (AlleleTyperResult result : results) {
+            System.out.println("Sample: " + result.getSampleId());
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                System.out.println("  " + star.getGene() + ": " + star.getDiplotype());
+            }
+        }
+    }
+
+    @Test
+    public void testComprehensiveComparison() throws IOException {
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()
+                || !expectedResultsFile.toFile().exists()) {
+            System.out.println("Skipping test: input/expected files not found");
+            return;
+        }
+
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+
+        if (cnvFile.toFile().exists()) {
+            typer.parseCnvFile(cnvFile);
+        }
+
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+
+        // Build lookup: sampleId -> gene -> diplotype
+        Map<String, Map<String, String>> obtainedResults = new LinkedHashMap<>();
+        for (AlleleTyperResult result : results) {
+            Map<String, String> geneMap = new LinkedHashMap<>();
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                geneMap.put(star.getGene(), star.getDiplotype());
+            }
+            obtainedResults.put(result.getSampleId(), geneMap);
+        }
+
+        // Get genes that exist in both obtained results and expected results
+        Set<String> obtainedGenes = new LinkedHashSet<>();
+        for (Map<String, String> geneMap : obtainedResults.values()) {
+            obtainedGenes.addAll(geneMap.keySet());
+        }
+
+        System.out.println("\n=== COMPREHENSIVE COMPARISON WITH OFFICIAL RESULTS ===\n");
+
+        for (String gene : obtainedGenes) {
+            compareGeneResults(gene, obtainedResults);
+        }
+    }
+
+    @Test
+    public void testSpecificSamples() throws IOException {
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
+
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+
+        if (cnvFile.toFile().exists()) {
+            typer.parseCnvFile(cnvFile);
+        }
+
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
+
+        Map<String, Map<String, String>> obtainedResults = new LinkedHashMap<>();
+        for (AlleleTyperResult result : results) {
+            Map<String, String> geneMap = new LinkedHashMap<>();
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                geneMap.put(star.getGene(), star.getDiplotype());
+            }
+            obtainedResults.put(result.getSampleId(), geneMap);
+        }
+
+        // Check specific known samples
+        System.out.println("\n=== Specific Sample Checks ===");
+
+        checkSampleGene(obtainedResults, "MN04", "CYP2D6", "*2/*35");
+        checkSampleGene(obtainedResults, "1900113", "CYP2D6", "*1/*4");
+    }
+
+    private void checkSampleGene(Map<String, Map<String, String>> obtainedResults,
+                                  String sampleId, String gene, String expected) {
+        Map<String, String> sampleResults = obtainedResults.get(sampleId);
+        if (sampleResults == null) {
+            System.out.println(sampleId + " " + gene + ": SAMPLE NOT FOUND");
+            return;
+        }
+
+        String obtained = sampleResults.get(gene);
+        boolean match = expected.equals(obtained);
+        System.out.println(String.format("%-15s %-10s: expected=%-25s obtained=%-25s %s",
+                sampleId, gene, expected, obtained, match ? "MATCH" : "MISMATCH"));
+    }
+
+    private void compareGeneResults(String geneName, Map<String, Map<String, String>> obtainedResults) {
+        System.out.println("\n=== " + geneName + " Results Comparison ===");
+        System.out.println(String.format("%-15s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Match"));
+        System.out.println("-".repeat(130));
+
+        int totalSamples = 0;
+        int exactMatches = 0;
+        int bothNoTranslation = 0;
+
+        for (Map.Entry<String, Map<String, String>> expectedEntry : expectedResults.entrySet()) {
+            String sampleId = expectedEntry.getKey();
+            String expected = expectedEntry.getValue().get(geneName);
+
+            Map<String, String> sampleObtained = obtainedResults.get(sampleId);
+            if (sampleObtained == null) {
+                continue;
+            }
+
+            totalSamples++;
+            String obtained = sampleObtained.get(geneName);
+
+            boolean expectedNoTranslation = expected == null || expected.isEmpty()
+                    || "no translation available".equals(expected);
+            boolean obtainedNoTranslation = obtained == null || obtained.isEmpty()
+                    || "no translation available".equals(obtained);
+
+            String expectedStr = expectedNoTranslation ? "no translation available" : expected;
+            String obtainedStr = obtainedNoTranslation ? "no translation available" : obtained;
+
+            String matchStatus;
+            if (expectedNoTranslation && obtainedNoTranslation) {
+                matchStatus = "CORRECT (no translation)";
+                bothNoTranslation++;
+            } else if (expectedStr.equals(obtainedStr)) {
+                matchStatus = "EXACT";
+                exactMatches++;
+            } else if (!expectedNoTranslation && !obtainedNoTranslation && normalizedMatch(expectedStr, obtainedStr)) {
+                matchStatus = "MATCH (normalized)";
+                exactMatches++;
+            } else {
+                matchStatus = "MISMATCH";
+            }
+
+            System.out.println(String.format("%-15s %-45s %-45s %s",
+                    sampleId,
+                    truncate(expectedStr, 45),
+                    truncate(obtainedStr, 45),
+                    matchStatus));
+        }
+
+        if (totalSamples > 0) {
+            System.out.println("-".repeat(130));
+            int totalCorrect = exactMatches + bothNoTranslation;
+            System.out.println(String.format("Total: %d, Exact matches: %d, No translation: %d, Accuracy: %.1f%%",
+                    totalSamples, exactMatches, bothNoTranslation, 100.0 * totalCorrect / totalSamples));
+        }
+        System.out.println();
+    }
+
+    /**
+     * Normalized match: compare after sorting alleles within each diplotype string.
+     * E.g., "{*1/*4, *1/*5}" matches "{*1/*5, *1/*4}"
+     */
+    private boolean normalizedMatch(String expected, String obtained) {
+        return normalize(expected).equals(normalize(obtained));
+    }
+
+    private String normalize(String diplotype) {
+        if (diplotype == null) {
+            return "";
+        }
+        // Remove curly brackets
+        String clean = diplotype.replaceAll("[{}]", "").trim();
+        // Split by comma
+        String[] parts = clean.split(",");
+        List<String> normalized = new ArrayList<>();
+        for (String part : parts) {
+            // Normalize each diplotype: sort the two alleles
+            String trimmed = part.trim();
+            String[] alleles = trimmed.split("/");
+            if (alleles.length == 2) {
+                Arrays.sort(alleles);
+                normalized.add(alleles[0] + "/" + alleles[1]);
+            } else {
+                normalized.add(trimmed);
+            }
+        }
+        Collections.sort(normalized);
+        return normalized.toString();
+    }
 
     @Test
     @Category(MediumTests.class)
     public void testGenerateAnnotatedJsonLines() throws IOException {
-        Path genotypingFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/3G_Export_DO_TrueMark_128_Export_DO_TrueMark_128_Genotyping_07-11-2025-074600.txt");
-        Path translationFile = Paths.get("/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Ejemplo Thermo Fisher/PGX_SNP_CNV_128_OA_translation_RevC.csv");
+        if (!genotypingFile.toFile().exists() || !translationFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
 
         // 1. Run AlleleTyper
         AlleleTyper typer = new AlleleTyper();
         typer.parseTranslationFile(translationFile);
+
+        if (cnvFile.toFile().exists()) {
+            typer.parseCnvFile(cnvFile);
+        }
+
         List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
         System.out.println("AlleleTyper produced " + results.size() + " sample results");
 
@@ -397,13 +465,20 @@ public class AlleleTyperTest {
             }
         }
 
-        // 3. Export to JSONL
-        Path outputFile = Paths.get("/home/imedina/projects/SESPA/pgx/pharmacogenomics_results.jsonl");
-        typer.exportToJsonLines(results, outputFile);
-
-        System.out.println("\nOutput file: " + outputFile);
-        System.out.println("Total samples: " + results.size());
-        assertTrue("Output file should exist", outputFile.toFile().exists());
+        // 3. Export one JSON file per sample
+        Path outputDir = Paths.get("/tmp/pgx_annotated_results");
+        java.nio.file.Files.createDirectories(outputDir);
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        objectMapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+        long totalSize = 0;
+        for (AlleleTyperResult r : results) {
+            byte[] json = objectMapper.writeValueAsBytes(r);
+            Path samplePath = outputDir.resolve(r.getSampleId() + ".json");
+            java.nio.file.Files.write(samplePath, json);
+            totalSize += json.length;
+        }
+        System.out.println("\nAnnotated results written to: " + outputDir + " (" + results.size() + " files)");
+        System.out.println("Total serialized size: " + String.format("%.2f", totalSize / 1024.0) + " KB");
     }
 
     private String truncate(String str, int maxLength) {

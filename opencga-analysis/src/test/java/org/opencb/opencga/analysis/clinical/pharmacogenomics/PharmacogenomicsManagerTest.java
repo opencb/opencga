@@ -141,7 +141,7 @@ public class PharmacogenomicsManagerTest {
                 String gene = geneHeaders.get(col).trim();
                 List<AlleleTyperResult.AlleleCall> alleleCalls = parseAlleleCalls(fields.get(col).trim());
                 if (!alleleCalls.isEmpty()) {
-                    starAlleleResults.add(new AlleleTyperResult.StarAlleleResult(gene, alleleCalls, null));
+                    starAlleleResults.add(new AlleleTyperResult.StarAlleleResult(gene, null, alleleCalls, null));
                 }
             }
             results.add(new AlleleTyperResult(sampleId, starAlleleResults, null, null));

@@ -107,7 +107,7 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_pgx_allele_typer_analysis"));
 
         PharmacogenomicsAlleleTyperToolParams params = new PharmacogenomicsAlleleTyperToolParams(
-                genotypingContent, translationContent, true, null);
+                genotypingContent, translationContent, null, true, null);
 
         ExecutionResult executionResult = toolRunner.execute(
                 PharmacogenomicsAlleleTyperAnalysisTool.class,
