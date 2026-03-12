@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.clinical.pharmacogenomics;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -22,6 +23,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -95,6 +97,15 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
         assertFalse("AlleleTyperResult list should not be empty", results.isEmpty());
         alleleTyperContent = new ObjectMapper().writeValueAsString(results);
 
+        // Create one catalog sample per allele-typer result so that storeResultsInCatalog can persist attributes
+        for (AlleleTyperResult r : results) {
+            if ("NTC".equalsIgnoreCase(r.getSampleId())) {
+                continue;
+            }
+            catalogManager.getSampleManager().create(studyFqn,
+                    new Sample().setId(r.getSampleId()), QueryOptions.empty(), token);
+        }
+
         // Write the alleleTyperContent JSON to a temporary file and link it to catalog
         // to be used later in the testAnnotationAnalysisUsingFile
         Path jsonFilePath = Paths.get(opencga.createTmpOutdir("_pgx_allele_typer_input")).resolve("allele_typer_results.json");
@@ -131,7 +142,7 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
 
         // Deserialise each per-sample file and verify annotations are present
         ObjectMapper objectMapper = new ObjectMapper();
-        int annotatedCallCount = 0;
+        int annotatedDiplotypeCount = 0;
         for (Path sampleFile : resultFiles) {
             assertTrue("Sample result file should not be empty: " + sampleFile, Files.size(sampleFile) > 0);
             AlleleTyperResult sampleResult = objectMapper.readValue(sampleFile.toFile(), AlleleTyperResult.class);
@@ -140,18 +151,19 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
                 continue;
             }
             for (AlleleTyperResult.StarAlleleResult starAlleleResult : sampleResult.getAlleleTyperResults()) {
-                if (starAlleleResult.getAlleleCalls() == null) {
+                if (starAlleleResult.getDiplotypeAnnotation() == null) {
                     continue;
                 }
-                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
-                    if (alleleCall.getAnnotation() != null) {
-                        annotatedCallCount++;
-                    }
+                if (starAlleleResult.getDiplotypeAnnotation().getDiplotypeInfo() != null) {
+                    annotatedDiplotypeCount++;
                 }
             }
         }
-        assertTrue("At least some allele calls should have been annotated", annotatedCallCount > 0);
-        System.out.println("Total annotated allele calls: " + annotatedCallCount);
+        assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
+        System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
+
+        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        assertSamplesHavePharmacogenomicsAttribute(objectMapper);
     }
 
     @Test
@@ -182,7 +194,7 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
 
         // Deserialise each per-sample file and verify annotations are present
         ObjectMapper objectMapper = new ObjectMapper();
-        int annotatedCallCount = 0;
+        int annotatedDiplotypeCount = 0;
         for (Path sampleFile : resultFiles) {
             assertTrue("Sample result file should not be empty: " + sampleFile, Files.size(sampleFile) > 0);
             AlleleTyperResult sampleResult = objectMapper.readValue(sampleFile.toFile(), AlleleTyperResult.class);
@@ -191,17 +203,45 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
                 continue;
             }
             for (AlleleTyperResult.StarAlleleResult starAlleleResult : sampleResult.getAlleleTyperResults()) {
-                if (starAlleleResult.getAlleleCalls() == null) {
+                if (starAlleleResult.getDiplotypeAnnotation() == null) {
                     continue;
                 }
-                for (AlleleTyperResult.AlleleCall alleleCall : starAlleleResult.getAlleleCalls()) {
-                    if (alleleCall.getAnnotation() != null) {
-                        annotatedCallCount++;
-                    }
+                if (starAlleleResult.getDiplotypeAnnotation().getDiplotypeInfo() != null) {
+                    annotatedDiplotypeCount++;
                 }
             }
         }
-        assertTrue("At least some allele calls should have been annotated", annotatedCallCount > 0);
-        System.out.println("Total annotated allele calls: " + annotatedCallCount);
+        assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
+        System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
+
+        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        assertSamplesHavePharmacogenomicsAttribute(objectMapper);
+    }
+
+    /**
+     * Verifies that every non-NTC sample in alleleTyperContent has the OPENCGA_PHARMACOGENOMICS_DATA
+     * attribute set in the catalog after the annotation tool has run.
+     */
+    private void assertSamplesHavePharmacogenomicsAttribute(ObjectMapper objectMapper) throws Exception {
+        List<AlleleTyperResult> parsedResults = objectMapper.readValue(alleleTyperContent,
+                new TypeReference<List<AlleleTyperResult>>() { });
+        int samplesChecked = 0;
+        int samplesWithAttribute = 0;
+        for (AlleleTyperResult r : parsedResults) {
+            if ("NTC".equalsIgnoreCase(r.getSampleId())) {
+                continue;
+            }
+            samplesChecked++;
+            Sample sample = catalogManager.getSampleManager()
+                    .get(studyFqn, r.getSampleId(), QueryOptions.empty(), token).first();
+            if (sample.getAttributes() != null
+                    && sample.getAttributes().containsKey("OPENCGA_PHARMACOGENOMICS_DATA")) {
+                samplesWithAttribute++;
+            }
+        }
+        assertTrue("At least one non-NTC sample should have OPENCGA_PHARMACOGENOMICS_DATA attribute set"
+                + " (checked " + samplesChecked + " samples)", samplesWithAttribute > 0);
+        System.out.println("Samples with OPENCGA_PHARMACOGENOMICS_DATA attribute: "
+                + samplesWithAttribute + "/" + samplesChecked);
     }
 }

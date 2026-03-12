@@ -222,7 +222,7 @@ public class PharmacogenomicsManager {
      * @throws CatalogException if catalog operations fail
      * @throws IOException if JSON serialization fails
      */
-    private void storeResultsInCatalog(String studyId, List<AlleleTyperResult> results, String token)
+    public void storeResultsInCatalog(String studyId, List<AlleleTyperResult> results, String token)
             throws CatalogException, IOException {
         logger.info("Storing pharmacogenomics results in catalog for {} samples", results.size());
 
@@ -247,7 +247,7 @@ public class PharmacogenomicsManager {
 
                 // Convert result to Map for storage
                 Map<String, Object> attributes = new HashMap<>();
-                attributes.put("OPENCGA_PHARMACOGENOMICS", objectMapper.convertValue(result, Map.class));
+                attributes.put("OPENCGA_PHARMACOGENOMICS_DATA", objectMapper.convertValue(result, Map.class));
 
                 // Update sample with pharmacogenomics results
                 SampleUpdateParams updateParams = new SampleUpdateParams();

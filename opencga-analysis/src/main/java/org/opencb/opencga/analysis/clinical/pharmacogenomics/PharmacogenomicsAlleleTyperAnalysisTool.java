@@ -77,5 +77,8 @@ public class PharmacogenomicsAlleleTyperAnalysisTool extends OperationTool {
         Path resultsPath = getOutDir().resolve(RESULTS_DIR);
         Files.createDirectories(resultsPath);
         pharmacogenomicsManager.storeResultsInPath(results, resultsPath);
+
+        // In addition, the it is store in the sample object in catalog
+        pharmacogenomicsManager.storeResultsInCatalog(study, results, token);
     }
 }

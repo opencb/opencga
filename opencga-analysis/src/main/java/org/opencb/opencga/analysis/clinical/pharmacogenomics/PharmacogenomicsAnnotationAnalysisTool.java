@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAnnotationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
@@ -74,7 +75,7 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
         step(this::annotateResults);
     }
 
-    private void annotateResults() throws IOException {
+    private void annotateResults() throws IOException, CatalogException {
         boolean annotate = !Boolean.FALSE.equals(analysisParams.getAnnotate());
         if (annotate) {
             // Annotate with CellBase (star-allele level) + CPIC (diplotype level)
@@ -85,6 +86,9 @@ public class PharmacogenomicsAnnotationAnalysisTool extends OperationTool {
         Path resultsPath = getOutDir().resolve(PharmacogenomicsAlleleTyperAnalysisTool.RESULTS_DIR);
         Files.createDirectories(resultsPath);
         pharmacogenomicsManager.storeResultsInPath(alleleTyperResults, resultsPath);
+        // In addition, the it is store in the sample object in catalog
+
+        pharmacogenomicsManager.storeResultsInCatalog(study, alleleTyperResults, token);
     }
 
 }
