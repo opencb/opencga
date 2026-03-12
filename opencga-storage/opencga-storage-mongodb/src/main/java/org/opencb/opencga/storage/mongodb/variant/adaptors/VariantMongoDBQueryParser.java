@@ -826,7 +826,7 @@ public class VariantMongoDBQueryParser {
                         String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
                         KeyValues<String, KeyOpValue<String, String>> fileDataValue =
                                 parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
-                        if (fileDataValue.getValues() != null) {
+                        if (fileDataValue != null && fileDataValue.getValues() != null) {
                             KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
                             Values<Bson> extraFilterFilters = null;
                             if (filterKeyOp != null) {
