@@ -739,7 +739,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     query.remove(REFERENCE.key());
                     query.remove(ALTERNATE.key());
                     query.remove(INCLUDE_STUDY.key());
-                    query.remove(INCLUDE_SAMPLE.key());
                     queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
                     Iterator<Variant> iterator = queryResult.getResults().iterator();
                     while (iterator.hasNext()) {

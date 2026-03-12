@@ -177,6 +177,24 @@ public class SampleToDocumentConverter {
             sampleIdx = 0;
             if (studyEntry.getSampleDataKeySet().contains(extraField)) {
                 Integer formatIdx = studyEntry.getSampleDataKeyPosition(extraField);
+
+                // If the header says Integer/Float but data contains non-parseable values,
+                // fall back to String to avoid silent data loss.
+                String effectiveType = extraFieldType;
+                if ("Integer".equals(extraFieldType) || "Float".equals(extraFieldType)) {
+                    for (SampleEntry sample : studyEntry.getSamples()) {
+                        String val = sample.getData().get(formatIdx);
+                        if (val != null && !".".equals(val)) {
+                            try {
+                                Float.parseFloat(val);
+                            } catch (NumberFormatException e) {
+                                effectiveType = "String";
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 for (SampleEntry sample : studyEntry.getSamples()) {
                     String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
                     sampleIdx++;
@@ -184,7 +202,7 @@ public class SampleToDocumentConverter {
                         continue;
                     }
                     String stringValue = sample.getData().get(formatIdx);
-                    switch (extraFieldType) {
+                    switch (effectiveType) {
                         case "Integer": {
                             builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
                             // Add to sfd if filterable and not missing

@@ -591,17 +591,29 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 extraFields = expectedExtraFields;
             }
         } else if (!files.isEmpty()) {
-            Set<String> extraFieldsSet = new HashSet<>();
-            for (Integer fid : filesWithSamplesData) {
-                if (files.containsKey(fid)) {
-                    Document sampleData = (Document) files.get(fid).get(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
-                    if (sampleData != null) {
-                        extraFieldsSet.addAll(sampleData.keySet());
+            // Use the order from study metadata to match the protobuf encoding order used during writes
+            List<String> metadataFields = getStudyMetadata(studyId).getAttributes()
+                    .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
+            if (!metadataFields.isEmpty()) {
+                Set<String> extraFieldsSet = new HashSet<>();
+                for (Integer fid : filesWithSamplesData) {
+                    if (files.containsKey(fid)) {
+                        Document sampleData = (Document) files.get(fid)
+                                .get(DocumentToStudyEntryConverter.SAMPLE_DATA_FIELD);
+                        if (sampleData != null) {
+                            extraFieldsSet.addAll(sampleData.keySet());
+                        }
                     }
                 }
+                extraFields = new ArrayList<>(metadataFields.size());
+                for (String field : metadataFields) {
+                    if (extraFieldsSet.contains(field.toLowerCase())) {
+                        extraFields.add(field);
+                    }
+                }
+            } else {
+                extraFields = Collections.emptyList();
             }
-            extraFields = new ArrayList<>(extraFieldsSet.size());
-            extraFieldsSet.stream().map(String::toUpperCase).sorted().forEach(extraFields::add);
 //            Iterator<String> it = extraFields.iterator();
 //            while (it.hasNext()) {
 //                String extraField = it.next();
