@@ -72,6 +72,8 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
 
     /** Buffer: SampleIndexEntryChunk → one SampleIndexEntryBuilder per sampleId. */
     private final Map<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>> buffer = new LinkedHashMap<>();
+    /** Chunks evicted (flushed to DB) during this run; used to distinguish own-data reloads from real duplicates. */
+    private final Set<SampleIndexEntryChunk> evictedChunks = new HashSet<>();
 
     public MongoDBSampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                             int studyId, List<Integer> sampleIds,
@@ -232,7 +234,12 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                         // When rebuilding the index for a non-MULTI split (REGION/CHROMOSOME), reject duplicate
                         // variants: if the builder already contains this variant (from a previously loaded file),
                         // the new file must not overlap — throw to match the behaviour of SampleGenotypeIndexerTask.
+                        // Exception: if this chunk was evicted and re-loaded during this run, the "duplicate" is
+                        // our own data read back from the DB — skip it instead of throwing.
                         if (rebuildIndex && !multiFileIndex[sampleIdx] && builder.containsVariant(entry)) {
+                            if (evictedChunks.contains(indexChunk)) {
+                                continue;
+                            }
                             throw new IllegalArgumentException("Already loaded variant " + variant);
                         }
                         builder.add(gt, entry);
@@ -255,7 +262,9 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
         List<SampleIndexEntry> entries = new ArrayList<>();
         Iterator<Map.Entry<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>>> it = buffer.entrySet().iterator();
         while (buffer.size() > remain && it.hasNext()) {
-            List<SampleIndexEntryBuilder> builders = it.next().getValue();
+            Map.Entry<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>> bufferEntry = it.next();
+            evictedChunks.add(bufferEntry.getKey());
+            List<SampleIndexEntryBuilder> builders = bufferEntry.getValue();
             for (SampleIndexEntryBuilder builder : builders) {
                 if (!builder.isEmpty()) {
                     entries.add(builder.buildEntry());

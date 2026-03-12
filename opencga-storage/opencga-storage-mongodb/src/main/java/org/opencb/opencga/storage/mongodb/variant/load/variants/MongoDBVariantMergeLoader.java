@@ -186,10 +186,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             cleanStage(mongoDBOps);
         }
 
-        long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
-                + mongoDBOps.getExistingStudy().getQueries().size()
-                + mongoDBOps.getMissingVariantsNoFillGaps();
-        logProgress(processedVariants);
+        logProgress(mongoDBOps);
         return writeResult;
     }
 
@@ -331,10 +328,16 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         throw new RuntimeException(sb.toString());
     }
 
-
-    protected void logProgress(long processedVariants) {
+    protected void logProgress(MongoDBOperations mongoDBOps) {
         if (progressLogger != null) {
-            progressLogger.increment(processedVariants);
+            long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
+                    + mongoDBOps.getExistingStudy().getQueries().size()
+                    + mongoDBOps.getMissingVariantsNoFillGaps();
+            progressLogger.increment(processedVariants, () -> "up to variant " + (
+                    mongoDBOps.getNewStudy().getIds().isEmpty()
+                            ? mongoDBOps.getExistingStudy().getIds().get(0)
+                            : mongoDBOps.getNewStudy().getIds().get(0)
+                    ));
         }
     }
 
