@@ -47,6 +47,8 @@ public class MongoDBSampleIndexFromMergeTask implements DataWriter<MongoDBOperat
                                            ObjectMap options, SampleIndexSchema schema) throws StorageEngineException {
         this.studyId = studyId;
         this.schema = schema;
+        // rebuildIndex=true: auto-detect per sample based on SampleMetadata index status.
+        // Samples with no prior index data will skip DB queries.
         this.indexerTask = new MongoDBSampleGenotypeIndexerTask(sampleIndexDBAdaptor, studyId, sampleIds, options, schema, true);
         this.entryWriter = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, -1, schema, options);
     }

@@ -10,6 +10,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
@@ -54,7 +55,8 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     private final SampleIndexVariantConverter converter;
     private final VariantStorageMetadataManager metadataManager;
     private final SampleIndexDBAdaptor dbAdaptor;
-    private final boolean rebuildIndex;
+    /** Per-sample flag: whether to load existing data from DB when creating builders. */
+    private final boolean[] rebuildPerSample;
     /** Custom sample-data index fields (source=SAMPLE). */
     private final List<IndexField<String>> sampleCustomFields;
     /** sampleCustomField key → position index, passed to {@link SampleIndexVariantConverter#addSampleDataIndexValues}. */
@@ -74,6 +76,8 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     private final Map<SampleIndexEntryChunk, List<SampleIndexEntryBuilder>> buffer = new LinkedHashMap<>();
     /** Chunks evicted (flushed to DB) during this run; used to distinguish own-data reloads from real duplicates. */
     private final Set<SampleIndexEntryChunk> evictedChunks = new HashSet<>();
+    /** Chunks where existing data was loaded from DB (any builder non-empty). Mirrors core's per-chunk isMerging. */
+    private final Set<SampleIndexEntryChunk> mergingChunks = new HashSet<>();
 
     public MongoDBSampleGenotypeIndexerTask(SampleIndexDBAdaptor dbAdaptor,
                                             int studyId, List<Integer> sampleIds,
@@ -89,7 +93,6 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
         this.studyId = studyId;
         this.sampleIds = sampleIds;
         this.schema = schema;
-        this.rebuildIndex = rebuildIndex;
         this.dbAdaptor = dbAdaptor;
         this.converter = new SampleIndexVariantConverter(schema);
         this.metadataManager = dbAdaptor.getMetadataManager();
@@ -112,10 +115,14 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
 
         fileIdxMap = new Map[sampleIds.size()];
         multiFileIndex = new boolean[sampleIds.size()];
+        rebuildPerSample = new boolean[sampleIds.size()];
         for (int i = 0; i < sampleIds.size(); i++) {
             Integer sampleId = sampleIds.get(i);
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             List<Integer> files = sampleMetadata.getFiles();
+            // Only query DB for existing data if the caller requested rebuild AND this sample has prior index data.
+            rebuildPerSample[i] = rebuildIndex
+                    && sampleMetadata.getSampleIndexStatus(schema.getVersion()) == TaskMetadata.Status.READY;
             Map<Integer, Integer> map = new HashMap<>(files.size());
             // For MULTI split, encode actual file position so multi-file variants can resolve their source file.
             // For REGION/CHROMOSOME split (or single-file), file position is always 0: each variant comes from
@@ -236,7 +243,7 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                         // the new file must not overlap — throw to match the behaviour of SampleGenotypeIndexerTask.
                         // Exception: if this chunk was evicted and re-loaded during this run, the "duplicate" is
                         // our own data read back from the DB — skip it instead of throwing.
-                        if (rebuildIndex && !multiFileIndex[sampleIdx] && builder.containsVariant(entry)) {
+                        if (mergingChunks.contains(indexChunk) && !multiFileIndex[sampleIdx] && builder.containsVariant(entry)) {
                             if (evictedChunks.contains(indexChunk)) {
                                 continue;
                             }
@@ -277,20 +284,27 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
 
     private List<SampleIndexEntryBuilder> createBuilders(SampleIndexEntryChunk chunk) {
         List<SampleIndexEntryBuilder> list = new ArrayList<>(sampleIds.size());
+        boolean merging = false;
         for (int i = 0; i < sampleIds.size(); i++) {
             SampleIndexEntryBuilder builder;
-            if (rebuildIndex) {
+            if (rebuildPerSample[i]) {
                 try {
                     builder = dbAdaptor.queryByGtBuilder(studyId, sampleIds.get(i),
                             chunk.getChromosome(), chunk.getBatchStart(), schema);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
+                if (!builder.getGtSet().isEmpty()) {
+                    merging = true;
+                }
             } else {
                 builder = new SampleIndexEntryBuilder(sampleIds.get(i),
                         chunk.getChromosome(), chunk.getBatchStart(), schema, false, multiFileIndex[i]);
             }
             list.add(builder);
+        }
+        if (merging) {
+            mergingChunks.add(chunk);
         }
         return list;
     }
