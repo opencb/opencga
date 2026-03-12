@@ -1,0 +1,106 @@
+---
+logLevel: "INFO"
+logDir: null
+
+databasePrefix: "opencga_test"
+workspace: "/tmp/opencga/sessions"
+
+jobDir: "/tmp/opencga/JOBS"
+
+admin:
+  secretKey: "asidnadh19rh230qncfascd1.rffzasf.asd.ad.12ddeASDAsd12e1d.adsx"
+
+audit:
+  manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
+  maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
+
+analysis:
+  scratchDir: "/tmp/"    # Scratch folder for the analysis.
+  execution:
+    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
+    id: "local"
+    maxConcurrentJobs:
+      variant-index: 20
+      variant-annotation-index: 5
+      variant-secondary-index: 2
+    options:
+      jobs.reuse.enabled: true
+      jobs.reuse.tools:
+          - "variant-index"
+          - "variant-stats-index"
+          - "variant-annotation-index"
+          - "variant-secondary-annotation-index"
+      ## Local executor configuration
+      local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: 9092
+
+email:
+  host: "localhost"
+  port: ""
+  user: ""
+  password: ""
+  from: ""
+  ssl: false
+
+hooks:
+  user@1000G:phase1:   # Full Qualified Name of the study.
+    file:               # Entity where the hook will be checked
+     - field: "name"     # Field of the entity to be checked
+       value: "~(.*)vcf.gz$"    # Value to be checked
+       stage: "CREATE"   # Stage when the hook will be checked
+       action: "ADD"     # Action to be performed
+       where: "tags"     # Field over which the action will be performed
+       what: "VCF,FILE"        # Value to be updated
+
+panel:
+  host: "http://resources.opencb.org/opencb/opencga/disease-panels"
+
+catalog:
+  database:
+    hosts:
+    - "localhost:27017"
+    user: ""
+    password: ""
+    options:
+      authenticationDatabase: ""
+  searchEngine:   ## Solr configuration, by default is the same than storage
+    hosts:
+    - "http://localhost:8983/solr/"
+    user: ""
+    password: ""
+    options:
+      mode: "core"
+      timeout: 30000
+      insertBatchSize: 2000
+
+authentication:
+  expiration: 1000
+#LDAP configuration example
+#  authenticationOrigins:
+#  - id: ldap            # Any id
+#    type: LDAP          # At the moment, we only support LDAP
+#    host: ldap://localhost:9000
+#    options:
+#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+
+optimizations:
+  simplifyPermissions: false
+
+server:
+  rest:
+    port: 8080
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
+
+  grpc:
+    port: 8081
+    logFile: null

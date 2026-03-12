@@ -1,0 +1,101 @@
+name: Release new opencga-enterprise version
+
+on:
+  push: # Push events to all push tags
+    tags:
+      - '*'
+
+jobs:
+
+  build-emr:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr6.1
+      artifact_name: emr-build-folder
+      release: true
+    secrets: inherit
+
+  deploy-emr-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr
+    secrets: inherit
+    with:
+      artifact_name: emr-build-folder
+
+  build-hdi:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: hdi5.1
+      artifact_name: build-hdi-folder
+      release: true
+    secrets: inherit
+
+  deploy-hdi-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build-hdi
+    secrets: inherit
+    with:
+      artifact_name: build-hdi-folder
+
+  build-emr13:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr6.13
+      artifact_name: emr13-build-folder
+      release: true
+    secrets: inherit
+
+  deploy-emr13-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr13
+    secrets: inherit
+    with:
+      artifact_name: emr13-build-folder
+
+  build-emr75:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr7.5
+      artifact_name: emr75-build-folder
+      release: true
+    secrets: inherit
+
+  deploy-emr75-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr75
+    secrets: inherit
+    with:
+      artifact_name: emr75-build-folder
+
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: build-hdi
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: hdi-build-folder
+    secrets:
+      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
+      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
+
+  release:
+    name: Create GitHub Release
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: [ build-emr75, deploy-emr75-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: emr-build-folder
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          generate_release_notes: true
+          files: |
+            opencga-enterprise-client-${{ needs.build-hdi.outputs.version }}.tar.gz
+            dist/*.*
+      - id: echo_result
+        name: Results
+        run: |
+          echo "### The release of __Xetabase ${{ needs.build-hdi.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+

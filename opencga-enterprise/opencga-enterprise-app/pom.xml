@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.zettagenomics.opencga-enterprise</groupId>
+        <artifactId>opencga-enterprise</artifactId>
+        <version>5.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>opencga-enterprise-app</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <build.dir>${project.basedir}/../build</build.dir>
+        <opencga.build.dir>${project.basedir}/../opencga-home/build</opencga.build.dir>
+        <app.dir>${project.basedir}/app</app.dir>
+        <opencga.client.dir>opencga-enterprise-cli-${project.parent.version}</opencga.client.dir>
+<!--        <dep.jline.version>3.12.1</dep.jline.version>-->
+
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-cvdb</artifactId>
+        </dependency>
+        <!-- OpenCB dependencies -->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-app</artifactId>
+            <version>${opencga.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-analysis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.ga4gh</groupId>
+            <artifactId>ga4gh</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+        </dependency>
+
+        <!-- General dependencies -->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>${opencga-storage-hadoop-lib.artifactId}</artifactId>
+            <version>${opencga.version}</version>
+        </dependency>
+        <!--JLINE Terminal dependencies-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.jline</groupId>-->
+        <!--            <artifactId>jline-reader</artifactId>-->
+        <!--            <version>${dep.jline.version}</version>-->
+        <!--        </dependency>-->
+
+        <!--        <dependency>-->
+<!--            <groupId>org.jline</groupId>-->
+<!--            <artifactId>jline-terminal</artifactId>-->
+<!--            <version>${dep.jline.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.jline</groupId>-->
+<!--            <artifactId>jline-terminal-jna</artifactId>-->
+<!--            <version>${dep.jline.version}</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
+    </dependencies>
+
+    <build>
+        <finalName>opencga-enterprise-app</finalName>
+        <sourceDirectory>src/main/java</sourceDirectory>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>enterprise-cli-usage.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/classes</targetPath>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.10</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repositoryName>libs</repositoryName>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <useWildcardClassPath>false</useWildcardClassPath>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
+                    <programs>
+                        <program>
+                            <id>opencga.sh</id>
+                            <mainClass>com.zettagenomics.opencga.enterprise.app.cli.main.OpencgaEnterpriseMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-admin.sh</id>
+                            <mainClass>com.zettagenomics.opencga.enterprise.app.cli.admin.AdminMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-internal.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.internal.InternalMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-clicompletion.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.utils.CliCompletionMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <id>opencga-storage-hadoop.sh</id>
+                            <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>clean-libs</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>install-app</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <echo>=============================</echo>
+                                <echo>Deleting ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Creating all folders in ${build.dir}</echo>
+                                <exec executable="mkdir">
+                                    <arg value="-p"/>
+                                    <arg value="${build.dir}/clients"/>
+                                    <arg value="${build.dir}/cloud/docker/opencga-enterprise"/>
+                                    <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Copying OpenCGA files and folders to ${build.dir}</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${opencga.build.dir}/analysis"/>
+                                    <arg value="${opencga.build.dir}/cloud"/>
+                                    <arg value="${opencga.build.dir}/conf"/>
+                                    <arg value="${opencga.build.dir}/misc"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${opencga.build.dir}/cloud/docker/docker-build.py"/>
+                                    <arg value="${opencga.build.dir}/cloud/docker/README.md"/>
+                                    <arg value="${build.dir}/cloud/docker"/>
+                                </exec>
+
+                                <echo>Update OpenCGA Enterprise configuration.yml analysis, adding com.zettagenomics.opencga.enterprise package</echo>
+                                <exec executable="sed">
+                                    <arg value='s/- "org.opencb.opencga"/- "org.opencb.opencga"\n    - "com.zettagenomics.opencga.enterprise"/'/>
+                                    <arg value="${build.dir}/conf/configuration.yml"/>
+                                    <arg value="-i"/>
+                                </exec>
+
+                                <echo>Copying OpenCGA Enterprise bin and libs folder to ${build.dir}</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/target/appassembler/libs"/>
+                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying Docker files to ${build.dir}/cloud/docker/opencga-enterprise</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/cloud/docker/opencga-enterprise"/>
+                                    <arg value="${app.dir}/cloud/docker/.dockerignore"/>
+                                    <arg value="${build.dir}/cloud/docker/"/>
+                                </exec>
+
+                                <echo>Copying SSO to ${build.dir}/cloud</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/cloud/sso"/>
+                                    <arg value="${build.dir}/cloud/"/>
+                                </exec>
+
+                                <exec executable="${project.basedir}/app/cvdb/prepare_configsets.sh">
+                                    <arg value="${project.basedir}/.."/>
+                                    <arg value="${project.parent.version}"/>
+                                </exec>
+
+                                <echo>Copying git.properties</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/git-enterprise.properties"/>
+                                    <arg value="${build.dir}/misc/git"/>
+                                </exec>
+
+                                <!--Building javascript library  -->
+                                <echo>Copying configuration files</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/classes/enterprise-configuration.yml"/>
+                                    <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Copying war file</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/../opencga-enterprise-server/target/${opencga.war.name}.war"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${opencga.build.dir}/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}-${opencga.version}-jar-with-dependencies.jar"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-storage-hadoop.sh"/>
+                                    <arg value="${build.dir}/misc/scripts/"/>
+                                </exec>
+                                <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
+                                <exec executable="sed" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
+                                    <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
+                                </exec>
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="-c"/>
+                                    <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
+                                </exec>
+
+                                <chmod perm="u+x">
+                                    <fileset dir="${build.dir}">
+                                        <include name="**/*.sh"/>
+                                        <exclude name="**/opencga-env.sh"/>
+                                    </fileset>
+                                </chmod>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>opencga-client</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+
+                                <echo>Preparing 'opencga-enterprise-client' folder</echo>
+                                <echo>============================================</echo>
+                                <exec executable="mkdir" failonerror="true">
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/completion"/>
+                                </exec>
+
+                                <echo>Copying files to 'opencga-client' folder</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${build.dir}/libs"/>
+<!--                                    <arg value="${build.dir}/LICENSE"/>-->
+<!--                                    <arg value="${build.dir}/README.md"/>-->
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                </exec>
+
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${build.dir}/bin/opencga.sh"/>
+                                    <!--<arg value="${build.dir}/bin/opencga-enterprise.sh"/>-->
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                </exec>
+
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${build.dir}/conf/configuration.yml"/>
+                                    <arg value="${build.dir}/conf/client-configuration.yml"/>
+                                    <arg value="${build.dir}/conf/enterprise-configuration.yml"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${build.dir}/misc/completion/opencga"/>
+                                    <arg value="${build.dir}/misc/completion/README.md"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/completion"/>
+                                </exec>
+
+                                <echo>Creating 'opencga-enterprise-client' tar.gz file</echo>
+                                <echo>=====================================</echo>
+                                <exec executable="tar" failonerror="true">
+                                    <arg value="-C"/>
+                                    <arg value="${build.dir}"/>
+                                    <arg value="-czf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}.tar.gz"/>
+                                    <arg value="${opencga.client.dir}"/>
+                                </exec>
+
+                                <echo>Deleting temporary 'opencga-client' folder</echo>
+                                <exec executable="rm" failonerror="true">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

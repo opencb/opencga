@@ -1,0 +1,61 @@
+name: Manual Deploy Docker OpenCGA Enterprise
+run-name: "Manual deploy the enterprise branch ${{ inputs.branch }} ${{ inputs.task == inputs.branch && '' || inputs.task }} with tag ${{ inputs.tag }} to Zettagenomics docker hub Central"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build docker."
+        type: string
+        required: true
+      task:
+        description: "The task to be built (e.g., 'TASK-1234'). If not provided, the branch will be used."
+        type: string
+        required: false
+      tag:
+        description: "The tag for the new docker."
+        type: string
+        required: true
+      storage_hadoop:
+        type: choice
+        description: 'Hadoop flavour.'
+        required: false
+        default: "hdi5.1"
+        options:
+          - "all"
+          - "hbase2.0"
+          - "hdi5.1"
+          - "emr6.1"
+          - "emr6.13"
+          - "emr7.5"
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: ${{ inputs.storage_hadoop }}
+      artifact_name: build-folder
+      python_client: false
+      branch: ${{ inputs.branch }}
+      task: ${{ inputs.task }}
+    secrets: inherit
+
+  deploy-docker-hub:
+    name: Push Docker image
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: build
+    steps:
+      - name: Download build dir
+        uses: actions/download-artifact@v4
+        with:
+          name: build-folder
+          path: build
+      - name: Chmod
+        run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Push in Docker Hub
+        run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag ${{ inputs.tag }}

@@ -1,0 +1,20 @@
+---
+sso:
+  active: ${ENTERPRISE.SSO.ACTIVE}
+  casServerPrefixUrl: ${ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL}
+  serverName: ${ENTERPRISE.SSO.SERVER.NAME}
+  protocol: ${ENTERPRISE.SSO.PROTOCOL}
+  attributes:
+    name: ${ENTERPRISE.SSO.ATTRIBUTES.NAME}
+    surname: ${ENTERPRISE.SSO.ATTRIBUTES.SURNAME}
+    email: ${ENTERPRISE.SSO.ATTRIBUTES.EMAIL}
+    organization: ${ENTERPRISE.SSO.ATTRIBUTES.ORGANIZATION}
+    groups: ${ENTERPRISE.SSO.ATTRIBUTES.GROUPS}
+cvdb:
+  active: ${ENTERPRISE.CVDB.ACTIVE}
+  database:
+    hosts:
+      - ${ENTERPRISE.CVDB.DATABASE.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+    mode: ${ENTERPRISE.CVDB.DATABASE.MODE}
+    timeout: ${ENTERPRISE.CVDB.DATABASE.TIMEOUT}
+

@@ -1,0 +1,23 @@
+name: Push to develop or release branch
+
+on:
+  push:
+    branches:
+      - develop
+      - release-*
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: ${{ vars.HADOOP_FLAVOUR }}
+      artifact_name: build-folder
+    secrets: inherit
+
+  deploy-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build
+    secrets: inherit
+    with:
+      artifact_name: build-folder
