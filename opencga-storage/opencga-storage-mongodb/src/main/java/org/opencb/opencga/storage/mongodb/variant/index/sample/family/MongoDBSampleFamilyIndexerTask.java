@@ -44,6 +44,9 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
     private final List<int[]> trios;
     /** Per-trio: true if any parent is from a different file than the child (unknown parent GT possible). */
     private final List<Boolean> trioHasUnknownParentGenotypes;
+    /** Per-sample: set of file IDs that belong to that sample. Used to determine if a sample's file
+     *  is present in a variant document (meaning 0/0 default) vs truly absent (unknown GT). */
+    private final Map<Integer, Set<Integer>> sampleFileIds;
     /** One FamilyIndexBuilder per childId, accumulates across all variants in a chunk. */
     private final Map<Integer, FamilyIndexBuilder> builders;
     /** Per-childId: GT string → occurrence count within the current chunk. */
@@ -58,6 +61,7 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
 
         trios = new ArrayList<>(trioList.size());
         trioHasUnknownParentGenotypes = new ArrayList<>(trioList.size());
+        sampleFileIds = new HashMap<>();
         builders = new HashMap<>(trioList.size());
         genotypeCount = new HashMap<>(trioList.size());
 
@@ -74,16 +78,20 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
             List<Integer> childFiles = childMetadata.getFiles();
             boolean parentsInSeparatedFile = false;
             if (fatherId != MISSING_SAMPLE) {
-                List<Integer> fatherFiles = metadataManager.getSampleMetadata(studyId, fatherId).getFiles();
+                SampleMetadata fatherMetadata = metadataManager.getSampleMetadata(studyId, fatherId);
+                List<Integer> fatherFiles = fatherMetadata.getFiles();
                 if (fatherFiles.size() != childFiles.size() || !fatherFiles.containsAll(childFiles)) {
                     parentsInSeparatedFile = true;
                 }
+                sampleFileIds.computeIfAbsent(fatherId, k -> new HashSet<>()).addAll(fatherFiles);
             }
             if (motherId != MISSING_SAMPLE) {
-                List<Integer> motherFiles = metadataManager.getSampleMetadata(studyId, motherId).getFiles();
+                SampleMetadata motherMetadata = metadataManager.getSampleMetadata(studyId, motherId);
+                List<Integer> motherFiles = motherMetadata.getFiles();
                 if (motherFiles.size() != childFiles.size() || !motherFiles.containsAll(childFiles)) {
                     parentsInSeparatedFile = true;
                 }
+                sampleFileIds.computeIfAbsent(motherId, k -> new HashSet<>()).addAll(motherFiles);
             }
             trioHasUnknownParentGenotypes.add(parentsInSeparatedFile);
             builders.put(childId, new FamilyIndexBuilder(childId));
@@ -138,9 +146,11 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
     }
 
     private void processVariant(Variant variant, Document doc) throws IOException {
-        // Build GT map from files[].mgt, detecting discrepancies for samples appearing in multiple files
+        // Build GT map from files[].mgt, detecting discrepancies for samples appearing in multiple files.
+        // Also collect the set of file IDs present in this variant to determine per-parent default GT.
         Map<Integer, String> gtMap = new HashMap<>();
         Map<Integer, Set<String>> discrepanciesGtMap = new HashMap<>();
+        Set<Integer> presentFileIds = new HashSet<>();
 
         List<Document> fileDocs = doc.getList(DocumentToVariantConverter.FILES_FIELD, Document.class);
         if (fileDocs != null) {
@@ -148,6 +158,10 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
                 Integer sid = fileDoc.getInteger(DocumentToStudyEntryConverter.STUDYID_FIELD);
                 if (sid == null || sid != studyId) {
                     continue;
+                }
+                Integer fid = fileDoc.getInteger(DocumentToStudyEntryConverter.FILEID_FIELD);
+                if (fid != null) {
+                    presentFileIds.add(fid);
                 }
                 Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
                 if (mgt == null) {
@@ -177,7 +191,21 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
             int child = trio[2];
 
             FamilyIndexBuilder builder = builders.get(child);
-            String defaultGenotype = trioHasUnknownParentGenotypes.get(i) ? null : "0/0";
+
+            // Determine default GT for each parent based on whether their file is present.
+            // mgt omits samples with the default genotype (0/0), so if the parent's file IS present
+            // but the parent is not in mgt, the parent has GT 0/0.
+            // If the parent's file is NOT present, the parent's GT is truly unknown (null).
+            String fatherDefault;
+            String motherDefault;
+            if (!trioHasUnknownParentGenotypes.get(i)) {
+                // Parents in same file as child — always use 0/0
+                fatherDefault = "0/0";
+                motherDefault = "0/0";
+            } else {
+                fatherDefault = parentHasFilePresent(father, presentFileIds) ? "0/0" : null;
+                motherDefault = parentHasFilePresent(mother, presentFileIds) ? "0/0" : null;
+            }
 
             Set<String> fatherDiscrepancies = discrepanciesGtMap.get(father);
             Set<String> motherDiscrepancies = discrepanciesGtMap.get(mother);
@@ -185,8 +213,8 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
 
             if (fatherDiscrepancies == null && motherDiscrepancies == null && childDiscrepancies == null) {
                 // Simple path: no discrepancies
-                String fatherGtStr = father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, defaultGenotype);
-                String motherGtStr = mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, defaultGenotype);
+                String fatherGtStr = father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, fatherDefault);
+                String motherGtStr = mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, motherDefault);
                 String childGtStr = gtMap.getOrDefault(child, "0/0");
 
                 builder.addParents(childGtStr, fatherGtStr, motherGtStr);
@@ -196,11 +224,11 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
                 // Discrepancy path: iterate all GT combinations
                 if (fatherDiscrepancies == null) {
                     fatherDiscrepancies = Collections.singleton(
-                            father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, defaultGenotype));
+                            father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, fatherDefault));
                 }
                 if (motherDiscrepancies == null) {
                     motherDiscrepancies = Collections.singleton(
-                            mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, defaultGenotype));
+                            mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, motherDefault));
                 }
                 if (childDiscrepancies == null) {
                     childDiscrepancies = Collections.singleton(gtMap.getOrDefault(child, "0/0"));
@@ -216,6 +244,25 @@ public class MongoDBSampleFamilyIndexerTask implements Task<Document, SampleInde
                 }
             }
         }
+    }
+
+    /**
+     * Check if any of the parent's files are present in this variant's file documents.
+     */
+    private boolean parentHasFilePresent(int parentId, Set<Integer> presentFileIds) {
+        if (parentId == MISSING_SAMPLE) {
+            return false;
+        }
+        Set<Integer> parentFiles = sampleFileIds.get(parentId);
+        if (parentFiles == null) {
+            return false;
+        }
+        for (Integer fileId : parentFiles) {
+            if (presentFileIds.contains(fileId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void computeMendelianError(Variant variant, int father, int mother,
