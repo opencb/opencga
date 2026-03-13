@@ -5,6 +5,9 @@ import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResul
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
@@ -195,20 +198,35 @@ public class AlleleTyperTest {
             }
             writer.newLine();
 
-            // Data
+            // Data: join multiple diplotypes per gene with " | "
             for (AlleleTyperResult result : results) {
-                Map<String, String> geneMap = new LinkedHashMap<>();
+                Map<String, List<String>> geneMap = new LinkedHashMap<>();
                 for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
-                    geneMap.put(star.getGene(), star.getDiplotype() != null ? star.getDiplotype() : "");
+                    geneMap.computeIfAbsent(star.getGene(), k -> new ArrayList<>())
+                           .add(star.getDiplotype() != null ? star.getDiplotype() : "");
                 }
 
                 writer.write(result.getSampleId());
                 for (String gene : allGenes) {
-                    writer.write("," + geneMap.getOrDefault(gene, ""));
+                    writer.write("," + joinDiplotypes(geneMap.get(gene)));
                 }
                 writer.newLine();
             }
         }
+    }
+
+    /**
+     * Join a list of diplotype strings into a single comparable string.
+     * A single diplotype is returned as-is; multiple are wrapped in curly brackets.
+     */
+    private String joinDiplotypes(List<String> diplotypes) {
+        if (diplotypes == null || diplotypes.isEmpty()) {
+            return "";
+        }
+        if (diplotypes.size() == 1) {
+            return diplotypes.get(0);
+        }
+        return "{" + String.join(", ", diplotypes) + "}";
     }
 
     @Test
@@ -256,19 +274,19 @@ public class AlleleTyperTest {
 
         List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
 
-        // Build lookup: sampleId -> gene -> diplotype
-        Map<String, Map<String, String>> obtainedResults = new LinkedHashMap<>();
+        // Build lookup: sampleId -> gene -> list of diplotypes (one per compatible pair)
+        Map<String, Map<String, List<String>>> obtainedResults = new LinkedHashMap<>();
         for (AlleleTyperResult result : results) {
-            Map<String, String> geneMap = new LinkedHashMap<>();
+            Map<String, List<String>> geneMap = new LinkedHashMap<>();
             for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
-                geneMap.put(star.getGene(), star.getDiplotype());
+                geneMap.computeIfAbsent(star.getGene(), k -> new ArrayList<>()).add(star.getDiplotype());
             }
             obtainedResults.put(result.getSampleId(), geneMap);
         }
 
         // Get genes that exist in both obtained results and expected results
         Set<String> obtainedGenes = new LinkedHashSet<>();
-        for (Map<String, String> geneMap : obtainedResults.values()) {
+        for (Map<String, List<String>> geneMap : obtainedResults.values()) {
             obtainedGenes.addAll(geneMap.keySet());
         }
 
@@ -295,11 +313,11 @@ public class AlleleTyperTest {
 
         List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
 
-        Map<String, Map<String, String>> obtainedResults = new LinkedHashMap<>();
+        Map<String, Map<String, List<String>>> obtainedResults = new LinkedHashMap<>();
         for (AlleleTyperResult result : results) {
-            Map<String, String> geneMap = new LinkedHashMap<>();
+            Map<String, List<String>> geneMap = new LinkedHashMap<>();
             for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
-                geneMap.put(star.getGene(), star.getDiplotype());
+                geneMap.computeIfAbsent(star.getGene(), k -> new ArrayList<>()).add(star.getDiplotype());
             }
             obtainedResults.put(result.getSampleId(), geneMap);
         }
@@ -311,21 +329,22 @@ public class AlleleTyperTest {
         checkSampleGene(obtainedResults, "1900113", "CYP2D6", "*1/*4");
     }
 
-    private void checkSampleGene(Map<String, Map<String, String>> obtainedResults,
+    private void checkSampleGene(Map<String, Map<String, List<String>>> obtainedResults,
                                   String sampleId, String gene, String expected) {
-        Map<String, String> sampleResults = obtainedResults.get(sampleId);
+        Map<String, List<String>> sampleResults = obtainedResults.get(sampleId);
         if (sampleResults == null) {
             System.out.println(sampleId + " " + gene + ": SAMPLE NOT FOUND");
             return;
         }
 
-        String obtained = sampleResults.get(gene);
-        boolean match = expected.equals(obtained);
+        List<String> obtainedList = sampleResults.get(gene);
+        String obtained = joinDiplotypes(obtainedList);
+        boolean match = normalizedMatch(expected, obtained);
         System.out.println(String.format("%-15s %-10s: expected=%-25s obtained=%-25s %s",
                 sampleId, gene, expected, obtained, match ? "MATCH" : "MISMATCH"));
     }
 
-    private void compareGeneResults(String geneName, Map<String, Map<String, String>> obtainedResults) {
+    private void compareGeneResults(String geneName, Map<String, Map<String, List<String>>> obtainedResults) {
         System.out.println("\n=== " + geneName + " Results Comparison ===");
         System.out.println(String.format("%-15s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Match"));
         System.out.println(new String(new char[130]).replace('\0', '-'));
@@ -338,13 +357,13 @@ public class AlleleTyperTest {
             String sampleId = expectedEntry.getKey();
             String expected = expectedEntry.getValue().get(geneName);
 
-            Map<String, String> sampleObtained = obtainedResults.get(sampleId);
+            Map<String, List<String>> sampleObtained = obtainedResults.get(sampleId);
             if (sampleObtained == null) {
                 continue;
             }
 
             totalSamples++;
-            String obtained = sampleObtained.get(geneName);
+            String obtained = joinDiplotypes(sampleObtained.get(geneName));
 
             boolean expectedNoTranslation = expected == null || expected.isEmpty()
                     || "no translation available".equals(expected);
@@ -435,9 +454,14 @@ public class AlleleTyperTest {
         List<AlleleTyperResult> results = typer.buildAlleleTyperResults(genotypingFile);
         System.out.println("AlleleTyper produced " + results.size() + " sample results");
 
-        // 2. Annotate with CPIC
+        // 2. Annotate with CellBase + CPIC
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .setVersion("v6.7")
+                .setDefaultSpecies("hsapiens")
+                .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient(clientConfiguration);
         PharmacogenomicsManager manager = new PharmacogenomicsManager(null);
-        manager.annotateCpicResults(results);
+        manager.annotateResults(results, cellBaseClient);
 
         // 3. Print summary of CPIC annotations
         int annotatedGenes = 0;
@@ -464,7 +488,7 @@ public class AlleleTyperTest {
                 + totalRecommendations + " total drugs");
 
         // 4. Export one JSON file per sample
-        Path outputDir = Paths.get("/tmp/pgx_cpic_annotated_results");
+        Path outputDir = Paths.get("/tmp/pgx_annotated_results");
         java.nio.file.Files.createDirectories(outputDir);
         com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
         objectMapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
@@ -475,7 +499,7 @@ public class AlleleTyperTest {
             java.nio.file.Files.write(samplePath, json);
             totalSize += json.length;
         }
-        System.out.println("\nCPIC annotated results written to: " + outputDir + " (" + results.size() + " files)");
+        System.out.println("\nAnnotated results written to: " + outputDir + " (" + results.size() + " files)");
         System.out.println("Total serialized size: " + String.format("%.2f", totalSize / 1024.0) + " KB");
     }
 

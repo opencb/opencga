@@ -73,7 +73,7 @@ public class CpicAnnotator {
         // 1. Diplotype info
         CpicDiplotypeInfo diplotypeInfo = fetchDiplotypeInfo(gene, diplotype);
         if (diplotypeInfo == null) {
-            logger.warn("No CPIC diplotype info found for {}/{}", gene, diplotype);
+            logger.warn("No CPIC diplotype info found for {}:{}", gene, diplotype);
         }
 
         // 2. Per-allele info: extract distinct allele names from the diplotype string

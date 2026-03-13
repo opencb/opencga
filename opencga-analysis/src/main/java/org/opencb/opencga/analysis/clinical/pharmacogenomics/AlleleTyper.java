@@ -386,21 +386,24 @@ public class AlleleTyper {
             String gene = geneEntry.getKey();
             List<HaplotypeDefinition> haplotypes = geneEntry.getValue();
             Set<String> relevantAssays = geneRelevantAssays.getOrDefault(gene, Collections.emptySet());
-
-            // Call diplotype for this gene
-            DiplotypeCallResult diplotypeResult = callDiplotype(gene, haplotypes, relevantAssays, genotypes, cnvData);
-
-            // Build allele calls from distinct alleles
-            List<AlleleTyperResult.AlleleCall> alleleCalls = new ArrayList<>();
-            for (String allele : diplotypeResult.distinctAlleles) {
-                alleleCalls.add(new AlleleTyperResult.AlleleCall(allele));
-            }
-
-            // Get variants (assay IDs) for this gene
             List<String> geneVariants = new ArrayList<>(relevantAssays);
 
-            alleleTyperResults.add(new AlleleTyperResult.StarAlleleResult(
-                    gene, diplotypeResult.diplotype, alleleCalls, geneVariants));
+            // Get all compatible diplotype pairs for this gene
+            List<DiplotypePair> pairs = callDiplotype(gene, haplotypes, relevantAssays, genotypes, cnvData);
+
+            if (pairs.isEmpty()) {
+                alleleTyperResults.add(new AlleleTyperResult.StarAlleleResult(
+                        gene, "no translation available", Collections.emptyList(), geneVariants));
+            } else {
+                // One StarAlleleResult per compatible pair
+                for (DiplotypePair pair : pairs) {
+                    List<AlleleTyperResult.AlleleCall> alleleCalls = new ArrayList<>();
+                    alleleCalls.add(new AlleleTyperResult.AlleleCall(pair.h1.allele));
+                    alleleCalls.add(new AlleleTyperResult.AlleleCall(pair.h2.allele));
+                    alleleTyperResults.add(new AlleleTyperResult.StarAlleleResult(
+                            gene, pair.toString(), alleleCalls, geneVariants));
+                }
+            }
         }
 
         // Build genotype list
@@ -447,8 +450,9 @@ public class AlleleTyper {
 
     /**
      * Call diplotype for a single gene by testing all pairs of haplotypes.
+     * Returns all compatible pairs — each represents one possible diplotype assignment.
      */
-    DiplotypeCallResult callDiplotype(String gene, List<HaplotypeDefinition> haplotypes,
+    List<DiplotypePair> callDiplotype(String gene, List<HaplotypeDefinition> haplotypes,
                                       Set<String> relevantAssays, Map<String, String> observedGenotypes,
                                       Map<String, Integer> cnvData) {
         // Separate SNP assays from CNV assays
@@ -475,7 +479,7 @@ public class AlleleTyper {
             }
         }
 
-        return formatDiplotypeResult(compatiblePairs);
+        return compatiblePairs;
     }
 
     /**

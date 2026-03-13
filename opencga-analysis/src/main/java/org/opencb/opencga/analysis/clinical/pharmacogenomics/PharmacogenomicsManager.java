@@ -109,8 +109,7 @@ public class PharmacogenomicsManager {
      * Annotate results with both CellBase (star-allele level) and CPIC (diplotype level) data.
      */
     public void annotateResults(List<AlleleTyperResult> results, CellBaseClient cellBaseClient) throws IOException {
-        // TODO: re-enable CellBase annotation when ready
-        // annotateCellBaseResults(results, cellBaseClient);
+        annotateCellBaseResults(results, cellBaseClient);
         annotateCpicResults(results);
     }
 
