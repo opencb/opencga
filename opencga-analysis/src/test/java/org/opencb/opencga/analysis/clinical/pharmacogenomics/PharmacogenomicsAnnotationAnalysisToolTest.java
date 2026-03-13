@@ -162,7 +162,7 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
         assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
         System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
 
-        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        // Verify OPENCGA_PHARMACOGENOMICS_PATH attribute was persisted in catalog for each sample
         assertSamplesHavePharmacogenomicsAttribute(objectMapper);
     }
 
@@ -214,12 +214,12 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
         assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
         System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
 
-        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        // Verify OPENCGA_PHARMACOGENOMICS_PATH attribute was persisted in catalog for each sample
         assertSamplesHavePharmacogenomicsAttribute(objectMapper);
     }
 
     /**
-     * Verifies that every non-NTC sample in alleleTyperContent has the OPENCGA_PHARMACOGENOMICS_DATA
+     * Verifies that every non-NTC sample in alleleTyperContent has the OPENCGA_PHARMACOGENOMICS_PATH
      * attribute set in the catalog after the annotation tool has run.
      */
     private void assertSamplesHavePharmacogenomicsAttribute(ObjectMapper objectMapper) throws Exception {
@@ -235,13 +235,13 @@ public class PharmacogenomicsAnnotationAnalysisToolTest {
             Sample sample = catalogManager.getSampleManager()
                     .get(studyFqn, r.getSampleId(), QueryOptions.empty(), token).first();
             if (sample.getAttributes() != null
-                    && sample.getAttributes().containsKey("OPENCGA_PHARMACOGENOMICS_DATA")) {
+                    && sample.getAttributes().containsKey("OPENCGA_PHARMACOGENOMICS_PATH")) {
                 samplesWithAttribute++;
             }
         }
-        assertTrue("At least one non-NTC sample should have OPENCGA_PHARMACOGENOMICS_DATA attribute set"
+        assertTrue("At least one non-NTC sample should have OPENCGA_PHARMACOGENOMICS_PATH attribute set"
                 + " (checked " + samplesChecked + " samples)", samplesWithAttribute > 0);
-        System.out.println("Samples with OPENCGA_PHARMACOGENOMICS_DATA attribute: "
+        System.out.println("Samples with OPENCGA_PHARMACOGENOMICS_PATH attribute: "
                 + samplesWithAttribute + "/" + samplesChecked);
     }
 }
