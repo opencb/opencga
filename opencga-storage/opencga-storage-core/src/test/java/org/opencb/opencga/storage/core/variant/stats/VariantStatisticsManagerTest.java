@@ -179,7 +179,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         Mockito.doAnswer(invocation -> {
             invocation.callRealMethod();
             throw new StorageEngineException("Mock error calculating stats");
-        }).when(statsManagerMock).preCalculateStats(Mockito.any(), Mockito.any(), Mockito.anyList(), Mockito.anyBoolean(), Mockito.any());
+        }).when(statsManagerMock).preCalculateStats(Mockito.any(), Mockito.any(), Mockito.anyMap(), Mockito.anyBoolean(), Mockito.any());
 
         options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("stats_mock_fail").toString());
         try {

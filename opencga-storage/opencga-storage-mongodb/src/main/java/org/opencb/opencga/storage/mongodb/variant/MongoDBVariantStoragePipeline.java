@@ -130,6 +130,14 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     @Override
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata source) throws StorageEngineException {
         super.securePreLoad(studyMetadata, source);
+
+        // Set aggregation from options if not yet set.
+        // MongoDB runs preTransform with TRANSFORM_ISOLATE=true, so aggregation is not persisted during transform.
+        if (studyMetadata.getAggregation() == null) {
+            studyMetadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
+                    VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
+        }
+
         int fileId = getFileId();
 
         MergeMode mergeMode;
