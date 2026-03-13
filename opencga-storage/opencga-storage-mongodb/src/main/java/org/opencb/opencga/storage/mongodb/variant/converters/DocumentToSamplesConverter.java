@@ -477,6 +477,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         // Samples appearing in multiple file mgt maps get a primary GT and DISCREPANCY IssueEntries.
         // Read from ALL file documents (not only output files) so genotypes are available even when
         // STUDIES_FILES is excluded from the output projection.
+        // Per-file filtering (includeFileIds) is applied per-sample after collection to avoid
+        // cross-file DISCREPANCY issues in per-file queries.
         if (study != null && !excludeGenotypes) {
             // sampleId -> { fileId -> genotype } — collected from all available files' mgt maps.
             Map<Integer, Map<Integer, String>> sampleFileGts = new HashMap<>();
@@ -505,6 +507,14 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 Integer samplePosition = effectiveSamplesPosition.get(sampleName);
                 if (samplePosition == null) {
                     continue;
+                }
+                // When querying by file (includeFileIds non-empty), restrict to included files only.
+                // Per-file queries should only see that file's data, without cross-file DISCREPANCY issues.
+                if (!includeFileIds.isEmpty()) {
+                    fileGts.keySet().retainAll(includeFileIds);
+                    if (fileGts.isEmpty()) {
+                        continue;
+                    }
                 }
                 if (fileGts.size() == 1) {
                     // Single file: just override the GT (may have been set from legacy study-level gt or default).
@@ -550,10 +560,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     if (fg == primaryEntry) {
                         continue;
                     }
+                    int secondaryFileId = fg.getKey();
                     List<String> issueData = new ArrayList<>(sampleDataKeys.size());
                     issueData.add(fg.getValue()); // GT
                     // Populate extra FORMAT fields from the secondary file's sampleData
-                    int secondaryFileId = fg.getKey();
                     String[] secondaryExtraValues = multiFileExtraValues
                             .getOrDefault(sampleId, Collections.emptyMap()).get(secondaryFileId);
                     for (int j = 0; j < extraFields.size(); j++) {
