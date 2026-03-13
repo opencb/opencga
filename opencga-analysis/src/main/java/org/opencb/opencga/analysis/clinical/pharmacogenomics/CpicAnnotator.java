@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicAlleleAnnotation;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicAlleleInfo;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicAlleleLocationValue;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicDiplotypeAnnotation;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicDiplotypeInfo;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicDrug;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicDrugRecommendation;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic.CpicSequenceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,11 +28,12 @@ import java.util.*;
  *
  * <p>For each gene diplotype the following CPIC endpoints are called:
  * <ul>
- *   <li>/diplotype       – phenotype classification and lookupkey</li>
- *   <li>/allele          – per-allele functional status and activity value</li>
- *   <li>/pair            – drug-gene pairs (CPIC level, PGx testing)</li>
- *   <li>/recommendation  – drug dosing recommendations for the lookupkey</li>
- *   <li>/drug            – resolves drugid to human-readable drug name</li>
+ *   <li>/diplotype            – phenotype classification and lookupkey</li>
+ *   <li>/allele               – per-allele functional status and activity value</li>
+ *   <li>/allele_definition    – per-allele variant locations (filled into CpicAlleleInfo.location)</li>
+ *   <li>/pair                 – drug-gene pairs (CPIC level, PGx testing)</li>
+ *   <li>/recommendation       – drug dosing recommendations for the lookupkey</li>
+ *   <li>/drug                 – resolves drugid to human-readable drug name</li>
  * </ul>
  */
 public class CpicAnnotator {
@@ -45,11 +48,12 @@ public class CpicAnnotator {
     private final Logger logger = LoggerFactory.getLogger(CpicAnnotator.class);
 
     // Caches to avoid repeated API calls across samples
-    private final Map<String, String> drugNameCache = new HashMap<>();               // drugid -> name
-    private final Map<String, CpicAlleleInfo> alleleInfoCache = new HashMap<>();     // "gene:allele" -> info
-    private final Map<String, CpicDiplotypeInfo> diplotypeInfoCache = new HashMap<>(); // "gene:diplotype" -> info
+    private final Map<String, String> drugNameCache = new HashMap<>();                         // drugid -> name
+    private final Map<String, CpicAlleleInfo> alleleInfoCache = new HashMap<>();               // "gene:allele" -> info
+    private final Map<String, List<CpicAlleleLocationValue>> alleleDefinitionCache = new HashMap<>(); // "gene:allele" -> location
+    private final Map<String, CpicDiplotypeInfo> diplotypeInfoCache = new HashMap<>();         // "gene:diplotype" -> info
     private final Map<String, List<CpicDrugRecommendation>> recommendationCache = new HashMap<>(); // lookupkey JSON -> recs
-    private final Map<String, List<RawPair>> pairCache = new HashMap<>();            // gene -> pairs
+    private final Map<String, List<RawPair>> pairCache = new HashMap<>();                      // gene -> pairs
 
     public CpicAnnotator() {
         this.objectMapper = new ObjectMapper()
@@ -158,7 +162,47 @@ public class CpicAnnotator {
             List<CpicAlleleInfo> list = objectMapper.readValue(json, new TypeReference<List<CpicAlleleInfo>>() { });
             result = list.isEmpty() ? null : list.get(0);
         }
+        if (result != null) {
+            // Enrich with variant-level location data from /allele_definition
+            result.setLocation(fetchAlleleLocationValues(gene, allele, encodedAllele));
+        }
         alleleInfoCache.put(cacheKey, result);
+        return result;
+    }
+
+    /**
+     * Fetch variant-level location values for a single allele from the CPIC /allele_definition endpoint.
+     * Example: GET /allele_definition?genesymbol=eq.CYP2C9&name=eq.*6&select=*,allele_location_value(*,sequence_location(*))
+     */
+    private List<CpicAlleleLocationValue> fetchAlleleLocationValues(String gene, String allele,
+                                                                    String encodedAllele) throws IOException {
+        String cacheKey = gene + ":" + allele;
+        if (alleleDefinitionCache.containsKey(cacheKey)) {
+            return alleleDefinitionCache.get(cacheKey);
+        }
+        String url = CPIC_BASE_URL + "/allele_definition?genesymbol=eq." + gene + "&name=eq." + encodedAllele
+                + "&select=*,allele_location_value(*,sequence_location(*))";
+        String json = get(url);
+        List<CpicAlleleLocationValue> result = new ArrayList<>();
+        if (json != null) {
+            List<RawAlleleDef> defs = objectMapper.readValue(json, new TypeReference<List<RawAlleleDef>>() { });
+            if (!defs.isEmpty() && defs.get(0).allele_location_value != null) {
+                for (RawLocationValue raw : defs.get(0).allele_location_value) {
+                    CpicSequenceLocation seqLoc = null;
+                    if (raw.sequence_location != null) {
+                        seqLoc = new CpicSequenceLocation(
+                                raw.sequence_location.name,
+                                raw.sequence_location.dbsnpid,
+                                raw.sequence_location.position,
+                                raw.sequence_location.genelocation,
+                                raw.sequence_location.proteinlocation,
+                                raw.sequence_location.chromosomelocation);
+                    }
+                    result.add(new CpicAlleleLocationValue(raw.variantallele, seqLoc));
+                }
+            }
+        }
+        alleleDefinitionCache.put(cacheKey, result);
         return result;
     }
 
@@ -329,6 +373,33 @@ public class CpicAnnotator {
             connection.disconnect();
         }
         return sb.toString();
+    }
+
+    /**
+     * Internal DTO to deserialize the /allele_definition response (top-level object).
+     */
+    private static class RawAlleleDef {
+        public List<RawLocationValue> allele_location_value;
+    }
+
+    /**
+     * Internal DTO for one element of the allele_location_value array.
+     */
+    private static class RawLocationValue {
+        public String variantallele;
+        public RawSequenceLocation sequence_location;
+    }
+
+    /**
+     * Internal DTO for the nested sequence_location object.
+     */
+    private static class RawSequenceLocation {
+        public String name;
+        public String dbsnpid;
+        public Long position;
+        public String genelocation;
+        public String proteinlocation;
+        public String chromosomelocation;
     }
 
     /**
