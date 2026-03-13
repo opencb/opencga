@@ -1155,6 +1155,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                     Map<Integer, String> samples = new HashMap<>();
                     for (Document file : files) {
                         Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
+                        if (gts == null) {
+                            // AC=0 variants: no sample carries an alt allele, so mgt is absent
+                            continue;
+                        }
 
                         for (Map.Entry<String, Object> entry : gts.entrySet()) {
                             List<Integer> sampleIds = (List<Integer>) entry.getValue();
