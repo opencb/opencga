@@ -121,9 +121,14 @@ apply_mem_multiplier() {
     awk "BEGIN {printf \"%.0fm\", ${heap_mb} * ${multiplier}}"
 }
 
-# Update a KEY=value in .env (only if the file exists)
+# Update a KEY=value in .env — logs only when the value actually changes
 update_env() {
     local key="$1" val="$2"
+    # Check current value (from env or .env file)
+    local cur="${!key:-}"
+    if [ "${cur}" = "${val}" ]; then
+        return 0  # no change
+    fi
     if [ -f "${ENV_FILE}" ]; then
         if grep -q "^${key}=" "${ENV_FILE}"; then
             sed -i "s|^${key}=.*|${key}=${val}|" "${ENV_FILE}"
@@ -132,6 +137,11 @@ update_env() {
         else
             echo "${key}=${val}" >> "${ENV_FILE}"
         fi
+    fi
+    if [ -n "${cur}" ]; then
+        log_info "${key}: ${cur} -> ${val}"
+    else
+        log_info "${key}: ${val}"
     fi
     export "${key}=${val}"
 }
@@ -176,8 +186,21 @@ Options:
   --pull        Pull images before starting
   --regen-conf  Regenerate conf/ from build templates
   --load-demo   Load demo data after services are ready (for more options, use 'load-demo' command)
-  --rest-heap SIZE    Java heap for REST server (e.g., 512m, 2g)
-  --master-heap SIZE  Java heap for Master daemon (e.g., 256m, 1g)
+  --force       Skip running-jobs safety check
+
+  Configuration (persisted to .env):
+  --rest-heap SIZE       Java heap for REST server (e.g., 512m, 2g)
+  --master-heap SIZE     Java heap for Master daemon (e.g., 256m, 1g)
+  --mongo-version VER    MongoDB version (e.g., 6.0, 7.0)
+  --solr-version VER     Solr version (e.g., 8.11, 9.4)
+  --mongo-port PORT      MongoDB host port (default: 27017)
+  --solr-port PORT       Solr host port (default: 8983)
+  --rest-port PORT       OpenCGA REST host port (default: 9090)
+  --iva-port PORT        IVA host port (default: 8080)
+  --org ID               Organization ID
+  --user ID              Owner user ID
+  --user-password PASS   Owner user password
+  --admin-password PASS  OpenCGA admin password
 EOF
 }
 
@@ -190,6 +213,7 @@ Stop and remove all services.
 Options:
   -v, --volumes  Also remove Docker volumes (MongoDB, Solr data)
   --clean        Remove conf/, data/, iva/ directories (implies --volumes)
+  --force        Skip running-jobs safety check
 EOF
 }
 
@@ -236,8 +260,21 @@ Options:
   --build       Build Docker image before starting
   --pull        Pull images before starting
   --regen-conf  Regenerate conf/ from build templates
-  --rest-heap SIZE    Java heap for REST server (e.g., 512m, 2g)
-  --master-heap SIZE  Java heap for Master daemon (e.g., 256m, 1g)
+  --force       Skip running-jobs safety check
+
+  Configuration (persisted to .env):
+  --rest-heap SIZE       Java heap for REST server (e.g., 512m, 2g)
+  --master-heap SIZE     Java heap for Master daemon (e.g., 256m, 1g)
+  --mongo-version VER    MongoDB version (e.g., 6.0, 7.0)
+  --solr-version VER     Solr version (e.g., 8.11, 9.4)
+  --mongo-port PORT      MongoDB host port (default: 27017)
+  --solr-port PORT       Solr host port (default: 8983)
+  --rest-port PORT       OpenCGA REST host port (default: 9090)
+  --iva-port PORT        IVA host port (default: 8080)
+  --org ID               Organization ID
+  --user ID              Owner user ID
+  --user-password PASS   Owner user password
+  --admin-password PASS  OpenCGA admin password
 EOF
 }
 
@@ -389,6 +426,42 @@ check_conf() {
     fi
     if [ "$errors" -gt 0 ]; then
         log_error "Config patching incomplete. Run './deploy.sh init-conf' or './deploy.sh up --regen-conf'"
+        exit 1
+    fi
+}
+
+# Check if any OpenCGA jobs are running in the master container.
+# Blocks unless DO_FORCE=true.
+check_running_jobs() {
+    if [ "${DO_FORCE:-false}" = "true" ]; then
+        return 0
+    fi
+    # Only check if the master container is running
+    if ! docker inspect --format '{{.State.Status}}' opencga-master 2>/dev/null | grep -q 'running'; then
+        return 0
+    fi
+    local job_count
+    job_count=$(docker exec opencga-master ps -eo args 2>/dev/null | grep -c "InternalMain" || true)
+    if [ "${job_count:-0}" -gt 0 ]; then
+        log_error "${job_count} job(s) running in opencga-master. Use --force to proceed anyway."
+        docker exec opencga-master ps -eo pid,etime,args 2>/dev/null | grep "InternalMain" | \
+            awk '{
+                pid=$1; elapsed=$2
+                cmd=""
+                for(i=3;i<=NF;i++) {
+                    if($i ~ /InternalMain$/) {
+                        for(j=i+1;j<=NF;j++) {
+                            if($j == "--opencga-token") break
+                            if($j == "--outdir") { j++; continue }
+                            if($j == "--job") { j++; continue }
+                            cmd = cmd " " $j
+                        }
+                        break
+                    }
+                }
+                gsub(/^ /, "", cmd)
+                printf "  PID %-6s  %s  %s\n", pid, elapsed, cmd
+            }' >&2
         exit 1
     fi
 }
@@ -618,6 +691,7 @@ do_up() {
     fi
 
     # Pre-flight checks
+    check_running_jobs
     check_ports
     check_heap_limits
     check_conf
@@ -654,6 +728,7 @@ do_up() {
 }
 
 do_down() {
+    check_running_jobs
     local vol_flag=""
     if [ "${DO_VOLUMES:-false}" = "true" ]; then
         vol_flag="-v"
@@ -753,12 +828,15 @@ do_top() {
     jobs_file=$(mktemp)
     inspect_file=$(mktemp)
     local bg_stats_pid="" bg_vol_pid="" bg_jobs_pid=""
+    local saved_tty
+    saved_tty=$(stty -g 2>/dev/null) || true
     _top_cleanup() {
         tput cnorm 2>/dev/null
-        [ -n "$bg_stats_pid" ] && kill "$bg_stats_pid" 2>/dev/null && wait "$bg_stats_pid" 2>/dev/null
-        [ -n "$bg_vol_pid" ] && kill "$bg_vol_pid" 2>/dev/null && wait "$bg_vol_pid" 2>/dev/null
-        [ -n "$bg_jobs_pid" ] && kill "$bg_jobs_pid" 2>/dev/null && wait "$bg_jobs_pid" 2>/dev/null
-        rm -f "$stats_file" "$vol_file" "$jobs_file" "$inspect_file"
+        [ -n "${saved_tty:-}" ] && stty "$saved_tty" 2>/dev/null
+        [ -n "${bg_stats_pid:-}" ] && kill "$bg_stats_pid" 2>/dev/null && wait "$bg_stats_pid" 2>/dev/null
+        [ -n "${bg_vol_pid:-}" ] && kill "$bg_vol_pid" 2>/dev/null && wait "$bg_vol_pid" 2>/dev/null
+        [ -n "${bg_jobs_pid:-}" ] && kill "$bg_jobs_pid" 2>/dev/null && wait "$bg_jobs_pid" 2>/dev/null
+        rm -f "${stats_file:-}" "${vol_file:-}" "${jobs_file:-}" "${inspect_file:-}"
     }
     trap '_top_cleanup; exit 0' INT TERM
     trap '_top_cleanup' EXIT
@@ -1029,14 +1107,17 @@ do_top() {
             fi
         fi
 
-        buf+="\n${C_DIM}Press Ctrl+C to exit${C_RESET}\n"
+        buf+="\n${C_DIM}Press q or Ctrl+C to exit${C_RESET}\n"
 
         # Render: cursor to top-left, clear remainder of each line, clear below
         tput cup 0 0 2>/dev/null
         printf "%b" "${buf//\\n/\\033[K\\n}"
         tput ed 2>/dev/null
 
-        sleep 1
+        # Wait 1s, but exit immediately on 'q'
+        if read -rsn1 -t 1 key 2>/dev/null && [[ "$key" == "q" || "$key" == "Q" ]]; then
+            break
+        fi
     done
 }
 
@@ -1099,17 +1180,28 @@ case "${COMMAND}" in
         ;;
 
     up)
-        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false; DO_LOAD_DEMO=false
+        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false; DO_LOAD_DEMO=false; DO_FORCE=false
         while [ $# -gt 0 ]; do
             case "$1" in
-                -h|--help)      usage_up; exit 0 ;;
-                --build)        DO_BUILD=true ;;
-                --pull)         DO_PULL=true ;;
-                --regen-conf)   REGEN_CONF=true ;;
-                --load-demo)    DO_LOAD_DEMO=true ;;
-                --rest-heap)    next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
-                --master-heap)  next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
-                *)              bad_option "$1" ;;
+                -h|--help)        usage_up; exit 0 ;;
+                --build)          DO_BUILD=true ;;
+                --pull)           DO_PULL=true ;;
+                --regen-conf)     REGEN_CONF=true ;;
+                --load-demo)      DO_LOAD_DEMO=true ;;
+                --force)          DO_FORCE=true ;;
+                --rest-heap)      next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
+                --master-heap)    next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
+                --mongo-version)  next_arg "$@"; update_env MONGO_VERSION "${_next_val}"; shift ;;
+                --solr-version)   next_arg "$@"; update_env SOLR_VERSION "${_next_val}"; shift ;;
+                --mongo-port)     next_arg "$@"; update_env MONGO_PORT "${_next_val}"; shift ;;
+                --solr-port)      next_arg "$@"; update_env SOLR_PORT "${_next_val}"; shift ;;
+                --rest-port)      next_arg "$@"; update_env OPENCGA_REST_PORT "${_next_val}"; shift ;;
+                --iva-port)       next_arg "$@"; update_env IVA_PORT "${_next_val}"; shift ;;
+                --org)            next_arg "$@"; update_env OPENCGA_ORG_ID "${_next_val}"; shift ;;
+                --user)           next_arg "$@"; update_env OPENCGA_OWNER_ID "${_next_val}"; shift ;;
+                --user-password)  next_arg "$@"; update_env OPENCGA_OWNER_PASSWORD "${_next_val}"; shift ;;
+                --admin-password) next_arg "$@"; update_env OPENCGA_ADMIN_PASSWORD "${_next_val}"; shift ;;
+                *)                bad_option "$1" ;;
             esac
             shift
         done
@@ -1120,12 +1212,13 @@ case "${COMMAND}" in
         ;;
 
     down)
-        DO_VOLUMES=false; DO_CLEAN=false
+        DO_VOLUMES=false; DO_CLEAN=false; DO_FORCE=false
         while [ $# -gt 0 ]; do
             case "$1" in
                 -h|--help)      usage_down; exit 0 ;;
                 -v|--volumes)   DO_VOLUMES=true ;;
                 --clean)        DO_CLEAN=true; DO_VOLUMES=true ;;
+                --force)        DO_FORCE=true ;;
                 *)              bad_option "$1" ;;
             esac
             shift
@@ -1135,16 +1228,27 @@ case "${COMMAND}" in
         ;;
 
     restart)
-        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false
+        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false; DO_FORCE=false
         while [ $# -gt 0 ]; do
             case "$1" in
-                -h|--help)      usage_restart; exit 0 ;;
-                --build)        DO_BUILD=true ;;
-                --pull)         DO_PULL=true ;;
-                --regen-conf)   REGEN_CONF=true ;;
-                --rest-heap)    next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
-                --master-heap)  next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
-                *)              bad_option "$1" ;;
+                -h|--help)        usage_restart; exit 0 ;;
+                --build)          DO_BUILD=true ;;
+                --pull)           DO_PULL=true ;;
+                --regen-conf)     REGEN_CONF=true ;;
+                --force)          DO_FORCE=true ;;
+                --rest-heap)      next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
+                --master-heap)    next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
+                --mongo-version)  next_arg "$@"; update_env MONGO_VERSION "${_next_val}"; shift ;;
+                --solr-version)   next_arg "$@"; update_env SOLR_VERSION "${_next_val}"; shift ;;
+                --mongo-port)     next_arg "$@"; update_env MONGO_PORT "${_next_val}"; shift ;;
+                --solr-port)      next_arg "$@"; update_env SOLR_PORT "${_next_val}"; shift ;;
+                --rest-port)      next_arg "$@"; update_env OPENCGA_REST_PORT "${_next_val}"; shift ;;
+                --iva-port)       next_arg "$@"; update_env IVA_PORT "${_next_val}"; shift ;;
+                --org)            next_arg "$@"; update_env OPENCGA_ORG_ID "${_next_val}"; shift ;;
+                --user)           next_arg "$@"; update_env OPENCGA_OWNER_ID "${_next_val}"; shift ;;
+                --user-password)  next_arg "$@"; update_env OPENCGA_OWNER_PASSWORD "${_next_val}"; shift ;;
+                --admin-password) next_arg "$@"; update_env OPENCGA_ADMIN_PASSWORD "${_next_val}"; shift ;;
+                *)                bad_option "$1" ;;
             esac
             shift
         done
