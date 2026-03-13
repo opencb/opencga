@@ -1029,11 +1029,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 Map<String, Document> files1 = ((List<Document>) study1.get(FILES_FIELD))
                         .stream()
                         .collect(Collectors.toMap(
-                                d -> metadataManager.getFileName(sc1.getId(), Math.abs(d.getInteger(FILEID_FIELD))),
+                                d -> metadataManager.getFileName(sc1.getId(), d.getInteger(FILEID_FIELD)),
                                 Function.identity()));
                 Map<String, Document> files2 = ((List<Document>) study2.get(FILES_FIELD))
                         .stream()
-                        .collect(Collectors.toMap(d -> metadataManager.getFileName(sc2.getId(), Math.abs(d.getInteger(FILEID_FIELD))), Function.identity()));
+                        .collect(Collectors.toMap(d -> metadataManager.getFileName(sc2.getId(), d.getInteger(FILEID_FIELD)), Function.identity()));
                 assertEquals(id, study1.get(FILES_FIELD, List.class).size(), study2.get(FILES_FIELD, List.class).size());
                 assertEquals(id, files1.size(), files2.size());
                 for (Map.Entry<String, Document> entry : files1.entrySet()) {

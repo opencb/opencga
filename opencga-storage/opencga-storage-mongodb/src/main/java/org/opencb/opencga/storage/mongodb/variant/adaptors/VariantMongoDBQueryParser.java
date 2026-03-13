@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsFromFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1106,17 +1107,26 @@ public class VariantMongoDBQueryParser {
             }
         } else {
             if (fileIdGroupsFromSamples.isEmpty()) {
-                filters.add(addQueryFilter(DocumentToVariantConverter.FILES_FIELD
-                                + '.' + DocumentToStudyEntryConverter.FILEID_FIELD,
-                        fileQuery.getValues(), filesOperation,
-                        value -> {
-                            int fileId = value.getValue().getId();
-                            if (overlappedFilesFiles) {
-                                return -fileId;
-                            } else {
-                                return fileId;
-                            }
-                        }));
+                if (overlappedFilesFiles) {
+                    // Match file documents that have the overlapping status marker (_ovs field)
+                    List<Bson> overlappedConditions = new ArrayList<>();
+                    for (NegatableValue<ResourceId> value : fileQuery.getValues()) {
+                        if (!value.isNegated()) {
+                            overlappedConditions.add(elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                                    and(eq(DocumentToStudyEntryConverter.FILEID_FIELD, value.getValue().getId()),
+                                            exists(MongoDBFillGapsFromFile.OVERLAPPING_STATUS_KEY))));
+                        }
+                    }
+                    if (!overlappedConditions.isEmpty()) {
+                        filters.add(overlappedConditions.size() == 1 ? overlappedConditions.get(0)
+                                : (filesOperation == QueryOperation.AND ? and(overlappedConditions) : or(overlappedConditions)));
+                    }
+                } else {
+                    filters.add(addQueryFilter(DocumentToVariantConverter.FILES_FIELD
+                                    + '.' + DocumentToStudyEntryConverter.FILEID_FIELD,
+                            fileQuery.getValues(), filesOperation,
+                            value -> value.getValue().getId()));
+                }
             } else {
                 // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
                 // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
@@ -1130,14 +1140,7 @@ public class VariantMongoDBQueryParser {
                         negatedFiles = fileQuery
                                 .stream()
                                 .filter(NegatableValue::isNegated)
-                                .map(value -> {
-                                    int fileId = value.getValue().getId();
-                                    if (overlappedFilesFiles) {
-                                        return -fileId;
-                                    } else {
-                                        return fileId;
-                                    }
-                                })
+                                .map(value -> value.getValue().getId())
                                 .collect(Collectors.toList());
                     }
                     for (Integer fileId : fileIds) {
@@ -1778,7 +1781,9 @@ public class VariantMongoDBQueryParser {
             } else {
                 studyConditions.add(new Document("$and", Arrays.asList(
                         new Document("$eq", Arrays.asList("$$this." + DocumentToStudyEntryConverter.STUDYID_FIELD, sid)),
-                        new Document("$in", Arrays.asList("$$this." + DocumentToStudyEntryConverter.FILEID_FIELD, new ArrayList<>(fileIds))
+                        new Document("$in", Arrays.asList(
+                                "$$this." + DocumentToStudyEntryConverter.FILEID_FIELD,
+                                new ArrayList<>(fileIds))
                         ))));
             }
         }

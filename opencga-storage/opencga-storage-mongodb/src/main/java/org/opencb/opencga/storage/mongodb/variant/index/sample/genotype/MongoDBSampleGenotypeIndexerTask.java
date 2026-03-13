@@ -164,9 +164,6 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                     continue;
                 }
                 int fid = fileDoc.getInteger(DocumentToStudyEntryConverter.FILEID_FIELD);
-                if (fid < 0) {
-                    fid = -fid;
-                }
 
                 Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
                 if (mgt == null) {

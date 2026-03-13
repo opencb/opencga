@@ -443,12 +443,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Find variant documents where this study has ONLY the files being removed (no otherIndexedFiles remain).
         // These variants need the entire study entry removed; the others just need the specific file entries pulled.
         // Since files are now stored at root level (files[]), check root files[] instead of the old studies[].files.
-        // Include negated file IDs (-fid) used for PARTIAL / VIRTUAL file entries in multi-file loads.
-        List<Integer> allOtherFileIds = new ArrayList<>(otherIndexedFiles.size() * 2);
-        for (Integer f : otherIndexedFiles) {
-            allOtherFileIds.add(f);
-            allOtherFileIds.add(-f);
-        }
+        List<Integer> allOtherFileIds = new ArrayList<>(otherIndexedFiles);
         Bson studiesToRemoveQuery = and(
                 elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
                 not(elemMatch(DocumentToVariantConverter.FILES_FIELD,

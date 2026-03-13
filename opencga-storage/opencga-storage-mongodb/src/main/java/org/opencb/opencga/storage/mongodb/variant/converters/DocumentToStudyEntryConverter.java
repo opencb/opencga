@@ -170,9 +170,6 @@ public class DocumentToStudyEntryConverter {
                 if (studyId != studyIdFromFile) {
                     continue;
                 }
-                if (fid < 0) {
-                    fid = -fid;
-                }
 
                 OriginalCall call = null;
                 if (fileDocument.containsKey(ORI_FIELD)) {

@@ -230,9 +230,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             filesWithSamplesData = new HashSet<>();
             for (Document fileObject : fileDocuments) {
                 int fileId = fileObject.get(DocumentToStudyEntryConverter.FILEID_FIELD, Number.class).intValue();
-                if (fileId < 0) {
-                    fileId = -fileId;
-                }
                 files.put(fileId, fileObject);
 
                 List<Integer> samplesInFile = getSamplesInFile(studyId, fileId);

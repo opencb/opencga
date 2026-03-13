@@ -308,11 +308,6 @@ public class MongoDBFillGapsFromFile {
         // Use SampleToDocumentConverter for mgt + sampleData + sfd
         samplesConverter.convertToStorageType(orderedStudy, fileSampleNames, fileDoc);
 
-        // Override fileId for VARIANT/MULTI (negative means "overlapped file")
-        if (status == VariantOverlappingStatus.VARIANT || status == VariantOverlappingStatus.MULTI) {
-            fileDoc.put(FILEID_FIELD, -fileId);
-        }
-
         // Store overlapping status at root level of file document
         fileDoc.put(OVERLAPPING_STATUS_KEY, status.toString());
 

@@ -126,7 +126,7 @@ public class MongoDBFillGapsTest extends FillGapsTest implements MongoDBVariantS
                 for (Map.Entry<Integer, Document> entry : study1OrigByFid.entrySet()) {
                     int fid1 = entry.getKey();
                     Document f1 = entry.getValue();
-                    Integer fid2 = fileId1To2.get(Math.abs(fid1));
+                    Integer fid2 = fileId1To2.get(fid1);
                     assertNotNull("No file mapping for fid=" + fid1 + " at " + variantId, fid2);
                     Document f2 = study2ByFid.remove(fid2);
                     assertNotNull("Missing reference file fid=" + fid2 + " at " + variantId, f2);

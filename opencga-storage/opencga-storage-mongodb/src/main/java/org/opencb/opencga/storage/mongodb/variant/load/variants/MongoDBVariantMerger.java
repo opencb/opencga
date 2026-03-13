@@ -41,7 +41,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsFromFile;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -621,9 +623,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         // For all the files that are being indexed
         for (Integer fileId : fileIds) {
             FileEntry file = studyEntry.getFile(fileId.toString());
-            if (file == null) {
-                file = studyEntry.getFile(String.valueOf(-fileId));
-            }
             if (file != null) {
                 // GT data is in FILE_GENOTYPE_FIELD (mgt) inside each file document; no study-level gt.
                 Pair<Document, List<Document>> pair = studyConverter.convertToStorageType(variant, studyEntry, file,
@@ -637,9 +636,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (newStudy) {
             for (Integer fileId : getIndexedFiles()) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
-                if (file == null) {
-                    file = studyEntry.getFile(String.valueOf(-fileId));
-                }
                 if (file != null) {
                     Pair<Document, List<Document>> pair = studyConverter.convertToStorageType(variant, studyEntry, file,
                             getSampleNamesInFile(fileId));
@@ -920,16 +916,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     private void markAsOverlapped(FileEntry fileEntry) {
-        int fid = getFileId(fileEntry);
-        if (fid > 0) {
-            fileEntry.setFileId(String.valueOf(-fid));
+        if (fileEntry.getData() == null) {
+            fileEntry.setData(new HashMap<>());
         }
+        fileEntry.getData().put(MongoDBFillGapsFromFile.OVERLAPPING_STATUS_KEY,
+                VariantOverlappingStatus.VARIANT.toString());
     }
 
     private void markAsNonOverlapped(FileEntry fileEntry) {
-        int fid = getFileId(fileEntry);
-        if (fid < 0) {
-            fileEntry.setFileId(String.valueOf(-fid));
+        if (fileEntry.getData() != null) {
+            fileEntry.getData().remove(MongoDBFillGapsFromFile.OVERLAPPING_STATUS_KEY);
         }
     }
 
@@ -1168,7 +1164,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 samplesPosition.put(sampleName, samplesPosition.size());
             }
             fileIdsMap.put(String.valueOf(fileId), fileId);
-            fileIdsMap.put(String.valueOf(-fileId), fileId);
             fileIdsMap.put(fileMetadata.getName(), fileId);
             sampleNamesInFile.put(fileId, sampleNames);
             samplesPositionMap.put(fileId, samplesPosition);

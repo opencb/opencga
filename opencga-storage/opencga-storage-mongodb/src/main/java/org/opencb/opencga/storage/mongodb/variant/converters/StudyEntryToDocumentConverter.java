@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.storage.mongodb.variant.gaps.MongoDBFillGapsFromFile;
 
 import java.io.IOException;
 import java.util.*;
@@ -97,6 +98,11 @@ public class StudyEntryToDocumentConverter {
             for (Map.Entry<String, String> entry : file.getData().entrySet()) {
                 String stringValue = entry.getValue();
                 String key = entry.getKey().replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS);
+                // Overlapping status is stored at root level of the file document, not inside attrs
+                if (key.equals(MongoDBFillGapsFromFile.OVERLAPPING_STATUS_KEY)) {
+                    fileObject.put(key, stringValue);
+                    continue;
+                }
                 Object value = stringValue;
                 if (key.equals("src")) {
                     if (includeSrc) {
