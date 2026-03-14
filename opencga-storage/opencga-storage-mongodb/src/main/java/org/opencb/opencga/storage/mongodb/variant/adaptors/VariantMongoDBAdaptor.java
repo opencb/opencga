@@ -702,6 +702,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // The aggregate() path does not perform a separate count; do it explicitly so that numMatches is
             // set to the total number of matching documents rather than just the (limited) result set size.
             result.setNumMatches(count(variantQuery).first());
+        } else {
+            result.setNumMatches(-1);
         }
         return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
     }
