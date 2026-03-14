@@ -99,6 +99,11 @@ init_env() {
 
 init_env
 
+# Compute OPENCGA_IMAGE if not explicitly set
+if [ -z "${OPENCGA_IMAGE:-}" ]; then
+    export OPENCGA_IMAGE="${OPENCGA_DOCKER_ORG:-opencb}/opencga-base:${OPENCGA_VERSION:-latest}"
+fi
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Memory helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +126,31 @@ apply_mem_multiplier() {
     awk "BEGIN {printf \"%.0fm\", ${heap_mb} * ${multiplier}}"
 }
 
+# Compute and export derived memory env vars from heap settings
+# (container mem_limit, JAVA_OPTS, HBASE_HEAPSIZE in MB)
+export_heap_vars() {
+    if [ -n "${OPENCGA_REST_HEAP:-}" ]; then
+        export OPENCGA_REST_JAVA_OPTS="${OPENCGA_REST_JAVA_OPTS:--Xmx${OPENCGA_REST_HEAP}}"
+        export OPENCGA_REST_MEM
+        OPENCGA_REST_MEM=$(apply_mem_multiplier "${OPENCGA_REST_HEAP}" 1.3)
+    fi
+    if [ -n "${OPENCGA_MASTER_HEAP:-}" ]; then
+        export OPENCGA_MASTER_JAVA_OPTS="${OPENCGA_MASTER_JAVA_OPTS:--Xmx${OPENCGA_MASTER_HEAP}}"
+        # Container limit = (master_heap + job_heap) * 1.3 to account for JVM overhead + child processes
+        local master_mb job_mb
+        master_mb=$(to_mb "${OPENCGA_MASTER_HEAP}")
+        job_mb=$(to_mb "${OPENCGA_JOB_HEAP:-1g}")
+        export OPENCGA_MASTER_MEM
+        OPENCGA_MASTER_MEM=$(awk "BEGIN {printf \"%.0fm\", ($master_mb + $job_mb) * 1.3}")
+    fi
+    if [ -n "${OPENCGA_HBASE_HEAP:-}" ]; then
+        export OPENCGA_HBASE_MEM
+        OPENCGA_HBASE_MEM=$(apply_mem_multiplier "${OPENCGA_HBASE_HEAP}" 1.3)
+        export OPENCGA_HBASE_HEAP_MB
+        OPENCGA_HBASE_HEAP_MB=$(to_mb "${OPENCGA_HBASE_HEAP}")
+    fi
+}
+
 # Update a KEY=value in .env — logs only when the value actually changes
 update_env() {
     local key="$1" val="$2"
@@ -135,6 +165,8 @@ update_env() {
         elif grep -q "^#${key}=" "${ENV_FILE}"; then
             sed -i "s|^#${key}=.*|${key}=${val}|" "${ENV_FILE}"
         else
+            # Ensure file ends with a newline before appending
+            [ -s "${ENV_FILE}" ] && [ "$(tail -c1 "${ENV_FILE}")" != "" ] && echo >> "${ENV_FILE}"
             echo "${key}=${val}" >> "${ENV_FILE}"
         fi
     fi
@@ -155,7 +187,7 @@ usage() {
 Usage: ./deploy.sh <command> [options]
 
 Commands:
-  up        Start all services
+  up        Start all services (use --storage hadoop for HBase + Phoenix)
   down      Stop and remove all services
   restart   Restart all services (down + up)
   build     Build opencga-base Docker image from local Maven build output
@@ -186,11 +218,18 @@ Options:
   --pull        Pull images before starting
   --regen-conf  Regenerate conf/ from build templates
   --load-demo   Load demo data after services are ready (for more options, use 'load-demo' command)
+  --storage ENGINE  Storage engine: mongodb (default) or hadoop (HBase + Phoenix)
   --force       Skip running-jobs safety check
 
   Configuration (persisted to .env):
+  --image [IMAGE]        Docker image to use (default: opencb/opencga-base:<version>)
+                         If IMAGE is omitted, shows the current image.
+                         Examples: --image myrepo/opencga:2.0.0
+                                   --image opencb/opencga-base:latest
   --rest-heap SIZE       Java heap for REST server (e.g., 512m, 2g)
-  --master-heap SIZE     Java heap for Master daemon (e.g., 256m, 1g)
+  --master-heap SIZE     Java heap for Master daemon (default: 400m)
+  --job-heap SIZE        Java heap for child job processes (default: 1g)
+  --hbase-heap SIZE      Java heap for HBase (default: 2g, hadoop mode only)
   --mongo-version VER    MongoDB version (e.g., 6.0, 7.0)
   --solr-version VER     Solr version (e.g., 8.11, 9.4)
   --mongo-port PORT      MongoDB host port (default: 27017)
@@ -219,10 +258,14 @@ EOF
 
 usage_build() {
     cat <<'EOF'
-Usage: ./deploy.sh build
+Usage: ./deploy.sh build [options]
 
 Build the opencga-base Docker image from local Maven build output.
 Requires 'mvn install -DskipTests' to have been run first.
+When storage=hadoop, also builds the HBase + Phoenix image.
+
+Options:
+  --storage ENGINE  Storage engine: mongodb (default) or hadoop (HBase + Phoenix)
 EOF
 }
 
@@ -252,19 +295,29 @@ EOF
 
 usage_restart() {
     cat <<'EOF'
-Usage: ./deploy.sh restart [options]
+Usage: ./deploy.sh restart [options] [service...]
 
-Restart all services (down + up). Preserves data and volumes.
+Restart services. If service names are given, restarts only those.
+Otherwise, restarts all (down + up). Accepts container or service names.
+
+Examples:
+  ./deploy.sh restart                          # Full restart (all services)
+  ./deploy.sh restart opencga-rest             # Restart REST only
+  ./deploy.sh restart opencga-rest opencga-master  # Restart REST and Master
 
 Options:
   --build       Build Docker image before starting
   --pull        Pull images before starting
   --regen-conf  Regenerate conf/ from build templates
+  --storage ENGINE  Storage engine: mongodb (default) or hadoop (HBase + Phoenix)
   --force       Skip running-jobs safety check
 
   Configuration (persisted to .env):
+  --image [IMAGE]        Docker image to use (default: opencb/opencga-base:<version>)
   --rest-heap SIZE       Java heap for REST server (e.g., 512m, 2g)
-  --master-heap SIZE     Java heap for Master daemon (e.g., 256m, 1g)
+  --master-heap SIZE     Java heap for Master daemon (default: 400m)
+  --job-heap SIZE        Java heap for child job processes (default: 1g)
+  --hbase-heap SIZE      Java heap for HBase (default: 2g, hadoop mode only)
   --mongo-version VER    MongoDB version (e.g., 6.0, 7.0)
   --solr-version VER     Solr version (e.g., 8.11, 9.4)
   --mongo-port PORT      MongoDB host port (default: 27017)
@@ -304,6 +357,7 @@ Usage: ./deploy.sh logs [options] [service...]
 
 Tail logs from services. Pass service names to filter, e.g.:
   ./deploy.sh logs opencga-rest opencga-master
+  ./deploy.sh logs hbase solr
 
 Options:
   --no-follow   Print logs and exit (don't follow)
@@ -358,7 +412,11 @@ check_port() {
 
 # docker compose wrapper that always uses the compose file from SCRIPT_DIR
 dc() {
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" "$@"
+    local compose_files=(-f "${SCRIPT_DIR}/docker-compose.yml")
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        compose_files+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
+    fi
+    docker compose "${compose_files[@]}" "$@"
 }
 
 # Check all configured ports before starting (skip if our own containers hold them)
@@ -372,6 +430,10 @@ check_ports() {
     check_port "${SOLR_PORT:-8983}" "Solr"             || failed=true
     check_port "${OPENCGA_REST_PORT:-9090}" "REST API" || failed=true
     check_port "${IVA_PORT:-8080}" "IVA"               || failed=true
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        check_port "${HBASE_MASTER_PORT:-16010}" "HBase Master UI" || failed=true
+        check_port "${ZOOKEEPER_PORT:-2181}" "ZooKeeper"           || failed=true
+    fi
     if [ "$failed" = "true" ]; then
         log_error "Port conflict detected. Free the ports or change them in .env"
         exit 1
@@ -394,12 +456,13 @@ check_heap_limits() {
         fi
     fi
     if [ -n "${OPENCGA_MASTER_HEAP:-}" ]; then
-        heap_mb=$(to_mb "${OPENCGA_MASTER_HEAP}")
+        local combined_mb
+        combined_mb=$(awk "BEGIN {printf \"%.0f\", $(to_mb "${OPENCGA_MASTER_HEAP}") + $(to_mb "${OPENCGA_JOB_HEAP:-1g}")}")
         if [ -n "${OPENCGA_MASTER_MEM:-}" ]; then
             local explicit_limit_mb
             explicit_limit_mb=$(to_mb "${OPENCGA_MASTER_MEM}")
-            if [ "$heap_mb" -gt "$explicit_limit_mb" ]; then
-                log_error "Master heap (${OPENCGA_MASTER_HEAP} = ${heap_mb}m) exceeds container limit (${OPENCGA_MASTER_MEM} = ${explicit_limit_mb}m)"
+            if [ "$combined_mb" -gt "$explicit_limit_mb" ]; then
+                log_error "Master+Job heap (${OPENCGA_MASTER_HEAP} + ${OPENCGA_JOB_HEAP:-1g} = ${combined_mb}m) exceeds container limit (${OPENCGA_MASTER_MEM} = ${explicit_limit_mb}m)"
                 exit 1
             fi
         fi
@@ -423,6 +486,12 @@ check_conf() {
     if grep -q 'localhost:27017' "${CONF_TARGET}/storage-configuration.yml" 2>/dev/null; then
         log_warn "storage-configuration.yml still references localhost:27017 (expected mongodb:27017)"
         errors=$((errors + 1))
+    fi
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        if [ ! -f "${CONF_TARGET}/hadoop/hbase-site.xml" ]; then
+            log_warn "hbase-site.xml not found in conf/hadoop/ (required for Hadoop mode)"
+            errors=$((errors + 1))
+        fi
     fi
     if [ "$errors" -gt 0 ]; then
         log_error "Config patching incomplete. Run './deploy.sh init-conf' or './deploy.sh up --regen-conf'"
@@ -487,6 +556,17 @@ do_health() {
         all_ok=false
     fi
 
+    # HBase (only in hadoop mode)
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        printf "  %-16s" "HBase"
+        if dc exec -T hbase hbase shell -n <<< 'status' 2>/dev/null | grep -q '1 active'; then
+            echo -e "${C_GREEN}healthy${C_RESET}"
+        else
+            echo -e "${C_RED}unreachable${C_RESET}"
+            all_ok=false
+        fi
+    fi
+
     # REST API
     printf "  %-16s" "REST API"
     local rest_url="http://localhost:${OPENCGA_REST_PORT:-9090}/opencga/webservices/rest/v3/meta/status"
@@ -541,18 +621,26 @@ do_info() {
     # Version & image
     echo -e "${C_BOLD}Image${C_RESET}"
     printf "  %-22s %s\n" "OpenCGA version:" "${OPENCGA_VERSION:-unknown}"
-    printf "  %-22s %s\n" "Docker image:" "${OPENCGA_DOCKER_ORG:-opencb}/opencga-base:${OPENCGA_VERSION:-unknown}"
+    printf "  %-22s %s\n" "Docker image:" "${OPENCGA_IMAGE}"
     printf "  %-22s %s\n" "IVA image:" "${IVA_DOCKER_IMAGE:-opencb/iva-app}:${IVA_VERSION:-unknown}"
     local img_id
-    img_id=$(docker image inspect "${OPENCGA_DOCKER_ORG:-opencb}/opencga-base:${OPENCGA_VERSION:-unknown}" --format '{{.Id}}' 2>/dev/null | cut -c8-19)
+    img_id=$(docker image inspect "${OPENCGA_IMAGE}" --format '{{.Id}}' 2>/dev/null | cut -c8-19)
     if [ -n "$img_id" ]; then
         local img_created
-        img_created=$(docker image inspect "${OPENCGA_DOCKER_ORG:-opencb}/opencga-base:${OPENCGA_VERSION:-unknown}" --format '{{.Created}}' 2>/dev/null | cut -c1-19)
+        img_created=$(docker image inspect "${OPENCGA_IMAGE}" --format '{{.Created}}' 2>/dev/null | cut -c1-19)
         printf "  %-22s %s  (%s)\n" "Image ID:" "$img_id" "$img_created"
     else
         printf "  %-22s %s\n" "Image:" "${C_YELLOW}not found (run ./deploy.sh build)${C_RESET}"
     fi
     echo ""
+
+    # Mode
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        echo -e "${C_BOLD}Storage Engine${C_RESET}"
+        printf "  %-22s %s\n" "Mode:" "hadoop (HBase + Phoenix)"
+        printf "  %-22s %s\n" "MR Executor:" "embedded (in-process)"
+        echo ""
+    fi
 
     # Ports
     echo -e "${C_BOLD}Ports${C_RESET}"
@@ -560,19 +648,33 @@ do_info() {
     printf "  %-22s %s\n" "IVA:" "http://localhost:${IVA_PORT:-8080}/iva"
     printf "  %-22s %s\n" "MongoDB:" "localhost:${MONGO_PORT:-27017}"
     printf "  %-22s %s\n" "Solr:" "http://localhost:${SOLR_PORT:-8983}"
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        printf "  %-22s %s\n" "HBase Master UI:" "http://localhost:${HBASE_MASTER_PORT:-16010}"
+        printf "  %-22s %s\n" "ZooKeeper:" "localhost:${ZOOKEEPER_PORT:-2181}"
+    fi
     echo ""
 
     # Memory
     echo -e "${C_BOLD}Memory${C_RESET}"
     local rest_heap="${OPENCGA_REST_HEAP:-500m}"
-    local master_heap="${OPENCGA_MASTER_HEAP:-1g}"
+    local master_heap="${OPENCGA_MASTER_HEAP:-400m}"
+    local job_heap="${OPENCGA_JOB_HEAP:-1g}"
     local rest_limit master_limit
     rest_limit=$(apply_mem_multiplier "$rest_heap" 1.3)
-    master_limit=$(apply_mem_multiplier "$master_heap" 2.2)
+    local master_mb job_mb
+    master_mb=$(to_mb "$master_heap")
+    job_mb=$(to_mb "$job_heap")
+    master_limit=$(awk "BEGIN {printf \"%.0fm\", ($master_mb + $job_mb) * 1.3}")
     printf "  %-22s heap %-5s  container %s  (1.3x)\n" "REST:" "$rest_heap" "$rest_limit"
-    printf "  %-22s heap %-5s  container %s  (2.2x)\n" "Master:" "$master_heap" "$master_limit"
+    printf "  %-22s heap %-5s  job heap %-5s  container %s  ((master+job)*1.3)\n" "Master:" "$master_heap" "$job_heap" "$master_limit"
     printf "  %-22s %s\n" "MongoDB:" "${OPENCGA_MONGO_MEM:-1g}"
     printf "  %-22s %s\n" "Solr:" "${OPENCGA_SOLR_MEM:-1g}"
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        local hbase_heap="${OPENCGA_HBASE_HEAP:-2g}"
+        local hbase_limit
+        hbase_limit=$(apply_mem_multiplier "$hbase_heap" 1.3)
+        printf "  %-22s heap %-5s  container %s  (1.3x)\n" "HBase:" "$hbase_heap" "$hbase_limit"
+    fi
     printf "  %-22s %s\n" "IVA:" "20m"
     echo ""
 
@@ -596,6 +698,10 @@ do_info() {
     echo -e "${C_BOLD}Infrastructure${C_RESET}"
     printf "  %-22s %s\n" "MongoDB:" "mongo:${MONGO_VERSION:-6.0}"
     printf "  %-22s %s\n" "Solr:" "solr:${SOLR_VERSION:-8.11}"
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        printf "  %-22s %s\n" "HBase:" "2.5.10 (standalone)"
+        printf "  %-22s %s\n" "Phoenix:" "5.2.0"
+    fi
     local compose_ver
     compose_ver=$(docker compose version --short 2>/dev/null)
     printf "  %-22s %s\n" "Docker Compose:" "${compose_ver:-unknown}"
@@ -621,6 +727,17 @@ init_conf() {
     log_step "Generating conf/ from ${CONF_SOURCE}"
     rm -rf "${CONF_TARGET}"
     cp -r "${CONF_SOURCE}" "${CONF_TARGET}"
+
+    # Copy files from the Docker image that aren't in the build conf dir
+    # (e.g., opencga-env.sh, conf/hadoop/) — the bind mount hides the image's /opt/opencga/conf/
+    docker run --rm --user 0:0 -v "${CONF_TARGET}:/host-conf" "${OPENCGA_IMAGE}" \
+        bash -c 'for f in /opt/opencga/conf/*; do
+            name=$(basename "$f")
+            if [ ! -e "/host-conf/$name" ]; then
+                cp -r "$f" "/host-conf/$name"
+            fi
+        done
+        chown -R '"$(id -u):$(id -g)"' /host-conf/'
 
     # Patch hostnames for Docker networking
     # configuration.yml: MongoDB host
@@ -657,6 +774,45 @@ init_conf() {
 }
 EOJSON
 
+    # Hadoop storage engine configuration
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        log_step "Patching storage-configuration.yml for Hadoop mode"
+
+        local storage_conf="${CONF_TARGET}/storage-configuration.yml"
+
+        # Set default engine to hadoop
+        sed -i 's|defaultEngine:.*|defaultEngine: "hadoop"|' "${storage_conf}"
+
+        # Set MR executor to embedded (no hadoop binary needed in container)
+        sed -i 's|storage.hadoop.mr.executor:.*|storage.hadoop.mr.executor: "embedded"|' "${storage_conf}"
+
+        # Replace snappy compression with gz (native snappy lib not available in this image)
+        sed -i 's|compression: "snappy"|compression: "gz"|g' "${storage_conf}"
+
+        # Reduce pre-split regions for local standalone HBase (500 is for production clusters)
+        sed -i 's|variant.table.preSplit.numSplits:.*|variant.table.preSplit.numSplits: 10|' "${storage_conf}"
+
+        # Skip reporting running jobs to the master (not needed locally, avoids connection issues)
+        sed -i '/storage.hadoop.mr.executor:/a\        storage.hadoop.mr.skipReportRunningJobs: true' "${storage_conf}"
+
+        # Generate client-side hbase-site.xml in conf/hadoop/ (added to classpath by opencga-env.sh)
+        # This tells the HBase client where to find ZooKeeper (the hbase container)
+        mkdir -p "${CONF_TARGET}/hadoop"
+        cat > "${CONF_TARGET}/hadoop/hbase-site.xml" <<'EOXML'
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property><name>hbase.zookeeper.quorum</name><value>hbase</value></property>
+  <property><name>hbase.zookeeper.property.clientPort</name><value>2181</value></property>
+  <property><name>phoenix.schema.isNamespaceMappingEnabled</name><value>true</value></property>
+  <property><name>phoenix.table.ttl.enabled</name><value>false</value></property>
+  <property><name>phoenix.client.maxMetaDataCacheSize</name><value>268435456</value></property>
+  <property><name>mapreduce.framework.name</name><value>local</value></property>
+</configuration>
+EOXML
+        log_info "Generated hbase-site.xml for Docker containers"
+    fi
+
     # Validate patching succeeded
     local patch_errors=0
     grep -q 'localhost:27017' "${CONF_TARGET}/configuration.yml" 2>/dev/null && patch_errors=$((patch_errors + 1))
@@ -676,12 +832,20 @@ do_build() {
         exit 1
     fi
 
-    log_step "Building ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}"
+    log_step "Building ${OPENCGA_IMAGE}"
     docker build \
-        -t "${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}" \
+        -t "${OPENCGA_IMAGE}" \
         -f "${DOCKERFILE}" \
         "${BUILD_CONTEXT}"
     log_info "Docker image built successfully."
+
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        log_step "Building HBase + Phoenix image"
+        docker build \
+            -t opencga-hbase:local \
+            "${SCRIPT_DIR}/hadoop"
+        log_info "HBase image built successfully."
+    fi
 }
 
 do_up() {
@@ -696,17 +860,7 @@ do_up() {
     check_heap_limits
     check_conf
 
-    # Set JAVA_OPTS from heap vars
-    if [ -n "${OPENCGA_REST_HEAP:-}" ]; then
-        export OPENCGA_REST_JAVA_OPTS="${OPENCGA_REST_JAVA_OPTS:--Xmx${OPENCGA_REST_HEAP}}"
-        export OPENCGA_REST_MEM
-        OPENCGA_REST_MEM=$(apply_mem_multiplier "${OPENCGA_REST_HEAP}" 1.3)
-    fi
-    if [ -n "${OPENCGA_MASTER_HEAP:-}" ]; then
-        export OPENCGA_MASTER_JAVA_OPTS="${OPENCGA_MASTER_JAVA_OPTS:--Xmx${OPENCGA_MASTER_HEAP}}"
-        export OPENCGA_MASTER_MEM
-        OPENCGA_MASTER_MEM=$(apply_mem_multiplier "${OPENCGA_MASTER_HEAP}" 2.2)
-    fi
+    export_heap_vars
 
     # Ensure data dirs exist and are owned by opencga user (UID 1001), no root files
     local data_dir="${DATA_HOME}/data"
@@ -719,6 +873,9 @@ do_up() {
     log_info "Services starting. Use './deploy.sh top' to monitor or './deploy.sh logs' for logs."
     echo -e "  REST API: ${C_CYAN}http://localhost:${OPENCGA_REST_PORT:-9090}/opencga/webservices/rest/v2/meta/status${C_RESET}"
     echo -e "  IVA:      ${C_CYAN}http://localhost:${IVA_PORT:-8080}/iva${C_RESET}"
+    if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        echo -e "  HBase UI: ${C_CYAN}http://localhost:${HBASE_MASTER_PORT:-16010}${C_RESET}"
+    fi
     if [ -n "${OPENCGA_ORG_ID:-}" ]; then
         echo ""
         echo -e "  Organization: ${C_BOLD}${OPENCGA_ORG_ID}${C_RESET}"
@@ -771,9 +928,16 @@ clean_files() {
     if [ ${#vol_args[@]} -gt 0 ]; then
         docker run --rm "${vol_args[@]}" alpine sh -c "rm -rf /data/* /iva/*" 2>/dev/null || true
     fi
-    rm -rf "${DATA_HOME}/conf" "${DATA_HOME}/data" "${DATA_HOME}/iva"
-    rm -f "${DATA_HOME}/.env"
-    log_info "Cleaned ${DATA_HOME} (.env, conf/, data/, iva/)."
+    for item in conf data iva; do
+        if [ -e "${DATA_HOME}/${item}" ]; then
+            rm -rf "${DATA_HOME}/${item}"
+            log_info "Removed ${DATA_HOME}/${item}"
+        fi
+    done
+    if [ -f "${DATA_HOME}/.env" ]; then
+        rm -f "${DATA_HOME}/.env"
+        log_info "Removed ${DATA_HOME}/.env"
+    fi
 }
 
 _top_to_bytes() {
@@ -870,29 +1034,29 @@ do_top() {
             out=""
             project=$(dc config --format json 2>/dev/null | jq -r '.name' 2>/dev/null)
             if [ -n "$project" ]; then
-                vol_mounts=(); vol_names=(); du_paths=()
-                for vol in mongodb solr; do
+                vol_mounts=(); vol_real_names=(); vol_short=(); du_paths=()
+                for vol in mongodb solr hbase-data; do
                     real_name="${project}_opencga-${vol}"
                     if docker volume inspect "$real_name" >/dev/null 2>&1; then
                         vol_mounts+=(-v "${real_name}:/mnt/${vol}:ro")
-                        vol_names+=("$vol")
+                        vol_real_names+=("$real_name")
+                        vol_short+=("$vol")
                         du_paths+=("/mnt/${vol}")
                     fi
                 done
                 if [ ${#vol_mounts[@]} -gt 0 ]; then
                     du_out=$(docker run --rm "${vol_mounts[@]}" alpine du -sh "${du_paths[@]}" 2>/dev/null || true)
-                    for vol in "${vol_names[@]}"; do
-                        size=$(echo "$du_out" | grep "/mnt/${vol}" | awk '{print $1}')
-                        out+=$(printf "%-16s %8s\n" "$vol" "${size:-?}")$'\n'
+                    for i in "${!vol_short[@]}"; do
+                        size=$(echo "$du_out" | grep "/mnt/${vol_short[$i]}" | awk '{print $1}')
+                        out+=$(printf "%-40s %8s\n" "${vol_real_names[$i]}" "${size:-?}")$'\n'
                     done
                 fi
             fi
             local data_dir="${DATA_HOME}/data"
-            for dir_label in "sessions:${data_dir}/sessions" "logs:${data_dir}/logs"; do
-                label="${dir_label%%:*}"; path="${dir_label#*:}"
+            for path in "${data_dir}/sessions" "${data_dir}/logs"; do
                 if [ -d "$path" ]; then
                     size=$(du -sh "$path" 2>/dev/null | awk '{print $1}')
-                    out+=$(printf "%-16s %8s\n" "$label" "${size:-?}")$'\n'
+                    out+=$(printf "%-40s %8s\n" "$path" "${size:-?}")$'\n'
                 fi
             done
             printf "%s" "$out" > "$vol_file.tmp" && mv "$vol_file.tmp" "$vol_file"
@@ -949,10 +1113,8 @@ do_top() {
     ) &
     bg_jobs_pid=$!
 
-    local sep72 sep50 sep26
-    sep72=$(printf '─%.0s' $(seq 1 72))
+    local sep50
     sep50=$(printf '─%.0s' $(seq 1 50))
-    sep26=$(printf '─%.0s' $(seq 1 26))
 
     # Helper: compute uptime string from ISO timestamp
     _uptime() {
@@ -1041,6 +1203,17 @@ do_top() {
             local inspect_raw
             inspect_raw=$(cat "$inspect_file" 2>/dev/null)
 
+            # Sort stats lines by container start time (oldest first)
+            local sorted_raw="$raw"
+            if [ -n "$inspect_raw" ]; then
+                sorted_raw=$(while IFS='|' read -r n _rest; do
+                    [ -z "$n" ] && continue
+                    local ts
+                    ts=$(echo "$inspect_raw" | grep "/${n}|" | head -1 | cut -d'|' -f4)
+                    printf "%s\t%s\n" "${ts:-9999}" "$n|$_rest"
+                done <<< "$raw" | sort -t$'\t' -k1,1 | cut -f2-)
+            fi
+
             while IFS='|' read -r name cpu mem_usage mem_pct pids bio nio; do
                 [ -z "$name" ] && continue
                 local cpu_num=${cpu%%%}
@@ -1080,7 +1253,7 @@ do_top() {
                     "$nio_str" "$bio_str")"
                 buf+="${status_str}"
                 buf+="$(printf "%6s" "$uptime_str")\n"
-            done <<< "$raw"
+            done <<< "$sorted_raw"
 
             # ── Jobs ──
             local jobs_raw
@@ -1101,8 +1274,8 @@ do_top() {
             vol_cache=$(cat "$vol_file" 2>/dev/null)
             if [ -n "$vol_cache" ]; then
                 buf+="\n"
-                buf+="$(printf "${C_DIM}%-16s %8s${C_RESET}" "VOLUME" "DISK")\n"
-                buf+="${C_DIM}${sep26}${C_RESET}\n"
+                buf+="$(printf "${C_DIM}%-40s %8s${C_RESET}" "VOLUME" "DISK")\n"
+                buf+="${C_DIM}${sep50}${C_RESET}\n"
                 buf+="${vol_cache}"
             fi
         fi
@@ -1129,7 +1302,24 @@ do_clean() {
             return 0
         fi
     fi
-    dc down -v 2>/dev/null || true
+    # Always include all compose files so all volumes are removed (including hadoop)
+    local all_compose=(-f "${SCRIPT_DIR}/docker-compose.yml")
+    if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
+        all_compose+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
+    fi
+    log_info "Stopping and removing containers..."
+    docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
+
+    # Remove all project volumes (match by volume name containing "opencga-")
+    local vol
+    for vol in $(docker volume ls -q 2>/dev/null | grep "opencga-"); do
+        if docker volume rm "$vol" >/dev/null 2>&1; then
+            log_info "Removed volume: $vol"
+        else
+            log_warn "Failed to remove volume: $vol (in use?)"
+        fi
+    done
+
     clean_files
 }
 
@@ -1154,6 +1344,14 @@ next_arg() {
     _next_val="$2"
 }
 
+# Validate --storage value
+validate_storage() {
+    case "$1" in
+        mongodb|hadoop) ;;
+        *) log_error "Invalid storage engine '$1'. Must be 'mongodb' or 'hadoop'."; exit 1 ;;
+    esac
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1172,6 +1370,7 @@ case "${COMMAND}" in
         while [ $# -gt 0 ]; do
             case "$1" in
                 -h|--help) usage_build; exit 0 ;;
+                --storage) next_arg "$@"; validate_storage "${_next_val}"; update_env OPENCGA_STORAGE_ENGINE "${_next_val}"; shift ;;
                 *) bad_option "$1" ;;
             esac
             shift
@@ -1188,9 +1387,17 @@ case "${COMMAND}" in
                 --pull)           DO_PULL=true ;;
                 --regen-conf)     REGEN_CONF=true ;;
                 --load-demo)      DO_LOAD_DEMO=true ;;
+                --storage)        next_arg "$@"; validate_storage "${_next_val}"; update_env OPENCGA_STORAGE_ENGINE "${_next_val}"; REGEN_CONF=true; shift ;;
                 --force)          DO_FORCE=true ;;
+                --image)          if [ $# -ge 2 ] && [[ "$2" != -* ]]; then
+                                      update_env OPENCGA_IMAGE "$2"; shift
+                                  else
+                                      log_info "Current image: ${OPENCGA_IMAGE}"
+                                  fi ;;
                 --rest-heap)      next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
                 --master-heap)    next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
+                --job-heap)       next_arg "$@"; update_env OPENCGA_JOB_HEAP "${_next_val}"; shift ;;
+                --hbase-heap)     next_arg "$@"; update_env OPENCGA_HBASE_HEAP "${_next_val}"; shift ;;
                 --mongo-version)  next_arg "$@"; update_env MONGO_VERSION "${_next_val}"; shift ;;
                 --solr-version)   next_arg "$@"; update_env SOLR_VERSION "${_next_val}"; shift ;;
                 --mongo-port)     next_arg "$@"; update_env MONGO_PORT "${_next_val}"; shift ;;
@@ -1228,16 +1435,24 @@ case "${COMMAND}" in
         ;;
 
     restart)
-        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false; DO_FORCE=false
+        DO_BUILD=false; DO_PULL=false; REGEN_CONF=false; DO_FORCE=false; RESTART_SERVICES=()
         while [ $# -gt 0 ]; do
             case "$1" in
                 -h|--help)        usage_restart; exit 0 ;;
                 --build)          DO_BUILD=true ;;
                 --pull)           DO_PULL=true ;;
                 --regen-conf)     REGEN_CONF=true ;;
+                --storage)        next_arg "$@"; validate_storage "${_next_val}"; update_env OPENCGA_STORAGE_ENGINE "${_next_val}"; REGEN_CONF=true; shift ;;
                 --force)          DO_FORCE=true ;;
+                --image)          if [ $# -ge 2 ] && [[ "$2" != -* ]]; then
+                                      update_env OPENCGA_IMAGE "$2"; shift
+                                  else
+                                      log_info "Current image: ${OPENCGA_IMAGE}"
+                                  fi ;;
                 --rest-heap)      next_arg "$@"; update_env OPENCGA_REST_HEAP "${_next_val}"; shift ;;
                 --master-heap)    next_arg "$@"; update_env OPENCGA_MASTER_HEAP "${_next_val}"; shift ;;
+                --job-heap)       next_arg "$@"; update_env OPENCGA_JOB_HEAP "${_next_val}"; shift ;;
+                --hbase-heap)     next_arg "$@"; update_env OPENCGA_HBASE_HEAP "${_next_val}"; shift ;;
                 --mongo-version)  next_arg "$@"; update_env MONGO_VERSION "${_next_val}"; shift ;;
                 --solr-version)   next_arg "$@"; update_env SOLR_VERSION "${_next_val}"; shift ;;
                 --mongo-port)     next_arg "$@"; update_env MONGO_PORT "${_next_val}"; shift ;;
@@ -1248,14 +1463,23 @@ case "${COMMAND}" in
                 --user)           next_arg "$@"; update_env OPENCGA_OWNER_ID "${_next_val}"; shift ;;
                 --user-password)  next_arg "$@"; update_env OPENCGA_OWNER_PASSWORD "${_next_val}"; shift ;;
                 --admin-password) next_arg "$@"; update_env OPENCGA_ADMIN_PASSWORD "${_next_val}"; shift ;;
-                *)                bad_option "$1" ;;
+                *)                RESTART_SERVICES+=("$1") ;;
             esac
             shift
         done
-        do_down
-        if [ "${DO_BUILD}" = "true" ]; then do_build; fi
-        init_conf "${REGEN_CONF}"
-        do_up
+        if [ ${#RESTART_SERVICES[@]} -gt 0 ]; then
+            # Recreate specific services — picks up any compose file changes
+            # (env vars, mem_limit, restart policy, etc.) unlike plain "restart"
+            export_heap_vars
+            log_info "Recreating: ${RESTART_SERVICES[*]}"
+            dc up -d --no-deps "${RESTART_SERVICES[@]}"
+        else
+            # Full restart (down + up)
+            do_down
+            if [ "${DO_BUILD}" = "true" ]; then do_build; fi
+            init_conf "${REGEN_CONF}"
+            do_up
+        fi
         ;;
 
     load-demo)

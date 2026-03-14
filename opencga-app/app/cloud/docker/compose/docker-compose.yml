@@ -7,6 +7,7 @@ services:
   mongodb:
     image: mongo:${MONGO_VERSION}
     container_name: opencga-mongodb
+    restart: unless-stopped
     mem_limit: ${OPENCGA_MONGO_MEM:-1g}
     ports:
       - "${MONGO_PORT}:27017"
@@ -68,6 +69,7 @@ services:
   solr:
     image: solr:${SOLR_VERSION}
     container_name: opencga-solr
+    restart: unless-stopped
     mem_limit: ${OPENCGA_SOLR_MEM:-1g}
     ports:
       - "${SOLR_PORT}:8983"
@@ -83,7 +85,7 @@ services:
 
   # Copy Solr configsets from opencga-base into shared volume
   solr-configsets-copy:
-    image: ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}
+    image: ${OPENCGA_IMAGE}
     container_name: opencga-solr-configsets-copy
     user: "0:0"
     volumes:
@@ -122,7 +124,7 @@ services:
   # OpenCGA init: install catalog database
   # ─────────────────────────────────────────────────────────────────
   opencga-init:
-    image: ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}
+    image: ${OPENCGA_IMAGE}
     container_name: opencga-init
     depends_on:
       mongodb:
@@ -142,9 +144,10 @@ services:
   # OpenCGA REST server
   # ─────────────────────────────────────────────────────────────────
   opencga-rest:
-    image: ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}
+    image: ${OPENCGA_IMAGE}
     container_name: opencga-rest
     hostname: rest
+    restart: unless-stopped
     mem_limit: ${OPENCGA_REST_MEM:-650m}
     depends_on:
       opencga-init:
@@ -180,9 +183,10 @@ services:
   # OpenCGA Master (daemon for job execution, monitor, etc.)
   # ─────────────────────────────────────────────────────────────────
   opencga-master:
-    image: ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}
+    image: ${OPENCGA_IMAGE}
     container_name: opencga-master
     hostname: master
+    restart: unless-stopped
     mem_limit: ${OPENCGA_MASTER_MEM:-2253m}
     depends_on:
       opencga-setup:
@@ -207,7 +211,7 @@ services:
   # Create organization + owner user (requires REST API)
   # ─────────────────────────────────────────────────────────────────
   opencga-setup:
-    image: ${OPENCGA_DOCKER_ORG}/opencga-base:${OPENCGA_VERSION}
+    image: ${OPENCGA_IMAGE}
     container_name: opencga-setup
     depends_on:
       opencga-rest:
@@ -231,6 +235,7 @@ services:
   iva:
     image: ${IVA_DOCKER_IMAGE}:${IVA_VERSION}
     container_name: opencga-iva
+    restart: unless-stopped
     mem_limit: 20m
     depends_on:
       opencga-rest:

@@ -289,6 +289,8 @@ analysis:
         - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
+      local.javaHeap: "1g"          # Java heap (-Xmx) for child job processes
+      local.javaOffHeap: "100m"     # Off-heap (-XX:MaxDirectMemorySize) for child job processes
 
       ## Kubernetes executor configuration example
       # k8s.masterUrl: "https://192.168.99.100:8443/"

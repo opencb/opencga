@@ -1,0 +1,46 @@
+services:
+  # ─────────────────────────────────────────────────────────────────
+  # HBase standalone with Phoenix co-processors (ZK embedded)
+  # ─────────────────────────────────────────────────────────────────
+  hbase:
+    build:
+      context: ./hadoop
+      dockerfile: Dockerfile
+    container_name: opencga-hbase
+    restart: unless-stopped
+    mem_limit: ${OPENCGA_HBASE_MEM:-2g}
+    environment:
+      - HBASE_HEAPSIZE=${OPENCGA_HBASE_HEAP_MB:-2048}
+    ports:
+      - "${HBASE_MASTER_PORT:-16010}:16010"
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    volumes:
+      - opencga-hbase-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "echo status | hbase shell -n 2>/dev/null | grep -q '1 active'"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+
+  # Override opencga-init to also depend on hbase
+  opencga-init:
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      solr-init:
+        condition: service_completed_successfully
+      hbase:
+        condition: service_healthy
+
+  # Mount client hbase-site.xml into REST and Master
+  opencga-rest:
+    environment:
+      - JAVA_OPTS=${OPENCGA_REST_JAVA_OPTS:-}
+
+  opencga-master:
+    environment:
+      - JAVA_OPTS=${OPENCGA_MASTER_JAVA_OPTS:-}
+
+volumes:
+  opencga-hbase-data:

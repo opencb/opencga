@@ -45,7 +45,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_HBASE_PHOENIX_SCAN_SPLIT("storage.hadoop.mr.phoenix.scanSplit", 5),
 
     /**
-     * MapReduce executor. Could be either 'system' or 'ssh'.
+     * MapReduce executor. Could be 'system', 'ssh', or 'embedded'.
+     * Use 'embedded' to run MR drivers in-process (no hadoop binary required).
      */
     MR_EXECUTOR("storage.hadoop.mr.executor", "system"),
 
