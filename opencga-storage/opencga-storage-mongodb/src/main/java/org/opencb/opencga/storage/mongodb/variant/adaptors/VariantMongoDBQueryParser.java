@@ -667,6 +667,7 @@ public class VariantMongoDBQueryParser {
         return filters;
     }
 
+    // CSOFF: MethodLength
     private List<Bson> parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, @Deprecated Query query) {
         List<Bson> filters = new ArrayList<>();
         if (query == null) {
@@ -680,6 +681,7 @@ public class VariantMongoDBQueryParser {
 
             filters.add(addQueryFilter(DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyEntryConverter.STUDYID_FIELD,
                     studies.getValues(),
+                    studies.getOperation(),
                     study -> study.getValue().getId()));
         }
 
@@ -700,6 +702,15 @@ public class VariantMongoDBQueryParser {
                 for (String file : files) {
                     fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
                 }
+            }
+        } else if (defaultStudy != null && isValidParam(query, INCLUDE_SAMPLE)) {
+            // When INCLUDE_SAMPLE is set, scope FILTER/QUAL/FILE_DATA queries to the included
+            // sample's files (matching HBase column-scoped behavior).
+            VariantQueryProjection projection = parsedVariantQuery.getProjection();
+            VariantQueryProjection.StudyVariantQueryProjection studyProjection =
+                    projection.getStudy(defaultStudy.getId());
+            if (studyProjection != null && !studyProjection.getFileIds().isEmpty()) {
+                fileIds = studyProjection.getFileIds();
             }
         }
 
@@ -849,9 +860,16 @@ public class VariantMongoDBQueryParser {
                             fileFilters.add(gtCondition);
                         }
                     }
-                    fileElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileFilters)));
+                    // Only add $elemMatch if the file has conditions beyond just {fid: fileId}.
+                    // When fileIds come from INCLUDE_FILE (projection), files without
+                    // FILTER/QUAL/FILE_DATA conditions should not produce a match-all clause.
+                    if (fileFilters.size() > 1 || fileQuery != null) {
+                        fileElemMatch.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileFilters)));
+                    }
                 }
-                addAll(filters, filesOperation, fileElemMatch);
+                if (!fileElemMatch.isEmpty()) {
+                    addAll(filters, filesOperation, fileElemMatch);
+                }
 
             }
 
@@ -1162,6 +1180,7 @@ public class VariantMongoDBQueryParser {
 
         return filters;
     }
+    // CSON: MethodLength
 
     /**
      * Build filter for default genotype (e.g. 0/0). Ensures the sample is NOT present in any
