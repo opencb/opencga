@@ -30,8 +30,53 @@ if [ -z "${PROJECT_ROOT}" ]; then
     exit 1
 fi
 
-# Runtime data lives outside the repo, safe from mvn clean
-DATA_HOME="${OPENCGA_LOCAL_HOME:-${HOME}/.opencga/local}"
+# Base directory for all instances
+OPENCGA_BASE="${HOME}/.opencga/instances"
+
+# Pre-parse global options (must be before the command word)
+# These affect initialization so they are consumed before init_env().
+INSTANCE_NAME=""
+_args=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --name)
+            if [ $# -lt 2 ] || [[ "$2" == -* ]]; then
+                log_error "--name requires an instance name"
+                exit 1
+            fi
+            INSTANCE_NAME="$2"; shift 2 ;;
+        *)
+            _args+=("$1"); shift ;;
+    esac
+done
+set -- "${_args[@]}"
+
+# Derive instance name: explicit --name > auto-detect from existing instances
+if [ -z "${INSTANCE_NAME}" ]; then
+    # Count existing instances
+    _instances=()
+    if [ -d "${OPENCGA_BASE}" ]; then
+        for _d in "${OPENCGA_BASE}"/*/; do
+            [ -d "$_d" ] && _instances+=("$(basename "$_d")")
+        done
+    fi
+    case ${#_instances[@]} in
+        0) INSTANCE_NAME="local" ;;
+        1) INSTANCE_NAME="${_instances[0]}" ;;
+        *)
+            # Allow 'list' and 'help' without --name
+            _cmd="${1:-help}"
+            if [ "$_cmd" = "list" ] || [ "$_cmd" = "help" ] || [ "$_cmd" = "-h" ] || [ "$_cmd" = "--help" ]; then
+                INSTANCE_NAME="${_instances[0]}"
+            else
+                log_error "Multiple instances found. Use --name to specify one: ${_instances[*]}"
+                echo "       Run './deploy.sh list' to see all instances."
+                exit 1
+            fi
+            ;;
+    esac
+fi
+DATA_HOME="${OPENCGA_BASE}/${INSTANCE_NAME}"
 
 CONF_SOURCE="${PROJECT_ROOT}/build/cloud/docker/compose/conf"
 CONF_TARGET="${DATA_HOME}/conf"
@@ -43,7 +88,7 @@ ENV_TEMPLATE="${SCRIPT_DIR}/.env.template"
 
 # Export for docker-compose.yml interpolation
 export OPENCGA_LOCAL_HOME="${DATA_HOME}"
-export OPENCGA_LOCAL_SCRIPTS="${SCRIPT_DIR}/scripts"
+export OPENCGA_LOCAL_SCRIPTS="${DATA_HOME}/scripts"
 
 init_env() {
     # Ensure DATA_HOME directory exists
@@ -88,8 +133,6 @@ init_env() {
     if [ -n "${docker_sock}" ]; then
         sed -i "s|^#DOCKER_SOCK=.*|DOCKER_SOCK=${docker_sock}|" "${ENV_FILE}"
     fi
-
-    log_info "Generated ${ENV_FILE} (edit it to customize, it won't be overwritten)"
 
     # Source the generated file
     set -a
@@ -183,14 +226,21 @@ update_env() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 usage() {
-    cat <<'EOF'
-Usage: ./deploy.sh <command> [options]
+    cat <<EOF
+Usage: ./deploy.sh [--name INSTANCE] <command> [options]
+
+Global options:
+  --name NAME   Instance name (default: local)
+                Each instance is fully independent: config, data, volumes, containers.
+                All instances live under ~/.opencga/instances/<name>/.
+                Example: ./deploy.sh --name dev up --storage hadoop
 
 Commands:
   up        Start all services (use --storage hadoop for HBase + Phoenix)
   down      Stop and remove all services
   restart   Restart all services (down + up)
   build     Build opencga-base Docker image from local Maven build output
+  list      List all instances and their status
   load-demo Load demo data (project, study, VCF index jobs)
   cli       Open opencga.sh CLI (auto-login as owner)
   shell     Open interactive shell in opencga-base container
@@ -202,6 +252,8 @@ Commands:
   logs      Tail logs (pass service names as extra args)
   clean     Remove all data (data/ and conf/ directories)
   init-conf Generate conf/ from build config templates
+
+Current instance: ${INSTANCE_NAME} (${DATA_HOME})
 
 Run './deploy.sh <command> --help' for command-specific options.
 EOF
@@ -410,13 +462,40 @@ check_port() {
     return 0
 }
 
-# docker compose wrapper that always uses the compose file from SCRIPT_DIR
+# Project name derived from instance name (e.g., local → opencga-local)
+COMPOSE_PROJECT="opencga-${INSTANCE_NAME}"
+
+# docker compose wrapper — uses compose files from the instance directory
 dc() {
-    local compose_files=(-f "${SCRIPT_DIR}/docker-compose.yml")
+    local compose_dir="${DATA_HOME}"
+    # Fall back to source dir if instance files haven't been synced yet
+    if [ ! -f "${DATA_HOME}/docker-compose.yml" ]; then
+        compose_dir="${SCRIPT_DIR}"
+    fi
+    local compose_files=(-p "${COMPOSE_PROJECT}" -f "${compose_dir}/docker-compose.yml")
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
-        compose_files+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
+        compose_files+=(-f "${compose_dir}/docker-compose.hadoop.yml")
     fi
     docker compose "${compose_files[@]}" "$@"
+}
+
+# Copy compose files, scripts, and hadoop/ into the instance directory.
+# Called on every 'up' so the instance always has the latest files.
+sync_instance_files() {
+    mkdir -p "${DATA_HOME}"
+    # Compose files
+    cp "${SCRIPT_DIR}/docker-compose.yml" "${DATA_HOME}/docker-compose.yml"
+    if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
+        cp "${SCRIPT_DIR}/docker-compose.hadoop.yml" "${DATA_HOME}/docker-compose.hadoop.yml"
+    fi
+    # Scripts (used by opencga-init, opencga-setup, load-demo containers)
+    rm -rf "${DATA_HOME}/scripts"
+    cp -r "${SCRIPT_DIR}/scripts" "${DATA_HOME}/scripts"
+    # Hadoop Dockerfile + config (for building HBase image)
+    if [ -d "${SCRIPT_DIR}/hadoop" ]; then
+        rm -rf "${DATA_HOME}/hadoop"
+        cp -r "${SCRIPT_DIR}/hadoop" "${DATA_HOME}/hadoop"
+    fi
 }
 
 # Check all configured ports before starting (skip if our own containers hold them)
@@ -506,14 +585,14 @@ check_running_jobs() {
         return 0
     fi
     # Only check if the master container is running
-    if ! docker inspect --format '{{.State.Status}}' opencga-master 2>/dev/null | grep -q 'running'; then
+    if ! dc ps -q opencga-master 2>/dev/null | head -1 | xargs -r docker inspect --format '{{.State.Status}}' 2>/dev/null | grep -q 'running'; then
         return 0
     fi
     local job_count
-    job_count=$(docker exec opencga-master ps -eo args 2>/dev/null | grep -c "InternalMain" || true)
+    job_count=$(dc exec -T opencga-master ps -eo args 2>/dev/null | grep -c "InternalMain" || true)
     if [ "${job_count:-0}" -gt 0 ]; then
         log_error "${job_count} job(s) running in opencga-master. Use --force to proceed anyway."
-        docker exec opencga-master ps -eo pid,etime,args 2>/dev/null | grep "InternalMain" | \
+        dc exec -T opencga-master ps -eo pid,etime,args 2>/dev/null | grep "InternalMain" | \
             awk '{
                 pid=$1; elapsed=$2
                 cmd=""
@@ -590,9 +669,11 @@ do_health() {
 
     # Master
     printf "  %-16s" "Master"
-    if dc ps --format '{{.Name}} {{.Health}}' 2>/dev/null | grep -q 'opencga-master'; then
+    local master_cid
+    master_cid=$(dc ps -q opencga-master 2>/dev/null | head -1)
+    if [ -n "$master_cid" ]; then
         local master_status
-        master_status=$(docker inspect --format '{{.State.Status}}' opencga-master 2>/dev/null)
+        master_status=$(docker inspect --format '{{.State.Status}}' "$master_cid" 2>/dev/null)
         if [ "$master_status" = "running" ]; then
             echo -e "${C_GREEN}running${C_RESET}"
         else
@@ -611,6 +692,49 @@ do_health() {
     else
         log_error "Some services are not healthy"
         return 1
+    fi
+}
+
+do_list() {
+    printf "${C_DIM}%-16s %-14s %-40s %s${C_RESET}\n" "INSTANCE" "STATUS" "HOME" "STORAGE"
+    printf "${C_DIM}%s${C_RESET}\n" "$(printf '─%.0s' $(seq 1 90))"
+
+    # Get running project info from Docker
+    local docker_projects
+    docker_projects=$(docker compose ls --format json 2>/dev/null | jq -r '.[] | select(.Name | startswith("opencga-")) | .Name + "|" + .Status + "|" + .ConfigFiles' 2>/dev/null || true)
+
+    # Scan ~/.opencga/ for instance directories
+    local found=false
+    for dir in "${OPENCGA_BASE}"/*/; do
+        [ -d "$dir" ] || continue
+        local name
+        name=$(basename "$dir")
+        local project="opencga-${name}"
+        local status="${C_DIM}stopped${C_RESET}"
+        local storage="mongodb"
+
+        # Check Docker for running status
+        if [ -n "$docker_projects" ]; then
+            local docker_status
+            docker_status=$(echo "$docker_projects" | grep "^${project}|" | head -1 | cut -d'|' -f2)
+            if [ -n "$docker_status" ]; then
+                status="${C_GREEN}${docker_status}${C_RESET}"
+            fi
+        fi
+
+        # Read storage engine from .env
+        if [ -f "${dir}.env" ]; then
+            local engine
+            engine=$(grep "^OPENCGA_STORAGE_ENGINE=" "${dir}.env" 2>/dev/null | cut -d= -f2)
+            [ -n "$engine" ] && storage="$engine"
+        fi
+
+        printf "%-16s %-24b %-40s %s\n" "$name" "$status" "$dir" "$storage"
+        found=true
+    done
+
+    if [ "$found" = "false" ]; then
+        echo "  No instances found. Create one with: ./deploy.sh up"
     fi
 }
 
@@ -687,7 +811,8 @@ do_info() {
 
     # Paths
     echo -e "${C_BOLD}Paths${C_RESET}"
-    printf "  %-22s %s\n" "Data home:" "${DATA_HOME}"
+    printf "  %-22s %s\n" "Instance:" "${INSTANCE_NAME}"
+    printf "  %-22s %s\n" "Home:" "${DATA_HOME}"
     printf "  %-22s %s\n" "Config:" "${CONF_TARGET}"
     printf "  %-22s %s\n" "Scripts:" "${SCRIPT_DIR}/scripts"
     printf "  %-22s %s\n" "Docker socket:" "${DOCKER_SOCK:-not set}"
@@ -840,10 +965,16 @@ do_build() {
     log_info "Docker image built successfully."
 
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
+        # Ensure hadoop/ is synced for the build context
+        if [ -d "${SCRIPT_DIR}/hadoop" ]; then
+            mkdir -p "${DATA_HOME}"
+            rm -rf "${DATA_HOME}/hadoop"
+            cp -r "${SCRIPT_DIR}/hadoop" "${DATA_HOME}/hadoop"
+        fi
         log_step "Building HBase + Phoenix image"
         docker build \
             -t opencga-hbase:local \
-            "${SCRIPT_DIR}/hadoop"
+            "${DATA_HOME}/hadoop"
         log_info "HBase image built successfully."
     fi
 }
@@ -853,6 +984,9 @@ do_up() {
     if [ "${DO_PULL:-false}" = "true" ]; then
         pull_flag="--pull always"
     fi
+
+    # Sync compose files, scripts, hadoop/ into instance directory
+    sync_instance_files
 
     # Pre-flight checks
     check_running_jobs
@@ -1069,7 +1203,7 @@ do_top() {
     (
         trap 'exit 0' TERM
         while true; do
-            docker exec opencga-master ps -eo pid,pcpu,rss,etime,args 2>/dev/null | \
+            dc exec -T opencga-master ps -eo pid,pcpu,rss,etime,args 2>/dev/null | \
                 grep "InternalMain" | \
                 awk '{
                     pid=$1; cpu=$2; rss_kb=$3; elapsed=$4
@@ -1194,10 +1328,10 @@ do_top() {
 
             # ── Container table ──
             buf+="\n"
-            buf+="$(printf "${C_DIM}%-22s %6s  %-20s %5s %5s  %-17s %-17s %-9s %6s${C_RESET}" \
+            buf+="$(printf "${C_DIM}%-36s %6s  %-20s %5s %5s  %-17s %-17s %-9s %6s${C_RESET}" \
                 "CONTAINER" "CPU%" "MEMORY" "USED" "LIMIT" "NET I/O" "BLOCK I/O" "STATUS" "UP")\n"
             local sep_line
-            sep_line=$(printf '─%.0s' $(seq 1 117))
+            sep_line=$(printf '─%.0s' $(seq 1 131))
             buf+="${C_DIM}${sep_line}${C_RESET}\n"
             # Build a lookup from inspect data: name -> status|health|started
             local inspect_raw
@@ -1245,7 +1379,7 @@ do_top() {
                 local bar
                 bar=$(_top_bar "$mem_pct_num")
 
-                buf+="$(printf "%-22s %6s%%" "$name" "$cpu_num")"
+                buf+="$(printf "%-36s %6s%%" "$name" "$cpu_num")"
                 buf+="  ${bar}"
                 buf+="$(printf " %5s %5s  %-17s %-17s " \
                     "$(_top_fmt_bytes $(_top_to_bytes "$used"))" \
@@ -1296,23 +1430,23 @@ do_top() {
 
 do_clean() {
     if [ "${SKIP_CONFIRM:-false}" != "true" ]; then
-        read -r -p "This will remove ${DATA_HOME} (.env, conf/, data/, iva/) and Docker volumes. Continue? [y/N] " response
+        read -r -p "This will remove instance '${INSTANCE_NAME}' (${DATA_HOME}) and its Docker volumes. Continue? [y/N] " response
         if [[ ! "${response}" =~ ^[Yy]$ ]]; then
             echo "Aborted."
             return 0
         fi
     fi
     # Always include all compose files so all volumes are removed (including hadoop)
-    local all_compose=(-f "${SCRIPT_DIR}/docker-compose.yml")
+    local all_compose=(-p "${COMPOSE_PROJECT}" -f "${SCRIPT_DIR}/docker-compose.yml")
     if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
         all_compose+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
     fi
     log_info "Stopping and removing containers..."
     docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
 
-    # Remove all project volumes (match by volume name containing "opencga-")
+    # Remove project volumes (match by project name prefix)
     local vol
-    for vol in $(docker volume ls -q 2>/dev/null | grep "opencga-"); do
+    for vol in $(docker volume ls -q 2>/dev/null | grep "^${COMPOSE_PROJECT}_"); do
         if docker volume rm "$vol" >/dev/null 2>&1; then
             log_info "Removed volume: $vol"
         else
@@ -1376,6 +1510,10 @@ case "${COMMAND}" in
             shift
         done
         do_build
+        ;;
+
+    list)
+        do_list
         ;;
 
     up)

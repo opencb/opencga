@@ -6,7 +6,6 @@ services:
     build:
       context: ./hadoop
       dockerfile: Dockerfile
-    container_name: opencga-hbase
     restart: unless-stopped
     mem_limit: ${OPENCGA_HBASE_MEM:-2g}
     environment:
