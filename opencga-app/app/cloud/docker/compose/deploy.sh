@@ -709,7 +709,7 @@ do_list() {
         # Check Docker for running status
         if [ -n "$docker_projects" ]; then
             local docker_status
-            docker_status=$(echo "$docker_projects" | grep "^${project}|" | head -1 | cut -d'|' -f2)
+            docker_status=$(echo "$docker_projects" | grep "^${project}|" | head -1 | cut -d'|' -f2 || true)
             if [ -n "$docker_status" ]; then
                 status="${C_GREEN}${docker_status}${C_RESET}"
             fi
@@ -997,7 +997,7 @@ do_up() {
     # shellcheck disable=SC2086
     dc up -d ${pull_flag}
     echo ""
-    log_info "Services starting. Use './deploy.sh top' to monitor or './deploy.sh logs' for logs."
+    log_info "Instance '${INSTANCE_NAME}' starting. Use './deploy.sh top' to monitor or './deploy.sh logs' for logs."
     echo -e "  REST API: ${C_CYAN}http://localhost:${OPENCGA_REST_PORT:-9090}/opencga/webservices/rest/v2/meta/status${C_RESET}"
     echo -e "  IVA:      ${C_CYAN}http://localhost:${IVA_PORT:-8080}/iva${C_RESET}"
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
@@ -1055,15 +1055,11 @@ clean_files() {
     if [ ${#vol_args[@]} -gt 0 ]; then
         docker run --rm "${vol_args[@]}" alpine sh -c "rm -rf /data/* /iva/*" 2>/dev/null || true
     fi
-    for item in conf data iva; do
-        if [ -e "${DATA_HOME}/${item}" ]; then
-            rm -rf "${DATA_HOME}/${item}"
-            log_info "Removed ${DATA_HOME}/${item}"
-        fi
-    done
     if [ -f "${DATA_HOME}/.env" ]; then
-        rm -f "${DATA_HOME}/.env"
-        log_info "Removed ${DATA_HOME}/.env"
+        rm -rf "${DATA_HOME:?}"
+        log_info "Removed instance directory ${DATA_HOME}"
+    elif [ -d "${DATA_HOME}" ]; then
+        log_warn "Directory ${DATA_HOME} does not look like an instance (missing .env). Skipping removal."
     fi
 }
 
@@ -1183,7 +1179,7 @@ do_top() {
             for path in "${data_dir}/sessions" "${data_dir}/logs"; do
                 if [ -d "$path" ]; then
                     size=$(du -sh "$path" 2>/dev/null | awk '{print $1}')
-                    out+=$(printf "%-40s %8s\n" "$path" "${size:-?}")$'\n'
+                    out+=$(printf "%-40s %8s\n" "${path#"${DATA_HOME}"/}" "${size:-?}")$'\n'
                 fi
             done
             printf "%s" "$out" > "$vol_file.tmp" && mv "$vol_file.tmp" "$vol_file"
@@ -1299,7 +1295,7 @@ do_top() {
         raw=$(cat "$stats_file" 2>/dev/null)
 
         if [ -z "$raw" ]; then
-            buf+="${C_BOLD}OpenCGA Docker — $(date '+%H:%M:%S')${C_RESET}\n"
+            buf+="${C_BOLD}OpenCGA Docker [${INSTANCE_NAME}] — $(date '+%H:%M:%S')${C_RESET}\n"
             buf+="\n${C_DIM}Waiting for data...${C_RESET}\n"
         else
             # Compute totals
@@ -1434,7 +1430,7 @@ do_clean() {
     if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
         all_compose+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
     fi
-    log_info "Stopping and removing containers..."
+    log_info "Stopping and removing containers for instance '${INSTANCE_NAME}'..."
     docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
 
     # Remove project volumes (match by project name prefix)
@@ -1602,7 +1598,7 @@ case "${COMMAND}" in
             # Recreate specific services — picks up any compose file changes
             # (env vars, mem_limit, restart policy, etc.) unlike plain "restart"
             export_heap_vars
-            log_info "Recreating: ${RESTART_SERVICES[*]}"
+            log_info "Recreating (${INSTANCE_NAME}): ${RESTART_SERVICES[*]}"
             dc up -d --no-deps "${RESTART_SERVICES[@]}"
         else
             # Full restart (down + up)
