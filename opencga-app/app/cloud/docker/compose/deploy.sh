@@ -464,18 +464,15 @@ check_port() {
 # Project name derived from instance name (e.g., local → opencga-local)
 COMPOSE_PROJECT="opencga-${INSTANCE_NAME}"
 
-# docker compose wrapper — uses compose files from the instance directory
+# docker compose wrapper — always reads compose files from the source directory.
+# Snap-installed Docker cannot open files under dot-directories (~/.opencga/),
+# so we avoid pointing -f at DATA_HOME.
 dc() {
-    local compose_dir="${DATA_HOME}"
-    # Fall back to source dir if instance files haven't been synced yet
-    if [ ! -f "${DATA_HOME}/docker-compose.yml" ]; then
-        compose_dir="${SCRIPT_DIR}"
-    fi
     # --env-file /dev/null prevents Docker Compose from auto-reading .env in the compose dir.
     # All variables are already exported via bash's 'source' in init_env().
-    local compose_files=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${compose_dir}/docker-compose.yml")
+    local compose_files=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${SCRIPT_DIR}/docker-compose.yml")
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
-        compose_files+=(-f "${compose_dir}/docker-compose.hadoop.yml")
+        compose_files+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
     fi
     docker compose "${compose_files[@]}" "$@"
 }
@@ -484,11 +481,6 @@ dc() {
 # Called on every 'up' so the instance always has the latest files.
 sync_instance_files() {
     mkdir -p "${DATA_HOME}"
-    # Compose files
-    cp "${SCRIPT_DIR}/docker-compose.yml" "${DATA_HOME}/docker-compose.yml"
-    if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
-        cp "${SCRIPT_DIR}/docker-compose.hadoop.yml" "${DATA_HOME}/docker-compose.hadoop.yml"
-    fi
     # Scripts (used by opencga-init, opencga-setup, load-demo containers)
     rm -rf "${DATA_HOME}/scripts"
     cp -r "${SCRIPT_DIR}/scripts" "${DATA_HOME}/scripts"
@@ -1438,11 +1430,9 @@ do_clean() {
         fi
     fi
     # Always include all compose files so all volumes are removed (including hadoop)
-    local compose_dir="${DATA_HOME}"
-    [ ! -f "${DATA_HOME}/docker-compose.yml" ] && compose_dir="${SCRIPT_DIR}"
-    local all_compose=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${compose_dir}/docker-compose.yml")
-    if [ -f "${compose_dir}/docker-compose.hadoop.yml" ]; then
-        all_compose+=(-f "${compose_dir}/docker-compose.hadoop.yml")
+    local all_compose=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${SCRIPT_DIR}/docker-compose.yml")
+    if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
+        all_compose+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
     fi
     log_info "Stopping and removing containers..."
     docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
