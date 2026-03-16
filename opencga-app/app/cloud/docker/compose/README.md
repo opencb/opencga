@@ -91,25 +91,29 @@ Run `./deploy.sh <command> --help` for command-specific options.
 
 ## Multiple Instances
 
-Run multiple independent deployments side by side using `--name`:
+Run multiple independent deployments side by side using `-n` / `--name`.
+The flag can appear anywhere in the command line:
 
 ```bash
 # Default instance (name: local)
 ./deploy.sh up --build
 
 # Second instance with Hadoop
-./deploy.sh --name hadoop up --build --storage hadoop --rest-port 9091 --mongo-port 27018 --solr-port 8984 --iva-port 8081
+./deploy.sh -n hadoop up --build --storage hadoop --rest-port 9091 --mongo-port 27018 --solr-port 8984 --iva-port 8081
 
 # List all instances
 ./deploy.sh list
 
 # Operate on a specific instance
-./deploy.sh --name hadoop top
-./deploy.sh --name hadoop logs opencga-rest
-./deploy.sh --name hadoop restart opencga-master
-./deploy.sh --name hadoop down
-./deploy.sh --name hadoop clean
+./deploy.sh -n hadoop top
+./deploy.sh -n hadoop logs opencga-rest
+./deploy.sh restart -n hadoop opencga-master
+./deploy.sh -n hadoop down
+./deploy.sh -n hadoop clean
 ```
+
+When only one instance exists, it is auto-selected. When multiple exist, `-n` is required
+(except for `list` and `help`).
 
 Each instance is fully self-contained under `~/.opencga/instances/<name>/` with its own
 compose files, scripts, config, data, `.env`, and Docker volumes.

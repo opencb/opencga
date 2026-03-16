@@ -33,13 +33,12 @@ fi
 # Base directory for all instances
 OPENCGA_BASE="${HOME}/.opencga/instances"
 
-# Pre-parse global options (must be before the command word)
-# These affect initialization so they are consumed before init_env().
+# Pre-parse global options (--name / -n can appear anywhere in the arg list).
 INSTANCE_NAME=""
 _args=()
 while [ $# -gt 0 ]; do
     case "$1" in
-        --name)
+        --name|-n)
             if [ $# -lt 2 ] || [[ "$2" == -* ]]; then
                 log_error "--name requires an instance name"
                 exit 1
@@ -227,10 +226,10 @@ update_env() {
 
 usage() {
     cat <<EOF
-Usage: ./deploy.sh [--name INSTANCE] <command> [options]
+Usage: ./deploy.sh [-n NAME] <command> [options]
 
 Global options:
-  --name NAME   Instance name (default: local)
+  -n, --name NAME   Instance name (default: local)
                 Each instance is fully independent: config, data, volumes, containers.
                 All instances live under ~/.opencga/instances/<name>/.
                 Example: ./deploy.sh --name dev up --storage hadoop
@@ -472,7 +471,9 @@ dc() {
     if [ ! -f "${DATA_HOME}/docker-compose.yml" ]; then
         compose_dir="${SCRIPT_DIR}"
     fi
-    local compose_files=(-p "${COMPOSE_PROJECT}" -f "${compose_dir}/docker-compose.yml")
+    # --env-file /dev/null prevents Docker Compose from auto-reading .env in the compose dir.
+    # All variables are already exported via bash's 'source' in init_env().
+    local compose_files=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${compose_dir}/docker-compose.yml")
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
         compose_files+=(-f "${compose_dir}/docker-compose.hadoop.yml")
     fi
@@ -1437,9 +1438,11 @@ do_clean() {
         fi
     fi
     # Always include all compose files so all volumes are removed (including hadoop)
-    local all_compose=(-p "${COMPOSE_PROJECT}" -f "${SCRIPT_DIR}/docker-compose.yml")
-    if [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
-        all_compose+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
+    local compose_dir="${DATA_HOME}"
+    [ ! -f "${DATA_HOME}/docker-compose.yml" ] && compose_dir="${SCRIPT_DIR}"
+    local all_compose=(-p "${COMPOSE_PROJECT}" --env-file /dev/null -f "${compose_dir}/docker-compose.yml")
+    if [ -f "${compose_dir}/docker-compose.hadoop.yml" ]; then
+        all_compose+=(-f "${compose_dir}/docker-compose.hadoop.yml")
     fi
     log_info "Stopping and removing containers..."
     docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
