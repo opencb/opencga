@@ -2023,7 +2023,13 @@ public class VariantMongoDBQueryParser {
             addCompQueryFilter(key, elem, compFilters, extendKey);
         }
         if (extraFilters != null) {
-            addAll(filters, extraFilters.getOperation(), extraFilters.getValues());
+            if (op == QueryOperation.OR) {
+                // When the FILE_DATA operation is OR, merge FILTER conditions into the
+                // same OR group (e.g., FILTER=LowGQX,LowMQ,DP>60 → all OR'd together).
+                addAll(compFilters, extraFilters.getOperation(), extraFilters.getValues());
+            } else {
+                addAll(filters, extraFilters.getOperation(), extraFilters.getValues());
+            }
         }
 
         if (op == QueryOperation.OR) {

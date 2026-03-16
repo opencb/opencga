@@ -719,6 +719,87 @@ public class VariantMongoDBQueryParserTest {
         assertEquals(fileIds, inArgs.get(1));
     }
 
+    @Test
+    public void testStudyAndQuery() {
+        // STUDY=study_1;study_2 (AND) should generate $all, not $in
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1;study_2"));
+        String json = mongoQuery.toBsonDocument().toJson();
+        assertTrue("Expected $all for AND study query, got: " + json,
+                json.contains("\"$all\""));
+        assertFalse("Should not use $in for AND study query, got: " + json,
+                json.contains("\"$in\""));
+    }
+
+    @Test
+    public void testStudyOrQuery() {
+        // STUDY=study_1,study_2 (OR) should generate $in, not $all
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1,study_2"));
+        String json = mongoQuery.toBsonDocument().toJson();
+        assertTrue("Expected $in for OR study query, got: " + json,
+                json.contains("\"$in\""));
+    }
+
+    @Test
+    public void testStudyNegatedQuery() {
+        // STUDY=study_1;!study_2 should generate both sid:1 check and $ne/nin for study 2
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1;!study_2"));
+        String json = mongoQuery.toBsonDocument().toJson();
+        assertTrue("Expected study filter, got: " + json,
+                json.contains("studies.sid"));
+    }
+
+    @Test
+    public void testFileDataFilterOrWithInfoField() throws StorageEngineException {
+        // Register INFO field "DP" in study_1 so FILE_DATA parsing accepts it
+        int studyId = metadataManager.getStudyId("study_1");
+        metadataManager.updateStudyMetadata(studyId, sm -> {
+            sm.getVariantHeader().getComplexLines().add(
+                    org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine.newBuilder()
+                            .setKey("INFO").setId("DP").setNumber("1").setType("Integer").build());
+        });
+
+        // FILE_DATA=file_1:FILTER=PASS,DP>60 should OR the FILTER and DP conditions together
+        Bson mongoQuery = parser.parseQuery(new Query()
+                .append(STUDY.key(), "study_1")
+                .append(FILE_DATA.key(), "file_1:FILTER=PASS,DP>60"));
+        String json = mongoQuery.toBsonDocument().toJson();
+        // Verify there's an $elemMatch with an $or that contains both FILTER and DP
+        boolean foundOrWithFilterAndDp = false;
+        Document doc = Document.parse(json);
+        List<?> andList = doc.getList("$and", Object.class);
+        assertNotNull(andList);
+        for (Object item : andList) {
+            String itemJson = ((Document) item).toJson();
+            if (itemJson.contains("$elemMatch") && itemJson.contains("$or")
+                    && itemJson.contains("FILTER") && itemJson.contains("DP")) {
+                foundOrWithFilterAndDp = true;
+            }
+        }
+        assertTrue("Expected $elemMatch with $or containing FILTER and DP, got: " + json,
+                foundOrWithFilterAndDp);
+    }
+
+    @Test
+    public void testFileDataAndAcrossFiles() throws StorageEngineException {
+        int studyId = metadataManager.getStudyId("study_1");
+        metadataManager.updateStudyMetadata(studyId, sm -> {
+            sm.getVariantHeader().getComplexLines().add(
+                    org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine.newBuilder()
+                            .setKey("INFO").setId("DP").setNumber("1").setType("Integer").build());
+        });
+
+        // FILE_DATA=file_1:DP>60;file_2:DP>100 should AND the two file conditions
+        Bson mongoQuery = parser.parseQuery(new Query()
+                .append(STUDY.key(), "study_1")
+                .append(FILE_DATA.key(), "file_1:DP>60;file_2:DP>100"));
+        String json = mongoQuery.toBsonDocument().toJson();
+        // Should have two $elemMatch conditions for both files
+        assertTrue("Expected fid for file_1 in query, got: " + json,
+                json.contains("\"fid\": 100001"));
+        assertTrue("Expected fid for file_2 in query, got: " + json,
+                json.contains("\"fid\": 100002"));
+    }
+
     /** Extract the {@code cond} document from an {@code $addFields} pipeline stage. */
     private static Document extractFilterCond(Document addFieldsStage) {
         Document addFields = (Document) addFieldsStage.get("$addFields");
