@@ -1377,8 +1377,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)
                 .append(DocumentToVariantConverter.START_FIELD, 1)
                 .append(DocumentToVariantConverter.END_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.IDS_FIELD, 1), onBackground);
-
         // Study indices
         ////////////////
         variantsCollection.createIndex(

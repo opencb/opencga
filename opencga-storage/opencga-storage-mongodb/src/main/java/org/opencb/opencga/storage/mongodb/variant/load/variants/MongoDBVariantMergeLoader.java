@@ -155,8 +155,6 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         fillGapsVariants.stop();
 
-        updateStage(mongoDBOps);
-
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(newVariants,
@@ -188,12 +186,6 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
 
         logProgress(mongoDBOps);
         return writeResult;
-    }
-
-    private void updateStage(MongoDBOperations mongoDBOps) {
-        if (cleanWhileLoading) {
-            cleanStage(mongoDBOps);
-        }
     }
 
     private long cleanStage(MongoDBOperations mongoDBOps) {

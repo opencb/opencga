@@ -29,6 +29,7 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
 
     DIRECT_LOAD("storage.mongodb.directLoad", false),
     DIRECT_LOAD_PARALLEL_WRITE("storage.mongodb.directLoad.parallelWrite", false),
+    LOAD_WRITE_CONCERN("storage.mongodb.load.writeConcern", ""),
 
     MERGE("storage.mongodb.merge", false),
     MERGE_SKIP("storage.mongodb.merge.skip", false), // Internal use only

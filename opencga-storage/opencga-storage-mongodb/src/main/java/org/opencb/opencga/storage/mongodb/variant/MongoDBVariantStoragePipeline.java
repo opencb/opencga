@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.WriteConcern;
 import com.google.common.base.Throwables;
 import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.time.StopWatch;
@@ -58,6 +59,7 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantDirectFileReader;
 import org.opencb.opencga.storage.mongodb.variant.load.direct.MongoDBVariantStageAndFileReader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -339,14 +341,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 sampleIndexFromMergeTask = null;
             }
 
-            MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
             MergeMode mergeMode = MergeMode.from(studyMetadata.getAttributes());
-            boolean addAllStageDocuments = mergeMode.equals(MergeMode.ADVANCED);
-
-            // Reader -- MongoDBVariantStageAndFileReader
-            MongoDBVariantStageAndFileReader stageReader = new MongoDBVariantStageAndFileReader(
-                    variantReader, stageCollection, studyId, fileId, addAllStageDocuments);
-
+            boolean skipStage = mergeMode.equals(MergeMode.BASIC);
 
             //TaskMetadata -- MongoDBVariantMerger
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
@@ -360,9 +356,30 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyMetadata, fileIds,
                     resume, ignoreOverlapping, release, excludeGenotypes);
 
+            // Reader and Writer depend on whether we skip the stage collection
+            DataReader<Document> documentReader;
+            long skippedVariants;
+            if (skipStage) {
+                // BASIC mode: bypass stage collection entirely
+                logger.info("Direct load with stage bypass (BASIC merge mode)");
+                MongoDBVariantDirectFileReader directFileReader = new MongoDBVariantDirectFileReader(
+                        variantReader, studyId, fileId);
+                documentReader = directFileReader;
+                skippedVariants = -1; // Will be read from directFileReader after run
+            } else {
+                // ADVANCED mode: use stage collection for multi-file merge
+                MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
+                MongoDBVariantStageAndFileReader stageReader = new MongoDBVariantStageAndFileReader(
+                        variantReader, stageCollection, studyId, fileId, true);
+                documentReader = stageReader;
+                skippedVariants = -1; // Will be read from stageReader after run
+            }
+
             // Writer -- MongoDBVariantDirectLoader
+            WriteConcern loadWriteConcern = getLoadWriteConcern();
+            logger.info("Direct load write concern: {}", loadWriteConcern != null ? loadWriteConcern : "default (server)");
             MongoDBVariantDirectLoader directLoader = new MongoDBVariantDirectLoader(dbAdaptor, studyMetadata, fileId, resume,
-                    progressLogger);
+                    progressLogger, skipStage, loadWriteConcern);
 
             // Runner
             // sorted=true is required when the sample-index writer is active: MongoDBSampleGenotypeIndexerTask
@@ -377,15 +394,18 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     .setBatchSize(batchSize)
                     .setSorted(sortedPtr)
                     .setAbortOnFail(true).build();
-            DataWriter<MongoDBOperations> directWriter = sampleIndexFromMergeTask != null
-                    ? DataWriter.tee(directLoader, sampleIndexFromMergeTask, true)
-                    : directLoader;
-            if (isDirectLoadParallelWrite(options) && sampleIndexFromMergeTask == null) {
+            if (isDirectLoadParallelWrite(options)) {
+                // Parallel writes: merger + directLoader run in N worker threads.
+                // sampleIndex (if present) runs in a dedicated writer thread, receiving batches in sorted order.
                 logger.info("Multi thread direct load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger.then(directLoader), null, config);
+                ptr = new ParallelTaskRunner<>(documentReader, variantMerger.then(directLoader), sampleIndexFromMergeTask, config);
             } else {
+                // Serial writes: merger runs in N worker threads, directLoader + sampleIndex in 1 writer thread.
+                DataWriter<MongoDBOperations> directWriter = sampleIndexFromMergeTask != null
+                        ? DataWriter.tee(directLoader, sampleIndexFromMergeTask, true)
+                        : directLoader;
                 logger.info("Multi thread direct load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
-                ptr = new ParallelTaskRunner<>(stageReader, variantMerger, directWriter, config);
+                ptr = new ParallelTaskRunner<>(documentReader, variantMerger, directWriter, config);
             }
 
             // Run
@@ -406,7 +426,11 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             this.largestVariantLength = largestVariantTask.getMaxLength();
 
             writeResult = directLoader.getResult();
-            writeResult.setSkippedVariants(stageReader.getSkippedVariants());
+            if (documentReader instanceof MongoDBVariantStageAndFileReader) {
+                writeResult.setSkippedVariants(((MongoDBVariantStageAndFileReader) documentReader).getSkippedVariants());
+            } else if (documentReader instanceof MongoDBVariantDirectFileReader) {
+                writeResult.setSkippedVariants(((MongoDBVariantDirectFileReader) documentReader).getSkippedVariants());
+            }
             writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
             loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
             loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
@@ -1063,6 +1087,25 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //            }
         }
         return doDirectLoad;
+    }
+
+    private WriteConcern getLoadWriteConcern() {
+        String wc = options.getString(MongoDBVariantStorageOptions.LOAD_WRITE_CONCERN.key(),
+                MongoDBVariantStorageOptions.LOAD_WRITE_CONCERN.defaultValue());
+        if (wc == null || wc.isEmpty()) {
+            return null;
+        }
+        switch (wc.toLowerCase()) {
+            case "w1":
+                return WriteConcern.W1;
+            case "acknowledged":
+                return WriteConcern.ACKNOWLEDGED;
+            case "majority":
+                return WriteConcern.MAJORITY;
+            default:
+                logger.warn("Unknown write concern '{}', using server default", wc);
+                return null;
+        }
     }
 
 }

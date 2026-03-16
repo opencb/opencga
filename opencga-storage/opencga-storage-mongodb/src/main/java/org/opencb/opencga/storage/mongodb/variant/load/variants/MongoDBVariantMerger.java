@@ -1004,7 +1004,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 Document studyDocument = new Document(STUDYID_FIELD, studyId);
 
                 List<Bson> updates = new ArrayList<>();
-                updates.add(push(STUDIES_FIELD, studyDocument));
+                updates.add(addToSet(STUDIES_FIELD, studyDocument));
                 // Files go to root-level files[] (not inside the study subdocument).
                 updates.add(pushEach(DocumentToVariantConverter.FILES_FIELD, fileDocuments));
                 // Study is new. Add study
