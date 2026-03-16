@@ -48,7 +48,7 @@ while [ $# -gt 0 ]; do
             _args+=("$1"); shift ;;
     esac
 done
-set -- "${_args[@]}"
+set -- ${_args[@]+"${_args[@]}"}
 
 # Derive instance name: explicit --name > auto-detect from existing instances
 if [ -z "${INSTANCE_NAME}" ]; then
@@ -202,10 +202,14 @@ update_env() {
         return 0  # no change
     fi
     if [ -f "${ENV_FILE}" ]; then
+        # Escape sed special chars in value (|, &, \)
+        local escaped_val="${val//\\/\\\\}"
+        escaped_val="${escaped_val//|/\\|}"
+        escaped_val="${escaped_val//&/\\&}"
         if grep -q "^${key}=" "${ENV_FILE}"; then
-            sed -i "s|^${key}=.*|${key}=${val}|" "${ENV_FILE}"
+            sed -i "s|^${key}=.*|${key}=${escaped_val}|" "${ENV_FILE}"
         elif grep -q "^#${key}=" "${ENV_FILE}"; then
-            sed -i "s|^#${key}=.*|${key}=${val}|" "${ENV_FILE}"
+            sed -i "s|^#${key}=.*|${key}=${escaped_val}|" "${ENV_FILE}"
         else
             # Ensure file ends with a newline before appending
             [ -s "${ENV_FILE}" ] && [ "$(tail -c1 "${ENV_FILE}")" != "" ] && echo >> "${ENV_FILE}"
@@ -422,7 +426,7 @@ usage_clean() {
 Usage: ./deploy.sh clean [options]
 
 Remove all generated files (.env, conf/, data/, iva/) and Docker volumes.
-Data is stored in ~/.opencga/local/ (or $OPENCGA_LOCAL_HOME).
+Data is stored in ~/.opencga/instances/<name>/.
 Prompts for confirmation before proceeding.
 
 Options:
@@ -643,8 +647,8 @@ do_health() {
     printf "  %-16s" "REST API"
     local rest_url="http://localhost:${OPENCGA_REST_PORT:-9090}/opencga/webservices/rest/v3/meta/status"
     local rest_response
-    rest_response=$(curl -sf "$rest_url" 2>/dev/null)
-    if [ $? -eq 0 ] && [ -n "$rest_response" ]; then
+    rest_response=$(curl -sf "$rest_url" 2>/dev/null) || true
+    if [ -n "$rest_response" ]; then
         echo -e "${C_GREEN}healthy${C_RESET}"
     else
         echo -e "${C_RED}unreachable${C_RESET}"
@@ -848,14 +852,18 @@ init_conf() {
 
     # Copy files from the Docker image that aren't in the build conf dir
     # (e.g., opencga-env.sh, conf/hadoop/) — the bind mount hides the image's /opt/opencga/conf/
-    docker run --rm --user 0:0 -v "${CONF_TARGET}:/host-conf" "${OPENCGA_IMAGE}" \
-        bash -c 'for f in /opt/opencga/conf/*; do
-            name=$(basename "$f")
-            if [ ! -e "/host-conf/$name" ]; then
-                cp -r "$f" "/host-conf/$name"
-            fi
-        done
-        chown -R '"$(id -u):$(id -g)"' /host-conf/'
+    if ! docker image inspect "${OPENCGA_IMAGE}" >/dev/null 2>&1; then
+        log_warn "Image '${OPENCGA_IMAGE}' not found — skipping image conf merge. Run './deploy.sh build' first."
+    else
+        docker run --rm --user 0:0 -v "${CONF_TARGET}:/host-conf" "${OPENCGA_IMAGE}" \
+            bash -c 'for f in /opt/opencga/conf/*; do
+                name=$(basename "$f")
+                if [ ! -e "/host-conf/$name" ]; then
+                    cp -r "$f" "/host-conf/$name"
+                fi
+            done
+            chown -R '"$(id -u):$(id -g)"' /host-conf/'
+    fi
 
     # Patch hostnames for Docker networking
     # configuration.yml: MongoDB host
@@ -984,10 +992,9 @@ do_up() {
     # Pre-flight checks
     check_running_jobs
     check_ports
+    export_heap_vars
     check_heap_limits
     check_conf
-
-    export_heap_vars
 
     # Ensure data dirs exist and are owned by opencga user (UID 1001), no root files
     local data_dir="${DATA_HOME}/data"
@@ -1017,8 +1024,16 @@ do_down() {
     if [ "${DO_VOLUMES:-false}" = "true" ]; then
         vol_flag="-v"
     fi
-    # shellcheck disable=SC2086
-    dc down --remove-orphans ${vol_flag}
+    if [ "${DO_VOLUMES:-false}" = "true" ] && [ -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" ]; then
+        # Include hadoop compose file so its volumes are also removed
+        # shellcheck disable=SC2086
+        docker compose -p "${COMPOSE_PROJECT}" --env-file /dev/null \
+            -f "${SCRIPT_DIR}/docker-compose.yml" -f "${SCRIPT_DIR}/docker-compose.hadoop.yml" \
+            down --remove-orphans ${vol_flag}
+    else
+        # shellcheck disable=SC2086
+        dc down --remove-orphans ${vol_flag}
+    fi
 }
 
 do_status() {
@@ -1147,7 +1162,7 @@ do_top() {
             fi
             sleep 2
         done
-    ) &
+    ) 2>/dev/null &
     bg_stats_pid=$!
 
     # Background: volume measurement (every 10s)
@@ -1175,7 +1190,7 @@ do_top() {
                     done
                 fi
             fi
-            local data_dir="${DATA_HOME}/data"
+            data_dir="${DATA_HOME}/data"
             for path in "${data_dir}/sessions" "${data_dir}/logs"; do
                 if [ -d "$path" ]; then
                     size=$(du -sh "$path" 2>/dev/null | awk '{print $1}')
@@ -1185,7 +1200,7 @@ do_top() {
             printf "%s" "$out" > "$vol_file.tmp" && mv "$vol_file.tmp" "$vol_file"
             sleep 10
         done
-    ) &
+    ) 2>/dev/null &
     bg_vol_pid=$!
 
     # Background: running jobs in master (every 3s)
@@ -1233,7 +1248,7 @@ do_top() {
                 }' > "$jobs_file.tmp" 2>/dev/null && mv "$jobs_file.tmp" "$jobs_file"
             sleep 3
         done
-    ) &
+    ) 2>/dev/null &
     bg_jobs_pid=$!
 
     local sep50
