@@ -406,9 +406,9 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyName1, studyId1, fileIds[0], mm,
                 (pos) -> Integer.toString(pos + 11), "DP");
-        // File2 not present at 1002 → samples get null for extra fields
+        // File2 not present at 1002 → samples get UNKNOWN_FIELD for extra fields (matching Hadoop)
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
-                (pos) -> null, "DP");
+                (pos) -> UNKNOWN_FIELD, "DP");
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
                 (pos) -> UNKNOWN_GENOTYPE, "GT");
         checkSampleData(variant, studyName2, studyId2, fileIds[2], mm,
@@ -419,25 +419,25 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
                 (pos) -> Integer.toString(pos + 1), "DP");
-        // File3 not present at 1004 → samples get null for extra fields
+        // File3 not present at 1004 → samples get UNKNOWN_FIELD for extra fields (matching Hadoop)
         checkSampleData(variant, studyName2, studyId2, fileIds[2], mm,
-                (pos) -> null, "DP");
+                (pos) -> UNKNOWN_FIELD, "DP");
         checkSampleData(variant, studyName2, studyId2, fileIds[2], mm,
                 (pos) -> UNKNOWN_GENOTYPE, "GT");
         // file2 variant 1004 GQX: positions 0,2 have "0.7"; positions 1,3 have "." and ".."
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
                 (pos) -> pos % 2 == 0 ? "0.7" : UNKNOWN_FIELD, "GQX");
         checkSampleData(variant, studyName2, studyId2, fileIds[2], mm,
-                (pos) -> null, "GQX");
+                (pos) -> UNKNOWN_FIELD, "GQX");
 
         variant = allVariants.get(4);
         assertEquals(1006, variant.getStart().longValue());
         assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
-        // File2 not present at 1006 → samples get null for extra fields
+        // File2 not present at 1006 → samples get UNKNOWN_FIELD for extra fields (matching Hadoop)
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
-                (pos) -> null, "DP");
+                (pos) -> UNKNOWN_FIELD, "DP");
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
-                (pos) -> null, "GQX");
+                (pos) -> UNKNOWN_FIELD, "GQX");
         checkSampleData(variant, studyName2, studyId2, fileIds[1], mm,
                 (pos) -> UNKNOWN_GENOTYPE, "GT");
         checkSampleData(variant, studyName2, studyId2, fileIds[2], mm,

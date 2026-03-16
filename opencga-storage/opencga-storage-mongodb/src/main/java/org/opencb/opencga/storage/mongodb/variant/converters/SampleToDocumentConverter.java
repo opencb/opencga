@@ -184,7 +184,7 @@ public class SampleToDocumentConverter {
                 if ("Integer".equals(extraFieldType) || "Float".equals(extraFieldType)) {
                     for (SampleEntry sample : studyEntry.getSamples()) {
                         String val = sample.getData().get(formatIdx);
-                        if (val != null && !".".equals(val)) {
+                        if (val != null && !isMissingValue(val)) {
                             try {
                                 Float.parseFloat(val);
                             } catch (NumberFormatException e) {
@@ -264,4 +264,18 @@ public class SampleToDocumentConverter {
         }
     }
 
+    /**
+     * Check if the value is a VCF missing marker (null, empty, or consisting entirely of dots).
+     */
+    private static boolean isMissingValue(String val) {
+        if (val == null || val.isEmpty()) {
+            return true;
+        }
+        for (int i = 0; i < val.length(); i++) {
+            if (val.charAt(i) != '.') {
+                return false;
+            }
+        }
+        return true;
+    }
 }
