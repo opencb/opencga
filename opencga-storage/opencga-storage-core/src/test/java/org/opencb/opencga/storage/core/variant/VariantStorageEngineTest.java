@@ -667,7 +667,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             StudyEntry studyEntry = variant.getStudies().get(0);
             studyEntry.setStudyId(STUDY_NAME);
             studyEntry.getFiles().get(0).setFileId(fileId);
-            studyEntry.getFiles().get(0).getData().remove(VCFConstants.END_KEY);
+
             studyEntry.getSamples().forEach(sd -> sd.setFileIndex(0));
             variant.setStudies(Collections.singletonList(studyEntry));
 
@@ -680,7 +680,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             loadedStudy.getSamples().forEach(sampleEntry -> {
                 sampleEntry.setData(new ArrayList<>(sampleEntry.getData()));
                 sampleEntry.getData().set(0, sampleEntry.getData().get(0).replace("0/0", "0|0"));
-                while (sampleEntry.getData().get(2).length() < 5) sampleEntry.getData().set(2, sampleEntry.get(2) + "0");   //Set lost zeros
+                while (sampleEntry.getData().get(2).length() < 5) sampleEntry.getData().set(2, sampleEntry.getData().get(2) + "0");   //Set lost zeros
             });
             for (FileEntry fileEntry : loadedStudy.getFiles()) {
                 if (fileEntry.getCall() != null && StringUtils.isEmpty(fileEntry.getCall().getVariantId())) {
