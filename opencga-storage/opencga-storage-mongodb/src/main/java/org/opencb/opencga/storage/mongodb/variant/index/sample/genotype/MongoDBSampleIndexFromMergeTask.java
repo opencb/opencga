@@ -10,14 +10,10 @@ import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor
 import org.opencb.opencga.storage.core.variant.index.sample.genotype.SampleIndexEntryWriter;
 import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
 
 import java.util.*;
-
-import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.validGenotype;
 
 /**
  * A {@link DataWriter}{@code <MongoDBOperations>} that builds sample-index entries from the merged
@@ -40,7 +36,6 @@ public class MongoDBSampleIndexFromMergeTask implements DataWriter<MongoDBOperat
     private final SampleIndexSchema schema;
     private final MongoDBSampleGenotypeIndexerTask indexerTask;
     private final SampleIndexEntryWriter entryWriter;
-    private final Set<String> loadedGenotypes = new HashSet<>();
 
     public MongoDBSampleIndexFromMergeTask(SampleIndexDBAdaptor sampleIndexDBAdaptor,
                                            int studyId, List<Integer> sampleIds,
@@ -67,7 +62,6 @@ public class MongoDBSampleIndexFromMergeTask implements DataWriter<MongoDBOperat
                 Variant variant = pair.getKey();
                 List<Document> fileDocs = pair.getValue();
                 syntheticDocs.add(buildSyntheticDoc(variant, fileDocs));
-                trackGenotypes(fileDocs);
             }
         }
         if (!syntheticDocs.isEmpty()) {
@@ -101,26 +95,8 @@ public class MongoDBSampleIndexFromMergeTask implements DataWriter<MongoDBOperat
         return true;
     }
 
-    public Set<String> getLoadedGenotypes() {
-        return loadedGenotypes;
-    }
-
     public int getSampleIndexVersion() {
         return schema.getVersion();
-    }
-
-    private void trackGenotypes(List<Document> fileDocs) {
-        for (Document fileDoc : fileDocs) {
-            Document mgt = fileDoc.get(DocumentToStudyEntryConverter.FILE_GENOTYPE_FIELD, Document.class);
-            if (mgt != null) {
-                for (String gtKey : mgt.keySet()) {
-                    String gt = DocumentToSamplesConverter.genotypeToDataModelType(gtKey);
-                    if (validGenotype(gt)) {
-                        loadedGenotypes.add(gt);
-                    }
-                }
-            }
-        }
     }
 
     private Document buildSyntheticDoc(Variant variant, List<Document> fileDocs) {

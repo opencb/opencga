@@ -385,8 +385,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         // Process remaining variants
         processVariants(overlappedVariants, previousDocument, previousVariant, mongoDBOps);
 
-//        // Execute MongoDB Operations
-//        return executeMongoDBOperations(mongoDBOps);
+        // Collect observed genotypes for LOADED_GENOTYPES tracking
+        if (studyConverter.getSamplesConverter() != null) {
+            mongoDBOps.getGenotypes().addAll(studyConverter.getSamplesConverter().getObservedGenotypes());
+        }
 
         return mongoDBOps;
     }

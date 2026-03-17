@@ -27,6 +27,10 @@ public class StudyEntryToDocumentConverter {
         this.includeSrc = includeSrc;
     }
 
+    public SampleToDocumentConverter getSamplesConverter() {
+        return samplesConverter;
+    }
+
     public Pair<Document, List<Document>> convertToStorageType(Variant variant, StudyEntry studyEntry) {
         return convertToStorageType(variant, studyEntry, studyEntry.getFiles(), new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
     }

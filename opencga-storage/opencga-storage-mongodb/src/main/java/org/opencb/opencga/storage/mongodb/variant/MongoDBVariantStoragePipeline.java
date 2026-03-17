@@ -420,12 +420,12 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
 
             if (sampleIndexFromMergeTask != null) {
-                this.loadedGenotypes = sampleIndexFromMergeTask.getLoadedGenotypes();
                 this.sampleIndexVersion = sampleIndexFromMergeTask.getSampleIndexVersion();
             }
             this.largestVariantLength = largestVariantTask.getMaxLength();
 
             writeResult = directLoader.getResult();
+            this.loadedGenotypes = writeResult.getGenotypes();
             if (documentReader instanceof MongoDBVariantStageAndFileReader) {
                 writeResult.setSkippedVariants(((MongoDBVariantStageAndFileReader) documentReader).getSkippedVariants());
             } else if (documentReader instanceof MongoDBVariantDirectFileReader) {
@@ -708,9 +708,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
 
         if (sampleIndexFromMergeTask != null) {
-            this.loadedGenotypes = sampleIndexFromMergeTask.getLoadedGenotypes();
             this.sampleIndexVersion = sampleIndexFromMergeTask.getSampleIndexVersion();
         }
+        this.loadedGenotypes = writeResult.getGenotypes();
 
         if (!options.getBoolean(STAGE_CLEAN_WHILE_LOAD.key(), STAGE_CLEAN_WHILE_LOAD.defaultValue())) {
             StopWatch time = StopWatch.createStarted();

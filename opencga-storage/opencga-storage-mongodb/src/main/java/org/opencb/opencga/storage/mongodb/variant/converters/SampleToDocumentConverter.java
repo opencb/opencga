@@ -30,6 +30,8 @@ public class SampleToDocumentConverter {
     /** Set of extra-field indices (into extraFields list) that are filterable (Number="1" or "."). */
     private final Set<Integer> filterableFieldIndices;
     private final boolean excludeGenotypes;
+    /** Collects all genotypes encountered during conversion (for LOADED_GENOTYPES tracking). */
+    private final Set<String> observedGenotypes = new HashSet<>();
 
     public SampleToDocumentConverter(StudyMetadata studyMetadata, Map<String, Integer> sampleIdsMap) {
         this(studyMetadata, sampleIdsMap, false);
@@ -135,6 +137,7 @@ public class SampleToDocumentConverter {
             int id = getSampleId(sampleName);
             genotypeCodes.computeIfAbsent(genotype, k -> new ArrayList<>()).add(id);
         }
+        observedGenotypes.addAll(genotypeCodes.keySet());
 
         // Build the per-file mgt map (FILE_GENOTYPE_FIELD) for ALL samples.
         // The study-level "gt" field is no longer written; all GT data lives in the root-level files[].mgt.
@@ -277,5 +280,15 @@ public class SampleToDocumentConverter {
             }
         }
         return true;
+    }
+
+    /**
+     * Returns all genotypes observed during conversion calls.
+     * Used to populate {@code LOADED_GENOTYPES} in the study metadata.
+     *
+     * @return set of observed genotype strings
+     */
+    public Set<String> getObservedGenotypes() {
+        return observedGenotypes;
     }
 }
