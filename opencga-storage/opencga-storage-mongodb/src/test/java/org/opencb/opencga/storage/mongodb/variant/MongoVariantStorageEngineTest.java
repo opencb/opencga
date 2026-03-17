@@ -673,9 +673,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();
+        List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
         thrown.expect(StoragePipelineException.class);
         thrown.expectCause(instanceOf(StorageEngineException.class));
-        thrown.expectCause(hasMessage(containsString(StorageEngineException.alreadyLoaded(FILE_ID, fileName).getMessage())));
+        thrown.expectCause(hasMessage(containsString(StorageEngineException.alreadyLoadedSamples(fileName, sampleNames).getMessage())));
         runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
@@ -696,7 +697,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertTrue(count > 0);
 
         String fileName = Paths.get(smallInputUri).getFileName().toString();
-        StorageEngineException expectCause = StorageEngineException.alreadyLoaded(FILE_ID, fileName);
+        List<String> sampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
+        StorageEngineException expectCause = StorageEngineException.alreadyLoadedSamples(fileName, sampleNames);
 
         thrown.expect(StoragePipelineException.class);
         thrown.expectCause(instanceOf(expectCause.getClass()));
@@ -921,7 +923,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     public void checkCanLoadSampleBatchFailTest() throws StorageEngineException {
         StudyMetadata studyMetadata = createStudyMetadata();
         metadataManager.addIndexedFiles(studyMetadata.getId(), Arrays.asList(1, 3, 4));
-        StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSamples("file2.vcf", Arrays.asList("s2"));
+        StorageEngineException e = MongoVariantStorageEngineException.alreadyLoadedSamples("file2.vcf", Arrays.asList("s1", "s2", "s3", "s4"));
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(variantStorageEngine.getMetadataManager(), studyMetadata, 2, false);
