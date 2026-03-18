@@ -1349,6 +1349,11 @@ public class VariantMongoDBQueryParser {
         if (query != null) {
             StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
 
+            // When the study query uses OR, stats filters must be scoped per-study:
+            // a variant that is not in the stats-referenced study should not be excluded.
+            boolean studyOrOperation = parsedVariantQuery.getStudyQuery().getStudies() != null
+                    && parsedVariantQuery.getStudyQuery().getStudies().getOperation() == QueryOperation.OR;
+
             if (query.get(COHORT.key()) != null && !query.getString(COHORT.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.STATS_FIELD
                                 + '.' + DocumentToVariantStatsConverter.COHORT_ID,
@@ -1387,37 +1392,37 @@ public class VariantMongoDBQueryParser {
 
             if (isValidParam(query, STATS_REF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.REF_FREQ_FIELD, query.getString(STATS_REF.key()),
-                        filters, defaultStudy);
+                        filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, STATS_ALT)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, query.getString(STATS_ALT.key()),
-                        filters, defaultStudy);
+                        filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, STATS_MAF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MAF_FIELD, query.getString(STATS_MAF.key()),
-                        filters, defaultStudy);
+                        filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, STATS_MGF)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MGF_FIELD, query.getString(STATS_MGF.key()),
-                        filters, defaultStudy);
+                        filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, STATS_PASS_FREQ)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.FILTER_FREQ_FIELD + '.' + VCFConstants.PASSES_FILTERS_v4,
-                        query.getString(STATS_PASS_FREQ.key()), filters, defaultStudy);
+                        query.getString(STATS_PASS_FREQ.key()), filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, MISSING_ALLELES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSALLELE_FIELD, query.getString(MISSING_ALLELES
-                        .key()), filters, defaultStudy);
+                        .key()), filters, defaultStudy, studyOrOperation);
             }
 
             if (isValidParam(query, MISSING_GENOTYPES)) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(
-                        MISSING_GENOTYPES.key()), filters, defaultStudy);
+                        MISSING_GENOTYPES.key()), filters, defaultStudy, studyOrOperation);
             }
             /* FIXME: TASK-8038
             if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
@@ -2326,12 +2331,13 @@ public class VariantMongoDBQueryParser {
      * @param filters                   List of filters to add the stats filters
      * @param defaultStudyMetadata
      */
-    private void addStatsFilterList(String key, String values, List<Bson> filters, StudyMetadata defaultStudyMetadata) {
+    private void addStatsFilterList(String key, String values, List<Bson> filters, StudyMetadata defaultStudyMetadata,
+                                     boolean studyOrOperation) {
         QueryOperation op = checkOperator(values);
         List<String> valuesList = splitValue(values, op);
         List<Bson> statsQueries = new LinkedList<>();
         for (String value : valuesList) {
-            statsQueries.add(addStatsFilter(key, value, defaultStudyMetadata));
+            statsQueries.add(addStatsFilter(key, value, defaultStudyMetadata, studyOrOperation));
         }
 
         if (!statsQueries.isEmpty()) {
@@ -2345,9 +2351,11 @@ public class VariantMongoDBQueryParser {
      *
      * @param key                       Stats field to filter
      * @param filter                    Filter to parse
-     * @param defaultStudyMetadata
+     * @param defaultStudyMetadata      Default study metadata
+     * @param studyOrOperation          If true, scope the filter per-study: variants without stats for
+     *                                  the referenced study will pass through (needed for study OR queries)
      */
-    private Bson addStatsFilter(String key, String filter, StudyMetadata defaultStudyMetadata) {
+    private Bson addStatsFilter(String key, String filter, StudyMetadata defaultStudyMetadata, boolean studyOrOperation) {
         String[] studyValue = VariantQueryUtils.splitStudyResource(filter);
         if (studyValue.length == 2 || defaultStudyMetadata != null) {
             int studyId;
@@ -2379,7 +2387,17 @@ public class VariantMongoDBQueryParser {
             filters.add(eq(DocumentToVariantStatsConverter.STUDY_ID, studyId));
             filters.add(eq(DocumentToVariantStatsConverter.COHORT_ID, cohortId));
             addCompQueryFilter(key, valueStr, filters, operator);
-            return elemMatch(DocumentToVariantConverter.STATS_FIELD, and(filters));
+            Bson statsFilter = elemMatch(DocumentToVariantConverter.STATS_FIELD, and(filters));
+
+            if (studyOrOperation) {
+                // When the study query is OR, the stats filter should only apply to variants
+                // that actually belong to the referenced study. Variants without stats for this
+                // study (i.e., from other studies in the OR) should pass through.
+                return or(statsFilter,
+                        not(elemMatch(DocumentToVariantConverter.STATS_FIELD,
+                                eq(DocumentToVariantStatsConverter.STUDY_ID, studyId))));
+            }
+            return statsFilter;
         } else {
             List<Bson> filters = new LinkedList<>();
             addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, filter, filters, false);
