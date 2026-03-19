@@ -20,6 +20,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.junit.*;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -32,19 +33,21 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,11 +66,18 @@ import static org.junit.Assert.assertNotNull;
 public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
     public static final String[] VCF_TEST_FILE_NAMES = {
-            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "s1.genome.vcf",
+            "s2.genome.vcf"
+//            "platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz",
+//            "platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz",
+//            "platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz",
+//            "platinum/1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz",
+//            "platinum/1K.end.platinum-genomes-vcf-NA12881_S1.genome.vcf.gz"
+//            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+//            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+//            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+//            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+//            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
     };
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
@@ -103,6 +113,9 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
                                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
             }
         }
+        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(),
+                new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), true),
+                new ObjectMap(), outputUri);
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
@@ -113,9 +126,9 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
-        Query query = new Query()
-                .append(VariantQueryParam.STUDY.key(), STUDY_NAME)
-                .append(VariantQueryParam.FILE.key(), 1);
+        VariantQuery query = new VariantQuery()
+            .study(STUDY_NAME)
+            .file(VCF_TEST_FILE_NAMES[0]);
 
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
@@ -123,21 +136,20 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
-        checkExportedVCF(Paths.get(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf" +
-                ".gz")), outputVcf, new Region("22"));
+        checkExportedVCF(Paths.get(getResourceUri(VCF_TEST_FILE_NAMES[0])), outputVcf, new Region("1"));
     }
 
     @Test
     public void testVcfHtsExportMultiFile() throws Exception {
-        Query query = new Query();
-        query.append(VariantQueryParam.STUDY.key(), STUDY_NAME);
-//                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        VariantQuery query = new VariantQuery()
+                .study(STUDY_NAME)
+                .includeSampleAll();
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
         int failedVariants = export(outputVcf, query, new QueryOptions(QueryOptions.SORT, true));
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
-        Path originalVcf = Paths.get(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+        Path originalVcf = Paths.get(getResourceUri("s1_s2.genome.vcf"));
 
         VariantReader variantReader = new VariantVcfHtsjdkReader(
                 originalVcf,
@@ -146,11 +158,9 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         variantReader.open();
         variantReader.pre();
 
-        Region region = new Region("22", 16000000);
+        Region region = new Region("1");
         int batchSize = 2000;
-        while (checkExportedVCF(originalVcf, variantReader, outputVcf, region, batchSize) != batchSize) {
-            region = new Region("22", region.getEnd());
-        }
+        checkExportedVCF(originalVcf, variantReader, outputVcf, region, batchSize);
 
         variantReader.post();
         variantReader.close();
@@ -217,11 +227,22 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             StudyEntry originalStudyEntry = originalVariant.getStudy(STUDY_NAME);
             StudyEntry exportedStudyEntry = exportedVariant.getStudy(STUDY_NAME);
             for (String sampleName : originalStudyEntry.getSamplesName()) {
-                assertWithConflicts(exportedVariant, () -> assertEquals("For sample '" + sampleName + "', id "
+                String originalGt = new Genotype(originalStudyEntry.getSampleData(sampleName, "GT")).toString();
+                String exportedGt = new Genotype(exportedStudyEntry.getSampleData(sampleName, "GT")).toString();
+                // Normalize allele order for unphased genotypes (e.g., 2/1 → 1/2)
+                Genotype origG = new Genotype(originalGt);
+                Genotype expG = new Genotype(exportedGt);
+                if (!origG.isPhased()) {
+                    origG.normalizeAllelesIdx();
+                }
+                if (!expG.isPhased()) {
+                    expG.normalizeAllelesIdx();
+                }
+                assertEquals("For sample '" + sampleName + "', id "
                                 + metadataManager.getSampleId(studyMetadata.getId(), sampleName)
                                 + ", in " + originalVariant,
-                        originalStudyEntry.getSampleData(sampleName, "GT"),
-                        exportedStudyEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));
+                        origG.toString(),
+                        expG.toString());
             }
         }
         return originalVariants.size();
@@ -270,7 +291,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             read = variantVcfReader.read(variantsToRead);
             for (Variant variant : read) {
                 lines++;
-                if (variant.getType().equals(VariantType.SYMBOLIC) || variant.getAlternate().startsWith("<")) {
+                if (variant.isSymbolic() || variant.getType() == VariantType.NO_VARIATION) {
                     continue;
                 }
                 if (variant.getStart() >= region.getStart() && variant.getEnd() <= region.getEnd()) {
