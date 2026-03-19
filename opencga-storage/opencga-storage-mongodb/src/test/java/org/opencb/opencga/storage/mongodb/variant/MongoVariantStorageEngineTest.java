@@ -964,32 +964,22 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Override
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum(new ObjectMap(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP,AD,PL"));
-        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton("0/0"));
-
-//        StudyMetadata studyMetadata = variantStorageEngine.getStudyMetadataManager()
-//                .getStudyMetadata(1, null).first();
-
-//        Iterator<BatchFileOperation> iterator = studyMetadata.getBatches().iterator();
-//        assertEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), iterator.next().getOperationName());
-//        while (iterator.hasNext()) {
-//            BatchFileOperation batchFileOperation = iterator.next();
-//            assertNotEquals(MongoDBVariantOptions.DIRECT_LOAD.key(), batchFileOperation.getOperationName());
-//        }
+        checkPlatinumDatabase(Collections.singleton("0/0"));
     }
 
 //    @Test
 //    public void multiIndexPlatinumNoUnknownGenotypes() throws Exception {
 //        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), GenotypeClass.UNKNOWN_GENOTYPE));
-//        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
+//        checkPlatinumDatabase(Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
 //    }
 
     @Test
     public void multiIndexPlatinumMergeSimple() throws Exception {
         super.multiIndexPlatinum(new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
-        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
+        checkPlatinumDatabase(Collections.singleton(GenotypeClass.UNKNOWN_GENOTYPE));
     }
 
-    private void checkPlatinumDatabase(Function<Document, Integer> getExpectedSamples, Set<String> defaultGenotypes) throws Exception {
+    private void checkPlatinumDatabase(Set<String> defaultGenotypes) throws Exception {
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
@@ -1000,68 +990,84 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 Document document = it.next();
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
-                List<Document> files = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
+                List<Document> allFiles = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
                 assertEquals(id, 2, studies.size());
-                Document study1 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc1.getId())).findAny().orElse(null);
-                Document study2 = studies.stream().filter(d -> d.getInteger(STUDYID_FIELD).equals(sc2.getId())).findAny().orElse(null);
-                for (Document file : files) {
-                    Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
-                    Set<Integer> samples = new HashSet<>();
-                    for (String defaultGenotype : defaultGenotypes) {
-                        assertThat(gts.keySet(), not(hasItem(defaultGenotype)));
-                    }
-                    for (Map.Entry<String, Object> entry : gts.entrySet()) {
-                        List<Integer> sampleIds = (List<Integer>) entry.getValue();
-                        for (Integer sampleId : sampleIds) {
-                            assertFalse(id, samples.contains(sampleId));
-                            assertTrue(id, samples.add(sampleId));
+
+                // Group root-level files by study
+                List<Document> studyFiles1 = allFiles.stream()
+                        .filter(f -> f.getInteger(STUDYID_FIELD).equals(sc1.getId()))
+                        .collect(Collectors.toList());
+                List<Document> studyFiles2 = allFiles.stream()
+                        .filter(f -> f.getInteger(STUDYID_FIELD).equals(sc2.getId()))
+                        .collect(Collectors.toList());
+
+                // Per-study genotype check: verify no default GTs stored, no duplicate samples
+                for (List<Document> studyFiles : Arrays.asList(studyFiles1, studyFiles2)) {
+                    Set<Integer> allSamples = new HashSet<>();
+                    for (Document file : studyFiles) {
+                        Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
+                        for (String defaultGenotype : defaultGenotypes) {
+                            assertThat(gts.keySet(), not(hasItem(defaultGenotype)));
+                        }
+                        for (Map.Entry<String, Object> entry : gts.entrySet()) {
+                            List<Integer> sampleIds = (List<Integer>) entry.getValue();
+                            for (Integer sampleId : sampleIds) {
+                                assertFalse(id, allSamples.contains(sampleId));
+                                assertTrue(id, allSamples.add(sampleId));
+                            }
                         }
                     }
-                    assertEquals("\"" + id + "\" study: " + file.get(STUDYID_FIELD), (int) getExpectedSamples.apply(file), samples.size());
+                    // Each platinum file has 1 sample; total non-default-GT samples = number of files
+                    assertEquals(id, studyFiles.size(), allSamples.size());
                 }
 
-                Document gt1 = study1.get(GENOTYPES_FIELD, Document.class);
-                Document gt2 = study2.get(GENOTYPES_FIELD, Document.class);
-                assertEquals(id, gt1.keySet(), gt2.keySet());
-                for (String gt : gt1.keySet()) {
-                    // Order is not important. Compare using a set
-                    Set<Integer> expected = ((List<Integer>) gt1.get(gt, List.class)).stream().map(i -> i > 17 ? i - 17 : i).collect(Collectors.toSet());
-                    Set<Integer> actual = ((List<Integer>) gt2.get(gt, List.class)).stream().map(i -> i > 17 ? i - 17 : i).collect(Collectors.toSet());
+                // Cross-study genotype comparison: merge genotypes from files per study
+                Map<String, Set<Integer>> gts1 = mergeFileGenotypes(studyFiles1);
+                Map<String, Set<Integer>> gts2 = mergeFileGenotypes(studyFiles2);
+                assertEquals(id, gts1.keySet(), gts2.keySet());
+                for (String gt : gts1.keySet()) {
+                    // Normalize sample IDs (study2 samples are offset by 17)
+                    Set<Integer> expected = gts1.get(gt).stream()
+                            .map(i -> i > 17 ? i - 17 : i).collect(Collectors.toSet());
+                    Set<Integer> actual = gts2.get(gt).stream()
+                            .map(i -> i > 17 ? i - 17 : i).collect(Collectors.toSet());
                     assertEquals(id + ":" + gt, expected, actual);
                 }
 
-                //Order is very important!
-                assertEquals(id, study1.get(ALTERNATES_FIELD), study2.get(ALTERNATES_FIELD));
-
-                //Order is not important.
-                Map<String, Document> files1 = ((List<Document>) study1.get(FILES_FIELD))
-                        .stream()
+                // Cross-study file comparison (order is not important)
+                Map<String, Document> fileMap1 = studyFiles1.stream()
                         .collect(Collectors.toMap(
                                 d -> metadataManager.getFileName(sc1.getId(), d.getInteger(FILEID_FIELD)),
                                 Function.identity()));
-                Map<String, Document> files2 = ((List<Document>) study2.get(FILES_FIELD))
-                        .stream()
-                        .collect(Collectors.toMap(d -> metadataManager.getFileName(sc2.getId(), d.getInteger(FILEID_FIELD)), Function.identity()));
-                assertEquals(id, study1.get(FILES_FIELD, List.class).size(), study2.get(FILES_FIELD, List.class).size());
-                assertEquals(id, files1.size(), files2.size());
-                for (Map.Entry<String, Document> entry : files1.entrySet()) {
+                Map<String, Document> fileMap2 = studyFiles2.stream()
+                        .collect(Collectors.toMap(
+                                d -> metadataManager.getFileName(sc2.getId(), d.getInteger(FILEID_FIELD)),
+                                Function.identity()));
+                assertEquals(id, fileMap1.size(), fileMap2.size());
+                for (Map.Entry<String, Document> entry : fileMap1.entrySet()) {
                     Document file1 = entry.getValue();
-                    Document file2 = files2.get(entry.getKey());
+                    Document file2 = fileMap2.get(entry.getKey());
+                    // Compare alternates per file
+                    assertEquals(id, file1.get(ALTERNATES_FIELD), file2.get(ALTERNATES_FIELD));
                     Document attrs = file1.get(ATTRIBUTES_FIELD, Document.class);
                     Document attrs2 = file2.get(ATTRIBUTES_FIELD, Document.class);
                     String ac1 = Objects.toString(attrs.remove("AC"));
                     String ac2 = Objects.toString(attrs2.remove("AC"));
                     if (!ac1.equals(ac2)) {
-                        ac1 = Arrays.stream(ac1.split(",")).map(Integer::parseInt).map(String::valueOf).collect(Collectors.joining(","));
-                        ac2 = Arrays.stream(ac2.split(",")).map(Integer::parseInt).map(String::valueOf).collect(Collectors.joining(","));
-                        assertTrue(id + ' ' + ac1 + ' ' + ac2 , ac1.startsWith(ac2) || ac2.startsWith(ac1));
+                        ac1 = Arrays.stream(ac1.split(",")).map(Integer::parseInt).map(String::valueOf)
+                                .collect(Collectors.joining(","));
+                        ac2 = Arrays.stream(ac2.split(",")).map(Integer::parseInt).map(String::valueOf)
+                                .collect(Collectors.joining(","));
+                        assertTrue(id + ' ' + ac1 + ' ' + ac2, ac1.startsWith(ac2) || ac2.startsWith(ac1));
                     }
                     String af1 = Objects.toString(attrs.remove("AF"));
                     String af2 = Objects.toString(attrs2.remove("AF"));
                     if (!af1.equals(af2)) {
-                        af1 = Arrays.stream(af1.split(",")).map(Double::parseDouble).map(String::valueOf).collect(Collectors.joining(","));
-                        af2 = Arrays.stream(af2.split(",")).map(Double::parseDouble).map(String::valueOf).collect(Collectors.joining(","));
-                        assertTrue(id + ' ' + af1 + ' ' + af2 , af1.startsWith(af2) || af2.startsWith(af1));
+                        af1 = Arrays.stream(af1.split(",")).map(Double::parseDouble).map(String::valueOf)
+                                .collect(Collectors.joining(","));
+                        af2 = Arrays.stream(af2.split(",")).map(Double::parseDouble).map(String::valueOf)
+                                .collect(Collectors.joining(","));
+                        assertTrue(id + ' ' + af1 + ' ' + af2, af1.startsWith(af2) || af2.startsWith(af1));
                     }
                     Document samplesData1 = (Document) file1.remove(SAMPLE_DATA_FIELD);
                     Document samplesData2 = (Document) file2.remove(SAMPLE_DATA_FIELD);
@@ -1075,7 +1081,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                             if (1 == data2.getStringValuesCount()) {
                                 String value1 = data1.getStringValues(0);
                                 String value2 = data2.getStringValues(0);
-                                assertTrue(id + ' ' + value1 + ' ' + value2 , value1.startsWith(value2) || value2.startsWith(value1));
+                                assertTrue(id + ' ' + value1 + ' ' + value2,
+                                        value1.startsWith(value2) || value2.startsWith(value1));
                             } else {
                                 assertEquals(data1, data2);
                             }
@@ -1084,16 +1091,49 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                     int fileId1 = (int) file1.remove(FILEID_FIELD);
                     int fileId2 = (int) file2.remove(FILEID_FIELD);
                     assertEquals(Integer.signum(fileId1), Integer.signum(fileId2));
+                    // Remove fields that differ between studies before comparing remaining
+                    file1.remove(STUDYID_FIELD);
+                    file2.remove(STUDYID_FIELD);
+                    file1.remove(FILE_GENOTYPE_FIELD);
+                    file2.remove(FILE_GENOTYPE_FIELD);
+                    // sfd keys are sample IDs (study2 offset by 17); normalize before comparing
+                    Document sfd1 = (Document) file1.remove(SAMPLE_FILTERABLE_DATA_FIELD);
+                    Document sfd2 = (Document) file2.remove(SAMPLE_FILTERABLE_DATA_FIELD);
+                    assertEquals(id, normalizeSfdSampleIds(sfd1), normalizeSfdSampleIds(sfd2));
                     assertEquals(id, file1, file2);
                 }
-
             }
-//            VariantExporter variantExporter = new VariantExporter(dbAdaptor);
-//            URI uri = newOutputUri();
-//            variantExporter.export(uri.resolve("s1.vcf"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".").append(VariantQueryParam.STUDIES.key(), 1), new QueryOptions(QueryOptions.SORT, true));
-//            variantExporter.export(uri.resolve("s2.vcf"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".").append(VariantQueryParam.STUDIES.key(), 2), new QueryOptions(QueryOptions.SORT, true));
         }
+    }
 
+    private static Document normalizeSfdSampleIds(Document sfd) {
+        if (sfd == null) {
+            return null;
+        }
+        Document normalized = new Document();
+        for (Map.Entry<String, Object> fieldEntry : sfd.entrySet()) {
+            Document sampleValues = (Document) fieldEntry.getValue();
+            Document normalizedValues = new Document();
+            for (Map.Entry<String, Object> sampleEntry : sampleValues.entrySet()) {
+                int sampleId = Integer.parseInt(sampleEntry.getKey());
+                String normalizedKey = String.valueOf(sampleId > 17 ? sampleId - 17 : sampleId);
+                normalizedValues.put(normalizedKey, sampleEntry.getValue());
+            }
+            normalized.put(fieldEntry.getKey(), normalizedValues);
+        }
+        return normalized;
+    }
+
+    private Map<String, Set<Integer>> mergeFileGenotypes(List<Document> files) {
+        Map<String, Set<Integer>> merged = new LinkedHashMap<>();
+        for (Document file : files) {
+            Document gts = file.get(FILE_GENOTYPE_FIELD, Document.class);
+            for (Map.Entry<String, Object> entry : gts.entrySet()) {
+                merged.computeIfAbsent(entry.getKey(), k -> new HashSet<>())
+                        .addAll((List<Integer>) entry.getValue());
+            }
+        }
+        return merged;
     }
 
     private VariantMongoDBProto.OtherFields readSamplesData(Document samplesData1, String key) throws com.google.protobuf.InvalidProtocolBufferException {
