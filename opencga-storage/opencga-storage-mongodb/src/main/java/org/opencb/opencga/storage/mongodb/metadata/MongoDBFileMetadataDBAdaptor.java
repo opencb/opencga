@@ -127,7 +127,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 
     @Override
     public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) {
-        Bson filter = parseQuery(query);
+        Bson filter = Filters.and(parseQuery(query), Filters.exists(VARIANT_METADATA_FIELD));
         return Iterators.transform(collection.nativeQuery().find(filter, options),
                 doc-> variantFileMetadataConverter.convertToDataModelType(doc.get(VARIANT_METADATA_FIELD, Document.class)));
     }

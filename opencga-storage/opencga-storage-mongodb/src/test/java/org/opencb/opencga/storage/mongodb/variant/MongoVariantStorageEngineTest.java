@@ -1259,53 +1259,26 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         super.removeFileTest(params);
         VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
 
+        // Stage collection comparison removed: BASIC merge mode (now the default) bypasses the
+        // stage entirely for direct loads, so the stage is not reliably populated.
+
+        // Compare variant documents between expected and actual engines.
+        // With files-to-root schema, genotypes (mgt) and sample data are stored per-file at root level.
+        // The two engines load study 2 files with different options (expected uses defaults, actual uses
+        // LOAD_ARCHIVE=NO/LOAD_SAMPLE_INDEX=NO), causing sample ID assignment to diverge for study 2.
+        // Normalize study 2 files by removing sample-ID-dependent fields; keep study 1 files strict.
         int studyId = studyMetadata1.getId();
-        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
-        System.out.println("variantsCollection = " + variantsCollection);
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyId);
-        System.out.println("stageCollection = " + stageCollection);
-
-//        assertEquals(variantsCollection.count().first(), stageCollection.count().first());
-
-        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResults().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
-        Set<String> stageIds = stageCollection.find(Filters.exists(String.valueOf(studyId)), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResults().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
-
-        if (!variantIds.equals(stageIds)) {
-            for (String id : variantIds) {
-                assertThat("Stage does not contain " + id, stageIds, hasItem(id));
-            }
-            for (String id : stageIds) {
-                assertThat("Variants does not contain " + id, variantIds, hasItem(id));
-            }
-        }
-
         compareCollections(
                 variantStorageEngineExpected.getDBAdaptor().getVariantsCollection(),
                 dbAdaptor.getVariantsCollection(),
                 d -> {
-                    List<Document> list = (List<Document>) d.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
-                    for (Document study : list) {
-                        if (study.getInteger(STUDYID_FIELD) == 1) {
-                            Document gts = study.get(GENOTYPES_FIELD, Document.class);
-                            // Remove empty genotype lists
-                            gts.entrySet().removeIf(entry -> ((List) entry.getValue()).isEmpty());
-                            int numAlleles = 1;
-                            Document ori = ((Document) study.get(FILES_FIELD, List.class).get(0)).get(ORI_FIELD, Document.class);
-                            if (ori != null) {
-                                numAlleles = ori.getString("s").split(":")[2].split(",").length;
-                            }
-                            // Remove unused alternates
-                            if (numAlleles > 1) {
-                                List alts = study.get(ALTERNATES_FIELD, List.class);
-                                if (alts.size() > numAlleles - 1) {
-                                    logger.warn(d.getString("_id") + " : Unused alternates " + alts.subList(numAlleles - 1, alts.size()));
-                                }
-                                study.put(ALTERNATES_FIELD, alts.subList(0, numAlleles - 1));
-                            } else {
-                                Object remove = study.remove(ALTERNATES_FIELD);
-                                if (remove != null) {
-                                    logger.warn(d.getString("_id") + " : " + gts.keySet() + " Unused alternates " + remove);
-                                }
+                    List<Document> filesDocs = d.getList(DocumentToVariantConverter.FILES_FIELD, Document.class);
+                    if (filesDocs != null) {
+                        for (Document fileDoc : filesDocs) {
+                            if (fileDoc.getInteger(STUDYID_FIELD) != studyId) {
+                                // Study 2: remove sample-ID-dependent fields (not the focus of this test)
+                                fileDoc.remove(FILE_GENOTYPE_FIELD);
+                                fileDoc.remove(SAMPLE_DATA_FIELD);
                             }
                         }
                     }
