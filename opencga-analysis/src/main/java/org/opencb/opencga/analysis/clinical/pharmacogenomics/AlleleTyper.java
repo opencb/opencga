@@ -831,13 +831,68 @@ public class AlleleTyper {
 
         @Override
         public String toString() {
-            // Alphabetical ordering for consistency
+            // Numeric star allele ordering: *5 before *22
             String a1 = h1.allele;
             String a2 = h2.allele;
-            if (a1.compareTo(a2) <= 0) {
+            if (compareStarAlleles(a1, a2) <= 0) {
                 return a1 + "/" + a2;
             }
             return a2 + "/" + a1;
+        }
+
+        /**
+         * Compare alleles with biologically meaningful ordering:
+         * - Star alleles (*N): numeric ordering (*5 before *22)
+         * - RS-based alleles: wt/Ref before Alt
+         * - Falls back to lexicographic comparison
+         */
+        private int compareStarAlleles(String a1, String a2) {
+            // Star alleles: numeric ordering
+            int n1 = extractStarNumber(a1);
+            int n2 = extractStarNumber(a2);
+            if (n1 >= 0 && n2 >= 0) {
+                if (n1 != n2) {
+                    return Integer.compare(n1, n2);
+                }
+                return a1.compareTo(a2);
+            }
+
+            // RS-based or other alleles: wt/Ref before Alt
+            boolean a1IsRef = a1.contains("wt") || a1.contains("Ref");
+            boolean a2IsRef = a2.contains("wt") || a2.contains("Ref");
+            boolean a1IsAlt = a1.contains("Alt");
+            boolean a2IsAlt = a2.contains("Alt");
+            if (a1IsRef && a2IsAlt) {
+                return -1;
+            }
+            if (a1IsAlt && a2IsRef) {
+                return 1;
+            }
+
+            return a1.compareTo(a2);
+        }
+
+        /**
+         * Extract the primary numeric value from a star allele name.
+         * E.g., *5 -> 5, *41x2 -> 41, *68+*4 -> 68, *36x2+10 -> 36.
+         * Returns -1 if not a star allele.
+         */
+        private int extractStarNumber(String allele) {
+            if (allele == null || !allele.startsWith("*")) {
+                return -1;
+            }
+            int end = 1;
+            while (end < allele.length() && Character.isDigit(allele.charAt(end))) {
+                end++;
+            }
+            if (end > 1) {
+                try {
+                    return Integer.parseInt(allele.substring(1, end));
+                } catch (NumberFormatException e) {
+                    return -1;
+                }
+            }
+            return -1;
         }
     }
 
