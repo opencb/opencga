@@ -7,7 +7,6 @@ public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest
 
     protected EnterpriseFederationManager enterpriseFederationManager;
     protected EnterpriseProjectManager enterpriseProjectManager;
-    protected EnterpriseUserManager enterpriseUserManager;
 
     @Before
     public void setUp() throws Exception {
@@ -16,7 +15,6 @@ public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest
 
         enterpriseFederationManager = EnterpriseFactory.getEnterpriseFederationManager();
         enterpriseProjectManager = EnterpriseFactory.getEnterpriseProjectManager();
-        enterpriseUserManager = EnterpriseFactory.getEnterpriseUserManager();
     }
 
 }

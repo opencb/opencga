@@ -121,7 +121,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             queryParams.append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
 
             AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
-            String token = EnterpriseFactory.getEnterpriseUserManager().ssoLogin(principal);
+            String token = catalogManager.getUserManager().ssoLogin(principal.getName(), principal.getAttributes());
             // Add user and token
             queryParams.append("&").append("token").append("=").append(token);
             queryParams.append("&").append("user").append("=").append(principal.getName());
