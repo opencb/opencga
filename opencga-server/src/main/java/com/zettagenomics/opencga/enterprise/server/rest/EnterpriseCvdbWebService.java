@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
@@ -45,7 +44,6 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     public EnterpriseCvdbWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                     @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     private CvdbSolrEngine getCvdbEngine() throws IOException {

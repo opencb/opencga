@@ -16,8 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
+import org.opencb.opencga.catalog.utils.FederationUtils;
 import org.opencb.opencga.core.config.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
@@ -951,7 +950,7 @@ public class CvdbSolrEngine {
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
         String organizationId = jwtPayload.getOrganization();
 
-        DBAdaptorFactory dbAdaptorFactory = EnterpriseFactory.getCatalogDBAdaptorFactory();
+        DBAdaptorFactory dbAdaptorFactory = catalogManager.getDBAdaptorFactory();
         Organization organization = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(ORGANIZATION_OPTIONS).first();
 
         OpenCGAResult<Project> projectResult;

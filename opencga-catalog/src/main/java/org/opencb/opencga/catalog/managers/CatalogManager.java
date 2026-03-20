@@ -436,4 +436,8 @@ public class CatalogManager implements AutoCloseable {
     public ExternalToolManager getExternalToolManager() {
         return externalToolManager;
     }
+
+    public DBAdaptorFactory getDBAdaptorFactory() {
+        return catalogDBAdaptorFactory;
+    }
 }

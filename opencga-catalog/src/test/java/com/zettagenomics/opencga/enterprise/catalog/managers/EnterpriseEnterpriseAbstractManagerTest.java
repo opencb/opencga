@@ -8,7 +8,6 @@ public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        EnterpriseFactory.init(catalogManager, catalogManager.getConfiguration());
     }
 
 }
