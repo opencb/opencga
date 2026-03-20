@@ -35,8 +35,8 @@ public class ParamConstants {
 
     public static final String STATS_LIMIT_NAME = "statsLimit";
     public static final int STATS_DEFAULT_LIMIT = 10;
-    public static final String STATS_LIMIT_DESCR = "Maximum number of results (i.e., buckets) to return for each aggregation." +
-            " Default value: " + STATS_DEFAULT_LIMIT;
+    public static final String STATS_LIMIT_DESCR = "Maximum number of results (i.e., buckets) to return for each aggregation."
+            + " Default value: " + STATS_DEFAULT_LIMIT;
 
     public static final String STATS_ORDER_NAME = "statsOrder";
     public static final String STATS_DEFAULT_ORDER = DESC;

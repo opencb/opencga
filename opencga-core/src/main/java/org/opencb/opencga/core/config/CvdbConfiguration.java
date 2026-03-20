@@ -1,13 +1,8 @@
-package com.zettagenomics.opencga.enterprise.core.configuration;
-
-import org.opencb.opencga.core.config.SearchConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package org.opencb.opencga.core.config;
 
 public class CvdbConfiguration extends AbstractModuleConfiguration {
-    private SearchConfiguration database;
 
-    protected static Logger logger = LoggerFactory.getLogger(CvdbConfiguration.class);
+    private SearchConfiguration database;
 
     public CvdbConfiguration() {
         super();

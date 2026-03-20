@@ -41,6 +41,19 @@ monitor:
   fileDaemonInterval: 8000      # number of milliseconds between checks
   port: 9092
 
+sso:
+  active: true
+  casServerPrefixUrl: "https://reports.test.zettagenomics.com:8443/cas"
+  serverName: "http://localhost:9090"
+
+cvdb:
+  active: true
+  database:
+    hosts:
+      - "http://localhost:8983/solr/"
+    mode: "cloud"
+    timeout: 30000
+
 email:
   host: "localhost"
   port: ""
