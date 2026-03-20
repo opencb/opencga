@@ -22,7 +22,6 @@ public class EnterpriseFactory implements AutoCloseable {
     private static final AtomicReference<CatalogManager> catalogManagerRef = new AtomicReference<>();
     private static final AtomicReference<Configuration> configurationRef = new AtomicReference<>();
 
-    private static final AtomicReference<EnterpriseFederationManager> federationManagerRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseProjectManager> projectManagerRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseAuditManager> auditManagerRef = new AtomicReference<>();
 
@@ -74,7 +73,6 @@ public class EnterpriseFactory implements AutoCloseable {
 
         auditManagerRef.set(new EnterpriseAuditManager(catalogManager.getAuthorizationManager(), catalogManager,
                 catalogDBAdaptorFactoryRef.get(), catalogManager.getConfiguration()));
-        federationManagerRef.set(new EnterpriseFederationManager(catalogManagerRef.get(), configurationRef.get()));
         projectManagerRef.set(new EnterpriseProjectManager(catalogManagerRef.get(), configurationRef.get()));
     }
 
@@ -84,14 +82,6 @@ public class EnterpriseFactory implements AutoCloseable {
                     + " Please, call init() method first.");
         }
         return catalogDBAdaptorFactoryRef.get();
-    }
-
-    public static EnterpriseFederationManager getEnterpriseFederationManager() throws CatalogRuntimeException {
-        if (federationManagerRef.get() == null) {
-            throw new CatalogRuntimeException("EnterpriseFederationManager has not been properly initialized."
-                    + " Please, call init() method first.");
-        }
-        return federationManagerRef.get();
     }
 
     public static EnterpriseProjectManager getEnterpriseProjectManager() throws CatalogRuntimeException {

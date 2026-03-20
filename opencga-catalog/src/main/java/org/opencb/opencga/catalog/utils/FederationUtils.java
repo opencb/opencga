@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.catalog.utils;
+package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,7 +11,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.JwtUtils;

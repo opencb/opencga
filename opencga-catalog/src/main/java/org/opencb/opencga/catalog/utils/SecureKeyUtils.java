@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.catalog.utils;
+package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.CryptoUtils;
@@ -20,7 +20,7 @@ public class SecureKeyUtils {
             // Add padding
             secureString = secureString + StringUtils.repeat("¬", 4 - (length % 4));
         }
-        length = secureString.length()/4;
+        length = secureString.length() / 4;
 
         // Split security key in 4 parts
         String[] parts = new String[4];
@@ -53,7 +53,7 @@ public class SecureKeyUtils {
 
         // Reconstruct security key in correct order
         String newSecurityKey = new String(chars);
-        int length = newSecurityKey.length()/4;
+        int length = newSecurityKey.length() / 4;
         String[] parts = new String[4];
         for (int i = 0; i < 4; i++) {
             parts[i] = newSecurityKey.substring(i * length, (i + 1) * length);

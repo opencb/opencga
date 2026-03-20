@@ -40,7 +40,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
-            return EnterpriseFactory.getEnterpriseFederationManager().createFederation(url, createParams, token);
+            return catalogManager.getFederationManager().createFederation(url, createParams, token);
         });
     }
 
@@ -52,7 +52,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
-            return EnterpriseFactory.getEnterpriseFederationManager().reset(url, federationServerId, token);
+            return catalogManager.getFederationManager().reset(url, federationServerId, token);
         });
     }
 
@@ -63,7 +63,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
             @ApiParam(value = EnterpriseParamConstants.FEDERATION_SERVER_ID_DESCRIPTION) @PathParam("id") String id,
             @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_UPDATE_SERVER_DESCRIPTION, required = true) FederationServerUpdateParams params
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
+        return run(() -> catalogManager.getFederationManager().update(id, params, token));
     }
 
     @DELETE
@@ -72,7 +72,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     public Response deleteServer(
             @ApiParam(value = EnterpriseParamConstants.FEDERATION_SERVER_ID_DESCRIPTION, required = true) @PathParam("id") String id
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationServer(id, token));
+        return run(() -> catalogManager.getFederationManager().deleteFederationServer(id, token));
     }
 
     @POST
@@ -80,7 +80,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Connect to a shared XetaBase instance.")
     public Response connect(
             @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_CONNECT_DESCRIPTION, required = true) FederationClientParams createParams) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
+        return run(() -> catalogManager.getFederationManager().connect(createParams, token));
     }
 
     @POST
@@ -88,7 +88,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
             @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_SYNC, required = true) @PathParam("id") String federationClientId) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
+        return run(() -> catalogManager.getFederationManager().sync(federationClientId, token));
     }
 
     @POST
@@ -98,7 +98,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
             @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_DESCRIPTION) @PathParam("id") String id,
             @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_UPDATE_CLIENT_DESCRIPTION, required = true) FederationClientUpdateParams params
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
+        return run(() -> catalogManager.getFederationManager().update(id, params, token));
     }
 
     @POST
@@ -110,7 +110,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
                 @QueryParam("action") String action,
             @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_SHARE_USERS_DESCRIPTION, required = true) FederationUserParams params
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().shareStudy(studyStr, action, params, token));
+        return run(() -> catalogManager.getFederationManager().shareStudy(studyStr, action, params, token));
     }
 
     @GET
@@ -119,7 +119,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     public Response federatedStudyAccess(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().showUsers(studyStr, token));
+        return run(() -> catalogManager.getFederationManager().showUsers(studyStr, token));
     }
 
     @DELETE
@@ -128,7 +128,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     public Response deleteClient(
             @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_DESCRIPTION, required = true) @PathParam("id") String id
     ) {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationClient(id, token));
+        return run(() -> catalogManager.getFederationManager().deleteFederationClient(id, token));
     }
 
     @POST
@@ -136,7 +136,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "First connection established with the Federation Server to update the secret key and extend the user " +
             "expiration date.", hidden = true)
     public Response firstConnection() {
-        return run(() -> EnterpriseFactory.getEnterpriseFederationManager().resetSecurityKey(token));
+        return run(() -> catalogManager.getFederationManager().resetSecurityKey(token));
     }
 
     /******************************************************************
@@ -153,7 +153,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
                 .filter(e -> !e.getKey().equals("method"))
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
         try {
-            return createResponse(EnterpriseFactory.getEnterpriseFederationManager().redirect(url, queryParams, body, "POST", token));
+            return createResponse(catalogManager.getFederationManager().redirect(url, queryParams, body, "POST", token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -169,7 +169,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
                 .filter(e -> !e.getKey().equals("method"))
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
         try {
-            return createResponse(EnterpriseFactory.getEnterpriseFederationManager().redirect(url, queryParams, null, "GET", token));
+            return createResponse(catalogManager.getFederationManager().redirect(url, queryParams, null, "GET", token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -185,7 +185,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
                 .filter(e -> !e.getKey().equals("method"))
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
         try {
-            return createResponse(EnterpriseFactory.getEnterpriseFederationManager().redirect(url, queryParams, null, "DELETE", token));
+            return createResponse(catalogManager.getFederationManager().redirect(url, queryParams, null, "DELETE", token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

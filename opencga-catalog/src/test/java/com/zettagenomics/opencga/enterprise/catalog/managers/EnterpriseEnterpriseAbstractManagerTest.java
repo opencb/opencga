@@ -5,7 +5,6 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 
 public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest {
 
-    protected EnterpriseFederationManager enterpriseFederationManager;
     protected EnterpriseProjectManager enterpriseProjectManager;
 
     @Before
@@ -13,7 +12,6 @@ public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest
         super.setUp();
         EnterpriseFactory.init(catalogManager, catalogManager.getConfiguration());
 
-        enterpriseFederationManager = EnterpriseFactory.getEnterpriseFederationManager();
         enterpriseProjectManager = EnterpriseFactory.getEnterpriseProjectManager();
     }
 
