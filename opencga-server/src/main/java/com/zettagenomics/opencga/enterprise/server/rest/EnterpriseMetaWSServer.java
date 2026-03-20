@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommonsImpl;
@@ -142,7 +142,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
             @ApiParam(value = EnterpriseParamConstants.SSO_LOGOUT_CALLBACK_DESCRIPTION) @QueryParam("url") String service,
             @ApiParam(value = EnterpriseParamConstants.SSO_LOGOUT_SUCCESS_DESCRIPTION, hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
+        Configuration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
             return createErrorResponse(new CatalogException("SSO is not enabled."));
         }

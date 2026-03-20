@@ -3,7 +3,7 @@ package com.zettagenomics.opencga.enterprise.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
 import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
 import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.models.federation.FederationServerUpdateParams;
@@ -77,8 +77,8 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.FQN.key(),
             ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.UID.key()));
 
-    public EnterpriseFederationManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration) {
-        super(catalogManager, enterpriseConfiguration);
+    public EnterpriseFederationManager(CatalogManager catalogManager, Configuration configuration) {
+        super(catalogManager, configuration);
     }
 
     // ************* FOR SERVERS **************** //

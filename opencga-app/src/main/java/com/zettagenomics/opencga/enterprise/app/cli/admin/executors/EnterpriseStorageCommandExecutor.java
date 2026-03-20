@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.app.cli.admin.executors;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.lang3.StringUtils;
@@ -36,10 +35,7 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
         return cvdbProjects;
     }
 
-    private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager) throws IOException {
-        // CVDB engine
-        EnterpriseConfiguration enterpriseConfig = EnterpriseConfiguration.load(opencgaHome);
-
-        return new CvdbSolrEngine(enterpriseConfig.getCvdb(), catalogManager);
+    private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager) {
+        return new CvdbSolrEngine(configuration.getCvdb(), catalogManager);
     }
 }

@@ -18,7 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
-import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
+import org.opencb.opencga.core.config.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;

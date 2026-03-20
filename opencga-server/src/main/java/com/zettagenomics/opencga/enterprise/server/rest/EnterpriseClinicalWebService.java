@@ -56,7 +56,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
                 cvdbEngine = cvdbEngineAtomicRef.get();
                 if (cvdbEngine == null) {
                     try {
-                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager);
                         cvdbEngineAtomicRef.set(cvdbEngine);
                     } catch (Exception e) {
                         throw new RuntimeException("Unable to initialize CVDB engine", e);

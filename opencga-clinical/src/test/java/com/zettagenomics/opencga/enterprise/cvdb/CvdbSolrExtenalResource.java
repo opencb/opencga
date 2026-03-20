@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,6 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private static Path rootDir;
 
     private Configuration configuration;
-    private EnterpriseConfiguration enterpriseConfiguration;
 
     public CvdbSolrExtenalResource(boolean embeded, String organizationId, String projectId, String collectionPrefix) {
         this.embeded = embeded;
@@ -55,7 +53,6 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
         try {
             this.configuration = Configuration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/configuration-test.yml"));
-            this.enterpriseConfiguration = EnterpriseConfiguration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/enterprise-configuration.yml"));
 
             System.out.println("this.configuration.getDatabasePrefix() = " + this.configuration.getDatabasePrefix());
         } catch (IOException e) {
@@ -127,7 +124,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     }
 
     public CvdbSolrEngine configure() {
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(configuration, enterpriseConfiguration.getCvdb());
+        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(configuration, configuration.getCvdb());
         cvdbEngine.setSolrManager(new SolrManager(solrClient, solrHost, solrMode));
         return cvdbEngine;
     }

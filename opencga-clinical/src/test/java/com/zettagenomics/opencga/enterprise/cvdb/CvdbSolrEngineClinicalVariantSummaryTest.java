@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
@@ -102,9 +102,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 
         if (cvdbEngine.getSolrManager().isAlive()) {
             // Enterprise factory init
-            InputStream is = CvdbSolrEngineClinicalVariantSummaryTest.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");
-            EnterpriseConfiguration config = EnterpriseConfiguration.load(is);
-            EnterpriseFactory.init(catalogManager, config);
+            EnterpriseFactory.init(catalogManager, catalogManager.getConfiguration());
 
 
             if (cvdbEngine.existCollections(collectionPrefix)) {

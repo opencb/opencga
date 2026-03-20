@@ -1,6 +1,6 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -29,7 +29,7 @@ public class EnterpriseFactory implements AutoCloseable {
 
     private static final AtomicReference<DBAdaptorFactory> catalogDBAdaptorFactoryRef = new AtomicReference<>();
     private static final AtomicReference<CatalogManager> catalogManagerRef = new AtomicReference<>();
-    private static final AtomicReference<EnterpriseConfiguration> configurationRef = new AtomicReference<>();
+    private static final AtomicReference<Configuration> configurationRef = new AtomicReference<>();
 
     private static final AtomicReference<EnterpriseFederationManager> federationManagerRef = new AtomicReference<>();
     private static final AtomicReference<EnterpriseProjectManager> projectManagerRef = new AtomicReference<>();
@@ -41,7 +41,7 @@ public class EnterpriseFactory implements AutoCloseable {
     private EnterpriseFactory() {
     }
 
-    public static synchronized void init(CatalogManager catalogManager, EnterpriseConfiguration configuration)
+    public static synchronized void init(CatalogManager catalogManager, Configuration configuration)
             throws CatalogDBException, CatalogIOException {
         if (catalogManagerRef.get() == null) {
             catalogManagerRef.set(catalogManager);
@@ -65,8 +65,7 @@ public class EnterpriseFactory implements AutoCloseable {
 
             try {
                 catalogManagerRef.set(catalogManager);
-                EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-                configurationRef.set(enterpriseConfiguration);
+                configurationRef.set(catalogManager.getConfiguration());
 
                 logger.info("|  * Configuring Enterprise DBAdaptorFactory");
                 CatalogIOManager catalogIOManager = new CatalogIOManager(catalogManager.getConfiguration());
@@ -133,9 +132,9 @@ public class EnterpriseFactory implements AutoCloseable {
         return auditManagerRef.get();
     }
 
-    public static EnterpriseConfiguration getEnterpriseConfiguration() throws CatalogRuntimeException {
+    public static Configuration getEnterpriseConfiguration() throws CatalogRuntimeException {
         if (configurationRef.get() == null) {
-            throw new CatalogRuntimeException("EnterpriseConfiguration has not been properly initialized."
+            throw new CatalogRuntimeException("Configuration has not been properly initialized."
                     + " Please, call init() method first.");
         }
         return configurationRef.get();

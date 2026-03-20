@@ -19,7 +19,6 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.client.rest.EnterpriseOpenCGAClient;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +30,6 @@ import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
@@ -42,9 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 /**
  * Created on 27/05/16.
@@ -54,7 +49,6 @@ import java.util.*;
 public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
 
     protected EnterpriseOpenCGAClient enterpriseOpenCGAClient;
-    protected EnterpriseConfiguration enterpriseConfiguration;
     protected AbstractOutputWriter writer;
 
     private Logger privateLogger;
@@ -70,19 +64,6 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         super(options, true);
 
         init(options, skipDuration);
-    }
-
-    public void loadEnterpriseConfiguration() throws IOException {
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("enterprise-configuration.yml");
-        if (Files.exists(path)) {
-            privateLogger.debug("Loading enterprise-configuration from '{}'", path.toAbsolutePath());
-            this.enterpriseConfiguration = EnterpriseConfiguration.load(Files.newInputStream(path.toFile().toPath()));
-        } else {
-            privateLogger.debug("Loading enterprise-configuration from JAR file");
-            this.enterpriseConfiguration = EnterpriseConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml"));
-        }
     }
 
     public static List<String> splitWithTrim(String value) {
@@ -105,8 +86,6 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
         try {
             privateLogger = LoggerFactory.getLogger(EnterpriseOpencgaCommandExecutor.class);
             privateLogger.debug("Executing OpencgaEnterpriseCommandExecutor 'init' method ...");
-
-            this.loadEnterpriseConfiguration();
 
             // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();

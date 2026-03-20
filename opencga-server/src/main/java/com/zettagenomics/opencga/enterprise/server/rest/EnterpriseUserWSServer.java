@@ -1,7 +1,7 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
@@ -72,7 +72,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
             @ApiParam(value = EnterpriseParamConstants.USERS_CALLBACK_URL_DESCRIPTION) @QueryParam("url") String service,
             @ApiParam(value = EnterpriseParamConstants.USERS_LOGOUT_DESCRIPTION, hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
+        Configuration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
             return createErrorResponse(new CatalogException("SSO is not enabled."));
         }

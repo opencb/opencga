@@ -1,6 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
@@ -31,10 +31,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
@@ -73,12 +69,6 @@ public class CvdbTaskTest {
         String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, sessionIdUser);
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
         cvdbSolrExternalResource.before();
-
-        // Copy the enterprise configuration in the opencga home
-        InputStream stream = CvdbIndexTask.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");
-        Path confPath = catalogManagerResource.getOpencgaHome().toAbsolutePath().resolve("conf");
-        confPath.toFile().mkdirs();
-        Files.copy(stream, confPath.resolve("enterprise-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         // Prepare storage engine factory
         StorageConfiguration storageConfig = StorageConfiguration.load(CvdbIndexTask.class.getClassLoader().getResource("storage-configuration.yml").openStream());
@@ -202,13 +192,12 @@ public class CvdbTaskTest {
     }
 
     public static boolean solrIsAlive() throws IOException {
-        // Get enterprise configuration to set the CVDB engine
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(CvdbIndexTask.class.getClassLoader()
-                .getResource("enterprise-configuration.yml").openStream());
+        Configuration configuration = Configuration.load(CvdbIndexTask.class.getClassLoader()
+                .getResource("configuration.yml").openStream());
 
-        return new SolrManager(enterpriseConfiguration.getCvdb().getDatabase().getHosts(),
-                enterpriseConfiguration.getCvdb().getDatabase().getMode(),
-                enterpriseConfiguration.getCvdb().getDatabase().getTimeout()).isAlive();
+        return new SolrManager(configuration.getCvdb().getDatabase().getHosts(),
+                configuration.getCvdb().getDatabase().getMode(),
+                configuration.getCvdb().getDatabase().getTimeout()).isAlive();
     }
 
 }

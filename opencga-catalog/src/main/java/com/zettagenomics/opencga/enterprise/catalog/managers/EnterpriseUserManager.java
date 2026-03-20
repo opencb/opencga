@@ -1,6 +1,6 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -32,9 +32,9 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
 
     protected static Logger logger = LoggerFactory.getLogger(EnterpriseUserManager.class);
 
-    public EnterpriseUserManager(CatalogManager catalogManager, EnterpriseConfiguration enterpriseConfiguration,
+    public EnterpriseUserManager(CatalogManager catalogManager, Configuration configuration,
                                  String opencgaToken) {
-        super(catalogManager, enterpriseConfiguration);
+        super(catalogManager, configuration);
 
         this.opencgaToken = opencgaToken;
         this.userAccountInfoQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
@@ -50,7 +50,7 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
                 logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
             }
             organizationId = getDefaultValue(principal.getAttributes(),
-                    enterpriseConfiguration.getSso().getAttributes().getOrganization(), "");
+                    configuration.getSso().getAttributes().getOrganization(), "");
         } else {
             throw CatalogParameterException.isNull("organizationId");
         }
@@ -102,20 +102,20 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
                             new Account(null, null, 0, new Account.AuthenticationOrigin(authOriginId, false)))
                     )
                     .setAttributes(principal.getAttributes());
-            if (enterpriseConfiguration.getSso().getAttributes() != null && principal.getAttributes() != null) {
+            if (configuration.getSso().getAttributes() != null && principal.getAttributes() != null) {
                 String name = getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getName(), principal.getName());
+                        configuration.getSso().getAttributes().getName(), principal.getName());
                 String surname = getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getSurname(), "");
+                        configuration.getSso().getAttributes().getSurname(), "");
                 if (StringUtils.isNotEmpty(surname)) {
                     user.setName(name + " " + surname);
                 } else {
                     user.setName(name);
                 }
                 user.setEmail(getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getEmail(), ""));
+                        configuration.getSso().getAttributes().getEmail(), ""));
                 user.setOrganization(getDefaultValue(principal.getAttributes(),
-                        enterpriseConfiguration.getSso().getAttributes().getOrganization(), ""));
+                        configuration.getSso().getAttributes().getOrganization(), ""));
             }
 
             catalogManager.getUserManager().create(user, null, opencgaToken);
@@ -135,17 +135,17 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
     }
 
     private List<String> getGroupsFromSSO(AttributePrincipal principal) {
-        if (enterpriseConfiguration.getSso() == null || enterpriseConfiguration.getSso().getAttributes() == null
-                || StringUtils.isEmpty(enterpriseConfiguration.getSso().getAttributes().getGroups())) {
+        if (configuration.getSso() == null || configuration.getSso().getAttributes() == null
+                || StringUtils.isEmpty(configuration.getSso().getAttributes().getGroups())) {
             logger.warn("Cannot fetch groups from SSO user '{}'. Field 'sso.attributes.groups' from the "
-                    + "enterprise-configuration.yml file is undefined.", principal.getName());
+                    + "configuration.yml file is undefined.", principal.getName());
             return Collections.emptyList();
         }
         if (principal.getAttributes() != null) {
             String msg = StringUtils.join(principal.getAttributes().keySet(), ",");
             logger.debug("Attribute keys: {}", msg);
         }
-        String groupsKey = enterpriseConfiguration.getSso().getAttributes().getGroups();
+        String groupsKey = configuration.getSso().getAttributes().getGroups();
         if (principal.getAttributes() == null || !principal.getAttributes().containsKey(groupsKey)) {
             logger.warn("No remote groups found under key '{}' for SSO user '{}'.", groupsKey, principal.getName());
             if (principal.getAttributes() == null) {

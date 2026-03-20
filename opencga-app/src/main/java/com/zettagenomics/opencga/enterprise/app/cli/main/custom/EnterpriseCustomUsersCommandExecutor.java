@@ -2,13 +2,11 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.custom;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.UsersCommandOptions;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -32,8 +30,6 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
 
     private static final String COOKIES = "cookies";
 
-    private EnterpriseConfiguration enterpriseConfiguration;
-
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger) {
         this(options, token, clientConfiguration, session, appHome, logger, null);
@@ -42,29 +38,6 @@ public class EnterpriseCustomUsersCommandExecutor extends CustomUsersCommandExec
     public EnterpriseCustomUsersCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
                                                 SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
-
-        this.init();
-    }
-
-    private void init() {
-        if (enterpriseConfiguration == null) {
-            logger.debug("Initialising EnterpriseConfiguration");
-            try {
-                // We load configuration file either from app home folder or from the JAR
-                Path path = Paths.get(appHome).resolve("conf").resolve("enterprise-configuration.yml");
-                if (Files.exists(path)) {
-                    logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-                    this.enterpriseConfiguration = EnterpriseConfiguration
-                            .load(Files.newInputStream(path.toFile().toPath()));
-                } else {
-                    logger.debug("Loading configuration from JAR file");
-                    this.enterpriseConfiguration = EnterpriseConfiguration
-                            .load(Configuration.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml"));
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     public RestResponse<AuthenticationResponse> loginSso(UsersCommandOptions.LoginSsoCommandOptions loginSsoCommandOptions) throws Exception {

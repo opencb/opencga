@@ -55,7 +55,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
                 try {
                     cvdbEngine = cvdbEngineAtomicRef.get();
                     if (cvdbEngine == null) {
-                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager);
                         cvdbEngineAtomicRef.set(cvdbEngine);
                     }
                 } catch (Exception e) {

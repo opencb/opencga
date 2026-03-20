@@ -16,7 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.server;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jasig.cas.client.configuration.ConfigurationKeys;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.DispatcherType;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -38,13 +36,10 @@ import java.util.Map;
  */
 public class EnterpriseRestServer extends RestServer {
 
-    private final EnterpriseConfiguration enterpriseConfiguration;
     private final Logger logger = LoggerFactory.getLogger(EnterpriseRestServer.class);
 
-
-    public EnterpriseRestServer(Path opencgaHome, int port) throws IOException {
+    public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
-        enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
     }
 
     @Override
@@ -55,15 +50,15 @@ public class EnterpriseRestServer extends RestServer {
     }
 
     private void addSingleSignOnFilters(WebAppContext webapp) throws Exception {
-        if (enterpriseConfiguration.getSso() != null && enterpriseConfiguration.getSso().isActive()) {
+        if (configuration.getSso() != null && configuration.getSso().isActive()) {
             // Check all mandatory fields
-            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getCasServerPrefixUrl(), "sso.casServerPrefixUrl");
-            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getServerName(), "sso.serverName");
-            ParamUtils.checkParameter(enterpriseConfiguration.getSso().getProtocol(), "sso.protocol");
-            Map<String, String> initParameters = enterpriseConfiguration.getSso().getInitParameters() != null
-                    ? enterpriseConfiguration.getSso().getInitParameters() : Collections.emptyMap();
+            ParamUtils.checkParameter(configuration.getSso().getCasServerPrefixUrl(), "sso.casServerPrefixUrl");
+            ParamUtils.checkParameter(configuration.getSso().getServerName(), "sso.serverName");
+            ParamUtils.checkParameter(configuration.getSso().getProtocol(), "sso.protocol");
+            Map<String, String> initParameters = configuration.getSso().getInitParameters() != null
+                    ? configuration.getSso().getInitParameters() : Collections.emptyMap();
 
-            switch (enterpriseConfiguration.getSso().getProtocol().toUpperCase()) {
+            switch (configuration.getSso().getProtocol().toUpperCase()) {
                 case "CAS":
                     logger.info("Using CAS protocol");
                     // Start CAS protocol configuration
@@ -71,8 +66,8 @@ public class EnterpriseRestServer extends RestServer {
                     casValidationFilterHolder.setName("CAS Validation Filter");
                     casValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter");
                     Map<String, String> casInitParameters = new HashMap<>();
-                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     casInitParameters.putAll(initParameters);
                     casValidationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
@@ -82,8 +77,8 @@ public class EnterpriseRestServer extends RestServer {
 //                    casAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.AuthenticationFilter");
                     casAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.OpencgaAuthenticationFilter");
                     casInitParameters = new HashMap<>();
-                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     casInitParameters.putAll(initParameters);
                     casAuthenticationFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(casAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
@@ -92,8 +87,8 @@ public class EnterpriseRestServer extends RestServer {
                     requestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
                     requestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
                     casInitParameters = new HashMap<>();
-                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    casInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    casInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     casInitParameters.putAll(initParameters);
                     requestWrapperFilterHolder.setInitParameters(casInitParameters);
                     webapp.addFilter(requestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
@@ -106,8 +101,8 @@ public class EnterpriseRestServer extends RestServer {
                     samlValidationFilterHolder.setName("CAS Validation Filter");
                     samlValidationFilterHolder.setClassName("org.jasig.cas.client.validation.Saml11TicketValidationFilter");
                     Map<String, String> samlInitParameters = new HashMap<>();
-                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     samlInitParameters.putAll(initParameters);
                     samlValidationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlValidationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
@@ -117,8 +112,8 @@ public class EnterpriseRestServer extends RestServer {
 //                    samlAuthenticationFilterHolder.setClassName("org.jasig.cas.client.authentication.Saml11AuthenticationFilter");
                     samlAuthenticationFilterHolder.setClassName("com.zettagenomics.opencga.enterprise.server.sso.Saml11OpencgaAuthenticationFilter");
                     samlInitParameters = new HashMap<>();
-                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     samlInitParameters.putAll(initParameters);
                     samlAuthenticationFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(samlAuthenticationFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
@@ -127,15 +122,15 @@ public class EnterpriseRestServer extends RestServer {
                     saml1RequestWrapperFilterHolder.setName("CAS HttpServletRequest Wrapper Filter");
                     saml1RequestWrapperFilterHolder.setClassName("org.jasig.cas.client.util.HttpServletRequestWrapperFilter");
                     samlInitParameters = new HashMap<>();
-                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), enterpriseConfiguration.getSso().getCasServerPrefixUrl());
-                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), enterpriseConfiguration.getSso().getServerName());
+                    samlInitParameters.put(ConfigurationKeys.CAS_SERVER_URL_PREFIX.getName(), configuration.getSso().getCasServerPrefixUrl());
+                    samlInitParameters.put(ConfigurationKeys.SERVER_NAME.getName(), configuration.getSso().getServerName());
                     samlInitParameters.putAll(initParameters);
                     saml1RequestWrapperFilterHolder.setInitParameters(samlInitParameters);
                     webapp.addFilter(saml1RequestWrapperFilterHolder, "/webservices/rest/*", EnumSet.of(DispatcherType.REQUEST));
                     // End of SAML1 configuration
                     break;
                 default:
-                    throw new Exception("Unsupported protocol '" + enterpriseConfiguration.getSso().getProtocol()
+                    throw new Exception("Unsupported protocol '" + configuration.getSso().getProtocol()
                             + "' found. Supported protocols are 'CAS' and 'SAML1'");
             }
         }
