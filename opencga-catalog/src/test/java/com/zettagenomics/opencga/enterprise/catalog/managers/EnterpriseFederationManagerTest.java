@@ -1,8 +1,8 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;

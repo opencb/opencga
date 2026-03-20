@@ -1,21 +1,16 @@
 package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.FederationsCommandOptions;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
-import java.util.HashMap;
-import java.util.List;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationServerUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationUserParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;

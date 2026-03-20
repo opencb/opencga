@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static org.opencb.opencga.core.api.ParamConstants.PROJECT_PARAM;
 
 public class CollectionNameGenerator {
 

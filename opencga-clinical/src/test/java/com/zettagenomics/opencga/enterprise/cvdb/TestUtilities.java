@@ -41,7 +41,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
+import static org.opencb.opencga.core.api.ParamConstants.PROJECT_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static org.junit.Assert.assertEquals;
 
@@ -71,7 +71,7 @@ public class TestUtilities {
 
     public static ClinicalAnalysis getClinicalAnalyis(String caId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -81,7 +81,7 @@ public class TestUtilities {
 
     public static Interpretation getClinicalInterpretation(String ciId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -91,7 +91,7 @@ public class TestUtilities {
 
     public static ClinicalVariant getClinicalVariant(String variantId, String projectId, CvdbSolrEngine cvdbEngine, String userToken)
             throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CV_VARIANT_ID_NAME, variantId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());

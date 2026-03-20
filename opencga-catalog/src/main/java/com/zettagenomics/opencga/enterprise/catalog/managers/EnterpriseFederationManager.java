@@ -4,11 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
 import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.core.models.audit.AuditAction;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationServerUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationUserParams;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -155,12 +154,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                         + "the 'configuration.yml' file and then call to '/federations/server/{federationServerId}/reset' again."));
             }
 
-            auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(0, eventList, 1, Collections.singletonList(federationServer), 1);
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.CREATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw e;
         }
@@ -219,12 +218,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                         + "to '/federations/server/{federationServerId}/reset' again."));
             }
 
-            auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(0, eventList, 0, Collections.singletonList(serverParams), 0);
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_FEDERATION_CLIENT_CREDENTIALS, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw e;
         }
@@ -322,12 +321,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             // Change password
             dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).changePassword(userId, null, newPassword);
 
-            auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(result.getTime(), Collections.singletonList(newSecurityKey + SEPARATOR + newPassword));
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.RESET_FEDERATION_SECURITY_KEY, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw new CatalogException(e);
         }
@@ -345,12 +344,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             OpenCGAResult<Organization> result = updateFederationServer(organizationId, clientId, updateParams);
-            auditManager.audit(organizationId, userId, AuditAction.UPDATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.UPDATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -394,12 +393,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                     QueryOptions.empty(), token);
 
 
-            auditManager.audit(organizationId, userId, AuditAction.DELETE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.DELETE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.DELETE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.DELETE_FEDERATION_SERVER, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -453,11 +452,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             removeFederatedStudies(organizationId, studiesToRemove);
             removeFederatedProjects(organizationId, projectsToRemove);
 
-            auditManager.audit(organizationId, userId, AuditAction.DELETE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.DELETE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.DELETE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.DELETE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -531,11 +530,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                         "communication with the federation may be broken.");
             }
 
-            auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.CREATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(0, Collections.singletonList(federationClient));
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.CREATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.CREATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -621,11 +620,11 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 importFederatedStudies(federationId, organization, project, studyList);
             }
 
-            auditManager.audit(organizationId, userId, AuditAction.SYNCHRONIZE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.SYNCHRONIZE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>(0, Collections.emptyList());
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.SYNCHRONIZE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION,
+            auditManager.audit(organizationId, userId, Enums.Action.SYNCHRONIZE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION,
                     organizationId, "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -674,12 +673,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             }
 
             OpenCGAResult<Organization> result = updateFederationClient(organizationId, clientId, updateParams);
-            auditManager.audit(organizationId, userId, AuditAction.UPDATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.UPDATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             if (e instanceof CatalogException) {
                 throw (CatalogException) e;
@@ -757,12 +756,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
                 changeAclResponse(userId, federationClient, execute);
             }
 
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return execute;
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_REDIRECT, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw new CatalogException(e);
         }
@@ -858,12 +857,12 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             GroupUpdateParams groupUpdateParams = new GroupUpdateParams(params.getUserIds());
 
             catalogManager.getStudyManager().updateGroup(studyStr, StudyManager.MEMBERS, updateAction, groupUpdateParams, token);
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 0, 0, 1, 0);
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_SHARE, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw new CatalogException(e);
         }
@@ -889,13 +888,13 @@ public class EnterpriseFederationManager extends EnterpriseAbstractManager {
             }
 
             Group group = catalogManager.getStudyManager().getGroup(studyStr, StudyManager.MEMBERS, token).first();
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             FederationUserParams userParams = new FederationUserParams(group.getUserIds());
             return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.singletonList(userParams));
         } catch (Exception e) {
-            auditManager.audit(organizationId, userId, AuditAction.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
+            auditManager.audit(organizationId, userId, Enums.Action.FEDERATION_SHOW_USERS, Enums.Resource.ORGANIZATION, organizationId,
                     "", "", "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
             throw new CatalogException(e);
         }

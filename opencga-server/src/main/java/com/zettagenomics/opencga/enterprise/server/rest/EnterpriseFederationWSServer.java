@@ -1,10 +1,10 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationServerUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationUserParams;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;

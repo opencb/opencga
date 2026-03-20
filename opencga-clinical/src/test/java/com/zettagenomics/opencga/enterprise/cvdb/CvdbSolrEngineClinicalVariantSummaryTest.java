@@ -49,8 +49,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STUDY_PARAM_NAME;
+import static org.opencb.opencga.core.api.ParamConstants.PROJECT_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_VARIANT_ID_NAME;
@@ -194,12 +194,12 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         checkCommonStats(result, variantIds, projectIds);
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId1)
-                .append(STUDY_PARAM_NAME, study1.getFqn())
+                .append(PROJECT_PARAM, projectId1)
+                .append(STUDY_PARAM, study1.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
         DataResult<ClinicalAnalysis> caResult1 = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
-        query.append(PROJECT_PARAM_NAME, projectId2)
-                .append(STUDY_PARAM_NAME, study2.getFqn());
+        query.append(PROJECT_PARAM, projectId2)
+                .append(STUDY_PARAM, study2.getFqn());
         DataResult<ClinicalAnalysis> caResult2 = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
 
         checkStats(result, caResult1.getResults(), variantId1, FqnUtils.buildFqn(organizationId, projectId1));
@@ -228,12 +228,12 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         checkCommonStats(result, variantIds, projectIds);
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId1)
-                .append(STUDY_PARAM_NAME, study1.getFqn())
+                .append(PROJECT_PARAM, projectId1)
+                .append(STUDY_PARAM, study1.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
         DataResult<ClinicalAnalysis> caResult1 = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
-        query.append(PROJECT_PARAM_NAME, projectId2)
-                .append(STUDY_PARAM_NAME, study2.getFqn())
+        query.append(PROJECT_PARAM, projectId2)
+                .append(STUDY_PARAM, study2.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId2);
         DataResult<ClinicalAnalysis> caResult2 = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
 
@@ -248,8 +248,8 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId3)
-                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(PROJECT_PARAM, projectId3)
+                .append(STUDY_PARAM, study3.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
@@ -269,8 +269,8 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId3)
-                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(PROJECT_PARAM, projectId3)
+                .append(STUDY_PARAM, study3.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
 
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
@@ -290,8 +290,8 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId3)
-                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(PROJECT_PARAM, projectId3)
+                .append(STUDY_PARAM, study3.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
 
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
@@ -311,8 +311,8 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
 
         Query query = new Query()
-                .append(PROJECT_PARAM_NAME, projectId3)
-                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(PROJECT_PARAM, projectId3)
+                .append(STUDY_PARAM, study3.getFqn())
                 .append(CV_VARIANT_ID_NAME, variantId1);
 
         DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, QueryOptions.empty(), userToken);

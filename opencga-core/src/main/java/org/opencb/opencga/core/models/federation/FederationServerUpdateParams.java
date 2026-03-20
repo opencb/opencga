@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.core.models.federation;
+package org.opencb.opencga.core.models.federation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
