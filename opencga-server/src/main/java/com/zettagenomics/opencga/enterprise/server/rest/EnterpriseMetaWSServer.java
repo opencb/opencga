@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
@@ -12,6 +11,7 @@ import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommon
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -52,11 +52,11 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     public Response getAbout() {
         Map<String, String> info = new LinkedHashMap<>(6);
         info.put("Program", "XetaBase (Zetta Genomics)");
-        info.put("Version", GitUtils.getEnterprise().getBuildVersion());
-        info.put("Git branch", GitUtils.getEnterprise().getBranch());
-        info.put("Git commit", GitUtils.getEnterprise().getCommitId());
+        info.put("Version", GitRepositoryState.getInstance().getBuildVersion());
+        info.put("Git branch", GitRepositoryState.getInstance().getBranch());
+        info.put("Git commit", GitRepositoryState.getInstance().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        info.put("OpenCGA Version", GitUtils.getOpenCGA().getBuildVersion());
+        info.put("OpenCGA Version", GitRepositoryState.getInstance().getBuildVersion());
 
         OpenCGAResult<Object> queryResult = new OpenCGAResult<>();
         queryResult.setTime(0);

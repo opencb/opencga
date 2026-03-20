@@ -18,7 +18,6 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
-import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
@@ -77,6 +76,7 @@ import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
@@ -124,15 +124,15 @@ public class CvdbSolrEngine {
             + " proceed.";
 
     public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-"
-            + GitUtils.getEnterprise().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
     public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-"
-            + GitUtils.getEnterprise().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
     public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-"
-            + GitUtils.getEnterprise().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
     public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-"
-            + GitUtils.getEnterprise().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
     public static final String CLINICAL_VIEWERS_CONFIGSET = "opencga-viewers-configset-"
-            + GitUtils.getEnterprise().getBuildVersion();
+            + GitRepositoryState.getInstance().getBuildVersion();
 
     private static final Map<String, String> COLLECTION_CONFIGSETS_MAP;
 

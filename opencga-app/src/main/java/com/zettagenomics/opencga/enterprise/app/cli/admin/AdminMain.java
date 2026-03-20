@@ -19,7 +19,6 @@ package com.zettagenomics.opencga.enterprise.app.cli.admin;
 import com.beust.jcommander.ParameterException;
 import com.zettagenomics.opencga.enterprise.app.cli.admin.executors.EnterpriseServerCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.admin.executors.EnterpriseStorageCommandExecutor;
-import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.admin.executors.*;
@@ -70,9 +69,9 @@ public class AdminMain {
         String parsedCommand = cliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
             if (cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + GitUtils.getEnterprise().getBuildVersion());
-                System.out.println("Git version: " + GitUtils.getEnterprise().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
-                System.out.println("OpenCGA Version " + GitUtils.getOpenCGA().getBuildVersion());
+                System.out.println("Version " + GitRepositoryState.getInstance().getBuildVersion());
+                System.out.println("Git version: " + GitRepositoryState.getInstance().getBranch() + " " + GitRepositoryState.getInstance().getCommitId());
+                System.out.println("OpenCGA Version " + GitRepositoryState.getInstance().getBuildVersion());
                 System.exit(0);
             } else if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
