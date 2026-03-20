@@ -5,14 +5,10 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 
 public class EnterpriseEnterpriseAbstractManagerTest extends AbstractManagerTest {
 
-    protected EnterpriseProjectManager enterpriseProjectManager;
-
     @Before
     public void setUp() throws Exception {
         super.setUp();
         EnterpriseFactory.init(catalogManager, catalogManager.getConfiguration());
-
-        enterpriseProjectManager = EnterpriseFactory.getEnterpriseProjectManager();
     }
 
 }
