@@ -1,0 +1,39 @@
+[project]
+name = "pharmacogenomics"
+version = "0.1.0"
+description = "OpenCGA pharmacogenomics analysis tool supporting OpenArray and NGS pipelines"
+readme = "README.md"
+authors = [
+    { name = "OpenCB", email = "opencb@opencb.org" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+pharmacogenomics = "pharmacogenomics.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/pharmacogenomics/core/allele_typer.py" = ["SIM102", "SIM103", "SIM105", "SIM110"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

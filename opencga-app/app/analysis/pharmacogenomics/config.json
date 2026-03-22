@@ -1,0 +1,6 @@
+{
+    "cpic_base_url": "https://api.cpicpgx.org/v1",
+    "pharmcat_docker_image": "pgkb/pharmcat",
+    "pharmcat_timeout": 600,
+    "threads": 4
+}
