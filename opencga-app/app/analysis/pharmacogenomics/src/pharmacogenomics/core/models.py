@@ -57,6 +57,22 @@ class CpicDrug:
 
 
 @dataclass
+class CpicSequenceLocation:
+    name: str = ""
+    dbsnp_id: str = ""
+    chromosome: str = ""
+    position: int = 0
+    gene_symbol: str = ""
+
+
+@dataclass
+class CpicAlleleLocationValue:
+    name: str = ""
+    value: str = ""
+    sequence_location: CpicSequenceLocation | None = None
+
+
+@dataclass
 class CpicAlleleInfo:
     gene_symbol: str = ""
     name: str = ""
@@ -66,6 +82,7 @@ class CpicAlleleInfo:
     strength: str = ""
     findings: str = ""
     frequency: dict[str, float] = field(default_factory=dict)
+    location: list[CpicAlleleLocationValue] = field(default_factory=list)
 
 
 @dataclass
