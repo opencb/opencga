@@ -56,6 +56,9 @@ public class AlleleTyper {
     // CNV data: sample -> target -> CN Predicted value
     private Map<String, Map<String, Integer>> sampleCnvData;
 
+    // Allele rename mapping: gene -> oldAlleleName -> newAlleleName
+    private Map<String, Map<String, String>> alleleRenames;
+
     public AlleleTyper() {
         this.geneHaplotypes = new HashMap<>();
         this.geneRelevantAssays = new HashMap<>();
@@ -63,6 +66,7 @@ public class AlleleTyper {
         this.assayToRsIdMap = new HashMap<>();
         this.assayToColumnMap = new HashMap<>();
         this.sampleCnvData = new HashMap<>();
+        this.alleleRenames = new HashMap<>();
     }
 
     // -----------------------------------------------------------------------
@@ -294,6 +298,100 @@ public class AlleleTyper {
         }
 
         logger.info("Parsed CNV data for {} samples", sampleCnvData.size());
+    }
+
+    // -----------------------------------------------------------------------
+    // Allele rename file parsing
+    // -----------------------------------------------------------------------
+
+    public void parseRenameFromString(String renameContent) throws IOException {
+        if (StringUtils.isEmpty(renameContent)) {
+            return;
+        }
+        logger.info("Parsing allele rename content from String");
+        try (BufferedReader br = new BufferedReader(new StringReader(renameContent))) {
+            parseRenameFromReader(br);
+        }
+    }
+
+    public void parseRenameFile(Path renameFile) throws IOException {
+        logger.info("Parsing allele rename file: {}", renameFile);
+        try (BufferedReader br = new BufferedReader(new FileReader(renameFile.toFile()))) {
+            parseRenameFromReader(br);
+        }
+    }
+
+    private void parseRenameFromReader(BufferedReader br) throws IOException {
+        String line;
+        boolean headerSkipped = false;
+
+        while ((line = br.readLine()) != null) {
+            if (line.trim().isEmpty()) {
+                continue;
+            }
+
+            // Skip header line
+            if (!headerSkipped) {
+                headerSkipped = true;
+                continue;
+            }
+
+            String[] fields = line.split("\t", -1);
+            if (fields.length >= 3) {
+                String gene = fields[0].trim();
+                String originalName = fields[1].trim();
+                String newName = fields[2].trim();
+
+                if (StringUtils.isNotEmpty(gene) && StringUtils.isNotEmpty(originalName)
+                        && StringUtils.isNotEmpty(newName)) {
+                    alleleRenames.computeIfAbsent(gene, k -> new LinkedHashMap<>())
+                            .put(originalName, newName);
+                }
+            }
+        }
+
+        logger.info("Parsed allele renames for {} genes", alleleRenames.size());
+    }
+
+    /**
+     * Apply allele renaming to a list of results. Original diplotype and allele names are preserved;
+     * renamed values are stored in renamedDiplotype and renamedAllele fields.
+     */
+    public void applyRenames(List<AlleleTyperResult> results) {
+        if (alleleRenames.isEmpty()) {
+            return;
+        }
+
+        for (AlleleTyperResult result : results) {
+            if (result.getAlleleTyperResults() == null) {
+                continue;
+            }
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                Map<String, String> geneRenames = alleleRenames.get(star.getGene());
+                if (geneRenames == null || geneRenames.isEmpty()) {
+                    continue;
+                }
+
+                // Rename individual allele calls
+                if (star.getAlleleCalls() != null) {
+                    for (AlleleTyperResult.AlleleCall call : star.getAlleleCalls()) {
+                        String renamed = geneRenames.get(call.getAllele());
+                        if (renamed != null) {
+                            call.setRenamedAllele(renamed);
+                        }
+                    }
+                }
+
+                // Build renamedDiplotype from renamed allele calls
+                if (star.getAlleleCalls() != null && star.getAlleleCalls().size() == 2) {
+                    AlleleTyperResult.AlleleCall c1 = star.getAlleleCalls().get(0);
+                    AlleleTyperResult.AlleleCall c2 = star.getAlleleCalls().get(1);
+                    String r1 = c1.getRenamedAllele() != null ? c1.getRenamedAllele() : c1.getAllele();
+                    String r2 = c2.getRenamedAllele() != null ? c2.getRenamedAllele() : c2.getAllele();
+                    star.setRenamedDiplotype(r1 + "/" + r2);
+                }
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

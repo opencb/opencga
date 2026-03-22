@@ -25,6 +25,7 @@ public class AlleleTyperTest {
 
     private static final String BASE_DIR = "/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/Pharmacogenetics";
     private static final String FQU71_BASE_DIR = "/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/FQU71";
+    private static final String AUX_DIR = "/home/imedina/projects/SESPA/pgx/Farmacogenetica/Archivos_experimentos/TrueMark (con CNV)/aux_files";
 
     private Path genotypingFile;
     private Path translationFile;
@@ -571,16 +572,30 @@ public class AlleleTyperTest {
             typer.parseCnvFile(fqu71Cnv);
         }
 
-        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(fqu71Genotyping);
+        // Load rename file if available
+        Path renameFile = Paths.get(AUX_DIR, "Nomenclatura_variante_personalizada_XettaBase.txt");
+        if (renameFile.toFile().exists()) {
+            typer.parseRenameFile(renameFile);
+        }
 
-        // Build lookup: sampleId -> gene -> list of diplotypes
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(fqu71Genotyping);
+        typer.applyRenames(results);
+
+        // Build lookup: sampleId -> gene -> list of diplotypes and renamed diplotypes
         Map<String, Map<String, List<String>>> obtainedResults = new LinkedHashMap<>();
+        Map<String, Map<String, List<String>>> renamedResults = new LinkedHashMap<>();
         for (AlleleTyperResult result : results) {
             Map<String, List<String>> geneMap = new LinkedHashMap<>();
+            Map<String, List<String>> renamedGeneMap = new LinkedHashMap<>();
             for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
                 geneMap.computeIfAbsent(star.getGene(), k -> new ArrayList<>()).add(star.getDiplotype());
+                if (star.getRenamedDiplotype() != null) {
+                    renamedGeneMap.computeIfAbsent(star.getGene(), k -> new ArrayList<>())
+                            .add(star.getRenamedDiplotype());
+                }
             }
             obtainedResults.put(result.getSampleId(), geneMap);
+            renamedResults.put(result.getSampleId(), renamedGeneMap);
         }
 
         // Parse TrueMark detailed results (tab-separated format)
@@ -594,8 +609,58 @@ public class AlleleTyperTest {
 
         // Write comparison report to file and stdout
         Path reportFile = Paths.get("/tmp/fqu71_comparison_report.txt");
-        writeComparisonReport(obtainedGenes, obtainedResults, fqu71Expected, reportFile);
+        writeComparisonReport(obtainedGenes, obtainedResults, renamedResults, fqu71Expected, reportFile);
         System.out.println("\nComparison report written to: " + reportFile);
+    }
+
+    @Test
+    public void testFQU71AlleleTyperWithRename() throws IOException {
+        Path fqu71Genotyping = Paths.get(FQU71_BASE_DIR,
+                "20260318_FQU71_DO_20260318_FQU71_DO_Genotyping_18-03-2026-122836.txt");
+        Path fqu71Cnv = Paths.get(FQU71_BASE_DIR,
+                "20260318_FQU71_DO_20260318_FQU71_DO_Copy_Number_Variation_Result_multi_plate_18-03-2026-122836.txt");
+        Path renameFile = Paths.get(AUX_DIR, "Nomenclatura_variante_personalizada_XettaBase.txt");
+
+        if (!fqu71Genotyping.toFile().exists() || !translationFile.toFile().exists()
+                || !renameFile.toFile().exists()) {
+            System.out.println("Skipping test: input files not found");
+            return;
+        }
+
+        AlleleTyper typer = new AlleleTyper();
+        typer.parseTranslationFile(translationFile);
+
+        if (fqu71Cnv.toFile().exists()) {
+            typer.parseCnvFile(fqu71Cnv);
+        }
+
+        typer.parseRenameFile(renameFile);
+
+        List<AlleleTyperResult> results = typer.buildAlleleTyperResults(fqu71Genotyping);
+        typer.applyRenames(results);
+
+        System.out.println("\n=== FQU71 AlleleTyper Results with Renamed Alleles ===");
+        for (AlleleTyperResult result : results) {
+            // Skip NTC and control samples
+            String sid = result.getSampleId();
+            if ("NTC".equals(sid) || sid.startsWith("CALT") || sid.startsWith("CHET") || sid.startsWith("CREF")) {
+                continue;
+            }
+            System.out.println("Sample: " + sid);
+            for (AlleleTyperResult.StarAlleleResult star : result.getAlleleTyperResults()) {
+                if (star.getRenamedDiplotype() != null) {
+                    System.out.println("  " + star.getGene() + ": " + star.getDiplotype()
+                            + "  ->  " + star.getRenamedDiplotype());
+                } else {
+                    System.out.println("  " + star.getGene() + ": " + star.getDiplotype());
+                }
+            }
+        }
+
+        // Export JSON with renamed alleles
+        Path jsonOutputFile = Paths.get("/tmp/fqu71_allele_typer_renamed_results.json");
+        typer.exportToJsonLines(results, jsonOutputFile);
+        System.out.println("\nJSON results with renames written to: " + jsonOutputFile);
     }
 
     @Test
@@ -775,13 +840,15 @@ public class AlleleTyperTest {
 
     /**
      * Write comparison report to file and stdout, matching the format from pharmacogenomics_comparison_report.txt.
+     * Includes renamed diplotypes in parentheses when available.
      */
     private void writeComparisonReport(Set<String> genes,
                                         Map<String, Map<String, List<String>>> obtainedResults,
+                                        Map<String, Map<String, List<String>>> renamedResults,
                                         Map<String, Map<String, String>> expectedResults,
                                         Path reportFile) throws IOException {
         try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(reportFile.toFile()))) {
-            String separator = new String(new char[130]).replace('\0', '-');
+            String separator = new String(new char[170]).replace('\0', '-');
 
             pw.println("=== COMPREHENSIVE COMPARISON WITH OFFICIAL RESULTS ===");
             pw.println();
@@ -794,7 +861,7 @@ public class AlleleTyperTest {
             for (String gene : genes) {
                 pw.println();
                 pw.println("=== " + gene + " Results Comparison ===");
-                pw.println(String.format("%-15s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Match"));
+                pw.println(String.format("%-15s %-45s %-45s %-45s %s", "Sample", "Expected", "Obtained", "Renamed", "Match"));
                 pw.println(separator);
 
                 int geneMatches = 0;
@@ -813,6 +880,17 @@ public class AlleleTyperTest {
 
                     geneSamples++;
                     String obtained = joinDiplotypes(sampleObtained.get(gene));
+
+                    // Get renamed diplotype if available
+                    Map<String, List<String>> sampleRenamed = renamedResults != null
+                            ? renamedResults.get(sampleId) : null;
+                    String renamed = "";
+                    if (sampleRenamed != null) {
+                        String renamedJoined = joinDiplotypes(sampleRenamed.get(gene));
+                        if (renamedJoined != null && !renamedJoined.isEmpty()) {
+                            renamed = renamedJoined;
+                        }
+                    }
 
                     boolean expectedNoTranslation = expected == null || expected.isEmpty()
                             || "no translation available".equals(expected);
@@ -838,10 +916,11 @@ public class AlleleTyperTest {
                         geneMismatches++;
                     }
 
-                    String line = String.format("%-15s %-45s %-45s %s",
+                    String line = String.format("%-15s %-45s %-45s %-45s %s",
                             sampleId,
                             truncate(expectedStr, 45),
                             truncate(obtainedStr, 45),
+                            truncate(renamed, 45),
                             matchStatus);
                     pw.println(line);
                 }

@@ -75,6 +75,9 @@ public class AlleleTyperResult {
         @JsonProperty("diplotype")
         private String diplotype;
 
+        @JsonProperty("renamedDiplotype")
+        private String renamedDiplotype;
+
         @JsonProperty("alleleCalls")
         private List<AlleleCall> alleleCalls;
 
@@ -110,6 +113,14 @@ public class AlleleTyperResult {
             this.diplotype = diplotype;
         }
 
+        public String getRenamedDiplotype() {
+            return renamedDiplotype;
+        }
+
+        public void setRenamedDiplotype(String renamedDiplotype) {
+            this.renamedDiplotype = renamedDiplotype;
+        }
+
         public List<AlleleCall> getAlleleCalls() {
             return alleleCalls;
         }
@@ -142,6 +153,9 @@ public class AlleleTyperResult {
         @JsonProperty("allele")
         private String allele;
 
+        @JsonProperty("renamedAllele")
+        private String renamedAllele;
+
         @JsonProperty("annotation")
         private StarAlleleAnnotation annotation;
 
@@ -163,6 +177,14 @@ public class AlleleTyperResult {
 
         public void setAllele(String allele) {
             this.allele = allele;
+        }
+
+        public String getRenamedAllele() {
+            return renamedAllele;
+        }
+
+        public void setRenamedAllele(String renamedAllele) {
+            this.renamedAllele = renamedAllele;
         }
 
         public StarAlleleAnnotation getAnnotation() {
