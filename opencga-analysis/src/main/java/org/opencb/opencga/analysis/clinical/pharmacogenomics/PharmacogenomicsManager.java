@@ -213,14 +213,59 @@ public class PharmacogenomicsManager {
     }
 
     /**
-     * Store pharmacogenomics results as attributes in sample objects.
+     * Store the tool output directory path in catalog sample attributes under the key OPENCGA_PHARMACOGENOMICS_PATH.
+     * The same outDir is stored for every non-NTC sample produced by the tool run.
+     * Samples not found in the catalog are silently skipped.
      *
      * @param studyId Study identifier
      * @param results List of pharmacogenomics results
-     * @param token Authentication token
+     * @param outDir  Root output directory of the tool execution
+     * @param token   Authentication token
      * @throws CatalogException if catalog operations fail
-     * @throws IOException if JSON serialization fails
      */
+    public void storeResultsPathInCatalog(String studyId, List<AlleleTyperResult> results, Path outDir, String token)
+            throws CatalogException {
+        logger.info("Storing pharmacogenomics output path in catalog for {} samples", results.size());
+        String outDirPath = outDir.toAbsolutePath().toString();
+
+        for (AlleleTyperResult result : results) {
+            String sampleId = result.getSampleId();
+
+            if ("NTC".equalsIgnoreCase(sampleId)) {
+                logger.debug("Skipping control sample: {}", sampleId);
+                continue;
+            }
+
+            try {
+                OpenCGAResult<org.opencb.opencga.core.models.sample.Sample> sampleResult =
+                        catalogManager.getSampleManager().get(studyId, sampleId, QueryOptions.empty(), token);
+
+                if (sampleResult.getNumResults() == 0) {
+                    logger.warn("Sample {} not found in study {}. Skipping path storage.", sampleId, studyId);
+                    continue;
+                }
+
+                Map<String, Object> attributes = new HashMap<>();
+                attributes.put("OPENCGA_PHARMACOGENOMICS_PATH", outDirPath);
+
+                SampleUpdateParams updateParams = new SampleUpdateParams();
+                updateParams.setAttributes(attributes);
+
+                catalogManager.getSampleManager().update(studyId, sampleId, updateParams, QueryOptions.empty(), token);
+                logger.debug("Updated sample {} with pharmacogenomics path: {}", sampleId, outDirPath);
+            } catch (CatalogException e) {
+                logger.error("Failed to update sample {} with pharmacogenomics path: {}", sampleId, e.getMessage());
+                throw e;
+            }
+        }
+
+        logger.info("Successfully stored pharmacogenomics path for {} samples in catalog", results.size());
+    }
+
+    /**
+     * @deprecated Use {@link #storeResultsPathInCatalog(String, List, Path, String)} instead.
+     */
+    @Deprecated
     public void storeResultsInCatalog(String studyId, List<AlleleTyperResult> results, String token)
             throws CatalogException, IOException {
         logger.info("Storing pharmacogenomics results in catalog for {} samples", results.size());

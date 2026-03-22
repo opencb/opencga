@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical.pharmacogenomics.cpic;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,12 +17,14 @@ public class CpicAlleleInfo {
     private String strength;                      // evidence strength: "Strong", "Moderate", etc.
     private String findings;                      // functional evidence summary
     private Map<String, Double> frequency;        // population -> frequency, e.g. {"European": 0.185}
+    private List<CpicAlleleLocationValue> location; // variant-level locations from /allele_definition endpoint
 
     public CpicAlleleInfo() {
     }
 
     public CpicAlleleInfo(String genesymbol, String name, String functionalstatus, String clinicalfunctionalstatus,
-                          String activityvalue, String strength, String findings, Map<String, Double> frequency) {
+                          String activityvalue, String strength, String findings, Map<String, Double> frequency,
+                          List<CpicAlleleLocationValue> location) {
         this.genesymbol = genesymbol;
         this.name = name;
         this.functionalstatus = functionalstatus;
@@ -30,6 +33,7 @@ public class CpicAlleleInfo {
         this.strength = strength;
         this.findings = findings;
         this.frequency = frequency;
+        this.location = location;
     }
 
     @Override
@@ -43,6 +47,7 @@ public class CpicAlleleInfo {
         sb.append(", strength='").append(strength).append('\'');
         sb.append(", findings='").append(findings).append('\'');
         sb.append(", frequency=").append(frequency);
+        sb.append(", location=").append(location);
         sb.append('}');
         return sb.toString();
     }
@@ -116,6 +121,15 @@ public class CpicAlleleInfo {
 
     public CpicAlleleInfo setFrequency(Map<String, Double> frequency) {
         this.frequency = frequency;
+        return this;
+    }
+
+    public List<CpicAlleleLocationValue> getLocation() {
+        return location;
+    }
+
+    public CpicAlleleInfo setLocation(List<CpicAlleleLocationValue> location) {
+        this.location = location;
         return this;
     }
 }

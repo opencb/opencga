@@ -110,7 +110,7 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
         translationContent = readGzipFile(TRANSLATION_RESOURCE);
 
         // Parse genotyping to discover sample IDs and create them in catalog so
-        // storeResultsInCatalog can persist the OPENCGA_PHARMACOGENOMICS_DATA attribute
+        // storeResultsInCatalog can persist the OPENCGA_PHARMACOGENOMICS_PATH attribute
         AlleleTyper typer = new AlleleTyper();
         typer.parseTranslationFromString(translationContent);
         List<AlleleTyperResult> parsedResults = typer.buildAlleleTyperResultsFromString(genotypingContent);
@@ -185,7 +185,7 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
         assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
         System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
 
-        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        // Verify OPENCGA_PHARMACOGENOMICS_PATH attribute was persisted in catalog for each sample
         assertSamplesHavePharmacogenomicsAttribute();
     }
 
@@ -237,12 +237,12 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
         assertTrue("At least some diplotypes should have been annotated", annotatedDiplotypeCount > 0);
         System.out.println("Total annotated diplotypes: " + annotatedDiplotypeCount);
 
-        // Verify OPENCGA_PHARMACOGENOMICS_DATA attribute was persisted in catalog for each sample
+        // Verify OPENCGA_PHARMACOGENOMICS_PATH attribute was persisted in catalog for each sample
         assertSamplesHavePharmacogenomicsAttribute();
     }
 
     /**
-     * Verifies that every non-NTC sample has the OPENCGA_PHARMACOGENOMICS_DATA attribute set
+     * Verifies that every non-NTC sample has the OPENCGA_PHARMACOGENOMICS_PATH attribute set
      * in the catalog after the allele typer tool has run.
      */
     private void assertSamplesHavePharmacogenomicsAttribute() throws Exception {
@@ -251,13 +251,13 @@ public class PharmacogenomicsAlleleTyperAnalysisToolTest {
             Sample sample = catalogManager.getSampleManager()
                     .get(studyFqn, sampleId, QueryOptions.empty(), token).first();
             Map<String, Object> attributes = sample.getAttributes();
-            if (attributes != null && attributes.containsKey("OPENCGA_PHARMACOGENOMICS_DATA")) {
+            if (attributes != null && attributes.containsKey("OPENCGA_PHARMACOGENOMICS_PATH")) {
                 samplesWithAttribute++;
             }
         }
-        assertTrue("At least one sample should have OPENCGA_PHARMACOGENOMICS_DATA attribute set"
+        assertTrue("At least one sample should have OPENCGA_PHARMACOGENOMICS_PATH attribute set"
                 + " (checked " + sampleIds.size() + " samples)", samplesWithAttribute > 0);
-        System.out.println("Samples with OPENCGA_PHARMACOGENOMICS_DATA attribute: "
+        System.out.println("Samples with OPENCGA_PHARMACOGENOMICS_PATH attribute: "
                 + samplesWithAttribute + "/" + sampleIds.size());
     }
 
