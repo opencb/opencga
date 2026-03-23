@@ -35,6 +35,7 @@ class CpicAnnotator:
         self._allele_cache: dict[str, list[dict]] = {}
         self._pair_cache: dict[str, list[dict]] = {}
         self._recommendation_cache: dict[str, list[dict]] = {}
+        self._drug_name_cache: dict[str, str] = {}  # drugid -> name
 
     def annotate_results(self, results: list[AlleleTyperResult]) -> None:
         for result in results:
@@ -146,22 +147,37 @@ class CpicAnnotator:
             drug_id = pair.get("drugid", "")
             guideline_id = pair.get("guidelineid", "")
 
+            # Resolve drug name from /drug endpoint
+            drug_name = self._resolve_drug_name(drug_id)
+
             # Query recommendations for this drug-gene pair
             recs = self._query_recommendations(drug_id, guideline_id)
 
             drug = CpicDrug(
                 drug_id=str(drug_id),
-                drug_name=pair.get("drugname", ""),
+                drug_name=drug_name,
                 gene_symbol=pair.get("genesymbol", ""),
                 guideline_id=str(guideline_id),
                 cpic_level=pair.get("cpiclevel", ""),
-                pgkb_ca_level=pair.get("pgkbcalevel", ""),
-                pgx_testing=pair.get("pgxtesting", ""),
+                pgkb_ca_level=pair.get("clinpgxlevel", ""),
+                pgx_testing=pair.get("pgxtesting", "") or "",
                 used_for_recommendation=pair.get("usedforrecommendation", False),
                 recommendations=recs,
             )
             drugs.append(drug)
         return drugs
+
+    def _resolve_drug_name(self, drug_id: str) -> str:
+        if not drug_id:
+            return ""
+        if drug_id not in self._drug_name_cache:
+            params = {"drugid": f"eq.{drug_id}"}
+            data = self._get("/drug", params)
+            if data:
+                self._drug_name_cache[drug_id] = data[0].get("name", "")
+            else:
+                self._drug_name_cache[drug_id] = ""
+        return self._drug_name_cache[drug_id]
 
     def _query_recommendations(self, drug_id: str, guideline_id: str) -> list[CpicDrugRecommendation]:
         cache_key = f"{drug_id}:{guideline_id}"
@@ -172,10 +188,11 @@ class CpicAnnotator:
 
         recs = []
         for item in self._recommendation_cache[cache_key]:
+            rec_drug_id = str(item.get("drugid", ""))
             rec = CpicDrugRecommendation(
                 source="CPIC",
-                drug_id=str(item.get("drugid", "")),
-                drug_name=item.get("drugname", ""),
+                drug_id=rec_drug_id,
+                drug_name=self._resolve_drug_name(rec_drug_id),
                 guideline_id=str(item.get("guidelineid", "")),
                 drug_recommendation=item.get("drugrecommendation", ""),
                 classification=item.get("classification", ""),

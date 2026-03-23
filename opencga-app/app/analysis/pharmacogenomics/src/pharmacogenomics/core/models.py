@@ -156,6 +156,162 @@ class AlleleTyperResult:
         return _to_dict(self)
 
 
+@dataclass
+class SummaryDrugRecommendation:
+    drug_name: str = ""
+    recommendation: str = ""
+    classification: str = ""
+    implications: str = ""
+    population: str = ""
+
+
+@dataclass
+class ActionableResult:
+    gene: str = ""
+    diplotype: str = ""
+    renamed_diplotype: str | None = None
+    phenotype: str = ""
+    activity_score: str = ""
+    cpic_level: str = ""
+    pgkb_level: str = ""
+    drugs: list[SummaryDrugRecommendation] = field(default_factory=list)
+
+
+@dataclass
+class NormalResult:
+    gene: str = ""
+    diplotype: str = ""
+    phenotype: str = ""
+
+
+@dataclass
+class PharmacogenomicsSummary:
+    sample_id: str = ""
+    source: str = ""
+    date: str = ""
+    total_genes_analyzed: int = 0
+    total_genes_with_results: int = 0
+    total_actionable_genes: int = 0
+    total_drugs_affected: int = 0
+    actionable_results: list[ActionableResult] = field(default_factory=list)
+    informative_results: list[ActionableResult] = field(default_factory=list)
+    normal_results: list[NormalResult] = field(default_factory=list)
+    no_translation_genes: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return _to_dict(self)
+
+
+# Actionable CPIC levels (A, B) and PharmGKB levels (1A, 1B, 2A, 2B)
+ACTIONABLE_CPIC_LEVELS = {"A", "B"}
+ACTIONABLE_PGKB_LEVELS = {"1A", "1B", "2A", "2B"}
+
+
+def build_summary(result: AlleleTyperResult) -> PharmacogenomicsSummary:
+    """Build a PharmacogenomicsSummary from an AlleleTyperResult."""
+    from datetime import date
+
+    summary = PharmacogenomicsSummary(
+        sample_id=result.sample_id,
+        source=result.source,
+        date=date.today().isoformat(),
+    )
+
+    seen_genes: set[str] = set()
+    all_drug_names: set[str] = set()
+
+    for star in result.allele_typer_results:
+        gene = star.gene
+
+        # Track unique genes
+        if gene not in seen_genes:
+            seen_genes.add(gene)
+            summary.total_genes_analyzed += 1
+
+        # No translation
+        if star.diplotype == "no translation available":
+            if gene not in summary.no_translation_genes:
+                summary.no_translation_genes.append(gene)
+            continue
+
+        summary.total_genes_with_results += 1
+
+        annotation = star.diplotype_annotation
+        if not annotation:
+            # No annotation — add as normal result
+            phenotype = ""
+            summary.normal_results.append(NormalResult(gene=gene, diplotype=star.diplotype, phenotype=phenotype))
+            continue
+
+        # Extract phenotype and activity score from diplotype info
+        phenotype = ""
+        activity_score = ""
+        if annotation.diplotype_info:
+            phenotype = annotation.diplotype_info.gene_result or ""
+            activity_score = annotation.diplotype_info.total_activity_score or ""
+
+        # Classify drugs by CPIC level
+        actionable_drugs: list[SummaryDrugRecommendation] = []
+        informative_drugs: list[SummaryDrugRecommendation] = []
+        best_cpic_level = ""
+        best_pgkb_level = ""
+
+        for drug in annotation.drugs:
+            cpic_level = drug.cpic_level or ""
+            pgkb_level = drug.pgkb_ca_level or ""
+
+            # Track best level for this gene
+            if cpic_level in ACTIONABLE_CPIC_LEVELS and (not best_cpic_level or cpic_level < best_cpic_level):
+                best_cpic_level = cpic_level
+            if pgkb_level in ACTIONABLE_PGKB_LEVELS and (not best_pgkb_level or pgkb_level < best_pgkb_level):
+                best_pgkb_level = pgkb_level
+
+            for rec in drug.recommendations:
+                summary_drug = SummaryDrugRecommendation(
+                    drug_name=drug.drug_name,
+                    recommendation=rec.drug_recommendation,
+                    classification=rec.classification,
+                    implications=_first_value(rec.implications),
+                    population=rec.population,
+                )
+                if cpic_level in ACTIONABLE_CPIC_LEVELS or pgkb_level in ACTIONABLE_PGKB_LEVELS:
+                    actionable_drugs.append(summary_drug)
+                    all_drug_names.add(drug.drug_name)
+                else:
+                    informative_drugs.append(summary_drug)
+
+        is_normal = phenotype.lower() in ("normal metabolizer", "extensive metabolizer", "normal function", "")
+
+        if actionable_drugs and not is_normal:
+            summary.actionable_results.append(ActionableResult(
+                gene=gene, diplotype=star.diplotype, renamed_diplotype=star.renamed_diplotype,
+                phenotype=phenotype, activity_score=activity_score,
+                cpic_level=best_cpic_level, pgkb_level=best_pgkb_level, drugs=actionable_drugs,
+            ))
+        elif informative_drugs or (actionable_drugs and is_normal):
+            all_drugs = actionable_drugs + informative_drugs
+            summary.informative_results.append(ActionableResult(
+                gene=gene, diplotype=star.diplotype, renamed_diplotype=star.renamed_diplotype,
+                phenotype=phenotype, activity_score=activity_score,
+                cpic_level=best_cpic_level, pgkb_level=best_pgkb_level, drugs=all_drugs,
+            ))
+        else:
+            summary.normal_results.append(NormalResult(gene=gene, diplotype=star.diplotype, phenotype=phenotype))
+
+    summary.total_actionable_genes = len(summary.actionable_results)
+    summary.total_drugs_affected = len(all_drug_names)
+
+    return summary
+
+
+def _first_value(d: dict[str, str]) -> str:
+    """Get first value from a dict, or empty string."""
+    if d:
+        return next(iter(d.values()), "")
+    return ""
+
+
 def _to_dict(obj) -> Any:
     """Recursively convert dataclass instances to dicts."""
     if isinstance(obj, list):

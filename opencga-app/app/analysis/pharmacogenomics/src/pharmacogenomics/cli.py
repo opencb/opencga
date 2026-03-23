@@ -117,12 +117,20 @@ def run_openarray(args, config, logger) -> None:
         annotator = CpicAnnotator(config.cpic_base_url)
         annotator.annotate_results(results)
 
-    # Export results
+    # Export results and summaries
+    from pharmacogenomics.core.models import build_summary
+
     for result in results:
         output_file = outdir / f"{result.sample_id}.json"
         with open(output_file, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
-        logger.info("Written: %s", output_file)
+
+        summary = build_summary(result)
+        summary_file = outdir / f"{result.sample_id}_summary.json"
+        with open(summary_file, "w") as f:
+            json.dump(summary.to_dict(), f, indent=2)
+
+        logger.info("Written: %s, %s", output_file, summary_file)
 
     # Run comparison benchmark if requested
     if args.compare_to:
@@ -168,12 +176,20 @@ def run_ngs(args, config, logger) -> None:
         annotator = CpicAnnotator(config.cpic_base_url)
         annotator.annotate_results(results)
 
-    # Export results
+    # Export results and summaries
+    from pharmacogenomics.core.models import build_summary
+
     for result in results:
         output_file = outdir / f"{result.sample_id}.json"
         with open(output_file, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
-        logger.info("Written: %s", output_file)
+
+        summary = build_summary(result)
+        summary_file = outdir / f"{result.sample_id}_summary.json"
+        with open(summary_file, "w") as f:
+            json.dump(summary.to_dict(), f, indent=2)
+
+        logger.info("Written: %s, %s", output_file, summary_file)
 
     logger.info("NGS pipeline complete: %d samples", len(results))
 
