@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.server;
+package org.opencb.opencga.server;
 
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -14,4 +14,3 @@ public class CvdbWSUtils {
         return new CvdbSolrEngine(catalogManager.getConfiguration().getCvdb(), catalogManager);
     }
 }
-

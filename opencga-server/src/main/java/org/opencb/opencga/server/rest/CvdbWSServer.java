@@ -1,12 +1,11 @@
-package com.zettagenomics.opencga.enterprise.server.rest;
+package org.opencb.opencga.server.rest;
 
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
-import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
-import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
+import org.opencb.opencga.server.CvdbWSUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
@@ -30,18 +29,28 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.CV_FACET_FIELDS;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
 
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
-public class EnterpriseCvdbWebService extends OpenCGAWSServer {
+public class CvdbWSServer extends OpenCGAWSServer {
 
     public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference();
     public static final AtomicReference<ClinicalInterpretationManager> clinicalInterpretationManagerAtomicRef = new AtomicReference<>();
 
+    private static final String CVDB_INDEX_TASK_PARAMS_DESCRIPTION = "Parameters: " + CvdbIndexTask.DESCRIPTION;
+    private static final String CLINICAL_AGGREGATION_STATS_FIELD_DESCRIPTION =
+            "List of facet fields separated by semicolons, e.g.: type;disorderId"
+            + ". For nested faceted fields use >>, e.g.: type>>disorderId. Accepted values: " + CA_FACET_FIELDS;
+    private static final String CLINICAL_INTERPRETATION_AGGREGATION_STATS_FIELD_DESCRIPTION =
+            "List of facet fields separated by semicolons, e.g.: panelIds;methodName"
+            + ". For nested faceted fields use >>, e.g.: panelIds>>methodName. Accepted values: " + CI_FACET_FIELDS;
+    private static final String CLINICAL_VARIANT_AGGREGATION_STATS_FIELD_DESCRIPTION =
+            "List of facet fields separated by semicolons, e.g.: geneName;tier"
+            + ". For nested faceted fields use >>, e.g.: geneName>>tier. Accepted values: " + CVE_FACET_FIELDS;
 
-    public EnterpriseCvdbWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+    public CvdbWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                     @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
@@ -95,7 +104,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = EnterpriseParamConstants.CVDB_INDEX_TASK_PARAMS_DESCRIPTION, required = true) CvdbIndexTaskParams params) {
+            @ApiParam(value = CVDB_INDEX_TASK_PARAMS_DESCRIPTION, required = true) CvdbIndexTaskParams params) {
         try {
             // Execute CVDB index as a job
             return submitJob(study, JobType.NATIVE_TOOL, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
@@ -952,7 +961,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
-    public Response clinicalAnalsysAggregationStats(@ApiParam(value = EnterpriseParamConstants.CLINICAL_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+    public Response clinicalAnalsysAggregationStats(@ApiParam(value = CLINICAL_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -1109,7 +1118,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
-    public Response clinicalInterpretationAggregationStats(@ApiParam(value = EnterpriseParamConstants.CLINICAL_INTERPRETATION_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+    public Response clinicalInterpretationAggregationStats(@ApiParam(value = CLINICAL_INTERPRETATION_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -1425,7 +1434,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
 
             // <dynamicField name="score_*" type="double" indexed="true" stored="true" multiValued="false"/>
     })
-    public Response clinicalVariantEvidenceAggregationStats(@ApiParam(value = EnterpriseParamConstants.CLINICAL_VARIANT_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
+    public Response clinicalVariantEvidenceAggregationStats(@ApiParam(value = CLINICAL_VARIANT_AGGREGATION_STATS_FIELD_DESCRIPTION) @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -1443,7 +1452,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/variant/{variantId}/stats")
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
-            @ApiParam(value = EnterpriseParamConstants.CLINICAL_VARIANT_VARIANT_ID_DESCRIPTION) @PathParam(value = "variantId") String variantId,
+            @ApiParam(value = ParamConstants.CLINICAL_VARIANT_VARIANT_ID_DESCRIPTION) @PathParam(value = "variantId") String variantId,
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM)
             String projectId) {
         return run(() -> {

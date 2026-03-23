@@ -1681,4 +1681,7 @@ public class ParamConstants {
     // SSO
     public static final String SSO_CALLBACK_URL_DESCRIPTION = "Callback URL";
     public static final String SSO_LOGOUT_DESCRIPTION = "Successfully logout from CAS service";
+
+    // CVDB
+    public static final String CLINICAL_VARIANT_VARIANT_ID_DESCRIPTION = "Variant ID (or comma separated list of variant IDs)";
 }

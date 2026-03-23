@@ -8,6 +8,8 @@ import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.opencb.opencga.server.rest.CvdbWSServer;
+import org.opencb.opencga.server.rest.FederationWSServer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,26 +21,28 @@ public class ApiCommonsImpl implements ApiCommons {
     /**
      * The order of the classes is important for the order of the categories in Swagger.
      * This is the correct order of categories in Swagger:
-     *   1. Organizations
-     *   2. Users
-     *   3. Projects
-     *   4. Studies
-     *   5. Files
-     *   6. Jobs
-     *   7. Workflows
-     *   8. User tools
-     *   9. Samples
-     *   10. Individuals
-     *   11. Families
-     *   12. Cohorts
-     *   13. Disease Panels
-     *   14. Analysis - Alignment
-     *   15. Analysis - Variant
-     *   16. Analysis - Clinical
-     *   17. Operations - Variant Storage
-     *   18. Meta
-     *   19. Admin
-     *   20. Ga4gh
+     *   1. Federations
+     *   2. Organizations
+     *   3. Users
+     *   4. Projects
+     *   5. Studies
+     *   6. Files
+     *   7. Jobs
+     *   8. Workflows
+     *   9. User tools
+     *   10. Samples
+     *   11. Individuals
+     *   12. Families
+     *   13. Cohorts
+     *   14. Disease Panels
+     *   15. Analysis - Alignment
+     *   16. Analysis - Variant
+     *   17. Analysis - Clinical
+     *   18. Analysis - CVDB
+     *   19. Operations - Variant Storage
+     *   20. Meta
+     *   21. Admin
+     *   22. Ga4gh
      */
 
 
@@ -46,6 +50,7 @@ public class ApiCommonsImpl implements ApiCommons {
 
         //The order of the classes is important for the order of the categories in the swagger.
         List<Class<?>> classes = new ArrayList<>();
+        classes.add(FederationWSServer.class);
         classes.add(OrganizationWSServer.class);
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);
@@ -62,6 +67,7 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(AlignmentWebService.class);
         classes.add(VariantWebService.class);
         classes.add(ClinicalWebService.class);
+        classes.add(CvdbWSServer.class);
         classes.add(VariantOperationWebService.class);
         classes.add(MetaWSServer.class);
         classes.add(AdminWSServer.class);
