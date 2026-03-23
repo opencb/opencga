@@ -211,9 +211,12 @@ class AlleleTyper:
                     header_skipped = True
                     continue
                 fields = line.split("\t")
-                if len(fields) >= 3:
-                    gene, orig, new_name = fields[0].strip(), fields[1].strip(), fields[2].strip()
-                    if gene and orig and new_name:
+                if len(fields) >= 2:
+                    gene = fields[0].strip()
+                    orig = fields[1].strip()
+                    new_name = fields[2].strip() if len(fields) >= 3 else ""
+                    if gene and orig:
+                        # Empty new_name is stored as "" to mark "exclude from renamed diplotype"
                         self.allele_renames.setdefault(gene, {})[orig] = new_name
         logger.info("Parsed allele renames for %d genes", len(self.allele_renames))
 
@@ -225,15 +228,38 @@ class AlleleTyper:
                 gene_renames = self.allele_renames.get(star.gene)
                 if not gene_renames:
                     continue
-                if star.allele_calls:
-                    for call in star.allele_calls:
-                        renamed = gene_renames.get(call.allele)
+                if not star.allele_calls:
+                    continue
+
+                # Rename individual alleles; track if any allele has an empty rename (excluded)
+                has_excluded_allele = False
+                for call in star.allele_calls:
+                    renamed = gene_renames.get(call.allele)
+                    if renamed is not None:
                         if renamed:
                             call.renamed_allele = renamed
-                    if len(star.allele_calls) == 2:
-                        c1, c2 = star.allele_calls
-                        r1 = c1.renamed_allele if c1.renamed_allele else c1.allele
-                        r2 = c2.renamed_allele if c2.renamed_allele else c2.allele
+                        else:
+                            # Empty rename = this allele is excluded from renamed diplotype
+                            has_excluded_allele = True
+
+                # Only build renamed diplotype if no allele is excluded
+                if not has_excluded_allele and len(star.allele_calls) == 2:
+                    c1, c2 = star.allele_calls
+                    r1 = c1.renamed_allele if c1.renamed_allele else c1.allele
+                    r2 = c2.renamed_allele if c2.renamed_allele else c2.allele
+
+                    # mtRNR1 is haploid (mitochondrial): show only one allele,
+                    # preferring the non-"No se detecta la variante." one
+                    if star.gene == "mtRNR1":
+                        no_detecta = "No se detecta la variante."
+                        if r1 == no_detecta and r2 != no_detecta:
+                            star.renamed_diplotype = r2
+                        elif r2 == no_detecta and r1 != no_detecta:
+                            star.renamed_diplotype = r1
+                        else:
+                            # Both same (both Ref or both Alt) — just show one
+                            star.renamed_diplotype = r1
+                    else:
                         star.renamed_diplotype = f"{r1}/{r2}"
 
     # --- Genotyping parsing and result building ---
