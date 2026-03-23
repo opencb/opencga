@@ -55,6 +55,7 @@ import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.OpenArrayPharmacogenomicsAnalysisParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
@@ -166,6 +167,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "pharmacogenomics-annotation-run":
                 queryResponse = runPharmacogenomicsAnnotation();
+                break;
+            case "pharmacogenomics-openarray-run":
+                queryResponse = runPharmacogenomicsOpenarray();
                 break;
             case "pipeline-affy-run":
                 queryResponse = runPipelineAffy();
@@ -946,6 +950,51 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), PharmacogenomicsAnnotationAnalysisToolParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runPharmacogenomicsAnnotation(pharmacogenomicsAnnotationAnalysisToolParams, queryParams);
+    }
+
+    private RestResponse<Job> runPharmacogenomicsOpenarray() throws Exception {
+        logger.debug("Executing runPharmacogenomicsOpenarray in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPharmacogenomicsOpenarrayCommandOptions commandOptions = analysisClinicalCommandOptions.runPharmacogenomicsOpenarrayCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        OpenArrayPharmacogenomicsAnalysisParams openArrayPharmacogenomicsAnalysisParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pharmacogenomics/openarray/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            openArrayPharmacogenomicsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), OpenArrayPharmacogenomicsAnalysisParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "snvFile", commandOptions.snvFile, true);
+            putNestedIfNotEmpty(beanParams, "translationFile", commandOptions.translationFile, true);
+            putNestedIfNotEmpty(beanParams, "cnvFile", commandOptions.cnvFile, true);
+            putNestedIfNotEmpty(beanParams, "renameFile", commandOptions.renameFile, true);
+            putNestedIfNotEmpty(beanParams, "compareTo", commandOptions.compareTo, true);
+            putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            openArrayPharmacogenomicsAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), OpenArrayPharmacogenomicsAnalysisParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPharmacogenomicsOpenarray(openArrayPharmacogenomicsAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runPipelineAffy() throws Exception {
