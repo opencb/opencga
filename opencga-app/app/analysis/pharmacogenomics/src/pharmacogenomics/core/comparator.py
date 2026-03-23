@@ -171,6 +171,9 @@ class ComparisonReport:
                     elif not exp_no and not obt_no and _normalized_match(exp_str, obt_str):
                         match_status = "MATCH (normalized)"
                         gene_matches += 1
+                    elif _is_ambiguous_match(exp_str, obt_str):
+                        match_status = "MATCH (ambiguous)"
+                        gene_matches += 1
                     else:
                         match_status = "MISMATCH"
                         gene_mismatches += 1
@@ -218,6 +221,21 @@ def _join_diplotypes(diplotypes: list[str] | None) -> str:
     if len(diplotypes) == 1:
         return diplotypes[0]
     return "{" + ", ".join(diplotypes) + "}"
+
+
+_NO_GENOTYPE = "No ha sido posible obtener un genotipo"
+
+
+def _is_ambiguous_match(expected: str, obtained: str) -> bool:
+    """Match ambiguous results: when expected has '...' (TrueMark truncated too many options)
+    or expected is 'no translation available' but we produced multiple diplotypes or the
+    undetermined text."""
+    obt_ambiguous = obtained == _NO_GENOTYPE or (obtained.startswith("{") and "," in obtained)
+    # Expected has '...' — TrueMark also had too many options
+    if "..." in expected and obt_ambiguous:
+        return True
+    # Expected is 'no translation available' but we found multiple ambiguous diplotypes
+    return expected == "no translation available" and obt_ambiguous
 
 
 def _normalized_match(expected: str, obtained: str) -> bool:

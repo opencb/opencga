@@ -312,6 +312,11 @@ class AlleleTyper:
                     sample_genotypes.setdefault(sample, {})[assay] = call
         return sample_genotypes
 
+    NO_GENOTYPE_AVAILABLE = "No ha sido posible obtener un genotipo"
+
+    # Maximum length for a joined diplotype string before it's considered too ambiguous
+    _MAX_DIPLOTYPE_LENGTH = 50
+
     def _build_sample_result(
         self, sample_id: str, genotypes: dict[str, str], cnv_data: dict[str, int]
     ) -> AlleleTyperResult:
@@ -323,6 +328,11 @@ class AlleleTyper:
             if not pairs:
                 star_results.append(StarAlleleResult(
                     gene=gene, diplotype="no translation available", allele_calls=[], variants=gene_variants,
+                ))
+            elif self._is_too_ambiguous(pairs):
+                # Too many combinations — cannot determine genotype
+                star_results.append(StarAlleleResult(
+                    gene=gene, diplotype=self.NO_GENOTYPE_AVAILABLE, allele_calls=[], variants=gene_variants,
                 ))
             else:
                 for pair in pairs:
@@ -337,6 +347,22 @@ class AlleleTyper:
             sample_id=sample_id, source="openarray",
             allele_typer_results=star_results, genotypes=geno_list, translation=translation_list,
         )
+
+    def _is_too_ambiguous(self, pairs: list[DiplotypePair]) -> bool:
+        """Check if the diplotype result is too ambiguous to report.
+
+        This happens when there are so many compatible pairs that the result is
+        meaningless (e.g., due to UND/noamp values making too many haplotypes match).
+        A result is too ambiguous when it has more than 2 pairs AND the joined string
+        is excessively long, or when it has more than 4 pairs regardless of length.
+        """
+        if len(pairs) <= 2:
+            return False
+        if len(pairs) > 4:
+            return True
+        diplotype_strs = [str(p) for p in pairs]
+        joined = "{" + ", ".join(diplotype_strs) + "}"
+        return len(joined) > self._MAX_DIPLOTYPE_LENGTH
 
     def _build_translation_info(self) -> list[TranslationInfo]:
         result = []
