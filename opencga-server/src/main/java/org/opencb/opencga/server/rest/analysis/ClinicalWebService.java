@@ -25,9 +25,11 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.interpreter.InterpreterAnalysisTool;
+import org.opencb.opencga.analysis.clinical.pharmacogenomics.OpenArrayPharmacogenomicsAnalysis;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsAlleleTyperAnalysisTool;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsAnnotationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.pharmacogenomics.PharmacogenomicsManager;
+import org.opencb.opencga.core.models.clinical.pharmacogenomics.OpenArrayPharmacogenomicsAnalysisParams;
 import org.opencb.opencga.core.models.clinical.PharmacogenomicsAnnotationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.pharmacogenomics.AlleleTyperResult;
 import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
@@ -1717,6 +1719,25 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(name = "body", value = "JSON with parameters to execute the tool " + PharmacogenomicsAnnotationAnalysisTool.ID, required = true)
             PharmacogenomicsAnnotationAnalysisToolParams params) {
         return submitJob(study, JobType.NATIVE_TOOL, PharmacogenomicsAnnotationAnalysisTool.ID, params, jobName, jobDescription,
+                dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/pharmacogenomics/openarray/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = OpenArrayPharmacogenomicsAnalysis.DESCRIPTION, response = Job.class)
+    public Response openArrayPharmacogenomicsRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(name = "body", value = OpenArrayPharmacogenomicsAnalysisParams.DESCRIPTION, required = true)
+            OpenArrayPharmacogenomicsAnalysisParams params) {
+        return submitJob(study, JobType.NATIVE_TOOL, OpenArrayPharmacogenomicsAnalysis.ID, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }
