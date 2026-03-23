@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.core.configuration;
+package org.opencb.opencga.core.config;
 
 public abstract class AbstractModuleConfiguration {
 

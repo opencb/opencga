@@ -16,7 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
-import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.ArrayList;
@@ -38,11 +38,11 @@ public final class ClinicalQueryParam implements QueryParam {
     private static final String ACCEPTS_AND_OR = "Accepts AND (" + AND + ") and OR (" + OR + ") operators.";
 
     public static final String PROJECT_ID_DESCR = ParamConstants.PROJECT_PARAM_DESCRIPTION;
-    public static final ClinicalQueryParam PROJECT_ID = new ClinicalQueryParam(ParamConstants.PROJECT_PARAM_NAME,
+    public static final ClinicalQueryParam PROJECT_ID = new ClinicalQueryParam(ParamConstants.PROJECT_PARAM,
             STRING, PROJECT_ID_DESCR);
 
     public static final String STUDY_ID_DESCR = ParamConstants.STUDY_PARAM_DESCRIPTION;
-    public static final ClinicalQueryParam STUDY_ID = new ClinicalQueryParam(ParamConstants.STUDY_PARAM_NAME,
+    public static final ClinicalQueryParam STUDY_ID = new ClinicalQueryParam(ParamConstants.STUDY_PARAM,
             STRING, STUDY_ID_DESCR);
 
     // ---------- Commons

@@ -16,10 +16,10 @@
 
 package com.zettagenomics.opencga.enterprise.client.rest.clients;
 
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationServerUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationUserParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;

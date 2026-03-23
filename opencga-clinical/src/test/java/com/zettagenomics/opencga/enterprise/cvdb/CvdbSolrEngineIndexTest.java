@@ -41,8 +41,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STUDY_PARAM_NAME;
+import static org.opencb.opencga.core.api.ParamConstants.PROJECT_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_ID_NAME;
@@ -227,7 +227,7 @@ public class CvdbSolrEngineIndexTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
@@ -267,7 +267,7 @@ public class CvdbSolrEngineIndexTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
@@ -319,7 +319,7 @@ public class CvdbSolrEngineIndexTest {
 
         System.out.println("Checking clinical variants in collection for interpretation " + interpreation.getId());
         query = new Query();
-        query.put(STUDY_PARAM_NAME, study.getFqn());
+        query.put(STUDY_PARAM, study.getFqn());
         query.put(CI_ID_NAME, interpreation.getId());
         ClinicalSolrIterator<ClinicalVariantSearch> solrIterator = cvdbEngine.clinicalVariantNativeIterator(query, QueryOptions.empty(),
                 userToken);
@@ -373,7 +373,7 @@ public class CvdbSolrEngineIndexTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_ID_NAME, caId);
 
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);

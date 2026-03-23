@@ -176,6 +176,17 @@ quota:                             # Quotas per organisation
   maxNumVariantIndexSamples: 15000 # Maximum number of variant index samples that an organisation can have
   maxNumJobHours: 100              # Maximum number of hours that the organisation can use in jobs on a monthly basis
 
+sso:
+  active: false
+
+cvdb:
+  active: false
+  database:
+    hosts:
+      - "http://localhost:8983/solr/"
+    mode: "cloud"
+    timeout: 30000
+
 email:
   host: "localhost"
   port: ""

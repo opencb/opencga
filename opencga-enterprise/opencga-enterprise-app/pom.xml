@@ -340,12 +340,6 @@
                                     <arg value="${project.parent.version}"/>
                                 </exec>
 
-                                <echo>Copying git.properties</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="${project.basedir}/../opencga-enterprise-core/target/generated-resources/com/zettagenomics/opencga/enterprise/git-enterprise.properties"/>
-                                    <arg value="${build.dir}/misc/git"/>
-                                </exec>
-
                                 <!--Building javascript library  -->
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp" failonerror="true">

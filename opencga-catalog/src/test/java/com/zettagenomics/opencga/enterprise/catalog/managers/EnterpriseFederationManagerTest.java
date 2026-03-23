@@ -1,8 +1,8 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
-import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -60,8 +60,8 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         // Federate server
         FederationServerCreateParams serverCreateParams = new FederationServerCreateParams(organizationId, "", "mail@mail.com",
                 organizationId);
-//        FederationClientParams client = enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
-        enterpriseFederationManager.createFederation("", serverCreateParams, org2OwnerToken).first();
+//        FederationClientParams client = catalogManager.getFederationManager().createFederation("", serverCreateParams, org2OwnerToken).first();
+        catalogManager.getFederationManager().createFederation("", serverCreateParams, org2OwnerToken).first();
         FederationClientParams client = new FederationClientParams();
 
         catalogManager.getStudyManager().updateAcl(study.getId(), organizationId, new StudyAclParams("", "view_only"),
@@ -79,7 +79,7 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         client.setId("org2");
         client.setUrl("http://localhost:9090/opencga");
         client.setEmail("mail@mail.com");
-        enterpriseFederationManager.connect(client, ownerToken);
+        catalogManager.getFederationManager().connect(client, ownerToken);
 
         // Check we can access remote data
         ownerToken = catalogManager.getUserManager().refreshToken(ownerToken).first().getToken();
@@ -99,14 +99,14 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         System.out.println(execute);
 
         // Reset federation server access
-//        client = enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
-        enterpriseFederationManager.reset("", serverCreateParams.getId(), org2OwnerToken).first();
+//        client = catalogManager.getFederationManager().reset("", serverCreateParams.getId(), org2OwnerToken).first();
+        catalogManager.getFederationManager().reset("", serverCreateParams.getId(), org2OwnerToken).first();
 
 //        // Update federation client creds
         FederationClientUpdateParams updateParams = new FederationClientUpdateParams()
                 .setPassword(client.getPassword())
                 .setSecurityKey(client.getSecurityKey());
-        enterpriseFederationManager.update("org2", updateParams, ownerToken);
+        catalogManager.getFederationManager().update("org2", updateParams, ownerToken);
 
         studyOpenCGAResult = genericClient.execute("studies", "org2@project:study", null, null, "info",
                 new ObjectMap(), "GET", Study.class).first();
@@ -116,10 +116,10 @@ public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstrac
         assertFalse(studyOpenCGAResult.first().getVariableSets().isEmpty());
 
         // Delete federation server
-        enterpriseFederationManager.deleteFederationServer(serverCreateParams.getId(), org2OwnerToken);
+        catalogManager.getFederationManager().deleteFederationServer(serverCreateParams.getId(), org2OwnerToken);
 
         // Delete federation client
-        enterpriseFederationManager.deleteFederationClient("org2", ownerToken);
+        catalogManager.getFederationManager().deleteFederationClient("org2", ownerToken);
     }
 
     @Test

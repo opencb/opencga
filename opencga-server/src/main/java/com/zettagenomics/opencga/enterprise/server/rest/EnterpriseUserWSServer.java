@@ -1,7 +1,5 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
@@ -31,7 +29,6 @@ public class EnterpriseUserWSServer extends UserWSServer {
     public EnterpriseUserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     @GET
@@ -52,7 +49,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
             queryParams.append("jsessionid").append("=").append(httpServletRequest.getSession().getId());
 
             AttributePrincipal principal = (AttributePrincipal) httpServletRequest.getUserPrincipal();
-            String token = EnterpriseFactory.getEnterpriseUserManager().ssoLogin(principal);
+            String token = catalogManager.getUserManager().ssoLogin(principal.getName(), principal.getAttributes());
             // Add user and token
             queryParams.append("&").append("token").append("=").append(token);
             queryParams.append("&").append("user").append("=").append(principal.getName());
@@ -72,7 +69,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
             @ApiParam(value = EnterpriseParamConstants.USERS_CALLBACK_URL_DESCRIPTION) @QueryParam("url") String service,
             @ApiParam(value = EnterpriseParamConstants.USERS_LOGOUT_DESCRIPTION, hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
+        Configuration enterpriseConfiguration = catalogManager.getConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
             return createErrorResponse(new CatalogException("SSO is not enabled."));
         }

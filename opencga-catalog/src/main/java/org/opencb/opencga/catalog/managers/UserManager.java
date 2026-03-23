@@ -1762,4 +1762,136 @@ public class UserManager extends AbstractManager {
         String organizationId = catalogFqn.getOrganizationId();
         return tokenPayload.getUserId(organizationId);
     }
+
+    public String ssoLogin(String userId, Map<String, Object> principalAttributes) throws CatalogException {
+        String organizationId;
+        if (principalAttributes != null) {
+            for (Map.Entry<String, Object> entry : principalAttributes.entrySet()) {
+                logger.debug("{}:\t{}", entry.getKey(), entry.getValue());
+            }
+            organizationId = getSsoAttributeValue(principalAttributes,
+                    configuration.getSso().getAttributes().getOrganization(), "");
+        } else {
+            throw CatalogParameterException.isNull("organizationId");
+        }
+
+        if (StringUtils.isEmpty(organizationId)) {
+            logger.debug("Organization id field is null. Fetching current organizations in installation.");
+            List<String> organizationIds = catalogDBAdaptorFactory.getOrganizationIds();
+            logger.debug("List of available organization ids '{}'.", StringUtils.join(organizationIds, "', '"));
+            if (organizationIds.size() == 2) {
+                organizationId = organizationIds.stream().filter(s -> !ParamConstants.ADMIN_ORGANIZATION.equals(s))
+                        .findFirst().get();
+            } else {
+                throw CatalogParameterException.isNull("organizationId");
+            }
+        }
+
+        Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)
+                .get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION).first();
+        String authOriginId = null;
+        for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+            if (authenticationOrigin.getType() == AuthenticationOrigin.AuthenticationType.SSO) {
+                authOriginId = authenticationOrigin.getId();
+                break;
+            }
+        }
+        if (authOriginId == null) {
+            throw new CatalogException("Missing SSO authentication origin in organization '" + organizationId + "'.");
+        }
+
+        QueryOptions userQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
+                        UserDBAdaptor.QueryParams.ATTRIBUTES.key()));
+        OpenCGAResult<User> result = getUserDBAdaptor(organizationId).get(userId, userQueryOptions);
+
+        String opencgaToken = getOpencgaToken();
+        if (result.getNumResults() == 1) {
+            if (!authOriginId.equals(result.first().getInternal().getAccount().getAuthentication().getId())) {
+                throw new CatalogException("User '" + userId + "' was already registered from a "
+                        + "different authentication origin ("
+                        + result.first().getInternal().getAccount().getAuthentication().getId() + ")");
+            }
+        } else {
+            User user = new User()
+                    .setId(userId)
+                    .setInternal(new UserInternal().setAccount(
+                            new Account(null, null, 0, new Account.AuthenticationOrigin(authOriginId, false)))
+                    )
+                    .setAttributes(principalAttributes);
+            if (configuration.getSso().getAttributes() != null) {
+                String name = getSsoAttributeValue(principalAttributes,
+                        configuration.getSso().getAttributes().getName(), userId);
+                String surname = getSsoAttributeValue(principalAttributes,
+                        configuration.getSso().getAttributes().getSurname(), "");
+                if (StringUtils.isNotEmpty(surname)) {
+                    user.setName(name + " " + surname);
+                } else {
+                    user.setName(name);
+                }
+                user.setEmail(getSsoAttributeValue(principalAttributes,
+                        configuration.getSso().getAttributes().getEmail(), ""));
+                user.setOrganization(getSsoAttributeValue(principalAttributes,
+                        configuration.getSso().getAttributes().getOrganization(), ""));
+            }
+            create(user, null, opencgaToken);
+        }
+
+        syncSsoGroups(organizationId, authOriginId, userId, principalAttributes, opencgaToken);
+
+        return getToken(organizationId, userId, Collections.emptyMap(), null, opencgaToken);
+    }
+
+    private void syncSsoGroups(String organizationId, String authOriginId, String userId,
+                               Map<String, Object> principalAttributes, String opencgaToken) throws CatalogException {
+        List<String> groups = getGroupsFromSsoPrincipal(principalAttributes, userId);
+        catalogManager.getAdminManager().syncRemoteGroups(organizationId, userId, groups, authOriginId, opencgaToken);
+    }
+
+    private List<String> getGroupsFromSsoPrincipal(Map<String, Object> principalAttributes, String userId) {
+        if (configuration.getSso() == null || configuration.getSso().getAttributes() == null
+                || StringUtils.isEmpty(configuration.getSso().getAttributes().getGroups())) {
+            logger.warn("Cannot fetch groups from SSO user '{}'. Field 'sso.attributes.groups' from the "
+                    + "configuration.yml file is undefined.", userId);
+            return Collections.emptyList();
+        }
+        if (principalAttributes != null) {
+            logger.debug("Attribute keys: {}", StringUtils.join(principalAttributes.keySet(), ","));
+        }
+        String groupsKey = configuration.getSso().getAttributes().getGroups();
+        if (principalAttributes == null || !principalAttributes.containsKey(groupsKey)) {
+            logger.warn("No remote groups found under key '{}' for SSO user '{}'.", groupsKey, userId);
+            if (principalAttributes == null) {
+                logger.warn("Principal object has no attributes");
+            }
+            return Collections.emptyList();
+        }
+        Object o = principalAttributes.get(groupsKey);
+        List<String> groupList;
+        if (o instanceof List) {
+            groupList = (List<String>) o;
+        } else if (o instanceof String) {
+            logger.debug("Groups value is instance of String: {}.", o);
+            groupList = Arrays.asList(((String) o).split(","));
+        } else {
+            logger.warn("Cannot fetch groups from SSO user '{}'. Groups value is instance of '{}'.",
+                    userId, o.getClass());
+            groupList = Collections.emptyList();
+        }
+        return groupList.stream().map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
+    private String getSsoAttributeValue(Map<String, Object> attributes, String key, String defaultValue) {
+        if (StringUtils.isEmpty(key)) {
+            return defaultValue;
+        }
+        String value = String.valueOf(attributes.get(key));
+        return StringUtils.isNotEmpty(value) && !"null".equals(value) ? value : defaultValue;
+    }
+
+    private String getOpencgaToken() throws CatalogException {
+        AuthenticationManager authManager = authenticationFactory.getOrganizationAuthenticationManager(
+                ParamConstants.ADMIN_ORGANIZATION, CatalogAuthenticationManager.OPENCGA);
+        return authManager.createNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID, null);
+    }
 }

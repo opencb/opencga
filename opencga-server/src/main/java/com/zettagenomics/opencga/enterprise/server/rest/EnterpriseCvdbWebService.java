@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
-import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
@@ -29,10 +28,9 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.CV_FACET_FIELDS;
-import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
@@ -46,7 +44,6 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     public EnterpriseCvdbWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                     @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
     private CvdbSolrEngine getCvdbEngine() throws IOException {
@@ -56,7 +53,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
                 try {
                     cvdbEngine = cvdbEngineAtomicRef.get();
                     if (cvdbEngine == null) {
-                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager);
                         cvdbEngineAtomicRef.set(cvdbEngine);
                     }
                 } catch (Exception e) {
@@ -143,8 +140,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/analysis/query")
     @ApiOperation(value = CLINICAL_ANALYSES_QUERY_DESCRIPTION, response = ClinicalAnalysis.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "interpretation,panels",
@@ -309,8 +306,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/interpretation/query")
     @ApiOperation(value = CLINICAL_INTERPRETATION_QUERY_DESCRIPTION, response = Interpretation.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "primaryFindings",
@@ -475,8 +472,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/variant/query")
     @ApiOperation(value = CLINICAL_VARIANT_QUERY_DESCRIPTION, response = ClinicalVariant.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status",
@@ -641,8 +638,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/evidence/query")
     @ApiOperation(value = CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION, response = ClinicalVariantEvidence.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
@@ -812,8 +809,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/analysis/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical analysis aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
             // Clinical analysis filters
 
@@ -969,8 +966,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/interpretation/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical interpretation aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
             // Clinical analysis filters
 
@@ -1126,8 +1123,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/variant/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
             // Clinical analysis filters
 
@@ -1285,8 +1282,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @Path("/evidence/aggregate")
     @ApiOperation(value = "Calculate and fetch clinical variant evidence aggregation stats", response = FacetField.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = PROJECT_PARAM_NAME, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = STUDY_PARAM_NAME, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = PROJECT_PARAM, value = PROJECT_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = STUDY_PARAM, value = STUDY_PARAM_DESCRIPTION, dataType = "string", paramType = "query"),
 
             // Clinical analysis filters
 
@@ -1447,7 +1444,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     @ApiOperation(value = CLINICAL_VARIANT_SUMMARY_DESCRIPTION, response = ClinicalVariantSummaryStats.class)
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = EnterpriseParamConstants.CLINICAL_VARIANT_VARIANT_ID_DESCRIPTION) @PathParam(value = "variantId") String variantId,
-            @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM_NAME)
+            @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM)
             String projectId) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantId, projectId, token);

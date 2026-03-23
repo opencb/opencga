@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
+import org.opencb.opencga.catalog.utils.FederationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;

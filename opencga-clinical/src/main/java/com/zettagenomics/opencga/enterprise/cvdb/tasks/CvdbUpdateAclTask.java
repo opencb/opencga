@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb.tasks;
 
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
@@ -77,9 +76,7 @@ public class CvdbUpdateAclTask extends OpenCgaTool {
             throw new CvdbException("Something wrong happened, could not get project from study '" + study.getFqn() + "'");
         }
 
-        // Get enterprise configuration to set the CVDB engine
-        EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
-        cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager);
+        cvdbEngine = new CvdbSolrEngine(configuration.getCvdb(), catalogManager);
         try {
             collectionPrefix = cvdbEngine.getCollectionNameGenerator().getCollectionPrefix(organizationId, project.getId(), token);
             if (!cvdbEngine.existCollections(collectionPrefix)) {

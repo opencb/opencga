@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.core.models.federation;
+package org.opencb.opencga.core.models.federation;
 
 import java.util.List;
 

@@ -1,7 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.core.GitUtils;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +10,7 @@ import org.apache.solr.core.NodeConfig;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 
@@ -45,7 +44,6 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private static Path rootDir;
 
     private Configuration configuration;
-    private EnterpriseConfiguration enterpriseConfiguration;
 
     public CvdbSolrExtenalResource(boolean embeded, String organizationId, String projectId, String collectionPrefix) {
         this.embeded = embeded;
@@ -55,7 +53,6 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
         try {
             this.configuration = Configuration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/configuration-test.yml"));
-            this.enterpriseConfiguration = EnterpriseConfiguration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/enterprise-configuration.yml"));
 
             System.out.println("this.configuration.getDatabasePrefix() = " + this.configuration.getDatabasePrefix());
         } catch (IOException e) {
@@ -70,11 +67,11 @@ public class CvdbSolrExtenalResource extends ExternalResource {
 
         //        Path rootDir = getTmpRootDir();
 
-        String caConfigSet = "opencga-ca-configset-" + GitUtils.getEnterprise().getBuildVersion();
-        String ciConfigSet = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
-        String cvConfigSet = "opencga-cv-configset-" + GitUtils.getEnterprise().getBuildVersion();
-        String cveConfigSet = "opencga-cve-configset-" + GitUtils.getEnterprise().getBuildVersion();
-        String viewersConfigSet = "opencga-viewers-configset-" + GitUtils.getEnterprise().getBuildVersion();
+        String caConfigSet = "opencga-ca-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String ciConfigSet = "opencga-ci-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String cvConfigSet = "opencga-cv-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String cveConfigSet = "opencga-cve-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String viewersConfigSet = "opencga-viewers-configset-" + GitRepositoryState.getInstance().getBuildVersion();
         copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
@@ -127,7 +124,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     }
 
     public CvdbSolrEngine configure() {
-        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(configuration, enterpriseConfiguration.getCvdb());
+        CvdbSolrEngine cvdbEngine = new CvdbSolrEngine(configuration, configuration.getCvdb());
         cvdbEngine.setSolrManager(new SolrManager(solrClient, solrHost, solrMode));
         return cvdbEngine;
     }

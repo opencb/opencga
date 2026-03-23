@@ -40,7 +40,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -140,7 +140,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user" can access to all clinical analyses
@@ -175,7 +175,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CI_PANEL_ID_NAME, "VACTERL-like_phenotypes-PanelAppId-101");
 
         // "user" can access to all clinical analyses
@@ -224,7 +224,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         // Check type
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CV_TYPE_NAME, "INDEL");
 
         // "user" can access to all clinical analyses
@@ -259,7 +259,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         // Check type
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CV_TYPE_NAME, "INDEL");
 
         String token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
@@ -302,7 +302,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // No token provided
@@ -318,8 +318,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, study.getId());
+        query = new Query(PROJECT_PARAM, projectId);
+        query.put(STUDY_PARAM, study.getId());
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user4" can not access to these clinical analyses
@@ -362,8 +362,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LIMIT, 100);
 
-        query = new Query(PROJECT_PARAM_NAME, projectId);
-        query.put(STUDY_PARAM_NAME, study.getId());
+        query = new Query(PROJECT_PARAM, projectId);
+        query.put(STUDY_PARAM, study.getId());
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user4" can not access to these clinical analyses
@@ -402,7 +402,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     //-----------------------------------------------------------------------
 
     private ClinicalAnalysis getClinicalAnalyis(String caId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CA_ID_NAME, caId);
         DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -411,7 +411,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     }
 
     private Interpretation getClinicalInterpretation(String ciId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CI_ID_NAME, ciId);
         DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
@@ -420,7 +420,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     }
 
     private ClinicalVariant getClinicalVariant(String cvId) throws IOException, CvdbException, CatalogException {
-        Query query = new Query(PROJECT_PARAM_NAME, projectId);
+        Query query = new Query(PROJECT_PARAM, projectId);
         query.put(CV_ID_NAME, cvId);
         DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());

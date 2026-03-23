@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.core.models.federation;
+package org.opencb.opencga.core.models.federation;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
