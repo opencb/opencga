@@ -522,8 +522,8 @@ public class FederationManager extends AbstractManager {
                     .setToken("");
             result = updateFederationClient(organizationId, federationClient.getId(), updateParams);
             if (result.getNumUpdated() == 0) {
-                throw new CatalogException("Could not update security key. Please, talk to the federation server administrator as the " +
-                        "communication with the federation may be broken.");
+                throw new CatalogException("Could not update security key. Please, talk to the federation server administrator as the "
+                        + "communication with the federation may be broken.");
             }
 
             auditManager.audit(organizationId, userId, Enums.Action.CREATE_FEDERATION_CLIENT, Enums.Resource.ORGANIZATION, organizationId,

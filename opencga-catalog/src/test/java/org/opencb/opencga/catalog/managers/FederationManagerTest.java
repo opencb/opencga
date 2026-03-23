@@ -1,21 +1,20 @@
-package com.zettagenomics.opencga.enterprise.catalog.managers;
+package org.opencb.opencga.catalog.managers;
 
-import com.zettagenomics.opencga.enterprise.catalog.utils.SecureKeyUtils;
-import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
-import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.SecureKeyUtils;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationClientUpdateParams;
+import org.opencb.opencga.core.models.federation.FederationServerCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -34,7 +33,7 @@ import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class EnterpriseFederationManagerTest extends EnterpriseEnterpriseAbstractManagerTest {
+public class FederationManagerTest extends AbstractManagerTest {
 
     @Ignore
     @Test
