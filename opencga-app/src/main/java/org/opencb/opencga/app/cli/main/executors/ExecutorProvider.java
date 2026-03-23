@@ -10,6 +10,12 @@ public class ExecutorProvider {
     public static OpencgaCommandExecutor getOpencgaCommandExecutor(OpencgaCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         OpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
+            case "federations":
+                commandExecutor = new FederationsCommandExecutor(cliOptionsParser.getFederationsCommandOptions());
+                break;
+            case "cvdb":
+                commandExecutor = new AnalysisCVDBCommandExecutor(cliOptionsParser.getAnalysisCVDBCommandOptions());
+                break;
             case "organizations":
                 commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
                 break;

@@ -24,6 +24,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
+import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -146,14 +148,26 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    // This method is implemented by the OpenCGA Enterprise
-    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager) throws Exception {
-        return Collections.emptyList();
+    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager)
+            throws CatalogException, CvdbException, IOException {
+        CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
+        List<String> cvdbProjects = cvdbEngine.getCvdbProjects(organizationIds, token);
+        cvdbEngine.close();
+        logger.debug("Returning CVDB project FQNs: {}", cvdbProjects == null ? "" : StringUtils.join(cvdbProjects, ", "));
+        return cvdbProjects;
     }
 
-    // This method is implemented by the OpenCGA Enterprise
-    protected DataStore getCvdbDatastore(String projectFqn, CatalogManager catalogManager) throws Exception {
-        return new DataStore();
+    protected DataStore getCvdbDatastore(String projectFqn, CatalogManager catalogManager)
+            throws CatalogException, CvdbException, IOException {
+        CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
+        DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(projectFqn, token);
+        cvdbEngine.close();
+        logger.debug("Returning CVDB datastore: {}", cvdbDatastore);
+        return cvdbDatastore;
+    }
+
+    private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager) throws IOException {
+        return new CvdbSolrEngine(configuration.getCvdb(), catalogManager);
     }
 
     private void updateDatabasePrefix() throws Exception {

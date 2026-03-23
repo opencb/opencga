@@ -20,6 +20,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.config.CliConfiguration;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.shell.Shell;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
@@ -43,6 +44,8 @@ public class OpencgaMain {
     public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
+
+        CliConfiguration.getInstance().setCliUsageFileName("enterprise-cli-usage.yml");
 
         if (args.length == 0) {
             CliOptionsParser parser = new OpencgaCliOptionsParser();

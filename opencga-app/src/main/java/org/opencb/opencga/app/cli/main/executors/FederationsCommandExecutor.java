@@ -1,9 +1,8 @@
-package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import com.zettagenomics.opencga.enterprise.app.cli.main.options.FederationsCommandOptions;
+import org.opencb.opencga.app.cli.main.options.FederationsCommandOptions;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationClientUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
@@ -34,7 +33,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Federations command line.
  *    PATH: /{apiVersion}/federations
  */
-public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
+public class FederationsCommandExecutor extends OpencgaCommandExecutor {
 
     public String categoryName = "federations";
     public FederationsCommandOptions federationsCommandOptions;
@@ -124,7 +123,7 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FederationClientParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().connectClient(federationClientParams);
+        return openCGAClient.getFederationClient().connectClient(federationClientParams);
     }
 
     private RestResponse<ObjectMap> clientStudyUsersList() throws Exception {
@@ -138,7 +137,7 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().clientStudyUsersList(queryParams);
+        return openCGAClient.getFederationClient().clientStudyUsersList(queryParams);
     }
 
     private RestResponse<ObjectMap> clientStudyUsersUpdate() throws Exception {
@@ -171,21 +170,21 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FederationUserParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().clientStudyUsersUpdate(federationUserParams, queryParams);
+        return openCGAClient.getFederationClient().clientStudyUsersUpdate(federationUserParams, queryParams);
     }
 
     private RestResponse<ObjectMap> deleteClient() throws Exception {
         logger.debug("Executing deleteClient in Federations command line");
 
         FederationsCommandOptions.DeleteClientCommandOptions commandOptions = federationsCommandOptions.deleteClientCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().deleteClient(commandOptions.id);
+        return openCGAClient.getFederationClient().deleteClient(commandOptions.id);
     }
 
     private RestResponse<ObjectMap> synchronizeClient() throws Exception {
         logger.debug("Executing synchronizeClient in Federations command line");
 
         FederationsCommandOptions.SynchronizeClientCommandOptions commandOptions = federationsCommandOptions.synchronizeClientCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().synchronizeClient(commandOptions.id);
+        return openCGAClient.getFederationClient().synchronizeClient(commandOptions.id);
     }
 
     private RestResponse<ObjectMap> updateClient() throws Exception {
@@ -216,7 +215,7 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FederationClientUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().updateClient(commandOptions.id, federationClientUpdateParams);
+        return openCGAClient.getFederationClient().updateClient(commandOptions.id, federationClientUpdateParams);
     }
 
     private RestResponse<ObjectMap> createServer() throws Exception {
@@ -244,21 +243,21 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FederationServerCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().createServer(federationServerCreateParams);
+        return openCGAClient.getFederationClient().createServer(federationServerCreateParams);
     }
 
     private RestResponse<ObjectMap> deleteServer() throws Exception {
         logger.debug("Executing deleteServer in Federations command line");
 
         FederationsCommandOptions.DeleteServerCommandOptions commandOptions = federationsCommandOptions.deleteServerCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().deleteServer(commandOptions.id);
+        return openCGAClient.getFederationClient().deleteServer(commandOptions.id);
     }
 
     private RestResponse<ObjectMap> resetServer() throws Exception {
         logger.debug("Executing resetServer in Federations command line");
 
         FederationsCommandOptions.ResetServerCommandOptions commandOptions = federationsCommandOptions.resetServerCommandOptions;
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().resetServer(commandOptions.id);
+        return openCGAClient.getFederationClient().resetServer(commandOptions.id);
     }
 
     private RestResponse<ObjectMap> updateServer() throws Exception {
@@ -287,6 +286,6 @@ public class FederationsCommandExecutor extends com.zettagenomics.opencga.enterp
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), FederationServerUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseFederationClient().updateServer(commandOptions.id, federationServerUpdateParams);
+        return openCGAClient.getFederationClient().updateServer(commandOptions.id, federationServerUpdateParams);
     }
 }
