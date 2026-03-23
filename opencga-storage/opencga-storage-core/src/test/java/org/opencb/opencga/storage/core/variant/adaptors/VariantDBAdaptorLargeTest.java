@@ -134,7 +134,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             dbAdaptor = variantStorageEngine.getDBAdaptor();
 
             NUM_VARIANTS -= skippedVariants();
-            allVariants = dbAdaptor.get(new Query(), new QueryOptions());
+            allVariants = dbAdaptor.get(new Query()
+                    .append(INCLUDE_SAMPLE.key(), ALL)
+                    .append(INCLUDE_FILE.key(), ALL)
+                    .append(INCLUDE_STUDY.key(), ALL), new QueryOptions());
             numVariants = allVariants.getNumResults();
         }
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -483,7 +486,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     public void testGetAllVariants_filterStudies2_AND_3() {
         String studyIds = studyMetadata2.getName() + ';' + studyMetadata3.getName();
         Query query = new Query(STUDY.key(), studyIds)
-                .append(INCLUDE_STUDY.key(), ALL);
+                .append(INCLUDE_STUDY.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_SAMPLE.key(), ALL);
         DataResult<Variant> queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,
@@ -505,7 +510,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     public void testGetAllVariants_filterStudies2_not_3() {
         String studyIds = studyMetadata2.getName() + ";!" + studyMetadata3.getName();
         query = new Query(STUDY.key(), studyIds)
-                .append(INCLUDE_STUDY.key(), ALL);
+                .append(INCLUDE_STUDY.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants,

@@ -232,16 +232,7 @@ public class VariantQueryParser {
         variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
 
         if (isValidParam(query, TYPE)) {
-            // Assume preProcess has expanded types to subtypes
-            List<VariantType> types = new ArrayList<>();
-            for (Object o : query.getAsList(TYPE.key())) {
-                if (o instanceof VariantType) {
-                    types.add((VariantType) o);
-                } else {
-                    types.add(parseVariantType(o.toString()));
-                }
-            }
-            variantQuery.setType(types);
+            variantQuery.setType(resolveVariantTypes(query.getAsList(TYPE.key())));
         }
 
         variantQuery.getAnnotationQuery()
@@ -356,7 +347,6 @@ public class VariantQueryParser {
         preProcessXrefs(query, cellBaseUtils);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
-            Set<VariantType> types = new HashSet<>();
             List<String> typesFromQuery = query.getAsStringList(TYPE.key());
             if (typesFromQuery.contains(VariantType.SNP.name()) && !typesFromQuery.contains(VariantType.SNV.name())) {
                 throw VariantQueryException.malformedParam(TYPE, "Unable to filter by SNP");
@@ -364,31 +354,7 @@ public class VariantQueryParser {
             if (typesFromQuery.contains(VariantType.MNP.name()) && !typesFromQuery.contains(VariantType.MNV.name())) {
                 throw VariantQueryException.malformedParam(TYPE, "Unable to filter by MNP");
             }
-            if (query.getString(TYPE.key()).contains(NOT)) {
-                // Invert negations
-                types.addAll(Arrays.asList(VariantType.values()));
-                for (String type : typesFromQuery) {
-                    if (isNegated(type)) {
-                        type = removeNegation(type);
-                    } else {
-                        throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
-                    }
-                    // Expand types to subtypes
-                    VariantType variantType = parseVariantType(type);
-                    Set<VariantType> subTypes = Variant.subTypes(variantType);
-                    types.remove(variantType);
-                    types.removeAll(subTypes);
-                }
-            } else {
-                // Expand types to subtypes
-                for (String type : typesFromQuery) {
-                    VariantType variantType = parseVariantType(type);
-                    Set<VariantType> subTypes = Variant.subTypes(variantType);
-                    types.add(variantType);
-                    types.addAll(subTypes);
-                }
-            }
-            query.put(TYPE.key(), new ArrayList<>(types));
+            query.put(TYPE.key(), resolveVariantTypes(typesFromQuery));
         }
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)
@@ -467,6 +433,41 @@ public class VariantQueryParser {
                     ? parsedCts
                     : String.join(values.operation.separator(), parsedCts));
         }
+    }
+
+    /**
+     * Resolve variant types from a list of type values, handling negation and subtype expansion.
+     * Accepts both raw strings (possibly negated like "!SNV") and pre-processed VariantType objects.
+     */
+    private List<VariantType> resolveVariantTypes(List<?> typeValues) {
+        boolean hasNegation = typeValues.stream().anyMatch(o -> o instanceof String && isNegated(o.toString()));
+        Set<VariantType> types;
+        if (hasNegation) {
+            types = new LinkedHashSet<>(Arrays.asList(VariantType.values()));
+            for (Object o : typeValues) {
+                String s = o.toString();
+                if (isNegated(s)) {
+                    VariantType vt = parseVariantType(removeNegation(s));
+                    types.remove(vt);
+                    types.removeAll(Variant.subTypes(vt));
+                } else {
+                    throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
+                }
+            }
+        } else {
+            types = new LinkedHashSet<>();
+            for (Object o : typeValues) {
+                VariantType vt;
+                if (o instanceof VariantType) {
+                    vt = (VariantType) o;
+                } else {
+                    vt = parseVariantType(o.toString());
+                }
+                types.add(vt);
+                types.addAll(Variant.subTypes(vt));
+            }
+        }
+        return new ArrayList<>(types);
     }
 
     private VariantType parseVariantType(String type) {
