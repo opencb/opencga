@@ -1,9 +1,8 @@
-package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import com.zettagenomics.opencga.enterprise.app.cli.main.options.AnalysisCVDBCommandOptions;
+import org.opencb.opencga.app.cli.main.options.AnalysisCVDBCommandOptions;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import java.util.HashMap;
@@ -38,7 +37,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Analysis - CVDB command line.
  *    PATH: /{apiVersion}/analysis/cvdb
  */
-public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
+public class AnalysisCVDBCommandExecutor extends OpencgaCommandExecutor {
 
     public String categoryName = "cvdb";
     public AnalysisCVDBCommandOptions analysisCVDBCommandOptions;
@@ -137,7 +136,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CvdbUpdateAclTaskParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().updateAcl(cvdbUpdateAclTaskParams, queryParams);
+        return openCGAClient.getCVDBClient().updateAcl(cvdbUpdateAclTaskParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregateAnalysis() throws Exception {
@@ -250,7 +249,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().aggregateAnalysis(queryParams);
+        return openCGAClient.getCVDBClient().aggregateAnalysis(queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> queryAnalysis() throws Exception {
@@ -366,7 +365,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().queryAnalysis(queryParams);
+        return openCGAClient.getCVDBClient().queryAnalysis(queryParams);
     }
 
     private RestResponse<FacetField> aggregateEvidence() throws Exception {
@@ -479,7 +478,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().aggregateEvidence(queryParams);
+        return openCGAClient.getCVDBClient().aggregateEvidence(queryParams);
     }
 
     private RestResponse<ClinicalVariantEvidence> queryEvidence() throws Exception {
@@ -595,7 +594,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().queryEvidence(queryParams);
+        return openCGAClient.getCVDBClient().queryEvidence(queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -636,7 +635,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CvdbIndexTaskParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().runIndex(cvdbIndexTaskParams, queryParams);
+        return openCGAClient.getCVDBClient().runIndex(cvdbIndexTaskParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregateInterpretation() throws Exception {
@@ -749,7 +748,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().aggregateInterpretation(queryParams);
+        return openCGAClient.getCVDBClient().aggregateInterpretation(queryParams);
     }
 
     private RestResponse<Interpretation> queryInterpretation() throws Exception {
@@ -865,7 +864,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().queryInterpretation(queryParams);
+        return openCGAClient.getCVDBClient().queryInterpretation(queryParams);
     }
 
     private RestResponse<FacetField> aggregateVariant() throws Exception {
@@ -978,7 +977,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().aggregateVariant(queryParams);
+        return openCGAClient.getCVDBClient().aggregateVariant(queryParams);
     }
 
     private RestResponse<ClinicalVariant> queryVariant() throws Exception {
@@ -1094,7 +1093,7 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().queryVariant(queryParams);
+        return openCGAClient.getCVDBClient().queryVariant(queryParams);
     }
 
     private RestResponse<ClinicalVariantSummaryStats> statsVariant() throws Exception {
@@ -1105,6 +1104,6 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
-        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().statsVariant(commandOptions.variantId, queryParams);
+        return openCGAClient.getCVDBClient().statsVariant(commandOptions.variantId, queryParams);
     }
 }

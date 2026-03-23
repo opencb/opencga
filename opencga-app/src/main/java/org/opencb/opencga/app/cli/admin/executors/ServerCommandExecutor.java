@@ -17,13 +17,9 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import com.zettagenomics.opencga.enterprise.server.EnterpriseRestServer;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.server.RestServer;
-import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GrpcServer;
 
 import javax.ws.rs.client.Client;
@@ -46,7 +42,7 @@ public class ServerCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing server command");
 
         String subCommandString = serverCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
@@ -69,12 +65,13 @@ public class ServerCommandExecutor extends CommandExecutor {
                 : serverCommandOptions.restServerCommandOptions.port;
 
         if (serverCommandOptions.restServerCommandOptions.start) {
-            RestServer server = new RestServer(Paths.get(this.appHome), port);
+            logger.info("Starting OpenCGA Enterprise REST server ...");
+            EnterpriseRestServer server = new EnterpriseRestServer(Paths.get(this.appHome), port);
             server.start();
             if (!serverCommandOptions.restServerCommandOptions.background) {
                 server.blockUntilShutdown();
             }
-            logger.info("Shutting down OpenCGA Storage REST server");
+            logger.info("Shutting down OpenCGA Enterprise REST server");
         }
 
         if (serverCommandOptions.restServerCommandOptions.stop) {
