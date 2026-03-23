@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.collect.Iterators;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.apache.commons.lang3.RandomUtils;
@@ -102,7 +101,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager metadataManager = variantStorageManager.getDBAdaptor().getMetadataManager();
 
         StudyMetadata studyMetadata = newStudyMetadata();
-        int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), smallInputUri.getPath());
 
         TaskMetadata task = metadataManager.addRunningTask(studyMetadata.getId(), MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(fileId));
         metadataManager.updateTask(studyMetadata.getId(), task.getId(), t -> {
@@ -130,7 +129,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager metadataManager = variantStorageManager.getDBAdaptor().getMetadataManager();
 
         StudyMetadata studyMetadata = newStudyMetadata();
-        int fileId = metadataManager.registerFile(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), smallInputUri.getPath());
         TaskMetadata task = metadataManager.addRunningTask(studyMetadata.getId(), MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(fileId));
         metadataManager.updateTask(studyMetadata.getId(), task.getId(), operation -> {
             operation.getStatus().clear();
@@ -764,17 +763,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager metadataManager2 = getVariantStorageEngine("2").getMetadataManager();
 
 
-        // Copy the sampleIds from the first load
-        StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
-        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata1);
-        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata1.getId(), s));
-        metadataManager1.fileMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateFileMetadata(newStudyMetadata1.getId(), s));
-
-        // Copy the sampleIds from the first load
-        StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
-        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata2);
-        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata2.getId(), s));
-        metadataManager1.fileMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateFileMetadata(newStudyMetadata2.getId(), s));
+        // Copy study metadata (with sampleIndexConfigurations), samples and files from the first load
+        StudyMetadata newStudyMetadata1 = copyStudyMetadata(metadataManager1, metadataManager2, studyMetadata1, true);
+        StudyMetadata newStudyMetadata2 = copyStudyMetadata(metadataManager1, metadataManager2, studyMetadata2, true);
 
         runDefaultETL(file1, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
@@ -860,15 +851,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         VariantStorageMetadataManager metadataManager1 = getVariantStorageEngine().getMetadataManager();
         VariantStorageMetadataManager metadataManager2 = getVariantStorageEngine("2").getMetadataManager();
 
-        // Copy the sampleIds from the first load
-        StudyMetadata newStudyMetadata1 = new StudyMetadata(1, "s1");
-        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata1);
-        metadataManager1.sampleMetadataIterator(studyMetadata1.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata1.getId(), s));
-
-        // Copy the sampleIds from the first load
-        StudyMetadata newStudyMetadata2 = new StudyMetadata(2, "s2");
-        metadataManager2.unsecureUpdateStudyMetadata(newStudyMetadata2);
-        metadataManager1.sampleMetadataIterator(studyMetadata2.getId()).forEachRemaining(s -> metadataManager2.unsecureUpdateSampleMetadata(newStudyMetadata2.getId(), s));
+        // Copy study metadata (with sampleIndexConfigurations) and samples from the first load
+        StudyMetadata newStudyMetadata1 = copyStudyMetadata(metadataManager1, metadataManager2, studyMetadata1, false);
+        StudyMetadata newStudyMetadata2 = copyStudyMetadata(metadataManager1, metadataManager2, studyMetadata2, false);
 
         runDefaultETL(file3, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
@@ -943,6 +928,29 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
         MongoDBVariantStoragePipeline.checkCanLoadSampleBatch(variantStorageEngine.getMetadataManager(), studyMetadata, 5, false);
+    }
+
+    /**
+     * Copy study metadata from one metadata manager to another, resetting index status on samples and files.
+     * Copies sampleIndexConfigurations from the source study so that the target study is properly initialized.
+     */
+    private StudyMetadata copyStudyMetadata(VariantStorageMetadataManager source, VariantStorageMetadataManager target,
+                                            StudyMetadata studyMetadata, boolean copyFiles) {
+        StudyMetadata sourceStudy = source.getStudyMetadata(studyMetadata.getId());
+        StudyMetadata newStudy = new StudyMetadata(sourceStudy.getId(), sourceStudy.getName());
+        newStudy.setSampleIndexConfigurations(sourceStudy.getSampleIndexConfigurations());
+        target.unsecureUpdateStudyMetadata(newStudy);
+        source.sampleMetadataIterator(studyMetadata.getId()).forEachRemaining(s -> {
+            s.setIndexStatus(TaskMetadata.Status.NONE);
+            target.unsecureUpdateSampleMetadata(newStudy.getId(), s);
+        });
+        if (copyFiles) {
+            source.fileMetadataIterator(studyMetadata.getId()).forEachRemaining(f -> {
+                f.setIndexStatus(TaskMetadata.Status.NONE);
+                target.unsecureUpdateFileMetadata(newStudy.getId(), f);
+            });
+        }
+        return newStudy;
     }
 
     public StudyMetadata createStudyMetadata() throws StorageEngineException {
