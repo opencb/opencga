@@ -1,6 +1,6 @@
 package org.opencb.opencga.server;
 
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
+import org.opencb.opencga.clinical.cvdb.CvdbSolrEngine;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

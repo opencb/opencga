@@ -1,10 +1,10 @@
 package org.opencb.opencga.server.rest;
 
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
+import org.opencb.opencga.clinical.cvdb.CvdbSolrEngine;
+import org.opencb.opencga.clinical.cvdb.tasks.CvdbIndexTask;
+import org.opencb.opencga.clinical.cvdb.tasks.CvdbUpdateAclTask;
+import org.opencb.opencga.clinical.cvdb.tasks.params.CvdbIndexTaskParams;
+import org.opencb.opencga.clinical.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import org.opencb.opencga.server.CvdbWSUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.*;
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParser.*;
 
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)

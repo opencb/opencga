@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
+import org.opencb.opencga.clinical.cvdb.CvdbSolrEngine;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -80,8 +80,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_DESCR;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_DESCR;
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
