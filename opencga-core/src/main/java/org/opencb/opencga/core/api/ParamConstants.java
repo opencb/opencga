@@ -1663,4 +1663,22 @@ public class ParamConstants {
     public static final String OPENCGA_PRIMARY_INTERPRETATION = "OPENCGA_PRIMARY_INTERPRETATION";
     public static final String OPENCGA_VARIANT_ID = "OPENCGA_VARIANT_ID";
     public static final String OPENCGA_PRIMARY_FINDING = "OPENCGA_PRIMARY_FINDING";
+
+    // Federation
+    public static final String FEDERATION_CREATE_DESCRIPTION = "JSON containing the new Federation object";
+    public static final String FEDERATION_RESET_DESCRIPTION = "Federation server id to reset";
+    public static final String FEDERATION_UPDATE_SERVER_DESCRIPTION = "JSON containing the Federation server parameters to be updated";
+    public static final String FEDERATION_SERVER_ID_DESCRIPTION = "Federation server id";
+    public static final String FEDERATION_CONNECT_DESCRIPTION = "JSON containing the Federation server configuration";
+    public static final String FEDERATION_CLIENT_ID_SYNC = "Federation client id to be synchronized";
+    public static final String FEDERATION_UPDATE_CLIENT_DESCRIPTION = "JSON containing the Federation client parameters to be updated";
+    public static final String FEDERATION_SHARE_ACTION_DESCRIPTION = "Action to be performed: ADD access or REMOVE access.";
+    public static final String FEDERATION_SHARE_USERS_DESCRIPTION = "JSON containing the list of users to which this action will be applied.";
+    public static final String FEDERATION_CLIENT_ID_DESCRIPTION = "Federation client id";
+    public static final String FEDERATION_REDIRECT_URL_DESCRIPTION = "Original URL";
+    public static final String FEDERATION_REDIRECT_BODY_DESCRIPTION = "JSON containing the POST object";
+
+    // SSO
+    public static final String SSO_CALLBACK_URL_DESCRIPTION = "Callback URL";
+    public static final String SSO_LOGOUT_DESCRIPTION = "Successfully logout from CAS service";
 }

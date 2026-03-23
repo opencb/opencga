@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.server.sso;
+package org.opencb.opencga.server.sso;
 
 import org.jasig.cas.client.Protocol;
 

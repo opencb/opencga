@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.server.sso;
+package org.opencb.opencga.server.sso;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.Protocol;
@@ -81,7 +81,8 @@ public class OpencgaAuthenticationFilter extends AbstractCasFilter {
                 setGatewayStorage(ReflectUtils.newInstance(gatewayStorageClass));
             }
 
-            final Class<? extends AuthenticationRedirectStrategy> authenticationRedirectStrategyClass = getClass(ConfigurationKeys.AUTHENTICATION_REDIRECT_STRATEGY_CLASS);
+            final Class<? extends AuthenticationRedirectStrategy> authenticationRedirectStrategyClass =
+                    getClass(ConfigurationKeys.AUTHENTICATION_REDIRECT_STRATEGY_CLASS);
 
             if (authenticationRedirectStrategyClass != null) {
                 this.authenticationRedirectStrategy = ReflectUtils.newInstance(authenticationRedirectStrategyClass);
