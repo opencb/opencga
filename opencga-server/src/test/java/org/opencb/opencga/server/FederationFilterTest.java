@@ -1,4 +1,4 @@
-package com.zettagenomics.opencga.enterprise.server;
+package org.opencb.opencga.server;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -8,12 +8,12 @@ import org.mockito.Mockito;
 import javax.servlet.http.HttpServletRequest;
 import java.nio.file.Paths;
 
-public class FederationFilterTest  {
+public class FederationFilterTest {
 
     @Ignore
     @Test
     public void runServerTest() throws Exception {
-        EnterpriseRestServer server = new EnterpriseRestServer(Paths.get("/opt/opencga"), 9090);
+        RestServer server = new RestServer(Paths.get("/opt/opencga"), 9090);
         server.start();
         server.blockUntilShutdown();
     }

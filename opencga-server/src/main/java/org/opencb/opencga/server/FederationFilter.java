@@ -1,9 +1,9 @@
-package com.zettagenomics.opencga.enterprise.server;
+package org.opencb.opencga.server;
 
-import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.server.ParamException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.FederationUtils;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,10 +85,6 @@ public class FederationFilter implements Filter {
         if (StringUtils.isEmpty(token)) {
             return false;
         }
-//        if (request.getRequestURI().endsWith("federations/redirect")) {
-//            // When the federation is made to the same server, we need to avoid an infinite loop
-//            return false;
-//        }
 
         JwtPayload jwtPayload;
         try {
@@ -151,4 +147,3 @@ public class FederationFilter implements Filter {
     }
 
 }
-
