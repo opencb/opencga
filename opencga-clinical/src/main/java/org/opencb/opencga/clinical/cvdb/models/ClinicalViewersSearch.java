@@ -19,7 +19,6 @@ package org.opencb.opencga.clinical.cvdb.models;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class ClinicalViewersSearch {

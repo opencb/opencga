@@ -29,8 +29,16 @@ public class SearchConverter<M, N> {
     protected ObjectMapper mapper;
     protected ObjectReader mapReader;
 
-    public static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-    public static SimpleDateFormat solrDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+    private static SimpleDateFormat solrDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+    public static SimpleDateFormat getSimpleDateFormat() {
+        return simpleDateFormat;
+    }
+
+    public static SimpleDateFormat getSolrDateFormat() {
+        return solrDateFormat;
+    }
 
     public SearchConverter() {
         this.mapper = JacksonUtils.getDefaultObjectMapper();

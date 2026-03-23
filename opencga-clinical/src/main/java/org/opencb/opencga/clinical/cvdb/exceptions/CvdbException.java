@@ -2,7 +2,7 @@ package org.opencb.opencga.clinical.cvdb.exceptions;
 
 public class CvdbException extends Exception {
 
-    public final static String NO_RESULTS_FOUND = "No results found matching the query";
+    public static final String NO_RESULTS_FOUND = "No results found matching the query";
 
     public CvdbException(String message) {
         super(message);

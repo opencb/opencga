@@ -17,7 +17,6 @@
 package org.opencb.opencga.clinical.cvdb;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.api.ParamConstants.PROJECT_PARAM;
 
 public class CollectionNameGenerator {
 

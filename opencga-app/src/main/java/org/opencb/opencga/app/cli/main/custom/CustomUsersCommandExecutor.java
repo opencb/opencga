@@ -16,7 +16,7 @@
 package org.opencb.opencga.app.cli.main.custom;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.zettagenomics.opencga.enterprise.app.cli.main.options.UsersCommandOptions;
+import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;

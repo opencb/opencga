@@ -73,11 +73,11 @@ public class ClinicalInterpretationSearch {
     @Field("methodCommit")
     private String methodCommit;
 
-	// Method software/dependencies are stores: name -- version
+    // Method software/dependencies are stores: name -- version
     @Field("methodDependencies")
     private List<String> methodDependencies;
 
-	// Comments are stores: author -- message -- tag1:tag2:.. -- date -- -->
+    // Comments are stores: author -- message -- tag1:tag2:.. -- date -- -->
     @Field("comments")
     private List<String> comments;
 

@@ -53,7 +53,8 @@ public class ConverterUtils {
         return comment;
     }
 
-    public static org.opencb.opencga.core.models.clinical.Interpretation clone(org.opencb.opencga.core.models.clinical.Interpretation input) throws IOException, ClassNotFoundException {
+    public static org.opencb.opencga.core.models.clinical.Interpretation clone(
+            org.opencb.opencga.core.models.clinical.Interpretation input) throws IOException, ClassNotFoundException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         oos.writeObject(input);

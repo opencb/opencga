@@ -47,11 +47,11 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     @Field("primaryInterpretation")
     private boolean primaryInterpretation;
 
-	// Comments are stores: author -- message -- tag1:tag2:.. -- date
+    // Comments are stores: author -- message -- tag1:tag2:.. -- date
     @Field("comments")
     private List<String> comments;
 
-	// Filters are stored in two dynamic fields: one for string values, the other one for numeric ones
+    // Filters are stored in two dynamic fields: one for string values, the other one for numeric ones
     @Field("annotations")
     private Map<String, String> annotations;
 

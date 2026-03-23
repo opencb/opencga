@@ -84,6 +84,26 @@ class User(_ParentRestClient):
 
         return self._get(category='users', resource='search', **options)
 
+    def login_sso(self, **options):
+        """
+        Single Sign On.
+        PATH: /{apiVersion}/users/sso/login
+
+        :param str url: Callback URL.
+        """
+
+        return self._get(category='users', resource='login', subcategory='sso', **options)
+
+    def logout_sso(self, **options):
+        """
+        Logout from Single Sign On.
+        PATH: /{apiVersion}/users/sso/logout
+
+        :param str url: Callback URL.
+        """
+
+        return self._get(category='users', resource='logout', subcategory='sso', **options)
+
     def info(self, users, **options):
         """
         Return the user information including its projects and studies.

@@ -29,7 +29,7 @@ import java.util.*;
 public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
 
     // Map from clinical analysis fields (keys) to Solr indexed fields (values)
-    public static Map<String, String> caToCasFieldMap;
+    private static Map<String, String> caToCasFieldMap;
 
     public ClinicalAnalysisQueryParser(String collectionPrefix, SearchIndexMetadata searchIndexMetadata) {
         super(collectionPrefix, searchIndexMetadata);

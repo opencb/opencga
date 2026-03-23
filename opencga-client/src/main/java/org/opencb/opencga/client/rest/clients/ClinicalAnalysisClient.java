@@ -926,6 +926,8 @@ public class ClinicalAnalysisClient extends ParentClient {
      *            secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index,
      *            some data might be missing or be partial.
      *       trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
+     *       ciStatusId: Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+     *            CLOSED.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

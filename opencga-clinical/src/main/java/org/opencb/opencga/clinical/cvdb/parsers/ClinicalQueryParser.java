@@ -17,6 +17,7 @@
 package org.opencb.opencga.clinical.cvdb.parsers;
 
 import org.opencb.opencga.clinical.cvdb.CollectionNameGenerator;
+import org.opencb.opencga.clinical.cvdb.converters.SearchConverter;
 import org.opencb.opencga.clinical.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -38,8 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.opencb.opencga.clinical.cvdb.converters.SearchConverter.simpleDateFormat;
-import static org.opencb.opencga.clinical.cvdb.converters.SearchConverter.solrDateFormat;
+
+
 import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.*;
 
 public class ClinicalQueryParser {
@@ -423,20 +424,21 @@ public class ClinicalQueryParser {
                         if (StringUtils.isEmpty(split[0])) {
                             tmp.append("*");
                         } else {
-                            tmp.append(solrDateFormat.format(simpleDateFormat.parse(split[0])));
+                            tmp.append(SearchConverter.getSolrDateFormat().format(SearchConverter.getSimpleDateFormat().parse(split[0])));
                         }
                         tmp.append(" TO ");
                         if (StringUtils.isEmpty(split[1])) {
                             tmp.append("*");
                         } else {
-                            tmp.append(solrDateFormat.format(simpleDateFormat.parse(split[1])));
+                            tmp.append(SearchConverter.getSolrDateFormat().format(SearchConverter.getSimpleDateFormat().parse(split[1])));
                         }
                         tmp.append("]");
                     } else {
                         // Single date
-                        tmp.append(fieldName).append(": \"").append(solrDateFormat.format(simpleDateFormat.parse(value))).append("\"");
-//                        tmp.append(fieldName).append(": [").append(solrDateFormat.format(simpleDateFormat.parse(value))).append(" TO ")
-//                                .append(solrDateFormat.format(simpleDateFormat.parse(value))).append("]");
+                        tmp.append(fieldName).append(": \"")
+                                .append(SearchConverter.getSolrDateFormat()
+                                        .format(SearchConverter.getSimpleDateFormat().parse(value)))
+                                .append("\"");
                     }
                     sb.append(tmp);
                 } catch (ParseException e) {

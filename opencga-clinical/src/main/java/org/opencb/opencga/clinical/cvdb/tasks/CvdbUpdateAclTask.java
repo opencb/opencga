@@ -36,8 +36,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 @Tool(id = CvdbUpdateAclTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbUpdateAclTask.DESCRIPTION)
 public class CvdbUpdateAclTask extends OpenCgaTool {
     public static final String ID = "cvdb-acl-update";
-    public static final String DESCRIPTION = "Update the set of permissions granted in CVDB for the OpenCGA users that have access" +
-            " to the clinical analyses.";
+    public static final String DESCRIPTION = "Update the set of permissions granted in CVDB for the OpenCGA users that have access"
+            + " to the clinical analyses.";
 
     public static final String NUM_UPDATED_ATTR = "Num. clinical analyses updated";
     public static final String NUM_NOT_UPDATED_ATTR = "Num. clinical analyses not updated";

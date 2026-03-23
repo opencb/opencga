@@ -80,6 +80,12 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
+            case "sso-login":
+                queryResponse = loginSso();
+                break;
+            case "sso-logout":
+                queryResponse = logoutSso();
+                break;
             case "info":
                 queryResponse = info();
                 break;
@@ -207,6 +213,24 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
         return openCGAClient.getUserClient().search(queryParams);
+    }
+
+    private RestResponse<AuthenticationResponse> loginSso() throws Exception {
+        logger.debug("Executing loginSso in Users command line");
+
+        UsersCommandOptions.LoginSsoCommandOptions commandOptions = usersCommandOptions.loginSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor customUsersCommandExecutor = new org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customUsersCommandExecutor.loginSso(commandOptions);
+    }
+
+    private RestResponse<AuthenticationResponse> logoutSso() throws Exception {
+        logger.debug("Executing logoutSso in Users command line");
+
+        UsersCommandOptions.LogoutSsoCommandOptions commandOptions = usersCommandOptions.logoutSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor customUsersCommandExecutor = new org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customUsersCommandExecutor.logoutSso(commandOptions);
     }
 
     private RestResponse<User> info() throws Exception {

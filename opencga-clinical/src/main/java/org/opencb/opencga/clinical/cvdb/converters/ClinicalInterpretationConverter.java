@@ -48,7 +48,8 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
         this.interpretationReader = mapper.readerFor(Interpretation.class);
     }
 
-    public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary, String studyId) throws CvdbException {
+    public ClinicalInterpretationSearch toInterpretationSearch(Interpretation interpretation, boolean primary,
+            String studyId) throws CvdbException {
         return toInterpretationSearch(Collections.singletonList(interpretation), primary, studyId).get(0);
     }
 
@@ -89,8 +90,9 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
                         .setAnalystAssignedBy(analyst.getAssignedBy());
                 if (StringUtils.isNotEmpty(analyst.getDate())) {
                     try {
-                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(analyst.getDate()));
-                        cis.setAnalystDate(solrDateFormat.parse(solrDate));
+                        String solrDate = SearchConverter.getSolrDateFormat()
+                                .format(SearchConverter.getSimpleDateFormat().parse(analyst.getDate()));
+                        cis.setAnalystDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                     } catch (ParseException e) {
                         logger.warn("Impossible to process interpretation analyst date {}: {}", analyst.getDate(), e.getMessage());
                     }
@@ -128,8 +130,9 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
                 }
                 if (StringUtils.isNotEmpty(status.getDate())) {
                     try {
-                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(status.getDate()));
-                        cis.setStatusDate(solrDateFormat.parse(solrDate));
+                        String solrDate = SearchConverter.getSolrDateFormat()
+                                .format(SearchConverter.getSimpleDateFormat().parse(status.getDate()));
+                        cis.setStatusDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                     } catch (ParseException e) {
                         logger.warn("Impossible to process interpretation status date {}: {}", status.getDate(), e.getMessage());
                     }
@@ -138,17 +141,20 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
 
             if (StringUtils.isNotEmpty(interpretation.getCreationDate())) {
                 try {
-                    String solrDate = solrDateFormat.format(simpleDateFormat.parse(interpretation.getCreationDate()));
-                    cis.setCreationDate(solrDateFormat.parse(solrDate));
+                    String solrDate = SearchConverter.getSolrDateFormat()
+                            .format(SearchConverter.getSimpleDateFormat().parse(interpretation.getCreationDate()));
+                    cis.setCreationDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                 } catch (ParseException e) {
-                    logger.warn("Impossible to process interpretation creation date {}: {}", interpretation.getCreationDate(), e.getMessage());
+                    logger.warn("Impossible to process interpretation creation date {}: {}",
+                            interpretation.getCreationDate(), e.getMessage());
                 }
             }
 
             if (StringUtils.isNotEmpty(interpretation.getModificationDate())) {
                 try {
-                    String solrDate = solrDateFormat.format(simpleDateFormat.parse(interpretation.getModificationDate()));
-                    cis.setModificationDate(solrDateFormat.parse(solrDate));
+                    String solrDate = SearchConverter.getSolrDateFormat()
+                            .format(SearchConverter.getSimpleDateFormat().parse(interpretation.getModificationDate()));
+                    cis.setModificationDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                 } catch (ParseException e) {
                     logger.warn("Impossible to process interpretation modification date {}: {}", interpretation.getModificationDate(),
                             e.getMessage());
@@ -237,7 +243,7 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
                     .setEmail(cis.getAnalystEmail())
                     .setAssignedBy(cis.getAnalystAssignedBy());
             if (cis.getAnalystDate() != null) {
-                analyst.setDate(simpleDateFormat.format(cis.getAnalystDate()));
+                analyst.setDate(SearchConverter.getSimpleDateFormat().format(cis.getAnalystDate()));
             }
             ci.setAnalyst(analyst);
 
@@ -279,16 +285,16 @@ public class ClinicalInterpretationConverter extends SearchConverter<Interpretat
                 status.setType(ClinicalStatusValue.ClinicalStatusType.valueOf(cis.getStatusType()));
             }
             if (cis.getStatusDate() != null) {
-                status.setDate(simpleDateFormat.format(cis.getStatusDate()));
+                status.setDate(SearchConverter.getSimpleDateFormat().format(cis.getStatusDate()));
             }
             ci.setStatus(status);
 
             if (cis.getCreationDate() != null) {
-                ci.setCreationDate(simpleDateFormat.format(cis.getCreationDate()));
+                ci.setCreationDate(SearchConverter.getSimpleDateFormat().format(cis.getCreationDate()));
             }
 
             if (cis.getModificationDate() != null) {
-                ci.setModificationDate(simpleDateFormat.format(cis.getModificationDate()));
+                ci.setModificationDate(SearchConverter.getSimpleDateFormat().format(cis.getModificationDate()));
             }
 
             ci.setVersion(cis.getVersion());

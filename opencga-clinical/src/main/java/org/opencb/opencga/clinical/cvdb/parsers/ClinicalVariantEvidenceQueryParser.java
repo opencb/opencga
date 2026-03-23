@@ -28,7 +28,7 @@ import java.util.*;
 public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
 
     // Map from clinical variant fields (keys) to Solr indexed fields (values)
-    public static Map<String, List<String>> cveToCvesFieldMap;
+    private static Map<String, List<String>> cveToCvesFieldMap;
 
     public ClinicalVariantEvidenceQueryParser(String collectionPrefix, SearchIndexMetadata indexMetadata) {
         super(collectionPrefix, indexMetadata);

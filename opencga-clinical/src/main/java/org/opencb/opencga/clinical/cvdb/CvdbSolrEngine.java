@@ -494,7 +494,8 @@ public class CvdbSolrEngine {
             checkQuery(query, queryOptions, token);
             if (!isAvailableCvdbDataStore(query.getString(PROJECT_PARAM), token)) {
                 // Return empty iterator
-                return new ClinicalIterator<>(null, null, null, queryOptions, ClinicalAnalysisSearch.class, ClinicalAnalysisConverter.class);
+                return new ClinicalIterator<>(null, null, null, queryOptions,
+                        ClinicalAnalysisSearch.class, ClinicalAnalysisConverter.class);
             }
 
             // Parse query
@@ -502,8 +503,8 @@ public class CvdbSolrEngine {
 
             // Execute query
             String collectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(query.getString(PROJECT_PARAM), token);
-            return new ClinicalIterator<>(solrManager.getSolrClient(), collectionName, solrQuery, queryOptions, ClinicalAnalysisSearch.class,
-                    ClinicalAnalysisConverter.class);
+            return new ClinicalIterator<>(solrManager.getSolrClient(), collectionName, solrQuery,
+                    queryOptions, ClinicalAnalysisSearch.class, ClinicalAnalysisConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                  | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
@@ -937,7 +938,8 @@ public class CvdbSolrEngine {
         }
 
         if (variantIds.size() > CVDB_DEFAULT_LIMIT) {
-            throw new CvdbException("The maximum number of variants (" + CVDB_DEFAULT_LIMIT + ") has been exceeded (" + variantIds.size() + ")");
+            throw new CvdbException("The maximum number of variants (" + CVDB_DEFAULT_LIMIT
+                    + ") has been exceeded (" + variantIds.size() + ")");
         }
 
         String order = CVDB_STATS_DEFAULT_ORDER;
@@ -1048,8 +1050,8 @@ public class CvdbSolrEngine {
                         facetMap.put("confidenceValue", variantStats.getVariant().getConfidences());
                         performFacet(query, facetMap, "variant", variantStats, order, limit, token);
 
-                        // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions, panel IDs, MoIs, ACMGs, and for review
-                        // tiers, ACMGs and clinical significances
+                        // Clinical variant evidence stats: gene names, transcript IDs, SO term accessions,
+                        // panel IDs, MoIs, ACMGs, and for review tiers, ACMGs and clinical significances
                         facetMap.clear();
                         facetMap.put("geneName", variantStats.getEvidence().getGenes());
                         facetMap.put("transcriptId", variantStats.getEvidence().getTranscripts());
@@ -1223,7 +1225,7 @@ public class CvdbSolrEngine {
     }
 
     private void index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyFqn,
-                       String collectionPrefix ) throws CvdbException {
+                       String collectionPrefix) throws CvdbException {
         SolrClient solrClient = solrManager.getSolrClient();
 
         try {

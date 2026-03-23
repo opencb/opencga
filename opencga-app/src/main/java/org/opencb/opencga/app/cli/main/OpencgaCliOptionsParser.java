@@ -30,11 +30,13 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final UserToolsCommandOptions userToolsCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
+    private final AnalysisCVDBCommandOptions analysisCVDBCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
     private final OrganizationsCommandOptions organizationsCommandOptions;
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
+    private final FederationsCommandOptions federationsCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
 
@@ -266,6 +268,8 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("search", usersCommandOptions.searchCommandOptions);
+        usersSubCommands.addCommand("sso-login", usersCommandOptions.loginSsoCommandOptions);
+        usersSubCommands.addCommand("sso-logout", usersCommandOptions.logoutSsoCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
@@ -289,6 +293,21 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
         samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+
+        analysisCVDBCommandOptions = new AnalysisCVDBCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cvdb", analysisCVDBCommandOptions);
+        JCommander analysisCVDBSubCommands = jCommander.getCommands().get("cvdb");
+        analysisCVDBSubCommands.addCommand("acl-update", analysisCVDBCommandOptions.updateAclCommandOptions);
+        analysisCVDBSubCommands.addCommand("analysis-aggregate", analysisCVDBCommandOptions.aggregateAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("analysis-query", analysisCVDBCommandOptions.queryAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-aggregate", analysisCVDBCommandOptions.aggregateEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-query", analysisCVDBCommandOptions.queryEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("index-run", analysisCVDBCommandOptions.runIndexCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-aggregate", analysisCVDBCommandOptions.aggregateInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-query", analysisCVDBCommandOptions.queryInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-aggregate", analysisCVDBCommandOptions.aggregateVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-query", analysisCVDBCommandOptions.queryVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-stats", analysisCVDBCommandOptions.statsVariantCommandOptions);
 
         analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
@@ -393,6 +412,20 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
         filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
         filesSubCommands.addCommand("tree", filesCommandOptions.treeCommandOptions);
+
+        federationsCommandOptions = new FederationsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("federations", federationsCommandOptions);
+        JCommander federationsSubCommands = jCommander.getCommands().get("federations");
+        federationsSubCommands.addCommand("client-connect", federationsCommandOptions.connectClientCommandOptions);
+        federationsSubCommands.addCommand("client-study-users-list", federationsCommandOptions.clientStudyUsersListCommandOptions);
+        federationsSubCommands.addCommand("client-study-users-update", federationsCommandOptions.clientStudyUsersUpdateCommandOptions);
+        federationsSubCommands.addCommand("client-delete", federationsCommandOptions.deleteClientCommandOptions);
+        federationsSubCommands.addCommand("client-synchronize", federationsCommandOptions.synchronizeClientCommandOptions);
+        federationsSubCommands.addCommand("client-update", federationsCommandOptions.updateClientCommandOptions);
+        federationsSubCommands.addCommand("server-create", federationsCommandOptions.createServerCommandOptions);
+        federationsSubCommands.addCommand("server-delete", federationsCommandOptions.deleteServerCommandOptions);
+        federationsSubCommands.addCommand("server-reset", federationsCommandOptions.resetServerCommandOptions);
+        federationsSubCommands.addCommand("server-update", federationsCommandOptions.updateServerCommandOptions);
 
         operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("operations", operationsVariantStorageCommandOptions);
@@ -504,6 +537,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     }
     
     
+    public AnalysisCVDBCommandOptions getAnalysisCVDBCommandOptions() {
+        return analysisCVDBCommandOptions;
+    }
+    
+    
     public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
         return analysisAlignmentCommandOptions;
     }
@@ -526,6 +564,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public FilesCommandOptions getFilesCommandOptions() {
         return filesCommandOptions;
+    }
+    
+    
+    public FederationsCommandOptions getFederationsCommandOptions() {
+        return federationsCommandOptions;
     }
     
     

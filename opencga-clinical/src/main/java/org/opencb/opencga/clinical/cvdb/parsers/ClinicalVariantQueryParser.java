@@ -33,7 +33,7 @@ import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.CV_TYP
 public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
     // Map from clinical variant fields (keys) to Solr indexed fields (values)
-    public static Map<String, List<String>> cvToCvsFieldMap;
+    private static Map<String, List<String>> cvToCvsFieldMap;
 
     private SolrQueryParser solrQueryParser;
 

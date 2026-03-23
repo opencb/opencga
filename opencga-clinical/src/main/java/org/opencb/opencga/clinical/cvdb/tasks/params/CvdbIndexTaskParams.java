@@ -1,8 +1,6 @@
 package org.opencb.opencga.clinical.cvdb.tasks.params;
 
-import org.opencb.opencga.clinical.cvdb.tasks.CvdbIndexTask;
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;

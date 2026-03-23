@@ -1,4 +1,9 @@
 # ##############################################################################
+## FederationClient
+setGeneric("federationClient", function(OpencgaR, id, endpointName, params=NULL, ...)
+    standardGeneric("federationClient"))
+
+# ##############################################################################
 ## OrganizationClient
 setGeneric("organizationClient", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...)
     standardGeneric("organizationClient"))
@@ -77,6 +82,11 @@ setGeneric("variantClient", function(OpencgaR, endpointName, params=NULL, ...)
 ## ClinicalClient
 setGeneric("clinicalClient", function(OpencgaR, annotationSet, clinicalAnalyses, clinicalAnalysis, interpretation, interpretations, members, endpointName, params=NULL, ...)
     standardGeneric("clinicalClient"))
+
+# ##############################################################################
+## CVDBClient
+setGeneric("cvdbClient", function(OpencgaR, variantId, endpointName, params=NULL, ...)
+    standardGeneric("cvdbClient"))
 
 # ##############################################################################
 ## OperationClient

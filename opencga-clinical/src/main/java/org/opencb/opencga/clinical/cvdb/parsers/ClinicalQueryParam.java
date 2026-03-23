@@ -360,7 +360,7 @@ public final class ClinicalQueryParam implements QueryParam {
             CV_ANNOT_CONSEQUENCE_TYPE_DESCR);
 
     public static final String CV_ANNOT_TRANSCRIPT_FLAG_NAME = "cvTranscriptFlag";
-    public static final String CV_ANNOT_TRANSCRIPT_FLAG_DESCR = "Variant transcript flag (or list of flags" + OPT_LIST +", e.g."
+    public static final String CV_ANNOT_TRANSCRIPT_FLAG_DESCR = "Variant transcript flag (or list of flags" + OPT_LIST + ", e.g."
             + " canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500";
     public static final ClinicalQueryParam CV_ANNOT_TRANSCRIPT_FLAG = new ClinicalQueryParam(CV_ANNOT_TRANSCRIPT_FLAG_NAME, TEXT_ARRAY,
             CV_ANNOT_TRANSCRIPT_FLAG_DESCR);
@@ -466,8 +466,8 @@ public final class ClinicalQueryParam implements QueryParam {
             CV_ANNOT_GENE_TRAIT_ID_DESCR);
 
     public static final String CV_ANNOT_TRAIT_NAME = "cvTrait";
-    public static final String CV_ANNOT_TRAIT_DESCR = "Variant Trait (or list of traits" + OPT_LIST + ", based on ClinVar, HPO, COSMIC, i.e.:"
-            + " IDs, histologies, descriptions,...";
+    public static final String CV_ANNOT_TRAIT_DESCR = "Variant Trait (or list of traits" + OPT_LIST
+            + ", based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     public static final ClinicalQueryParam CV_ANNOT_TRAIT = new ClinicalQueryParam(CV_ANNOT_TRAIT_NAME, TEXT_ARRAY, CV_ANNOT_TRAIT_DESCR);
 
     public static final String CV_ANNOT_PROTEIN_KEYWORD_NAME = "cvProteinKeyword";

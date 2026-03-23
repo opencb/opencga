@@ -17,7 +17,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
-import com.zettagenomics.opencga.enterprise.server.EnterpriseRestServer;
+import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.server.grpc.GrpcServer;
@@ -66,7 +66,7 @@ public class ServerCommandExecutor extends CommandExecutor {
 
         if (serverCommandOptions.restServerCommandOptions.start) {
             logger.info("Starting OpenCGA Enterprise REST server ...");
-            EnterpriseRestServer server = new EnterpriseRestServer(Paths.get(this.appHome), port);
+            RestServer server = new RestServer(Paths.get(this.appHome), port);
             server.start();
             if (!serverCommandOptions.restServerCommandOptions.background) {
                 server.blockUntilShutdown();

@@ -9,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
@@ -81,8 +80,9 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                         .setDiscussionText(discussion.getText());
                 if (StringUtils.isNotEmpty(discussion.getDate())) {
                     try {
-                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(discussion.getDate()));
-                        cvs.setDiscussionDate(solrDateFormat.parse(solrDate));
+                        String solrDate = SearchConverter.getSolrDateFormat()
+                                .format(SearchConverter.getSimpleDateFormat().parse(discussion.getDate()));
+                        cvs.setDiscussionDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                     } catch (ParseException e) {
                         logger.warn("Impossible to process clinical variant discussion date {}: {}", discussion.getDate(), e.getMessage());
                     }
@@ -95,8 +95,9 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                 cvs.setConfidenceAuthor(confidence.getAuthor());
                 if (StringUtils.isNotEmpty(confidence.getDate())) {
                     try {
-                        String solrDate = solrDateFormat.format(simpleDateFormat.parse(confidence.getDate()));
-                        cvs.setConfidenceDate(solrDateFormat.parse(solrDate));
+                        String solrDate = SearchConverter.getSolrDateFormat()
+                                .format(SearchConverter.getSimpleDateFormat().parse(confidence.getDate()));
+                        cvs.setConfidenceDate(SearchConverter.getSolrDateFormat().parse(solrDate));
                     } catch (ParseException e) {
                         logger.warn("Impossible to process clinical variant confidence date {}: {}", confidence.getDate(), e.getMessage());
                     }
@@ -158,7 +159,7 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                         confidence.setAuthor(cvs.getConfidenceAuthor());
                     }
                     if (cvs.getConfidenceDate() != null) {
-                        confidence.setAuthor(simpleDateFormat.format(cvs.getConfidenceDate()));
+                        confidence.setAuthor(SearchConverter.getSimpleDateFormat().format(cvs.getConfidenceDate()));
                     }
                     cv.setConfidence(confidence);
                 }

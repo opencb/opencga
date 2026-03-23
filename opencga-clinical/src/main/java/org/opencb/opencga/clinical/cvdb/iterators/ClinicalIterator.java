@@ -31,7 +31,7 @@ import java.util.NoSuchElementException;
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends ClinicalIncludeHandler implements Iterator<M>, AutoCloseable {
+public class ClinicalIterator<M, N, C extends SearchConverter<M, N>> extends ClinicalIncludeHandler implements Iterator<M>, AutoCloseable {
 
     private ClinicalSolrIterator<N> nativeSolrIterator;
     private C converter;
