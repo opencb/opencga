@@ -90,6 +90,13 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
         QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
 
+        ANALYSIS("analysis", TEXT_ARRAY, ""),
+        ANALYSIS_PHARMACOGENOMICS("analysis.pharmacogenomics", TEXT_ARRAY, ""),
+        ANALYSIS_PHARMACOGENOMICS_SAMPLE_ID("analysis.pharmacogenomics.sampleId", TEXT, ""),
+        ANALYSIS_PHARMACOGENOMICS_SOURCE("analysis.pharmacogenomics.source", TEXT, ""),
+        ANALYSIS_PHARMACOGENOMICS_SUMMARY_ACTIONABLE_GENE("analysis.pharmacogenomics.summary.actionableResults.gene", TEXT, ""),
+        ANALYSIS_PHARMACOGENOMICS_SUMMARY_ACTIONABLE_DRUG("analysis.pharmacogenomics.summary.actionableResults.drugs.drugName", TEXT, ""),
+
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

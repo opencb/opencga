@@ -59,6 +59,7 @@ public class IndividualUpdateParams {
     private List<Disorder> disorders;
     private StatusParams status;
     private IndividualQualityControl qualityControl;
+    private IndividualAnalysis analysis;
     private Map<String, Object> attributes;
 
     public IndividualUpdateParams() {
@@ -328,6 +329,15 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setQualityControl(IndividualQualityControl qualityControl) {
         this.qualityControl = qualityControl;
+        return this;
+    }
+
+    public IndividualAnalysis getAnalysis() {
+        return analysis;
+    }
+
+    public IndividualUpdateParams setAnalysis(IndividualAnalysis analysis) {
+        this.analysis = analysis;
         return this;
     }
 

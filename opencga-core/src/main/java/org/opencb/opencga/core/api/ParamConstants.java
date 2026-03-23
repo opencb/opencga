@@ -353,6 +353,15 @@ public class ParamConstants {
     public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION = "Subpopulation name" + REGEX_SUPPORT;
     public static final String INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION = "Individual karyotypic sex";
     public static final String INDIVIDUAL_LIFE_STATUS_DESCRIPTION = "Individual life status";
+    public static final String INDIVIDUAL_PGX_SAMPLE_ID_PARAM = "analysis.pharmacogenomics.sampleId";
+    public static final String INDIVIDUAL_PGX_SAMPLE_ID_DESCRIPTION = "Pharmacogenomics analysis sample ID";
+    public static final String INDIVIDUAL_PGX_SOURCE_PARAM = "analysis.pharmacogenomics.source";
+    public static final String INDIVIDUAL_PGX_SOURCE_DESCRIPTION = "Pharmacogenomics analysis source (openarray, ngs)";
+    public static final String INDIVIDUAL_PGX_ACTIONABLE_GENE_PARAM = "analysis.pharmacogenomics.summary.actionableResults.gene";
+    public static final String INDIVIDUAL_PGX_ACTIONABLE_GENE_DESCRIPTION = "Pharmacogenomics actionable gene name";
+    public static final String INDIVIDUAL_PGX_ACTIONABLE_DRUG_PARAM = "analysis.pharmacogenomics.summary.actionableResults.drugs.drugName";
+    public static final String INDIVIDUAL_PGX_ACTIONABLE_DRUG_DESCRIPTION = "Pharmacogenomics actionable drug name";
+
     public static final String INDIVIDUAL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
     public static final String INDIVIDUAL_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
     public static final String INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;

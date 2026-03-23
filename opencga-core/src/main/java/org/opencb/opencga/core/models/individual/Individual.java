@@ -164,6 +164,10 @@ public class Individual extends Annotable {
             description = FieldConstants.INDIVIDUAL_PARENTAL_CONSANGUINITY)
     private boolean parentalConsanguinity;
 
+    @DataField(id = "analysis", since = "5.0",
+            description = "Analysis results associated with this individual (e.g., pharmacogenomics)")
+    private IndividualAnalysis analysis;
+
     @DataField(id = "status", since = "2.0",
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
 
@@ -520,6 +524,15 @@ public class Individual extends Annotable {
 
     public Individual setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
+        return this;
+    }
+
+    public IndividualAnalysis getAnalysis() {
+        return analysis;
+    }
+
+    public Individual setAnalysis(IndividualAnalysis analysis) {
+        this.analysis = analysis;
         return this;
     }
 

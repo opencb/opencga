@@ -1529,6 +1529,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case PHENOTYPES_NAME:
                     case DISORDERS_ID:
                     case DISORDERS_NAME:
+                    case ANALYSIS_PHARMACOGENOMICS_SAMPLE_ID:
+                    case ANALYSIS_PHARMACOGENOMICS_SOURCE:
+                    case ANALYSIS_PHARMACOGENOMICS_SUMMARY_ACTIONABLE_GENE:
+                    case ANALYSIS_PHARMACOGENOMICS_SUMMARY_ACTIONABLE_DRUG:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

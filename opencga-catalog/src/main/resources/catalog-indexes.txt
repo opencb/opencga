@@ -126,6 +126,10 @@
 {"collections": ["individual", "individual_archive"], "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"disorders.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"disorders.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"analysis.pharmacogenomics.sampleId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"analysis.pharmacogenomics.source": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"analysis.pharmacogenomics.summary.actionableResults.gene": 1, "studyUid": 1}, "options": {}}
+{"collections": ["individual", "individual_archive"], "fields": {"analysis.pharmacogenomics.summary.actionableResults.drugs.drugName": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"population.name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"population.subpopulation": 1, "studyUid": 1}, "options": {}}
 {"collections": ["individual", "individual_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}

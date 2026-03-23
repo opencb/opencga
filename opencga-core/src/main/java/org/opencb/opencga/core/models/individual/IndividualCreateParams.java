@@ -55,6 +55,7 @@ public class IndividualCreateParams {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
     private StatusParams status;
+    private IndividualAnalysis analysis;
     private Map<String, Object> attributes;
 
     public IndividualCreateParams() {
@@ -323,6 +324,15 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setStatus(StatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public IndividualAnalysis getAnalysis() {
+        return analysis;
+    }
+
+    public IndividualCreateParams setAnalysis(IndividualAnalysis analysis) {
+        this.analysis = analysis;
         return this;
     }
 
