@@ -720,6 +720,63 @@ public class VariantMongoDBQueryParserTest {
     }
 
     @Test
+    public void testQueryNegatedNonDefaultGenotype() {
+        // !1/1 : negated non-default GT → $ne on mgt field, no file filter
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "1/1"));
+
+        Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
+                .append("$and", Collections.singletonList(
+                        new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".1/1",
+                                new Document("$ne", sample_10101_id))));
+
+        checkEqualDocuments(expected, mongoQuery);
+    }
+
+    @Test
+    public void testQueryNegatedDefaultGenotype() {
+        // !0/0 : negated default GT → $or with file-absence + positive eq for each non-default GT
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "0/0"));
+
+        // Expected: $or [ ne(files.fid, file_1_id), eq(files.mgt.0/1, sid), eq(files.mgt.1/1, sid), eq(files.mgt.?/?, sid) ]
+        Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
+                .append("$and", Collections.singletonList(
+                        new Document("$or", Arrays.asList(
+                                new Document(FILES_FIELD + '.' + FILEID_FIELD, new Document("$ne", file_1_id)),
+                                new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".0/1", sample_10101_id),
+                                new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".1/1", sample_10101_id),
+                                new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".?/?", sample_10101_id)))));
+
+        checkEqualDocuments(expected, mongoQuery);
+    }
+
+    @Test
+    public void testQueryNegatedDefaultAndNonDefaultGenotype() {
+        // !0/0,!0/1 : combined default + non-default negation
+        // The file-absence OR from !0/0 must be preserved even though !0/1 sets canFilterSampleByFile=false
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+                .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "0/0" + OR + NOT + "0/1"));
+
+        // Expected:
+        //   $and: [
+        //     $or: [ ne(files.fid, file_1_id), eq(files.mgt.0/1, sid), eq(files.mgt.1/1, sid), eq(files.mgt.?/?, sid) ]
+        //     ne(files.mgt.0/1, sid)
+        //   ]
+        Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
+                .append("$and", Collections.singletonList(
+                        new Document("$and", Arrays.asList(
+                                new Document("$or", Arrays.asList(
+                                        new Document(FILES_FIELD + '.' + FILEID_FIELD, new Document("$ne", file_1_id)),
+                                        new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".0/1", sample_10101_id),
+                                        new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".1/1", sample_10101_id),
+                                        new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".?/?", sample_10101_id))),
+                                new Document(FILES_FIELD + '.' + FILE_GENOTYPE_FIELD + ".0/1", new Document("$ne", sample_10101_id))))));
+
+        checkEqualDocuments(expected, mongoQuery);
+    }
+
+    @Test
     public void testStudyAndQuery() {
         // STUDY=study_1;study_2 (AND) should generate $all, not $in
         Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1;study_2"));

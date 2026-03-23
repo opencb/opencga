@@ -1015,35 +1015,39 @@ public class VariantMongoDBQueryParser {
                     } else if (isNegated(genotype)) {
                         // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
                         if (defaultGenotypes.contains(removeNegation(genotype))) {
-                            canFilterSampleByFile = true;
                             defaultGenotypeNegated = true;
                         } else {
                             canFilterSampleByFile = false;
-                            break;
+                            // Don't break — continue scanning for default negated GTs
                         }
                     }
                 }
 
-                if (canFilterSampleByFile) {
+                List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(
+                        defaultStudy.getId(), sampleId, true);
+                String fileKey = DocumentToVariantConverter.FILES_FIELD
+                        + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
+
+                if (defaultGenotypeNegated) {
+                    // When negating the default genotype (!0/0), add an OR condition for
+                    // "file not present" (i.e. unknown GT). This must be added regardless
+                    // of canFilterSampleByFile, because the default genotype negation always
+                    // needs this file-absence alternative in the OR clause.
+                    Bson negatedFile;
+                    if (fileIdsFromSample.size() == 1) {
+                        negatedFile = ne(fileKey, fileIdsFromSample.get(0));
+                    } else {
+                        negatedFile = nin(fileKey, fileIdsFromSample);
+                    }
+                    genotypesFiltersOr.add(negatedFile);
+                } else if (canFilterSampleByFile) {
                     // Extra filter by FILE IDs associated to the sample.
                     // Files are now at root level, so no studyQueryPrefix needed.
-                    List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(defaultStudy.getId(), sampleId, true);
-
-                    String key = DocumentToVariantConverter.FILES_FIELD
-                            + '.' + DocumentToStudyEntryConverter.FILEID_FIELD;
-                    if (defaultGenotypeNegated) {
-                        Bson negatedFile;
+                    if (genotypesQuery.getOperation() == QueryOperation.OR) {
                         if (fileIdsFromSample.size() == 1) {
-                            negatedFile = ne(key, fileIdsFromSample.get(0));
+                            genotypesFiltersAnd.add(eq(fileKey, fileIdsFromSample.get(0)));
                         } else {
-                            negatedFile = nin(key, fileIdsFromSample);
-                        }
-                        genotypesFiltersOr.add(negatedFile);
-                    } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
-                        if (fileIdsFromSample.size() == 1) {
-                            genotypesFiltersAnd.add(eq(key, fileIdsFromSample.get(0)));
-                        } else {
-                            genotypesFiltersAnd.add(in(key, fileIdsFromSample));
+                            genotypesFiltersAnd.add(in(fileKey, fileIdsFromSample));
                         }
                     } else {
                         // FILE ID filter can be added at the end, together with the main FILE filter

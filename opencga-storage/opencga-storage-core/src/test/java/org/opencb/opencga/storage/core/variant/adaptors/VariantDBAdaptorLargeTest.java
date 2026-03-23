@@ -318,7 +318,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .append(UNKNOWN_GENOTYPE.key(), "./.")
                 .append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL);
-        DataResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        DataResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./.")
+                .append(INCLUDE_SAMPLE.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_STUDY.key(), ALL), new QueryOptions());
 
         query.put(GENOTYPE.key(), f1_s1 + IS + "1|1" + AND + f2_s1 + IS + "0|1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
@@ -375,7 +378,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .append(UNKNOWN_GENOTYPE.key(), "./.")
                 .append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL);
-        DataResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        DataResult<Variant> allVariants = dbAdaptor.get(new Query(UNKNOWN_GENOTYPE.key(), "./.")
+                .append(INCLUDE_SAMPLE.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_STUDY.key(), ALL), new QueryOptions());
 
         //Get all variants with not 1|1 for s1
         query.put(GENOTYPE.key(), s1 + ":!1|1");
@@ -388,16 +394,21 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT", not(is("0/0"))))));
 
         //Get all variants with not 0/0 or 0|1 for s1
+        // !0/0 expands to NOT {0/0, 0|0} (0|0 added as phased equivalent of unphased 0/0)
+        // !0|1 stays as NOT {0|1} (phased GTs are not expanded to reversed/unphased)
         query.put(GENOTYPE.key(), s1 + ":!0/0,!0|1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT", allOf(not(is("0/0")), not(is("0|1")))))));
+        assertThat(queryResult, everyResult(allVariants, withStudy(study, withSampleData(s1, "GT",
+                allOf(not(anyOf(is("0/0"), is("0|0"))), not(is("0|1")))))));
 
-        //Get all variants with 1|1 for s1 and 0|0 or 1|0 for s2
+        //Get all variants with 1|1 for s1 and not 0|0 or 1|0 for s2
+        // !0|0 stays as NOT {0|0} (already phased; 0/0 is also a default genotype so covered implicitly)
+        // !1|0 stays as NOT {1|0} (phased GTs are not expanded)
         query.put(GENOTYPE.key(), s1 + ":1|1" + ';' + s2 + ":!0|0,!1|0");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertThat(queryResult, everyResult(allVariants, withStudy(study, allOf(
                 withSampleData(s1, "GT", is("1|1")),
-                withSampleData(s2, "GT", allOf(not(is("0/0")), not(is("1|0"))))))));
+                withSampleData(s2, "GT", allOf(not(anyOf(is("0|0"), is("0/0"))), not(is("1|0"))))))));
 
     }
 
