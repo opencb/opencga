@@ -20,11 +20,11 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/individuals/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
-#' | aggregationStats | /{apiVersion}/individuals/aggregationStats | study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field |
+#' | aggregationStats | /{apiVersion}/individuals/aggregationStats | study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, analysis.pharmacogenomics.sampleId, analysis.pharmacogenomics.source, analysis.pharmacogenomics.summary.actionableResults.gene, analysis.pharmacogenomics.summary.actionableResults.drugs.drugName, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field |
 #' | loadAnnotationSets | /{apiVersion}/individuals/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/individuals/create | include, exclude, study, samples, includeResult, body[*] |
-#' | distinct | /{apiVersion}/individuals/distinct | study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field[*] |
-#' | search | /{apiVersion}/individuals/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot |
+#' | distinct | /{apiVersion}/individuals/distinct | study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, analysis.pharmacogenomics.sampleId, analysis.pharmacogenomics.source, analysis.pharmacogenomics.summary.actionableResults.gene, analysis.pharmacogenomics.summary.actionableResults.drugs.drugName, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field[*] |
+#' | search | /{apiVersion}/individuals/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, analysis.pharmacogenomics.sampleId, analysis.pharmacogenomics.source, analysis.pharmacogenomics.summary.actionableResults.gene, analysis.pharmacogenomics.summary.actionableResults.drugs.drugName, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot |
 #' | acl | /{apiVersion}/individuals/{individuals}/acl | individuals[*], study, member, silent |
 #' | delete | /{apiVersion}/individuals/{individuals}/delete | force, study, individuals[*] |
 #' | info | /{apiVersion}/individuals/{individuals}/info | include, exclude, flattenAnnotations, individuals[*], study, version, deleted |
@@ -67,6 +67,10 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, annotationSet, indi
         #' @param ethnicity Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param disorders Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param phenotypes Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param analysis.pharmacogenomics.sampleId Pharmacogenomics analysis sample ID.
+        #' @param analysis.pharmacogenomics.source Pharmacogenomics analysis source (openarray, ngs).
+        #' @param analysis.pharmacogenomics.summary.actionableResults.gene Pharmacogenomics actionable gene name.
+        #' @param analysis.pharmacogenomics.summary.actionableResults.drugs.drugName Pharmacogenomics actionable drug name.
         #' @param populationName Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param populationSubpopulation Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param karyotypicSex Individual karyotypic sex.
@@ -123,6 +127,10 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, annotationSet, indi
         #' @param dateOfBirth Individual date of birth.
         #' @param disorders Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param phenotypes Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param analysis.pharmacogenomics.sampleId Pharmacogenomics analysis sample ID.
+        #' @param analysis.pharmacogenomics.source Pharmacogenomics analysis source (openarray, ngs).
+        #' @param analysis.pharmacogenomics.summary.actionableResults.gene Pharmacogenomics actionable gene name.
+        #' @param analysis.pharmacogenomics.summary.actionableResults.drugs.drugName Pharmacogenomics actionable drug name.
         #' @param populationName Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param populationSubpopulation Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param karyotypicSex Individual karyotypic sex.
@@ -161,6 +169,10 @@ setMethod("individualClient", "OpencgaR", function(OpencgaR, annotationSet, indi
         #' @param ethnicity Individual ethnicity. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param disorders Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param phenotypes Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param analysis.pharmacogenomics.sampleId Pharmacogenomics analysis sample ID.
+        #' @param analysis.pharmacogenomics.source Pharmacogenomics analysis source (openarray, ngs).
+        #' @param analysis.pharmacogenomics.summary.actionableResults.gene Pharmacogenomics actionable gene name.
+        #' @param analysis.pharmacogenomics.summary.actionableResults.drugs.drugName Pharmacogenomics actionable drug name.
         #' @param populationName Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param populationSubpopulation Subpopulation name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param karyotypicSex Individual karyotypic sex.

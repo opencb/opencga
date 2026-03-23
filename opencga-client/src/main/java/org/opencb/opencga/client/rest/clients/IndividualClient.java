@@ -94,6 +94,10 @@ public class IndividualClient extends ParentClient {
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       analysis.pharmacogenomics.sampleId: Pharmacogenomics analysis sample ID.
+     *       analysis.pharmacogenomics.source: Pharmacogenomics analysis source (openarray, ngs).
+     *       analysis.pharmacogenomics.summary.actionableResults.gene: Pharmacogenomics actionable gene name.
+     *       analysis.pharmacogenomics.summary.actionableResults.drugs.drugName: Pharmacogenomics actionable drug name.
      *       populationName: Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       populationSubpopulation: Subpopulation name. Also admits basic regular expressions using the operator '~', i.e.
@@ -184,6 +188,10 @@ public class IndividualClient extends ParentClient {
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       analysis.pharmacogenomics.sampleId: Pharmacogenomics analysis sample ID.
+     *       analysis.pharmacogenomics.source: Pharmacogenomics analysis source (openarray, ngs).
+     *       analysis.pharmacogenomics.summary.actionableResults.gene: Pharmacogenomics actionable gene name.
+     *       analysis.pharmacogenomics.summary.actionableResults.drugs.drugName: Pharmacogenomics actionable drug name.
      *       populationName: Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       populationSubpopulation: Subpopulation name. Also admits basic regular expressions using the operator '~', i.e.
@@ -238,6 +246,10 @@ public class IndividualClient extends ParentClient {
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       analysis.pharmacogenomics.sampleId: Pharmacogenomics analysis sample ID.
+     *       analysis.pharmacogenomics.source: Pharmacogenomics analysis source (openarray, ngs).
+     *       analysis.pharmacogenomics.summary.actionableResults.gene: Pharmacogenomics actionable gene name.
+     *       analysis.pharmacogenomics.summary.actionableResults.drugs.drugName: Pharmacogenomics actionable drug name.
      *       populationName: Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       populationSubpopulation: Subpopulation name. Also admits basic regular expressions using the operator '~', i.e.

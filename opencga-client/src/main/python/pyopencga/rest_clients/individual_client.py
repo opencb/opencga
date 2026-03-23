@@ -77,6 +77,15 @@ class Individual(_ParentRestClient):
             Also admits basic regular expressions using the operator '~', i.e.
             '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
             case insensitive search.
+        :param str analysis.pharmacogenomics.sample_id: Pharmacogenomics
+            analysis sample ID.
+        :param str analysis.pharmacogenomics.source: Pharmacogenomics analysis
+            source (openarray, ngs).
+        :param str analysis.pharmacogenomics.summary.actionable_results.gene:
+            Pharmacogenomics actionable gene name.
+        :param str
+            analysis.pharmacogenomics.summary.actionable_results.drugs.drug_name:
+            Pharmacogenomics actionable drug name.
         :param str population_name: Population name. Also admits basic regular
             expressions using the operator '~', i.e. '~{perl-regex}' e.g.
             '~value' for case sensitive, '~/value/i' for case insensitive
@@ -193,6 +202,15 @@ class Individual(_ParentRestClient):
             Also admits basic regular expressions using the operator '~', i.e.
             '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
             case insensitive search.
+        :param str analysis.pharmacogenomics.sample_id: Pharmacogenomics
+            analysis sample ID.
+        :param str analysis.pharmacogenomics.source: Pharmacogenomics analysis
+            source (openarray, ngs).
+        :param str analysis.pharmacogenomics.summary.actionable_results.gene:
+            Pharmacogenomics actionable gene name.
+        :param str
+            analysis.pharmacogenomics.summary.actionable_results.drugs.drug_name:
+            Pharmacogenomics actionable drug name.
         :param str population_name: Population name. Also admits basic regular
             expressions using the operator '~', i.e. '~{perl-regex}' e.g.
             '~value' for case sensitive, '~/value/i' for case insensitive
@@ -271,6 +289,15 @@ class Individual(_ParentRestClient):
             Also admits basic regular expressions using the operator '~', i.e.
             '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
             case insensitive search.
+        :param str analysis.pharmacogenomics.sample_id: Pharmacogenomics
+            analysis sample ID.
+        :param str analysis.pharmacogenomics.source: Pharmacogenomics analysis
+            source (openarray, ngs).
+        :param str analysis.pharmacogenomics.summary.actionable_results.gene:
+            Pharmacogenomics actionable gene name.
+        :param str
+            analysis.pharmacogenomics.summary.actionable_results.drugs.drug_name:
+            Pharmacogenomics actionable drug name.
         :param str population_name: Population name. Also admits basic regular
             expressions using the operator '~', i.e. '~{perl-regex}' e.g.
             '~value' for case sensitive, '~/value/i' for case insensitive

@@ -146,6 +146,18 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
+        @Parameter(names = {"--analysis.pharmacogenomics.sample-id"}, description = "Pharmacogenomics analysis sample ID", required = false, arity = 1)
+        public String analysisPharmacogenomicsSampleId; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.source"}, description = "Pharmacogenomics analysis source (openarray, ngs)", required = false, arity = 1)
+        public String analysisPharmacogenomicsSource; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.gene"}, description = "Pharmacogenomics actionable gene name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsGene; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.drugs.drug-name"}, description = "Pharmacogenomics actionable drug name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsDrugsDrugName; 
+    
         @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationName; 
     
@@ -404,6 +416,18 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
     
+        @Parameter(names = {"--analysis.pharmacogenomics.sample-id"}, description = "Pharmacogenomics analysis sample ID", required = false, arity = 1)
+        public String analysisPharmacogenomicsSampleId; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.source"}, description = "Pharmacogenomics analysis source (openarray, ngs)", required = false, arity = 1)
+        public String analysisPharmacogenomicsSource; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.gene"}, description = "Pharmacogenomics actionable gene name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsGene; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.drugs.drug-name"}, description = "Pharmacogenomics actionable drug name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsDrugsDrugName; 
+    
         @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationName; 
     
@@ -510,6 +534,18 @@ public class IndividualsCommandOptions {
     
         @Parameter(names = {"--phenotypes"}, description = "Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String phenotypes; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.sample-id"}, description = "Pharmacogenomics analysis sample ID", required = false, arity = 1)
+        public String analysisPharmacogenomicsSampleId; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.source"}, description = "Pharmacogenomics analysis source (openarray, ngs)", required = false, arity = 1)
+        public String analysisPharmacogenomicsSource; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.gene"}, description = "Pharmacogenomics actionable gene name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsGene; 
+    
+        @Parameter(names = {"--analysis.pharmacogenomics.summary.actionable-results.drugs.drug-name"}, description = "Pharmacogenomics actionable drug name", required = false, arity = 1)
+        public String analysisPharmacogenomicsSummaryActionableResultsDrugsDrugName; 
     
         @Parameter(names = {"--population-name"}, description = "Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String populationName; 

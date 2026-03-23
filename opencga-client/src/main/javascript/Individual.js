@@ -68,6 +68,10 @@ export default class Individual extends OpenCGAParentClass {
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.phenotypes] - Comma separated list of phenotype ids or names. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.analysis.pharmacogenomics.sampleId] - Pharmacogenomics analysis sample ID.
+    * @param {String} [params.analysis.pharmacogenomics.source] - Pharmacogenomics analysis source (openarray, ngs).
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.gene] - Pharmacogenomics actionable gene name.
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.drugs.drugName] - Pharmacogenomics actionable drug name.
     * @param {String} [params.populationName] - Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-
     *     regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.populationSubpopulation] - Subpopulation name. Also admits basic regular expressions using the operator '~',
@@ -145,6 +149,10 @@ export default class Individual extends OpenCGAParentClass {
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.phenotypes] - Comma separated list of phenotype ids or names. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.analysis.pharmacogenomics.sampleId] - Pharmacogenomics analysis sample ID.
+    * @param {String} [params.analysis.pharmacogenomics.source] - Pharmacogenomics analysis source (openarray, ngs).
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.gene] - Pharmacogenomics actionable gene name.
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.drugs.drugName] - Pharmacogenomics actionable drug name.
     * @param {String} [params.populationName] - Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-
     *     regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.populationSubpopulation] - Subpopulation name. Also admits basic regular expressions using the operator '~',
@@ -196,6 +204,10 @@ export default class Individual extends OpenCGAParentClass {
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.phenotypes] - Comma separated list of phenotype ids or names. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.analysis.pharmacogenomics.sampleId] - Pharmacogenomics analysis sample ID.
+    * @param {String} [params.analysis.pharmacogenomics.source] - Pharmacogenomics analysis source (openarray, ngs).
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.gene] - Pharmacogenomics actionable gene name.
+    * @param {String} [params.analysis.pharmacogenomics.summary.actionableResults.drugs.drugName] - Pharmacogenomics actionable drug name.
     * @param {String} [params.populationName] - Population name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-
     *     regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.populationSubpopulation] - Subpopulation name. Also admits basic regular expressions using the operator '~',
