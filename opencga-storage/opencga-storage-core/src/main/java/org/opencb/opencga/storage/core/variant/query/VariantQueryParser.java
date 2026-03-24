@@ -347,13 +347,9 @@ public class VariantQueryParser {
         preProcessXrefs(query, cellBaseUtils);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
+            // Resolve types first (maps deprecated SNP→SNV, MNP→MNV, handles negation and subtypes)
+            // then validate that no unresolvable deprecated types remain.
             List<String> typesFromQuery = query.getAsStringList(TYPE.key());
-            if (typesFromQuery.contains(VariantType.SNP.name()) && !typesFromQuery.contains(VariantType.SNV.name())) {
-                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by SNP");
-            }
-            if (typesFromQuery.contains(VariantType.MNP.name()) && !typesFromQuery.contains(VariantType.MNV.name())) {
-                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by MNP");
-            }
             query.put(TYPE.key(), resolveVariantTypes(typesFromQuery));
         }
 
@@ -680,6 +676,13 @@ public class VariantQueryParser {
         if (isValidParam(query, GENOTYPE)) {
             genotypeParam = GENOTYPE;
 
+            if (defaultStudy == null) {
+                Map<Object, List<String>> gtMap = new LinkedHashMap<>();
+                VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+                throw VariantQueryException.missingStudyForSamples(
+                        gtMap.keySet().stream().map(Object::toString).collect(Collectors.toSet()),
+                        metadataManager.getStudyNames());
+            }
             List<String> loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
