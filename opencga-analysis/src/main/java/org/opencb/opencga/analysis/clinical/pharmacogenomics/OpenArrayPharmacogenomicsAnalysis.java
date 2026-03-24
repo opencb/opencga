@@ -89,8 +89,8 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
                     .getUri().getPath();
         }
 
-        if (StringUtils.isNotEmpty(analysisParams.getCompareTo())) {
-            compareToPath = AnalysisUtils.getCatalogFile(analysisParams.getCompareTo(), study, fileManager, token)
+        if (StringUtils.isNotEmpty(analysisParams.getCompareToFile())) {
+            compareToPath = AnalysisUtils.getCatalogFile(analysisParams.getCompareToFile(), study, fileManager, token)
                     .getUri().getPath();
         }
 
