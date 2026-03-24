@@ -224,7 +224,7 @@ public class ParamConstants {
     public static final String FILE_PARENTS_PARAM = "parents";
     public static final String FILE_PARENTS_DESCRIPTION = "Create the parent directories if they do not exist";
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
-    public static final int MAXIMUM_LINES_CONTENT = 1000;
+    public static final int MAXIMUM_LINES_CONTENT = 5000;
     public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
             "Maximum number of lines to be returned up to a maximum of " + MAXIMUM_LINES_CONTENT;
     public static final String PHENOTYPES_ACTION_PARAM = "phenotypesAction";
