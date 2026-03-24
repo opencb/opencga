@@ -41,7 +41,7 @@ jobs:
         run: python3 ./build/cloud/docker/docker-build.py push --org zettagenomics --images enterprise --tag ${{ github.ref_name }}
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: build
     with:
       cli: ./clients/python/python-build.sh push

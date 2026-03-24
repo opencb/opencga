@@ -68,7 +68,7 @@ jobs:
       artifact_name: emr75-build-folder
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: build-hdi
     with:
       cli: ./clients/python/python-build.sh push

@@ -41,7 +41,7 @@ jobs:
           echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
-          repository: opencb/opencga
+          repository: zetta-genomics/opencga
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: "0" # Perform a full clone, not a shallow one to build.sh can get the branch name

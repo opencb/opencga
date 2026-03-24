@@ -22,7 +22,7 @@ jobs:
           fetch-depth: '10'
       - uses: actions/checkout@v4
         with:
-          repository: opencb/opencga
+          repository: zetta-genomics/opencga
           path: opencga-home
           fetch-depth: '10'
       - name: Validate task name

@@ -32,7 +32,7 @@ jobs:
           echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
-          repository: opencb/opencga
+          repository: zetta-genomics/opencga
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
@@ -58,7 +58,7 @@ jobs:
           path: build/dist/opencga-enterprise-python-client-${{ steps.version.outputs.version }}.tar.gz
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: build-python-client
     with:
       cli: ./clients/python/python-build.sh push

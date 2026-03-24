@@ -32,7 +32,7 @@ jobs:
           path: build/dist/opencga-python-client-${{ steps.version.outputs.version }}.tar.gz
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: build-python-client
     with:
       cli: ./clients/python/python-build.sh push
