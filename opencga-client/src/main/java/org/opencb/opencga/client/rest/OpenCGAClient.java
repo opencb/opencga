@@ -87,6 +87,14 @@ public class OpenCGAClient {
         return getClient(OrganizationClient.class, () -> new OrganizationClient(token, clientConfiguration));
     }
 
+    public FederationClient getFederationClient() {
+        return getClient(FederationClient.class, () -> new FederationClient(token, clientConfiguration));
+    }
+
+    public CVDBClient getCVDBClient() {
+        return getClient(CVDBClient.class, () -> new CVDBClient(token, clientConfiguration));
+    }
+
     public UserClient getUserClient() {
         return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
     }

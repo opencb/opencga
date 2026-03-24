@@ -59,6 +59,10 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-clinical</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-test</artifactId>
         </dependency>
         <dependency>

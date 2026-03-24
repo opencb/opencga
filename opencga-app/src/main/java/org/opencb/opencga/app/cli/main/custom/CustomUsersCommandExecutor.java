@@ -205,6 +205,6 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
 
     public RestResponse<AuthenticationResponse> logoutSso(UsersCommandOptions.LogoutSsoCommandOptions logoutSsoCommandOptions) throws Exception {
         logger.debug("Executing logout SSO in Users command line");
-        return super.logout(null);
+        return logout(null);
     }
 }
