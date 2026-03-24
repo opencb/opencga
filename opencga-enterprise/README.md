@@ -1,1 +1,0 @@
-# opencga-enterprise
