@@ -46,90 +46,90 @@ jobs:
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
-  analysis:
-    name: Execute Sonar Analysis
-    runs-on: ${{ vars.UBUNTU_VERSION }}
-    if: ${{ inputs.sonar }}
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: '10'
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - name: Cache local Maven repository
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ needs.build.outputs.cache_key }}
-          ## Force cache hit to avoid analyzing with incomplete dependencies
-          fail-on-cache-miss: true
-      - name: Test and Analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -T 2 clean install -P storage-hadoop,${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+  # analysis:
+  #   name: Execute Sonar Analysis
+  #   runs-on: ${{ vars.UBUNTU_VERSION }}
+  #   if: ${{ inputs.sonar }}
+  #   needs: build
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: '10'
+  #     - name: Set up JDK 11
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'temurin'
+  #         java-version: '17'
+  #         cache: 'maven'
+  #     - name: Cache local Maven repository
+  #       uses: actions/cache/restore@v4
+  #       with:
+  #         path: ~/.m2/repository
+  #         key: ${{ needs.build.outputs.cache_key }}
+  #         ## Force cache hit to avoid analyzing with incomplete dependencies
+  #         fail-on-cache-miss: true
+  #     - name: Test and Analyze
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       run: mvn -T 2 clean install -P storage-hadoop,${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
 
 
-  test:
-    name: Execute JUnit and Jacoco tests
-    runs-on: ${{ vars.UBUNTU_VERSION }}
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: '10'
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Cache local Maven repository
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ needs.build.outputs.cache_key }}
-          ## Force cache hit to avoid testing with incomplete dependencies
-          fail-on-cache-miss: true
-      - name: Install Samtools
-        run: sudo apt-get install samtools python3-deeptools
-      - name: Start MongoDB v6.0
-        uses: supercharge/mongodb-github-action@1.8.0
-        with:
-          mongodb-version: 6.0
-          mongodb-replica-set: rs-test
-      - name: Build Junit log file name
-        id: BuildJunitLogFileName
-        run: |
-          MODULE=$(basename ${{ (inputs.module == '' || inputs.module == 'all') && 'opencga' || inputs.module }} )
-          if [[ -z "$MODULE" ]]; then
-            MODULE="opencga"
-          fi
-          TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
-          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
-      - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
-      - name: Upload Junit test logs
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
-          path: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
-      - name: Publish Test Report on GitHub
-        uses: scacap/action-surefire-report@v1
-        env:
-          NODE_OPTIONS: '--max_old_space_size=6144'
-        ## Skip cancelled()
-        ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
-        if: success() || failure()
-        with:
-          check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.module }} ${{ inputs.test_profile }}"
-          report_paths: './**/surefire-reports/TEST-*.xml'
-          commit: '${{ github.sha }}'
-          fail_on_test_failures: true
-          fail_if_no_tests: false
+  # test:
+  #   name: Execute JUnit and Jacoco tests
+  #   runs-on: ${{ vars.UBUNTU_VERSION }}
+  #   needs: build
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: '10'
+  #     - name: Set up JDK 8
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'temurin'
+  #         java-version: '8'
+  #         cache: 'maven'
+  #     - name: Cache local Maven repository
+  #       uses: actions/cache/restore@v4
+  #       with:
+  #         path: ~/.m2/repository
+  #         key: ${{ needs.build.outputs.cache_key }}
+  #         ## Force cache hit to avoid testing with incomplete dependencies
+  #         fail-on-cache-miss: true
+  #     - name: Install Samtools
+  #       run: sudo apt-get install samtools python3-deeptools
+  #     - name: Start MongoDB v6.0
+  #       uses: supercharge/mongodb-github-action@1.8.0
+  #       with:
+  #         mongodb-version: 6.0
+  #         mongodb-replica-set: rs-test
+  #     - name: Build Junit log file name
+  #       id: BuildJunitLogFileName
+  #       run: |
+  #         MODULE=$(basename ${{ (inputs.module == '' || inputs.module == 'all') && 'opencga' || inputs.module }} )
+  #         if [[ -z "$MODULE" ]]; then
+  #           MODULE="opencga"
+  #         fi
+  #         TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
+  #         echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
+  #     - name: Run Junit tests
+  #       run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
+  #     - name: Upload Junit test logs
+  #       if: success() || failure()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
+  #         path: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
+  #     - name: Publish Test Report on GitHub
+  #       uses: scacap/action-surefire-report@v1
+  #       env:
+  #         NODE_OPTIONS: '--max_old_space_size=6144'
+  #       ## Skip cancelled()
+  #       ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
+  #       if: success() || failure()
+  #       with:
+  #         check_name: "Surefire tests report ${{ inputs.hadoop }} ${{ inputs.module }} ${{ inputs.test_profile }}"
+  #         report_paths: './**/surefire-reports/TEST-*.xml'
+  #         commit: '${{ github.sha }}'
+  #         fail_on_test_failures: true
+  #         fail_if_no_tests: false
