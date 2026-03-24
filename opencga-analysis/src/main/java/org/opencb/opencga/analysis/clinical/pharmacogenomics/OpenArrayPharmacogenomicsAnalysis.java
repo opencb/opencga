@@ -104,16 +104,17 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
 
     @Override
     protected void run() throws ToolException {
-        // Step 1: Execute the Python pharmacogenomics tool via Docker
+        // Step 1: Execute the Python pharmacogenomics tool locally (inside opencga-base)
         step(STEP_EXECUTE, () -> {
             OpenArrayPharmacogenomicsAnalysisExecutor executor =
                     getToolExecutor(OpenArrayPharmacogenomicsAnalysisExecutor.class);
 
-            executor.setSnvFilePath(snvFilePath)
+            executor.setOpencgaHome(getOpencgaHome())
+                    .setSnvFilePath(snvFilePath)
                     .setTranslationFilePath(translationFilePath)
                     .setCnvFilePath(cnvFilePath)
                     .setRenameFilePath(renameFilePath)
-                    .setCompareToPath(compareToPath)
+                    .setCompareToFilePath(compareToPath)
                     .setAnnotate(Boolean.TRUE.equals(analysisParams.getAnnotate()))
                     .execute();
         });
