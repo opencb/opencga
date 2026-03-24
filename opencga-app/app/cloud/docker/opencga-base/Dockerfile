@@ -24,6 +24,9 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
     wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
     chmod +x /usr/local/bin/yq && \
 
+    ## Install uv (Python package manager for analysis tools)
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh && \
+
     ## Clean downloaded packages to make images smaller
     rm -rf /var/lib/apt/lists/* && \
     adduser --disabled-password --uid 1001 opencga
@@ -32,6 +35,9 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y lsb-release sshpa
 USER opencga
 
 COPY --chown=opencga:opencga ${BUILD_PATH} /opt/opencga
+
+## Install Python analysis tools
+RUN cd /opt/opencga/analysis/pharmacogenomics && uv sync --no-dev 2>/dev/null || true
 
 ## Declare the volume to be mounted later
 VOLUME /opt/opencga/conf

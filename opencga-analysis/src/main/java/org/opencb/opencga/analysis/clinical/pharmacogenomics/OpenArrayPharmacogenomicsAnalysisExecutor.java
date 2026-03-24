@@ -22,7 +22,7 @@ public class OpenArrayPharmacogenomicsAnalysisExecutor extends DockerWrapperAnal
 
     public static final String ID = OpenArrayPharmacogenomicsAnalysis.ID + "-local";
 
-    private static final String PYTHON_CLI = "python3 /opt/opencga/analysis/pharmacogenomics/src/pharmacogenomics/cli.py";
+    private static final String PYTHON_CLI = "/opt/opencga/analysis/pharmacogenomics/.venv/bin/pharmacogenomics";
 
     private String snvFilePath;
     private String translationFilePath;
