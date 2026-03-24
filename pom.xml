@@ -1553,6 +1553,27 @@
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.REST.HOST>https://uk.ws.zettagenomics.com/cellbase/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.VERSION>v5.8</OPENCGA.CELLBASE.VERSION>
+
+                <!-- sso -->
+                <OPENCGA.SSO.ACTIVE>false</OPENCGA.SSO.ACTIVE>
+                <OPENCGA.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</OPENCGA.SSO.CAS.SERVER.PREFIX.URL>
+                <OPENCGA.SSO.SERVER.NAME>http://localhost:9090</OPENCGA.SSO.SERVER.NAME>
+                <OPENCGA.SSO.PROTOCOL>SAML1</OPENCGA.SSO.PROTOCOL>
+                <OPENCGA.SSO.ATTRIBUTES.NAME>name</OPENCGA.SSO.ATTRIBUTES.NAME>
+                <OPENCGA.SSO.ATTRIBUTES.SURNAME>surname</OPENCGA.SSO.ATTRIBUTES.SURNAME>
+                <OPENCGA.SSO.ATTRIBUTES.EMAIL>email</OPENCGA.SSO.ATTRIBUTES.EMAIL>
+                <OPENCGA.SSO.ATTRIBUTES.ORGANIZATION>organization</OPENCGA.SSO.ATTRIBUTES.ORGANIZATION>
+                <OPENCGA.SSO.ATTRIBUTES.GROUPS>groups</OPENCGA.SSO.ATTRIBUTES.GROUPS>
+
+                <!-- cvdb -->
+                <OPENCGA.CVDB.ACTIVE>true</OPENCGA.CVDB.ACTIVE>
+                <OPENCGA.CVDB.DATABASE.HOST>http://localhost:8983/solr/</OPENCGA.CVDB.DATABASE.HOST>
+                <OPENCGA.CVDB.DATABASE.MODE>cloud</OPENCGA.CVDB.DATABASE.MODE>
+                <OPENCGA.CVDB.DATABASE.TIMEOUT>30000</OPENCGA.CVDB.DATABASE.TIMEOUT>
+                <OPENCGA.CVDB.CA_CONFIG_SET>opencga-ca-configset-${project.parent.version}</OPENCGA.CVDB.CA_CONFIG_SET>
+                <OPENCGA.CVDB.CI_CONFIG_SET>opencga-ci-configset-${project.parent.version}</OPENCGA.CVDB.CI_CONFIG_SET>
+                <OPENCGA.CVDB.CV_CONFIG_SET>opencga-cv-configset-${project.parent.version}</OPENCGA.CVDB.CV_CONFIG_SET>
+                <OPENCGA.CVDB.CVE_CONFIG_SET>opencga-cve-configset-${project.parent.version}</OPENCGA.CVDB.CVE_CONFIG_SET>
             </properties>
             <build>
                 <plugins>
