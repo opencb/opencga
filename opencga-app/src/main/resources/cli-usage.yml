@@ -15,6 +15,7 @@ categories:
       - samples
       - cohorts
       - tools
+      - workflows
       - meta
   - name: Analysis
     description: "Analysis commands:"
