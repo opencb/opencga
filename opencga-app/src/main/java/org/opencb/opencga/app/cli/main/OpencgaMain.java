@@ -45,7 +45,7 @@ public class OpencgaMain {
 
     public static void main(String[] args) {
 
-        CliConfiguration.getInstance().setCliUsageFileName("enterprise-cli-usage.yml");
+        CliConfiguration.getInstance().setCliUsageFileName("cli-usage.yml");
 
         if (args.length == 0) {
             CliOptionsParser parser = new OpencgaCliOptionsParser();

@@ -2,19 +2,19 @@ categories:
   - name: catalog
     description: "Catalog commands:"
     options:
+      - federations
       - organizations
       - users
       - projects
       - studies
       - files
-      - tools
-      - workflows
       - jobs
       - individuals
       - families
       - panels
       - samples
       - cohorts
+      - tools
       - meta
   - name: Analysis
     description: "Analysis commands:"
@@ -22,6 +22,7 @@ categories:
       - alignments
       - variant
       - clinical
+      - cvdb
   - name: Operation
     description: "Operation commands:"
     options:
