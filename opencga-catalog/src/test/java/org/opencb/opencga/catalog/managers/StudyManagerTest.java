@@ -315,4 +315,182 @@ public class StudyManagerTest extends AbstractManagerTest {
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
         assertTrue(search.getNumResults() > 0);
     }
+
+    // -----------------------------------------------------------------------
+    // Samplesheet registration tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void testRegisterFromSamplesheetMinimal() throws Exception {
+        String samplesheet = "#sample\n"
+                + "SAMPLE_001\n"
+                + "SAMPLE_002\n"
+                + "SAMPLE_003\n";
+
+        OpenCGAResult<Map<String, Integer>> result = catalogManager.getStudyManager()
+                .registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        Map<String, Integer> counts = result.first();
+        assertEquals(3, (int) counts.get("individualsCreated"));
+        assertEquals(3, (int) counts.get("samplesCreated"));
+
+        // Verify individuals and samples exist
+        assertEquals(1, catalogManager.getIndividualManager().get(studyFqn, "SAMPLE_001", QueryOptions.empty(), ownerToken).getNumResults());
+        assertEquals(1, catalogManager.getSampleManager().get(studyFqn, "SAMPLE_002", QueryOptions.empty(), ownerToken).getNumResults());
+    }
+
+    @Test
+    public void testRegisterFromSamplesheetWithMetadata() throws Exception {
+        String samplesheet = "#sample,individual,gender,disorder\n"
+                + "S001,IND001,male,HP:0001250\n"
+                + "S002,IND002,female,\n"
+                + "S003,IND003,unknown,OMIM:614856\n";
+
+        OpenCGAResult<Map<String, Integer>> result = catalogManager.getStudyManager()
+                .registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        Map<String, Integer> counts = result.first();
+        assertEquals(3, (int) counts.get("individualsCreated"));
+        assertEquals(3, (int) counts.get("samplesCreated"));
+
+        // Verify individual has correct sex
+        org.opencb.opencga.core.models.individual.Individual ind1 = catalogManager.getIndividualManager()
+                .get(studyFqn, "IND001", QueryOptions.empty(), ownerToken).first();
+        assertEquals("MALE", ind1.getSex().getId());
+
+        // Verify individual has disorder
+        assertFalse(ind1.getDisorders().isEmpty());
+        assertEquals("HP:0001250", ind1.getDisorders().get(0).getId());
+
+        // Verify sample is linked to individual
+        org.opencb.opencga.core.models.sample.Sample s1 = catalogManager.getSampleManager()
+                .get(studyFqn, "S001", QueryOptions.empty(), ownerToken).first();
+        assertEquals("IND001", s1.getIndividualId());
+    }
+
+    @Test
+    public void testRegisterFromSamplesheetTsv() throws Exception {
+        String samplesheet = "#sample\tindividual\tgender\n"
+                + "S001\tIND001\tmale\n"
+                + "S002\tIND002\tfemale\n";
+
+        OpenCGAResult<Map<String, Integer>> result = catalogManager.getStudyManager()
+                .registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        Map<String, Integer> counts = result.first();
+        assertEquals(2, (int) counts.get("individualsCreated"));
+        assertEquals(2, (int) counts.get("samplesCreated"));
+    }
+
+    @Test
+    public void testRegisterFromSamplesheetIdempotent() throws Exception {
+        String samplesheet = "#sample,individual\n"
+                + "S001,IND001\n"
+                + "S002,IND002\n";
+
+        // First call — creates
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        // Second call — should not fail, entities already exist
+        OpenCGAResult<Map<String, Integer>> result = catalogManager.getStudyManager()
+                .registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        Map<String, Integer> counts = result.first();
+        assertEquals(0, (int) counts.get("individualsCreated"));
+        assertEquals(0, (int) counts.get("samplesCreated"));
+        assertEquals(2, (int) counts.get("individualsExisting"));
+        assertEquals(2, (int) counts.get("samplesExisting"));
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetDuplicateSample() throws Exception {
+        String samplesheet = "#sample\n"
+                + "S001\n"
+                + "S001\n";
+
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetInvalidSex() throws Exception {
+        String samplesheet = "#sample,gender\n"
+                + "S001,invalid_sex\n";
+
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetEmptyContent() throws Exception {
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, "", ownerToken);
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetNoHeader() throws Exception {
+        String samplesheet = "S001\n";
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+    }
+
+    @Test
+    public void testRegisterFromSamplesheetWithSomatic() throws Exception {
+        String samplesheet = "#sample,individual,somatic\n"
+                + "S001,IND001,false\n"
+                + "S002,IND001,true\n";
+
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        org.opencb.opencga.core.models.sample.Sample s1 = catalogManager.getSampleManager()
+                .get(studyFqn, "S001", QueryOptions.empty(), ownerToken).first();
+        assertFalse(s1.isSomatic());
+
+        org.opencb.opencga.core.models.sample.Sample s2 = catalogManager.getSampleManager()
+                .get(studyFqn, "S002", QueryOptions.empty(), ownerToken).first();
+        assertTrue(s2.isSomatic());
+    }
+
+    @Test
+    public void testRegisterFromSamplesheetExistingSampleWithIndividual() throws Exception {
+        // Pre-create individual and sample linked together
+        catalogManager.getIndividualManager().create(studyFqn,
+                new org.opencb.opencga.core.models.individual.Individual().setId("IND_PRE"), QueryOptions.empty(), ownerToken);
+        catalogManager.getSampleManager().create(studyFqn,
+                new org.opencb.opencga.core.models.sample.Sample().setId("S_PRE").setIndividualId("IND_PRE"),
+                QueryOptions.empty(), ownerToken);
+
+        // Samplesheet with same sample — no individual column, should reuse existing
+        String samplesheet = "#sample\n"
+                + "S_PRE\n";
+
+        OpenCGAResult<Map<String, Integer>> result = catalogManager.getStudyManager()
+                .registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+
+        Map<String, Integer> counts = result.first();
+        assertEquals(0, (int) counts.get("individualsCreated"));
+        assertEquals(0, (int) counts.get("samplesCreated"));
+        assertEquals(1, (int) counts.get("samplesExisting"));
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetConflictingIndividual() throws Exception {
+        // Pre-create individual and sample linked together
+        catalogManager.getIndividualManager().create(studyFqn,
+                new org.opencb.opencga.core.models.individual.Individual().setId("IND_ORIG"), QueryOptions.empty(), ownerToken);
+        catalogManager.getSampleManager().create(studyFqn,
+                new org.opencb.opencga.core.models.sample.Sample().setId("S_CONFLICT").setIndividualId("IND_ORIG"),
+                QueryOptions.empty(), ownerToken);
+
+        // Samplesheet tries to assign a different individual — should fail
+        String samplesheet = "#sample,individual\n"
+                + "S_CONFLICT,IND_DIFFERENT\n";
+
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+    }
+
+    @Test(expected = CatalogException.class)
+    public void testRegisterFromSamplesheetMissingSampleColumn() throws Exception {
+        // Only 'individual' column, no 'sample' — should fail
+        String samplesheet = "#individual\n"
+                + "IND001\n";
+
+        catalogManager.getStudyManager().registerFromSamplesheetContent(studyFqn, samplesheet, ownerToken);
+    }
 }

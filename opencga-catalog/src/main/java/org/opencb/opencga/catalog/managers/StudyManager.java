@@ -2444,4 +2444,43 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Samplesheet registration
+    // -----------------------------------------------------------------------
+
+    /**
+     * Register samples, individuals, and clinical analyses from a samplesheet file stored in the catalog.
+     *
+     * @param studyStr  Study identifier.
+     * @param fileId    Catalog file ID of the samplesheet (CSV, TSV, or TXT).
+     * @param token     Authentication token.
+     * @return OpenCGAResult with the number of created entities.
+     * @throws CatalogException if validation or creation fails.
+     * @throws IOException if reading the file fails.
+     */
+    public OpenCGAResult<Map<String, Integer>> registerFromSamplesheet(String studyStr, String fileId, String token)
+            throws CatalogException, IOException {
+        File opencgaFile = catalogManager.getFileManager()
+                .get(studyStr, fileId, QueryOptions.empty(), token).first();
+        String content = new String(java.nio.file.Files.readAllBytes(Paths.get(opencgaFile.getUri())),
+                java.nio.charset.StandardCharsets.UTF_8);
+        return registerFromSamplesheetContent(studyStr, content, token);
+    }
+
+    /**
+     * Register samples, individuals, and clinical analyses from samplesheet content string.
+     *
+     * @param studyStr  Study identifier.
+     * @param content   Samplesheet file content as string.
+     * @param token     Authentication token.
+     * @return OpenCGAResult with the number of created entities.
+     * @throws CatalogException if validation or creation fails.
+     * @see SamplesheetUtils#register(CatalogManager, String, String, String)
+     */
+    public OpenCGAResult<Map<String, Integer>> registerFromSamplesheetContent(String studyStr, String content, String token)
+            throws CatalogException {
+        Map<String, Integer> result = SamplesheetUtils.register(catalogManager, studyStr, content, token);
+        return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(result), 1);
+    }
+
 }

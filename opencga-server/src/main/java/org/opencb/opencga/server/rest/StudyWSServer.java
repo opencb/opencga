@@ -673,6 +673,33 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{study}/samplesheet/load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Load a samplesheet to register samples, individuals, and clinical analyses",
+            response = Map.class,
+            notes = "Provide either a catalog file ID (samplesheetFile) or inline content (samplesheetContent). "
+                    + "The 'sample' column is mandatory. Other supported columns (all optional, any order): "
+                    + "file, somatic, individual, gender/sex, father, mother, disorder, phenotype, family, case, panel, proband.")
+    public Response loadSamplesheet(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
+            @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = SamplesheetLoadParams.DESCRIPTION, required = true) SamplesheetLoadParams params) {
+        try {
+            if (StringUtils.isNotEmpty(params.getSamplesheetFile())) {
+                return createOkResponse(catalogManager.getStudyManager()
+                        .registerFromSamplesheet(studyStr, params.getSamplesheetFile(), token));
+            } else if (StringUtils.isNotEmpty(params.getSamplesheetContent())) {
+                return createOkResponse(catalogManager.getStudyManager()
+                        .registerFromSamplesheetContent(studyStr, params.getSamplesheetContent(), token));
+            } else {
+                return createErrorResponse(new Exception("Either 'samplesheetFile' or 'samplesheetContent' must be provided"));
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     private void fixVariable(Variable variable) {
         variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
         if (variable.getVariables() != null && variable.getVariables().size() > 0) {
