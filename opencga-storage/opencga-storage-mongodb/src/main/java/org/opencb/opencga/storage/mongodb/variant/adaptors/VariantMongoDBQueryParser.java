@@ -602,12 +602,10 @@ public class VariantMongoDBQueryParser {
                 String value = query.getString(ANNOT_FUNCTIONAL_SCORE.key());
                 addScoreFilter(value, filters, ANNOT_FUNCTIONAL_SCORE, false);
             }
-            /* FIXME: TASK-8038
             if (isValidParam(query, CUSTOM_ANNOTATION)) {
                 String value = query.getString(CUSTOM_ANNOTATION.key());
-                addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, f, true);
+                addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, filters, true);
             }
-*/
             if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
                 String value = query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES,

@@ -683,7 +683,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         } else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
             VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantStudyMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
-                    variantReaderUtils.getVariantVcfReader(Paths.get(fileName), metadata),
+                    variantReaderUtils.getVariantVcfReader(path, metadata),
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());
