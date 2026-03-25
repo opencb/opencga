@@ -6,10 +6,55 @@ set -o pipefail
 # Load demo data: create project, study, fetch VCF, index, annotate, stats, secondary index, and export.
 # Modeled after opencga-hadoop-test load-test.sh
 
+usage() {
+    cat <<'EOF'
+Usage: opencga-load-demo.sh [OPTIONS]
+
+Load demo data into OpenCGA: create project and study, fetch a VCF, and submit
+jobs for indexing, annotation, stats, secondary index, and export.
+
+Steps performed:
+  1. Login as owner user
+  2. Create project (GRCh37, CellBase v5.8)
+  3. Create study (Corpas Family)
+  4. Configure variant storage
+  5. Fetch demo VCF (quartet.variants.annotated.vcf.gz)
+  6. Submit variant index job
+  7. Submit variant annotation job
+  8. Submit variant stats job
+  9. Submit variant secondary index job
+  10. Submit export jobs (JSON_SPARSE, VCF, AVRO)
+
+Options (override environment variables):
+  --opencga-home DIR        OpenCGA installation directory (env: OPENCGA_HOME, default: /opt/opencga)
+  --org-id ID               Organization identifier (env: OPENCGA_ORG_ID) [required]
+  --owner-id ID             Owner user identifier (env: OPENCGA_OWNER_ID) [required]
+  --owner-password PASS     Owner user password (env: OPENCGA_OWNER_PASSWORD) [required]
+  --project ID              Project identifier (env: OPENCGA_DEMO_PROJECT, default: family)
+  --study ID                Study identifier (env: OPENCGA_DEMO_STUDY, default: corpasome)
+  --host URL                REST host URL (exports OPENCGA_CLIENT_REST_HOST)
+  -h, --help                Show this help message
+EOF
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)          usage; exit 0 ;;
+        --opencga-home)     OPENCGA_HOME="$2"; shift 2 ;;
+        --host)             export OPENCGA_CLIENT_REST_HOST="$2"; shift 2 ;;
+        --org-id)           OPENCGA_ORG_ID="$2"; shift 2 ;;
+        --owner-id)         OPENCGA_OWNER_ID="$2"; shift 2 ;;
+        --owner-password)   OPENCGA_OWNER_PASSWORD="$2"; shift 2 ;;
+        --project)          OPENCGA_DEMO_PROJECT="$2"; shift 2 ;;
+        --study)            OPENCGA_DEMO_STUDY="$2"; shift 2 ;;
+        *)                  echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+    esac
+done
+
 OPENCGA_HOME=${OPENCGA_HOME:-/opt/opencga}
-OWNER_ID=${OPENCGA_OWNER_ID:?Missing OPENCGA_OWNER_ID}
-OWNER_PASSWORD=${OPENCGA_OWNER_PASSWORD:?Missing OPENCGA_OWNER_PASSWORD}
-ORG_ID=${OPENCGA_ORG_ID:?Missing OPENCGA_ORG_ID}
+OWNER_ID=${OPENCGA_OWNER_ID:?Missing --owner-id or OPENCGA_OWNER_ID}
+OWNER_PASSWORD=${OPENCGA_OWNER_PASSWORD:?Missing --owner-password or OPENCGA_OWNER_PASSWORD}
+ORG_ID=${OPENCGA_ORG_ID:?Missing --org-id or OPENCGA_ORG_ID}
 PROJECT="${OPENCGA_DEMO_PROJECT:-family}"
 STUDY="${OPENCGA_DEMO_STUDY:-corpasome}"
 STUDY_FQN="${PROJECT}:${STUDY}"
