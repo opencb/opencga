@@ -65,6 +65,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
       - name: Building string profiles to run
         id: validate
         run: |

@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+          with:
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
           name: build-folder
