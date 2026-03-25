@@ -27,7 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * OpenArray pharmacogenomics analysis tool.
@@ -94,6 +96,9 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
                     .getUri().getPath();
         }
 
+        // Register samples and individuals from the SNV genotyping file
+        registerSamplesFromGenotypingFile(snvFilePath);
+
         setUpStorageEngineExecutor(study);
     }
 
@@ -121,6 +126,68 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
 
         // Step 2: Read summary JSON files and update Individual entities in catalog
         step(STEP_UPDATE_CATALOG, this::updateCatalog);
+    }
+
+    /**
+     * Extract unique sample IDs from the SNV genotyping file (column 5, tab-separated)
+     * and create the corresponding individual + sample in catalog if they don't exist.
+     */
+    private void registerSamplesFromGenotypingFile(String genotypingFilePath) throws IOException, CatalogException {
+        Set<String> sampleIds = new LinkedHashSet<>();
+
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(genotypingFilePath))) {
+            String line;
+            boolean headerSkipped = false;
+            while ((line = br.readLine()) != null) {
+                String trimmed = line.trim();
+                if (trimmed.startsWith("#") || trimmed.isEmpty()) {
+                    continue;
+                }
+                // Skip header line
+                if (!headerSkipped) {
+                    headerSkipped = true;
+                    continue;
+                }
+                String[] columns = trimmed.split("\t");
+                if (columns.length > 4 && StringUtils.isNotEmpty(columns[4].trim())) {
+                    sampleIds.add(columns[4].trim());
+                }
+            }
+        }
+
+        logger.info("Found {} unique sample IDs in genotyping file", sampleIds.size());
+
+        for (String sampleId : sampleIds) {
+            // Check if sample already exists
+            boolean sampleExists = false;
+            try {
+                catalogManager.getSampleManager().get(study, sampleId, QueryOptions.empty(), token);
+                sampleExists = true;
+            } catch (CatalogException e) {
+                // Does not exist
+            }
+
+            if (!sampleExists) {
+                // Create individual with same ID if it doesn't exist
+                boolean individualExists = false;
+                try {
+                    catalogManager.getIndividualManager().get(study, sampleId, QueryOptions.empty(), token);
+                    individualExists = true;
+                } catch (CatalogException e) {
+                    // Does not exist
+                }
+
+                if (!individualExists) {
+                    Individual individual = new Individual().setId(sampleId);
+                    catalogManager.getIndividualManager().create(study, individual, QueryOptions.empty(), token);
+                    logger.info("Created individual '{}'", sampleId);
+                }
+
+                Sample sample = new Sample().setId(sampleId).setIndividualId(sampleId);
+                catalogManager.getSampleManager().create(study, sample, QueryOptions.empty(), token);
+                logger.info("Created sample '{}' linked to individual '{}'", sampleId, sampleId);
+            }
+        }
     }
 
     /**
