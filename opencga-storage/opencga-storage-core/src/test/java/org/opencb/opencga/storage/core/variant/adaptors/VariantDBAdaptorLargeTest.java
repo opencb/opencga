@@ -512,7 +512,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 allOf(withStudy(studyMetadata2.getName()), withStudy(studyMetadata3.getName()))));
 
 
-        query = new Query(STUDY.key(), studyIds).append(FILE.key(), Arrays.asList(file3, file4, file5))
+        query = new Query(STUDY.key(), studyIds).append(FILE.key(), Arrays.asList(fileName3, fileName4, fileName5))
                 .append(INCLUDE_STUDY.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -537,7 +537,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 allOf(withStudy(studyMetadata2.getName()), withStudy(studyMetadata3.getName(), nullValue()))));
 
 
-        query = new Query(STUDY.key(), studyIds).append(FILE.key(), Arrays.asList(file3, file4))
+        query = new Query(STUDY.key(), studyIds).append(FILE.key(), Arrays.asList(fileName3, fileName4))
                 .append(INCLUDE_STUDY.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -596,7 +596,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     @Test()
     public void testGetAllVariants_filterFiles_not_1() {
         String unknownGenotype = "./.";
-        query.append(FILE.key(), "!" + file1)
+        query.append(FILE.key(), "!" + fileName1)
                 .append(STUDY.key(), studyMetadata1.getName())
                 .append(UNKNOWN_GENOTYPE.key(), unknownGenotype)
                 .append(INCLUDE_STUDY.key(), studyMetadata1.getName());
@@ -638,7 +638,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+FILE1,FILE2
-        query = new Query(FILE.key(), file1 + "," + file2).append(FILTER.key(), "PASS")
+        query = new Query(FILE.key(), fileName1 + "," + fileName2).append(FILTER.key(), "PASS")
                 .append(INCLUDE_STUDY.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -651,7 +651,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+FILE1;!FILE2
-        query = new Query(FILE.key(), file1 + ";!" + file2).append(FILTER.key(), "PASS")
+        query = new Query(FILE.key(), fileName1 + ";!" + fileName2).append(FILTER.key(), "PASS")
                 .append(INCLUDE_STUDY.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -674,7 +674,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(0, count(query).longValue());
 
         // FILTER+FILE+STUDY
-        query = new Query(FILE.key(), file1 + "," + file2)
+        query = new Query(FILE.key(), fileName1 + "," + fileName2)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(STUDY.key(), studyMetadata1.getId())
                 .append(INCLUDE_STUDY.key(), ALL)
@@ -701,16 +701,16 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
     public void testGetAllVariants_returnedFiles1(boolean implicitReturnedFields) {
 
-        query.append(FILE.key(), file1)
+        query.append(FILE.key(), fileName1)
                 .append(STUDY.key(), studyMetadata1.getName());
         if (!implicitReturnedFields) {
-            query.append(INCLUDE_FILE.key(), file1)
+            query.append(INCLUDE_FILE.key(), fileName1)
                     .append(INCLUDE_STUDY.key(), studyMetadata1.getName());
         }
 
         queryResult = get(query, options);
 
-        query = new Query(FILE.key(), file1);
+        query = new Query(FILE.key(), fileName1);
         Long queryResultFile = count(query);
 
         int expectedCount = 0;
@@ -842,7 +842,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     @Test
     public void testSampleData() throws Exception {
         Set<String> validGts = new HashSet<>(Arrays.asList("0/1", "0|1", "1|0", "1/1", "1|1"));
-        VariantDBIterator iterator = iterator(new Query(VariantQueryParam.STUDY.key(), studyMetadata1.getName()), null);
+        VariantDBIterator iterator = iterator(new Query(VariantQueryParam.STUDY.key(), studyMetadata1.getName())
+                .append(INCLUDE_SAMPLE.key(), ALL), null);
         for (int i = 0; i < 20; i++) {
             Variant variant = iterator.next();
             int expectedNumSamples = (int) variant.getStudies().get(0).getSamples().stream().map(SampleEntry::getData).filter(data -> validGts.contains(data.get(0))).count();
