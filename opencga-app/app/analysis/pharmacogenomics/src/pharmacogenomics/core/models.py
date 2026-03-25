@@ -219,7 +219,8 @@ def build_summary(result: AlleleTyperResult) -> PharmacogenomicsSummary:
     )
 
     seen_genes: set[str] = set()
-    all_drug_names: set[str] = set()
+    genes_with_results: set[str] = set()
+    actionable_drug_names: set[str] = set()
 
     for star in result.allele_typer_results:
         gene = star.gene
@@ -229,13 +230,13 @@ def build_summary(result: AlleleTyperResult) -> PharmacogenomicsSummary:
             seen_genes.add(gene)
             summary.total_genes_analyzed += 1
 
-        # No translation
-        if star.diplotype == "no translation available":
+        # No translation or undetermined
+        if star.diplotype in ("no translation available", "No ha sido posible obtener un genotipo"):
             if gene not in summary.no_translation_genes:
                 summary.no_translation_genes.append(gene)
             continue
 
-        summary.total_genes_with_results += 1
+        genes_with_results.add(gene)
 
         annotation = star.diplotype_annotation
         if not annotation:
@@ -277,13 +278,15 @@ def build_summary(result: AlleleTyperResult) -> PharmacogenomicsSummary:
                 )
                 if cpic_level in ACTIONABLE_CPIC_LEVELS or pgkb_level in ACTIONABLE_PGKB_LEVELS:
                     actionable_drugs.append(summary_drug)
-                    all_drug_names.add(drug.drug_name)
                 else:
                     informative_drugs.append(summary_drug)
 
         is_normal = phenotype.lower() in ("normal metabolizer", "extensive metabolizer", "normal function", "")
 
         if actionable_drugs and not is_normal:
+            # Only count drugs as affected when the phenotype is non-normal
+            for d in actionable_drugs:
+                actionable_drug_names.add(d.drug_name)
             summary.actionable_results.append(ActionableResult(
                 gene=gene, diplotype=star.diplotype, renamed_diplotype=star.renamed_diplotype,
                 phenotype=phenotype, activity_score=activity_score,
@@ -299,8 +302,9 @@ def build_summary(result: AlleleTyperResult) -> PharmacogenomicsSummary:
         else:
             summary.normal_results.append(NormalResult(gene=gene, diplotype=star.diplotype, phenotype=phenotype))
 
+    summary.total_genes_with_results = len(genes_with_results)
     summary.total_actionable_genes = len(summary.actionable_results)
-    summary.total_drugs_affected = len(all_drug_names)
+    summary.total_drugs_affected = len(actionable_drug_names)
 
     return summary
 
