@@ -35,22 +35,22 @@ public class OpenArrayPharmacogenomicsAnalysisExecutor extends DockerWrapperAnal
 
         StringBuilder cli = new StringBuilder(cliPath.toAbsolutePath().toString());
         cli.append(" openarray");
-        cli.append(" --snv-file ").append(snvFilePath);
-        cli.append(" --translation-file ").append(translationFilePath);
+        cli.append(" --snv-file \"").append(snvFilePath).append("\"");
+        cli.append(" --translation-file \"").append(translationFilePath).append("\"");
 
         if (StringUtils.isNotEmpty(cnvFilePath)) {
-            cli.append(" --cnv-file ").append(cnvFilePath);
+            cli.append(" --cnv-file \"").append(cnvFilePath).append("\"");
         }
         if (StringUtils.isNotEmpty(renameFilePath)) {
-            cli.append(" --rename-file ").append(renameFilePath);
+            cli.append(" --rename-file \"").append(renameFilePath).append("\"");
         }
         if (StringUtils.isNotEmpty(compareToFilePath)) {
-            cli.append(" --compare-to ").append(compareToFilePath);
+            cli.append(" --compare-to \"").append(compareToFilePath).append("\"");
         }
         if (annotate) {
             cli.append(" --annotate");
         }
-        cli.append(" --outdir ").append(getOutDir().toAbsolutePath());
+        cli.append(" --outdir \"").append(getOutDir().toAbsolutePath()).append("\"");
 
         logger.info("Pharmacogenomics CLI: {}", cli);
         runCommandLine(cli.toString());
