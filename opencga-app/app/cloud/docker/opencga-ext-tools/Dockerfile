@@ -77,7 +77,8 @@ RUN apt-get update -y && \
     R -e "options(timeout = 7200); for(i in 1:3) { tryCatch({ BiocManager::install('BSgenome.Hsapiens.UCSC.hg38'); break }, error = function(e) { Sys.sleep(30); if(i == 3) stop(e) }) }"  && \
 
     ## 7. Install signature.tools.lib
-    R -e "install.packages(c('devtools', 'getopt'), repos='https://cran.rstudio.com/')" && \
+    R -e "install.packages(c('remotes', 'getopt'), repos='https://cran.rstudio.com/')" && \
+    R -e "if (!requireNamespace('remotes', quietly=TRUE)) stop('remotes installation failed')" && \
     R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/GenSA/GenSA_1.1.7.tar.gz', repos=NULL, type='source')" && \
     R -e "if (!requireNamespace('GenSA', quietly=TRUE)) stop('GenSA installation failed')" && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
@@ -87,7 +88,7 @@ RUN apt-get update -y && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+    R -e "options(timeout = 3600);remotes::install_local('.', repos='https://www.stats.bris.ac.uk/R/')" && \
     rm -rf /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
