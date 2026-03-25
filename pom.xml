@@ -1480,8 +1480,6 @@
                 </property>
             </activation>
             <properties>
-                <opencga.war.name>opencga-${project.parent.version}</opencga.war.name>
-
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>
