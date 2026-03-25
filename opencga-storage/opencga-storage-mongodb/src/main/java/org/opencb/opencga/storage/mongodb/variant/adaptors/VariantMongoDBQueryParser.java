@@ -252,16 +252,17 @@ public class VariantMongoDBQueryParser {
                     : parsedVariantQuery.getInputQuery()));
             logger.debug("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         }
-        logger.info("MongoDB Query = {}", filter.toBsonDocument().toJson(JSON_WRITER_SETTINGS));
         if (!filters.isEmpty()) {
             logger.info("MongoDB Query (all of):");
             if (idIntersectBson != null) {
                 BsonDocument bsonDocument = idIntersectBson.toBsonDocument();
                 String message;
-                if (bsonDocument.containsKey("$in")) {
-                    BsonArray array = bsonDocument.getArray("$in");
+                if (bsonDocument.containsKey("_id") && bsonDocument.get("_id").isDocument()
+                        && bsonDocument.getDocument("_id").containsKey("$in")) {
+                    BsonArray array = bsonDocument.getDocument("_id").getArray("$in");
                     if (array.size() > 10) {
-                        message = "{\"$in\" : [ \"" + array.get(0).asString().getValue() + "\" ... " + array.size() + " ] }";
+                        message = "{\"_id\" : {\"$in\" : [ \"" + array.get(0).asString().getValue()
+                                + "\" ... (" + array.size() + " total) ] } }";
                     } else {
                         message = bsonDocument.toJson(JSON_WRITER_SETTINGS);
                     }
