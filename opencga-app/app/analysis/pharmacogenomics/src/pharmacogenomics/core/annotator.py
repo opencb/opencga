@@ -144,20 +144,20 @@ class CpicAnnotator:
 
         drugs = []
         for pair in self._pair_cache[gene]:
-            drug_id = pair.get("drugid", "")
-            guideline_id = pair.get("guidelineid", "")
+            drug_id = pair.get("drugid") or ""
+            guideline_id = pair.get("guidelineid")
 
             # Resolve drug name from /drug endpoint
             drug_name = self._resolve_drug_name(drug_id)
 
-            # Query recommendations for this drug-gene pair
-            recs = self._query_recommendations(drug_id, guideline_id)
+            # Query recommendations only if both drugid and guidelineid are available
+            recs = self._query_recommendations(drug_id, guideline_id) if drug_id and guideline_id else []
 
             drug = CpicDrug(
                 drug_id=str(drug_id),
                 drug_name=drug_name,
                 gene_symbol=pair.get("genesymbol", ""),
-                guideline_id=str(guideline_id),
+                guideline_id=str(guideline_id or ""),
                 cpic_level=pair.get("cpiclevel", ""),
                 pgkb_ca_level=pair.get("clinpgxlevel", ""),
                 pgx_testing=pair.get("pgxtesting", "") or "",
