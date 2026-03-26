@@ -52,7 +52,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected OpenCGAClient openCGAClient;
     protected AbstractOutputWriter writer;
 
-
+    private boolean errors;
     private Logger privateLogger;
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
@@ -182,9 +182,16 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected void createOutput(RestResponse queryResponse) {
         if (writer != null && queryResponse != null) {
             writer.print(queryResponse);
+            if (writer.hasErrors(queryResponse)) {
+                errors = true;
+            }
         } else {
             privateLogger.error("Null object found: writer set to '{}' and queryResponse set to '{}'", writer, queryResponse);
         }
+    }
+
+    public boolean hasErrors() {
+        return errors;
     }
 
     @Deprecated

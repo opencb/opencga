@@ -36,7 +36,7 @@ public class CommandProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
-    public void process(String[] args) {
+    public int process(String[] args) {
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
         try {
             if (!ArrayUtils.isEmpty(args)) {
@@ -75,29 +75,36 @@ public class CommandProcessor {
                                         commandExecutor.execute();
                                         commandExecutor.getSessionManager().saveSession();
                                         loadSessionStudies(commandExecutor);
+                                        if (commandExecutor.hasErrors()) {
+                                            return 1;
+                                        }
                                     } else {
                                         PrintUtils.println("Session has expired, you must log in again or log out to work as a anonymous user.\n");
+                                        return 1;
                                     }
                                 } catch (Exception ex) {
                                     CommandLineUtils.error("Execution error", ex);
                                     logger.error("Execution error", ex);
+                                    return 1;
                                 }
                             } else {
                                 cliOptionsParser.printUsage();
                                 logger.error("Command Executor NULL");
-                                System.exit(1);
+                                return 1;
                             }
                         } else {
                             cliOptionsParser.printUsage();
+                            return 1;
                         }
                     } catch (ParameterException e) {
                         printWarn("\n" + e.getMessage());
                         cliOptionsParser.printUsage();
                         logger.error("Parameter error: " + e.getMessage(), e);
+                        return 1;
                     } catch (CatalogAuthenticationException e) {
                         printWarn("\n" + e.getMessage());
                         logger.error(e.getMessage(), e);
-
+                        return 1;
                     }
                 }
             }
@@ -106,9 +113,9 @@ public class CommandProcessor {
             CommandLineUtils.error(e);
             cliOptionsParser.printUsage();
             logger.error(e.getMessage(), e);
-
+            return 1;
         }
-
+        return 0;
     }
 
     private void refreshToken(OpencgaCommandExecutor commandExecutor) throws ClientException, IOException {

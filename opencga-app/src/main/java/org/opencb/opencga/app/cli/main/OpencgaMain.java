@@ -117,7 +117,10 @@ public class OpencgaMain {
         args = parseCliParams(args);
         if (!ArrayUtils.isEmpty(args)) {
             CommandProcessor processor = new CommandProcessor();
-            processor.process(args);
+            int exitCode = processor.process(args);
+            if (exitCode != 0) {
+                System.exit(exitCode);
+            }
         }
     }
 
