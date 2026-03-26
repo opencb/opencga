@@ -27,9 +27,9 @@ Steps performed:
 
 Options (override environment variables):
   --opencga-home DIR        OpenCGA installation directory (env: OPENCGA_HOME, default: /opt/opencga)
-  --org-id ID               Organization identifier (env: OPENCGA_ORG_ID) [required]
-  --owner-id ID             Owner user identifier (env: OPENCGA_OWNER_ID) [required]
   --owner-password PASS     Owner user password (env: OPENCGA_OWNER_PASSWORD) [required]
+  --org-id ID               Organization identifier (env: OPENCGA_ORG_ID, default: test)
+  --owner-id ID             Owner user identifier (env: OPENCGA_OWNER_ID, default: test-user)
   --project ID              Project identifier (env: OPENCGA_DEMO_PROJECT, default: family)
   --study ID                Study identifier (env: OPENCGA_DEMO_STUDY, default: corpasome)
   --host URL                REST host URL (exports OPENCGA_CLIENT_REST_HOST)
@@ -52,9 +52,9 @@ while [ $# -gt 0 ]; do
 done
 
 OPENCGA_HOME=${OPENCGA_HOME:-/opt/opencga}
-OWNER_ID=${OPENCGA_OWNER_ID:?Missing --owner-id or OPENCGA_OWNER_ID}
+OWNER_ID=${OPENCGA_OWNER_ID:-test-user}
 OWNER_PASSWORD=${OPENCGA_OWNER_PASSWORD:?Missing --owner-password or OPENCGA_OWNER_PASSWORD}
-ORG_ID=${OPENCGA_ORG_ID:?Missing --org-id or OPENCGA_ORG_ID}
+ORG_ID=${OPENCGA_ORG_ID:-test}
 PROJECT="${OPENCGA_DEMO_PROJECT:-family}"
 STUDY="${OPENCGA_DEMO_STUDY:-corpasome}"
 STUDY_FQN="${PROJECT}:${STUDY}"
@@ -71,31 +71,57 @@ echo "============================================="
 echo "Logging in as ${OWNER_ID}..."
 echo "${OWNER_PASSWORD}" | "${OPENCGA_HOME}/bin/opencga.sh" users login -u "${OWNER_ID}" -p --organization "${ORG_ID}"
 
-# Create project
+# Create project (skip if already exists)
 echo "Creating project ${PROJECT}..."
-"${OPENCGA_HOME}/bin/opencga.sh" projects create --id "${PROJECT}" \
+output=$("${OPENCGA_HOME}/bin/opencga.sh" projects create --id "${PROJECT}" \
     --name "Project ${PROJECT} - GRCh37" \
     --organism-scientific-name 'hsapiens' \
     --organism-assembly 'GRCh37' \
     --cellbase-url https://ws.zettagenomics.com/cellbase/ \
     --cellbase-version v5.8 \
-    --cellbase-data-release 1
+    --cellbase-data-release 1 2>&1) && rc=0 || rc=$?
+if [ "$rc" -eq 0 ]; then
+    echo "Project '${PROJECT}' created."
+elif echo "$output" | grep -qi "already exists"; then
+    echo "Project '${PROJECT}' already exists, skipping."
+else
+    echo "$output" >&2
+    exit "$rc"
+fi
 
-# Create study
+# Create study (skip if already exists)
 echo "Creating study ${STUDY}..."
-"${OPENCGA_HOME}/bin/opencga.sh" studies create --project "${PROJECT}" \
+output=$("${OPENCGA_HOME}/bin/opencga.sh" studies create --project "${PROJECT}" \
     --id "${STUDY}" \
     --name 'Corpas Family' \
-    --description 'This study simulates two disorders and some phenotypes in the Corpas family for training purposes'
+    --description 'This study simulates two disorders and some phenotypes in the Corpas family for training purposes' 2>&1) && rc=0 || rc=$?
+if [ "$rc" -eq 0 ]; then
+    echo "Study '${STUDY}' created."
+elif echo "$output" | grep -qi "already exists"; then
+    echo "Study '${STUDY}' already exists, skipping."
+else
+    echo "$output" >&2
+    exit "$rc"
+fi
 
 # Configure variant storage
 echo "Configuring variant storage for ${STUDY_FQN}..."
 "${OPENCGA_HOME}/bin/opencga.sh" operations variant-setup --study "${STUDY_FQN}" \
     --expected-samples 4 --expected-files 1 --average-samples-per-file 4 --average-file-size 20MiB
 
-# Create data directory and fetch VCF
+# Create data directory (skip if already exists) and fetch VCF
+echo "Creating data directory..."
+output=$("${OPENCGA_HOME}/bin/opencga.sh" files create --study "${STUDY_FQN}" --path 'data' --type 'DIRECTORY' 2>&1) && rc=0 || rc=$?
+if [ "$rc" -eq 0 ]; then
+    echo "Directory 'data' created."
+elif echo "$output" | grep -qi "already exists"; then
+    echo "Directory 'data' already exists, skipping."
+else
+    echo "$output" >&2
+    exit "$rc"
+fi
+
 echo "Fetching demo VCF file..."
-"${OPENCGA_HOME}/bin/opencga.sh" files create --study "${STUDY_FQN}" --path 'data' --type 'DIRECTORY'
 "${OPENCGA_HOME}/bin/opencga.sh" files fetch --study "${STUDY_FQN}" --path 'data' \
     --url 'http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz' \
     --job-id "${PROJECT}_download_vcf"
