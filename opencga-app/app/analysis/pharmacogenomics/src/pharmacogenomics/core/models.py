@@ -109,12 +109,23 @@ class CpicDiplotypeInfo:
 
 
 @dataclass
+class CustomDiplotypeAnnotation:
+    gene: str = ""
+    allele1: str = ""
+    allele2: str = ""
+    function: str = ""
+    description: str = ""
+    type: str = ""
+
+
+@dataclass
 class CpicDiplotypeAnnotation:
     gene: str = ""
     diplotype: str = ""
     diplotype_info: CpicDiplotypeInfo | None = None
     alleles: list[CpicAlleleAnnotation] = field(default_factory=list)
     drugs: list[CpicDrug] = field(default_factory=list)
+    custom_annotation: CustomDiplotypeAnnotation | None = None
 
 
 @dataclass

@@ -13,6 +13,7 @@ public class CpicDiplotypeAnnotation {
     private CpicDiplotypeInfo diplotypeInfo;          // from /diplotype endpoint
     private List<CpicAlleleAnnotation> alleles;       // from /allele endpoint, one per allele
     private List<CpicDrug> drugs;                         // from /pair endpoint, each with nested recommendations
+    private CustomDiplotypeAnnotation customAnnotation;   // custom annotation from external file
 
     public CpicDiplotypeAnnotation() {
     }
@@ -80,6 +81,15 @@ public class CpicDiplotypeAnnotation {
 
     public CpicDiplotypeAnnotation setDrugs(List<CpicDrug> drugs) {
         this.drugs = drugs;
+        return this;
+    }
+
+    public CustomDiplotypeAnnotation getCustomAnnotation() {
+        return customAnnotation;
+    }
+
+    public CpicDiplotypeAnnotation setCustomAnnotation(CustomDiplotypeAnnotation customAnnotation) {
+        this.customAnnotation = customAnnotation;
         return this;
     }
 }

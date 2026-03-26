@@ -25,6 +25,7 @@ public class OpenArrayPharmacogenomicsAnalysisExecutor extends DockerWrapperAnal
     private String translationFilePath;
     private String cnvFilePath;
     private String renameFilePath;
+    private String diplotypeAnnotationFilePath;
     private String compareToFilePath;
     private boolean annotate;
 
@@ -43,6 +44,9 @@ public class OpenArrayPharmacogenomicsAnalysisExecutor extends DockerWrapperAnal
         }
         if (StringUtils.isNotEmpty(renameFilePath)) {
             cli.append(" --rename-file \"").append(renameFilePath).append("\"");
+        }
+        if (StringUtils.isNotEmpty(diplotypeAnnotationFilePath)) {
+            cli.append(" --diplotype-annotation-file \"").append(diplotypeAnnotationFilePath).append("\"");
         }
         if (StringUtils.isNotEmpty(compareToFilePath)) {
             cli.append(" --compare-to \"").append(compareToFilePath).append("\"");
@@ -84,6 +88,12 @@ public class OpenArrayPharmacogenomicsAnalysisExecutor extends DockerWrapperAnal
     public String getRenameFilePath() { return renameFilePath; }
     public OpenArrayPharmacogenomicsAnalysisExecutor setRenameFilePath(String renameFilePath) {
         this.renameFilePath = renameFilePath;
+        return this;
+    }
+
+    public String getDiplotypeAnnotationFilePath() { return diplotypeAnnotationFilePath; }
+    public OpenArrayPharmacogenomicsAnalysisExecutor setDiplotypeAnnotationFilePath(String diplotypeAnnotationFilePath) {
+        this.diplotypeAnnotationFilePath = diplotypeAnnotationFilePath;
         return this;
     }
 

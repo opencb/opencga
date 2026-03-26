@@ -55,6 +55,7 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
     private String translationFilePath;
     private String cnvFilePath;
     private String renameFilePath;
+    private String diplotypeAnnotationFilePath;
     private String compareToPath;
 
     @Override
@@ -91,6 +92,11 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
                     .getUri().getPath();
         }
 
+        if (StringUtils.isNotEmpty(analysisParams.getDiplotypeAnnotationFile())) {
+            diplotypeAnnotationFilePath = AnalysisUtils.getCatalogFile(analysisParams.getDiplotypeAnnotationFile(),
+                    study, fileManager, token).getUri().getPath();
+        }
+
         if (StringUtils.isNotEmpty(analysisParams.getCompareToFile())) {
             compareToPath = AnalysisUtils.getCatalogFile(analysisParams.getCompareToFile(), study, fileManager, token)
                     .getUri().getPath();
@@ -119,6 +125,7 @@ public class OpenArrayPharmacogenomicsAnalysis extends OpenCgaTool {
                     .setTranslationFilePath(translationFilePath)
                     .setCnvFilePath(cnvFilePath)
                     .setRenameFilePath(renameFilePath)
+                    .setDiplotypeAnnotationFilePath(diplotypeAnnotationFilePath)
                     .setCompareToFilePath(compareToPath)
                     .setAnnotate(Boolean.TRUE.equals(analysisParams.getAnnotate()))
                     .execute();

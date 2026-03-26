@@ -20,6 +20,9 @@ public class OpenArrayPharmacogenomicsAnalysisParams extends ToolParams {
     @DataField(id = "renameFile", description = "Catalog path to allele rename file (HGVS nomenclature)")
     private String renameFile;
 
+    @DataField(id = "diplotypeAnnotationFile", description = "Catalog path to custom diplotype annotation file")
+    private String diplotypeAnnotationFile;
+
     @DataField(id = "compareToFile", description = "Catalog path to TrueMark detailed results file for comparison benchmark")
     private String compareToFile;
 
@@ -33,12 +36,13 @@ public class OpenArrayPharmacogenomicsAnalysisParams extends ToolParams {
     }
 
     public OpenArrayPharmacogenomicsAnalysisParams(String snvFile, String cnvFile, String translationFile,
-                                                   String renameFile, String compareToFile, Boolean annotate,
-                                                   String outdir) {
+                                                   String renameFile, String diplotypeAnnotationFile,
+                                                   String compareToFile, Boolean annotate, String outdir) {
         this.snvFile = snvFile;
         this.cnvFile = cnvFile;
         this.translationFile = translationFile;
         this.renameFile = renameFile;
+        this.diplotypeAnnotationFile = diplotypeAnnotationFile;
         this.compareToFile = compareToFile;
         this.annotate = annotate;
         this.outdir = outdir;
@@ -51,6 +55,7 @@ public class OpenArrayPharmacogenomicsAnalysisParams extends ToolParams {
         sb.append(", cnvFile='").append(cnvFile).append('\'');
         sb.append(", translationFile='").append(translationFile).append('\'');
         sb.append(", renameFile='").append(renameFile).append('\'');
+        sb.append(", diplotypeAnnotationFile='").append(diplotypeAnnotationFile).append('\'');
         sb.append(", compareToFile='").append(compareToFile).append('\'');
         sb.append(", annotate=").append(annotate);
         sb.append(", outdir='").append(outdir).append('\'');
@@ -69,6 +74,9 @@ public class OpenArrayPharmacogenomicsAnalysisParams extends ToolParams {
 
     public String getRenameFile() { return renameFile; }
     public OpenArrayPharmacogenomicsAnalysisParams setRenameFile(String renameFile) { this.renameFile = renameFile; return this; }
+
+    public String getDiplotypeAnnotationFile() { return diplotypeAnnotationFile; }
+    public OpenArrayPharmacogenomicsAnalysisParams setDiplotypeAnnotationFile(String diplotypeAnnotationFile) { this.diplotypeAnnotationFile = diplotypeAnnotationFile; return this; }
 
     public String getCompareToFile() { return compareToFile; }
     public OpenArrayPharmacogenomicsAnalysisParams setCompareToFile(String compareToFile) { this.compareToFile = compareToFile; return this; }

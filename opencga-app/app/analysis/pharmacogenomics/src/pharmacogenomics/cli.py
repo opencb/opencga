@@ -38,6 +38,10 @@ def parse_args(argv=None):
     oa_parser.add_argument("--translation-file", type=str, required=True, help="Translation table file")
     oa_parser.add_argument("--rename-file", type=str, default=None, help="Allele rename file (optional)")
     oa_parser.add_argument(
+        "--diplotype-annotation-file", type=str, default=None,
+        help="Custom diplotype annotation file mapping allele pairs to clinical function",
+    )
+    oa_parser.add_argument(
         "--compare-to", type=str, default=None,
         help="Path to TrueMark detailed results file for comparison benchmark",
     )
@@ -100,12 +104,18 @@ def run_openarray(args, config, logger) -> None:
         logger.info("Parsing rename file: %s", args.rename_file)
         typer.parse_rename_file(Path(args.rename_file))
 
+    # Parse custom diplotype annotation file if provided
+    if args.diplotype_annotation_file:
+        logger.info("Parsing diplotype annotation file: %s", args.diplotype_annotation_file)
+        typer.parse_diplotype_annotation_file(Path(args.diplotype_annotation_file))
+
     # Run allele typing
     logger.info("Running allele typing on: %s", args.snv_file)
     results = typer.build_allele_typer_results(Path(args.snv_file))
 
-    # Apply renames if loaded
+    # Apply renames and custom annotations
     typer.apply_renames(results)
+    typer.apply_custom_annotations(results)
 
     logger.info("Allele typing produced %d sample results", len(results))
 

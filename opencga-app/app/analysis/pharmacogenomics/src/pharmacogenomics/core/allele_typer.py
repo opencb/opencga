@@ -13,6 +13,8 @@ from pharmacogenomics.core.models import (
     AlleleCall,
     AlleleTyperResult,
     AssayDefinition,
+    CpicDiplotypeAnnotation,
+    CustomDiplotypeAnnotation,
     Genotype,
     StarAlleleResult,
     TranslationInfo,
@@ -82,6 +84,8 @@ class AlleleTyper:
         self.assay_to_column: dict[str, int] = {}
         self.sample_cnv_data: dict[str, dict[str, int]] = {}
         self.allele_renames: dict[str, dict[str, str]] = {}
+        # Custom diplotype annotations: gene -> {(allele1, allele2) -> CustomDiplotypeAnnotation}
+        self.custom_diplotype_annotations: dict[str, dict[tuple[str, str], CustomDiplotypeAnnotation]] = {}
 
     # --- Translation parsing ---
 
@@ -261,6 +265,56 @@ class AlleleTyper:
                             star.renamed_diplotype = r1
                     else:
                         star.renamed_diplotype = f"{r1}/{r2}"
+
+    # --- Custom diplotype annotation ---
+
+    def parse_diplotype_annotation_file(self, path: Path) -> None:
+        logger.info("Parsing diplotype annotation file: %s", path)
+        header_skipped = False
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.rstrip("\n\r")
+                if not line.strip():
+                    continue
+                if not header_skipped:
+                    header_skipped = True
+                    continue
+                fields = line.split("\t")
+                if len(fields) >= 4:
+                    gene = fields[0].strip()
+                    allele1 = fields[1].strip()
+                    allele2 = fields[2].strip()
+                    function = fields[3].strip()
+                    description = fields[4].strip() if len(fields) >= 5 else ""
+                    ann_type = fields[5].strip() if len(fields) >= 6 else ""
+                    if gene and allele1 and allele2:
+                        annotation = CustomDiplotypeAnnotation(
+                            gene=gene, allele1=allele1, allele2=allele2,
+                            function=function, description=description, type=ann_type,
+                        )
+                        # Store both orders for order-independent matching
+                        key1 = (allele1, allele2)
+                        key2 = (allele2, allele1)
+                        gene_map = self.custom_diplotype_annotations.setdefault(gene, {})
+                        gene_map[key1] = annotation
+                        gene_map[key2] = annotation
+        logger.info("Parsed custom diplotype annotations for %d genes", len(self.custom_diplotype_annotations))
+
+    def apply_custom_annotations(self, results: list[AlleleTyperResult]) -> None:
+        if not self.custom_diplotype_annotations:
+            return
+        for result in results:
+            for star in result.allele_typer_results:
+                gene_map = self.custom_diplotype_annotations.get(star.gene)
+                if not gene_map or not star.allele_calls or len(star.allele_calls) != 2:
+                    continue
+                a1 = star.allele_calls[0].allele
+                a2 = star.allele_calls[1].allele
+                annotation = gene_map.get((a1, a2))
+                if annotation:
+                    if star.diplotype_annotation is None:
+                        star.diplotype_annotation = CpicDiplotypeAnnotation(gene=star.gene, diplotype=star.diplotype)
+                    star.diplotype_annotation.custom_annotation = annotation
 
     # --- Genotyping parsing and result building ---
 
