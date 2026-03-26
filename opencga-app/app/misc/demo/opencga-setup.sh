@@ -72,6 +72,12 @@ OWNER_NAME=${OPENCGA_OWNER_NAME:-Test User}
 OWNER_EMAIL=${OPENCGA_OWNER_EMAIL:-test@opencga.local}
 OWNER_PASSWORD=${OPENCGA_OWNER_PASSWORD:?Missing --owner-password or OPENCGA_OWNER_PASSWORD}
 
+# Tee all output to a log file if the logs directory exists
+LOG_DIR="${OPENCGA_HOME}/logs"
+if [ -d "$LOG_DIR" ]; then
+    exec > >(tee -a "${LOG_DIR}/opencga-setup.log") 2>&1
+fi
+
 echo "============================================="
 echo " OpenCGA Setup"
 echo "============================================="

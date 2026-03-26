@@ -79,6 +79,12 @@ STUDY="${OPENCGA_DEMO_STUDY:-corpasome}"
 TEMPLATE="${OPENCGA_DEMO_TEMPLATE:-}"
 STUDY_FQN="${PROJECT}:${STUDY}"
 
+# Tee all output to a log file if the logs directory exists
+LOG_DIR="${OPENCGA_HOME}/logs"
+if [ -d "$LOG_DIR" ]; then
+    exec > >(tee -a "${LOG_DIR}/opencga-load-demo.log") 2>&1
+fi
+
 echo "============================================="
 echo " OpenCGA Demo Data Load"
 echo " Organization: ${ORG_ID}"
@@ -122,6 +128,15 @@ run_idempotent "Fetching demo VCF file" \
     "${OPENCGA_HOME}/bin/opencga.sh" files fetch --study "${STUDY_FQN}" --path 'data' \
     --url 'http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz' \
     --job-id "${PROJECT}_download_vcf"
+
+# Upload and run template (if provided)
+if [ -n "$TEMPLATE" ]; then
+    echo "Uploading template from ${TEMPLATE}..."
+    TEMPLATE_ID=$("${OPENCGA_HOME}/bin/opencga.sh" studies templates-upload -i "$TEMPLATE" --study "${STUDY_FQN}")
+    echo "Running template '${TEMPLATE_ID}'..."
+    "${OPENCGA_HOME}/bin/opencga.sh" studies templates-run --id "$TEMPLATE_ID" --study "${STUDY_FQN}" --overwrite \
+      --job-depends-on "${PROJECT}_download_vcf"
+fi
 
 # Index variants
 run_idempotent "Submitting variant index job" \
@@ -176,13 +191,7 @@ run_idempotent "Submitting export job (cohort filter, AVRO)" \
     --job-id "${PROJECT}_variant_export_filtered" \
     --job-depends-on "${PROJECT}_variant_secondary_index"
 
-# Upload and run template (if provided)
-if [ -n "$TEMPLATE" ]; then
-    echo "Uploading template from ${TEMPLATE}..."
-    TEMPLATE_ID=$("${OPENCGA_HOME}/bin/opencga.sh" studies templates-upload -i "$TEMPLATE" --study "${STUDY_FQN}")
-    echo "Running template '${TEMPLATE_ID}'..."
-    "${OPENCGA_HOME}/bin/opencga.sh" studies templates-run --id "$TEMPLATE_ID" --study "${STUDY_FQN}" --overwrite
-fi
+
 
 echo "============================================="
 echo " Demo data jobs submitted!"

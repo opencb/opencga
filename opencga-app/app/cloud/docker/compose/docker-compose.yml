@@ -207,9 +207,9 @@ services:
         condition: service_healthy
     volumes:
       - ${OPENCGA_LOCAL_HOME}/conf:/opt/opencga/conf
-      - ${OPENCGA_LOCAL_SCRIPTS}:/opt/opencga/scripts:ro
+      - ${OPENCGA_LOCAL_HOME}/data/logs:/opt/opencga/logs
     restart: "no"
-    entrypoint: ["bash", "/opt/opencga/scripts/opencga-setup.sh"]
+    entrypoint: ["bash", "/opt/opencga/misc/demo/opencga-setup.sh"]
     environment:
       - OPENCGA_ADMIN_PASSWORD=${OPENCGA_ADMIN_PASSWORD}
       - OPENCGA_ORG_ID=${OPENCGA_ORG_ID}

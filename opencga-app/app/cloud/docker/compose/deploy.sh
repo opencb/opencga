@@ -262,6 +262,14 @@ Run './deploy.sh <command> --help' for command-specific options.
 EOF
 }
 
+_global_opts() {
+    cat <<'EOF'
+
+Global options:
+  -n, --name NAME   Instance name (default: local)
+EOF
+}
+
 usage_up() {
     cat <<'EOF'
 Usage: ./deploy.sh up [options]
@@ -296,6 +304,7 @@ Options:
   --user-password PASS   Owner user password
   --admin-password PASS  OpenCGA admin password
 EOF
+    _global_opts
 }
 
 usage_down() {
@@ -309,6 +318,7 @@ Options:
   --clean        Remove conf/, data/, iva/ directories (implies --volumes)
   --force        Skip running-jobs safety check
 EOF
+    _global_opts
 }
 
 usage_build() {
@@ -322,6 +332,7 @@ When storage=hadoop, also builds the HBase + Phoenix image.
 Options:
   --storage ENGINE  Storage engine: mongodb (default) or hadoop (HBase + Phoenix)
 EOF
+    _global_opts
 }
 
 usage_load_demo() {
@@ -338,6 +349,7 @@ Options:
   --project NAME   Project ID (default: family)
   --study NAME     Study ID (default: corpasome)
 EOF
+    _global_opts
 }
 
 usage_status() {
@@ -346,6 +358,7 @@ Usage: ./deploy.sh status
 
 Show status of all services.
 EOF
+    _global_opts
 }
 
 usage_restart() {
@@ -384,6 +397,7 @@ Options:
   --user-password PASS   Owner user password
   --admin-password PASS  OpenCGA admin password
 EOF
+    _global_opts
 }
 
 usage_cli() {
@@ -395,6 +409,7 @@ Optionally pass arguments to run a single command, e.g.:
   ./deploy.sh cli jobs top
   ./deploy.sh cli studies search
 EOF
+    _global_opts
 }
 
 usage_shell() {
@@ -404,6 +419,7 @@ Usage: ./deploy.sh shell
 Open an interactive shell in an opencga-base container with
 conf and scripts mounted. Useful for debugging and ad-hoc CLI commands.
 EOF
+    _global_opts
 }
 
 usage_logs() {
@@ -419,6 +435,7 @@ Options:
   --tail N      Show last N lines (default: 200)
   --all         Show all log lines (no tail limit)
 EOF
+    _global_opts
 }
 
 usage_clean() {
@@ -432,6 +449,7 @@ Prompts for confirmation before proceeding.
 Options:
   -y    Skip confirmation prompt
 EOF
+    _global_opts
 }
 
 usage_init_conf() {
@@ -441,6 +459,7 @@ Usage: ./deploy.sh init-conf
 Regenerate conf/ from build config templates, patching hostnames
 for Docker networking. Also regenerates iva/server.json.
 EOF
+    _global_opts
 }
 
 check_prerequisites() {
@@ -485,7 +504,7 @@ dc() {
 # Called on every 'up' so the instance always has the latest files.
 sync_instance_files() {
     mkdir -p "${DATA_HOME}"
-    # Scripts (used by opencga-init, opencga-setup, load-demo containers)
+    # Scripts (used by opencga-init container)
     rm -rf "${DATA_HOME}/scripts"
     cp -r "${SCRIPT_DIR}/scripts" "${DATA_HOME}/scripts"
     # Hadoop Dockerfile + config (for building HBase image)
@@ -1042,23 +1061,21 @@ do_status() {
 
 do_shell() {
     dc run --rm --no-deps \
-        -v "${SCRIPT_DIR}/scripts:/opt/opencga/scripts:ro" \
         --entrypoint bash \
         opencga-rest
 }
 
 do_load_demo() {
-    local env_args=(
-        -e OPENCGA_OWNER_ID="${OPENCGA_OWNER_ID}"
-        -e OPENCGA_OWNER_PASSWORD="${OPENCGA_OWNER_PASSWORD}"
-        -e OPENCGA_ORG_ID="${OPENCGA_ORG_ID}"
+    local cmd_args=(
+        --owner-id "${OPENCGA_OWNER_ID}"
+        --owner-password "${OPENCGA_OWNER_PASSWORD}"
+        --org-id "${OPENCGA_ORG_ID}"
+        --template /opt/opencga/misc/demo/corpasome
     )
-    [ -n "${DEMO_PROJECT:-}" ] && env_args+=(-e OPENCGA_DEMO_PROJECT="${DEMO_PROJECT}")
-    [ -n "${DEMO_STUDY:-}" ] && env_args+=(-e OPENCGA_DEMO_STUDY="${DEMO_STUDY}")
+    [ -n "${DEMO_PROJECT:-}" ] && cmd_args+=(--project "${DEMO_PROJECT}")
+    [ -n "${DEMO_STUDY:-}" ] && cmd_args+=(--study "${DEMO_STUDY}")
     dc run --rm --no-deps \
-        -v "${SCRIPT_DIR}/scripts:/opt/opencga/scripts:ro" \
-        "${env_args[@]}" \
-        --entrypoint "bash /opt/opencga/scripts/opencga-load-demo.sh" \
+        --entrypoint "bash /opt/opencga/misc/demo/opencga-load-demo.sh ${cmd_args[*]}" \
         opencga-rest
 }
 
