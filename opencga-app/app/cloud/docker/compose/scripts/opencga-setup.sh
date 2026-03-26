@@ -48,6 +48,22 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Run a command, tolerating "already exists" errors for idempotency.
+# Usage: run_idempotent "description" command [args...]
+run_idempotent() {
+    local desc="$1"; shift
+    echo "${desc}..."
+    output=$("$@" 2>&1) && rc=0 || rc=$?
+    if [ "$rc" -eq 0 ]; then
+        echo "${desc}... done."
+    elif echo "$output" | grep -qiE "already exists|already has"; then
+        echo "${desc}... already done, skipping."
+    else
+        echo "$output" >&2
+        exit "$rc"
+    fi
+}
+
 OPENCGA_HOME=${OPENCGA_HOME:-/opt/opencga}
 ADMIN_PASSWORD=${OPENCGA_ADMIN_PASSWORD:?Missing --admin-password or OPENCGA_ADMIN_PASSWORD}
 ORG_ID=${OPENCGA_ORG_ID:-test}
@@ -64,34 +80,18 @@ echo "============================================="
 echo "Logging in as admin..."
 echo "$ADMIN_PASSWORD" | "${OPENCGA_HOME}/bin/opencga.sh" users login -u opencga -p
 
-# Create organization (skip if already exists)
-echo "Creating organization '${ORG_ID}'..."
-output=$("${OPENCGA_HOME}/bin/opencga.sh" organizations create --id "$ORG_ID" 2>&1) && rc=0 || rc=$?
-if [ "$rc" -eq 0 ]; then
-    echo "Organization '${ORG_ID}' created."
-elif echo "$output" | grep -qi "already exists"; then
-    echo "Organization '${ORG_ID}' already exists, skipping."
-else
-    echo "$output" >&2
-    exit "$rc"
-fi
+# Create organization
+run_idempotent "Creating organization '${ORG_ID}'" \
+    "${OPENCGA_HOME}/bin/opencga.sh" organizations create --id "$ORG_ID"
 
-# Create owner user (skip if already exists)
-echo "Creating user '${OWNER_ID}' in organization '${ORG_ID}'..."
-output=$(echo "$ADMIN_PASSWORD" | "${OPENCGA_HOME}/bin/opencga.sh" users create \
+# Create owner user
+run_idempotent "Creating user '${OWNER_ID}' in organization '${ORG_ID}'" \
+    "${OPENCGA_HOME}/bin/opencga.sh" users create \
     --id "$OWNER_ID" \
     --name "$OWNER_NAME" \
     --email "$OWNER_EMAIL" \
     --password "$OWNER_PASSWORD" \
-    --organization "$ORG_ID" 2>&1) && rc=0 || rc=$?
-if [ "$rc" -eq 0 ]; then
-    echo "User '${OWNER_ID}' created."
-elif echo "$output" | grep -qi "already exists"; then
-    echo "User '${OWNER_ID}' already exists, skipping."
-else
-    echo "$output" >&2
-    exit "$rc"
-fi
+    --organization "$ORG_ID"
 
 # Make user owner of the organization (idempotent)
 echo "Making '${OWNER_ID}' owner of '${ORG_ID}'..."

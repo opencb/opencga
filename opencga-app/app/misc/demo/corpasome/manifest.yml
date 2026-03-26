@@ -10,6 +10,7 @@
 
 configuration:
   version: REPLACEME_OPENCGA_VERSION
+  organizationId: test
   index: false
   projectId: family
 study:
