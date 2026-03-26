@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -214,6 +215,15 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 insert(clientSession, project, study);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
+        } catch (CatalogDBException e) {
+            throw e;
+        } catch (CatalogException e) {
+            throw new CatalogDBException("Could not create study '" + study.getFqn() + "'", e);
+        } catch (MongoWriteException e) {
+            if (MongoDBUtils.isDuplicateKeyException(e)) {
+                throw new CatalogDBException("Study {id:\"" + study.getId() + "\"} already exists");
+            }
+            throw new CatalogDBException("Could not create study '" + study.getFqn() + "'", e);
         } catch (Exception e) {
             throw new CatalogDBException("Could not create study '" + study.getFqn() + "'", e);
         }
