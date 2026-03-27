@@ -113,19 +113,21 @@ def run_openarray(args, config, logger) -> None:
     logger.info("Running allele typing on: %s", args.snv_file)
     results = typer.build_allele_typer_results(Path(args.snv_file))
 
-    # Apply renames and custom annotations
+    # Apply renames
     typer.apply_renames(results)
-    typer.apply_custom_annotations(results)
 
     logger.info("Allele typing produced %d sample results", len(results))
 
-    # Annotate if requested
+    # Annotate if requested (must run before custom annotations so custom_annotation supplements CPIC data)
     if args.annotate:
         logger.info("Running CPIC annotation...")
         from pharmacogenomics.core.annotator import CpicAnnotator
 
         annotator = CpicAnnotator(config.cpic_base_url)
         annotator.annotate_results(results)
+
+    # Apply custom annotations after CPIC so they supplement (not get replaced by) the CPIC annotation
+    typer.apply_custom_annotations(results)
 
     # Export results and summaries
     from pharmacogenomics.core.models import build_summary
