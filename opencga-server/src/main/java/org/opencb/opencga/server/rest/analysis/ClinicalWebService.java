@@ -205,6 +205,20 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
+    @Path("/emedgene/import")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Import a clinical analysis from an Emedgene HL7 v2 JSON file", response = ClinicalAnalysis.class)
+    public Response emedgeneImport(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = EmedgeneImportParams.DESCRIPTION, required = true) EmedgeneImportParams params) {
+        try {
+            return createOkResponse(clinicalManager.importFromEmedgene(study, Paths.get(params.getFile()), token));
+        } catch (Exception e) {
+            return createErrorResponse("Import Emedgene clinical analysis", e.getMessage());
+        }
+    }
+
+    @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update clinical analysis attributes", response = ClinicalAnalysis.class, hidden = true)

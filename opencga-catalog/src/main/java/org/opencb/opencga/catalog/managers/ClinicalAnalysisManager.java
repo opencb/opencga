@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.managers.clinical.EmedgeneParser;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -817,6 +818,94 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             catalogManager.getInterpretationManager().create(study, clinicalAnalysis.getId(), secondaryInterpretation, SECONDARY,
                     QueryOptions.empty(), token);
         }
+    }
+
+    /**
+     * Import a ClinicalAnalysis from an Emedgene HL7 v2 JSON file.
+     * <p>
+     * Parses the Emedgene JSON, creates Individual/Sample if they don't exist, and creates a ClinicalAnalysis
+     * with an Interpretation containing the reported variants as primary findings.
+     *
+     * @param studyStr  Study identifier.
+     * @param filePath  Path to the Emedgene JSON file.
+     * @param token     Authentication token.
+     * @return OpenCGAResult with the created ClinicalAnalysis.
+     * @throws CatalogException if import fails.
+     * @throws IOException      if file cannot be read.
+     */
+    public OpenCGAResult<ClinicalAnalysis> importFromEmedgene(String studyStr, Path filePath, String token)
+            throws CatalogException, IOException {
+        // Parse the Emedgene file
+        EmedgeneParser parser = new EmedgeneParser();
+        EmedgeneParser.EmedgeneParseResult parseResult = parser.parse(filePath);
+
+        ClinicalAnalysis clinicalAnalysis = parseResult.getClinicalAnalysis();
+        Individual proband = parseResult.getProband();
+        Sample sample = parseResult.getSample();
+        Interpretation interpretation = parseResult.getInterpretation();
+
+        // Create sample if it doesn't exist
+        try {
+            catalogManager.getSampleManager().create(studyStr, sample, QueryOptions.empty(), token);
+            logger.info("Created sample '{}'", sample.getId());
+        } catch (CatalogException e) {
+            if (!e.getMessage().contains("already exists")) {
+                throw e;
+            }
+            logger.info("Sample '{}' already exists", sample.getId());
+        }
+
+        // Create individual if it doesn't exist
+        try {
+            catalogManager.getIndividualManager().create(studyStr, proband, QueryOptions.empty(), token);
+            logger.info("Created individual '{}'", proband.getId());
+        } catch (CatalogException e) {
+            if (!e.getMessage().contains("already exists")) {
+                throw e;
+            }
+            logger.info("Individual '{}' already exists", proband.getId());
+        }
+
+        // Associate sample to individual
+        catalogManager.getIndividualManager().update(studyStr, proband.getId(),
+                new IndividualUpdateParams().setSamples(
+                        Collections.singletonList(new SampleReferenceParam().setId(sample.getId()))),
+                QueryOptions.empty(), token);
+
+        // If proband has disorders, update the individual with them
+        if (CollectionUtils.isNotEmpty(proband.getDisorders())) {
+            IndividualUpdateParams disorderUpdate = new IndividualUpdateParams();
+            disorderUpdate.setDisorders(proband.getDisorders());
+            catalogManager.getIndividualManager().update(studyStr, proband.getId(), disorderUpdate,
+                    QueryOptions.empty(), token);
+        }
+
+        // If proband has phenotypes, update the individual with them
+        if (CollectionUtils.isNotEmpty(proband.getPhenotypes())) {
+            IndividualUpdateParams phenotypeUpdate = new IndividualUpdateParams();
+            phenotypeUpdate.setPhenotypes(proband.getPhenotypes());
+            catalogManager.getIndividualManager().update(studyStr, proband.getId(), phenotypeUpdate,
+                    QueryOptions.empty(), token);
+        }
+
+        // Extract interpretation for separate creation after ClinicalAnalysis
+        clinicalAnalysis.setInterpretation(null);
+
+        // Create the ClinicalAnalysis (without interpretation)
+        ClinicalAnalysis caToCreate = ClinicalAnalysisCreateParams.of(clinicalAnalysis).toClinicalAnalysis();
+        caToCreate.setAnalysts(Collections.emptyList());
+        OpenCGAResult<ClinicalAnalysis> result = create(studyStr, caToCreate, true, QueryOptions.empty(), token);
+
+        // Create the primary interpretation
+        if (interpretation != null) {
+            interpretation.setId(null);
+            catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysis.getId(), interpretation, PRIMARY,
+                    QueryOptions.empty(), token);
+        }
+
+        logger.info("Successfully imported Emedgene case '{}' as ClinicalAnalysis", clinicalAnalysis.getId());
+
+        return result;
     }
 
     private void validateAndInitReport(String organizationId, Study study, ClinicalReport report, String userId)
