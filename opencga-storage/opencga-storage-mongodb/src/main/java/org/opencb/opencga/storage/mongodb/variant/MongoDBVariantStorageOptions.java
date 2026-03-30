@@ -38,6 +38,7 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
     MERGE_PARALLEL_WRITE("storage.mongodb.merge.parallelWrite", false),
     MERGE_BATCH_SIZE("storage.mongodb.merge.batchSize", 10),          //Number of files to merge directly from first to second collection
 
+    AUTO_PRUNE_EMPTY_VARIANTS("storage.mongodb.autoPrune", false),
 
     EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
     DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0"));

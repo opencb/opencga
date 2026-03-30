@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.io.IOException;
@@ -127,7 +128,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions(MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.key(), false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
@@ -138,14 +139,14 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     }
 
     @Test
-    public void removeAndPurgeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions("purge", true));
+    public void removeAndPruneStudyTest() throws Exception {
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions(MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.key(), true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
             }
         }
-        DataResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
+        DataResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.COUNT, true));
         assertEquals(0, allVariants.getNumMatches());
     }
 

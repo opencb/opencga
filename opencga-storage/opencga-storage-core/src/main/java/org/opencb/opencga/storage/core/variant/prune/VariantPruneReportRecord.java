@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.prune;
+package org.opencb.opencga.storage.core.variant.prune;
 
 import org.opencb.biodata.models.variant.Variant;
 
@@ -12,7 +12,7 @@ public class VariantPruneReportRecord {
     private final Type type;
     private final List<Integer> studies;
 
-    enum Type {
+    public enum Type {
         FULL, PARTIAL
     }
 
