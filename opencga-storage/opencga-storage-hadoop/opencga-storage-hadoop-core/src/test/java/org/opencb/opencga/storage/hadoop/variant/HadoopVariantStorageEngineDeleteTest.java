@@ -24,5 +24,8 @@ public class HadoopVariantStorageEngineDeleteTest extends VariantStorageEngineDe
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
     }
 
-
+    @Override
+    protected void printVariants(String label) throws Exception {
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(label));
+    }
 }
