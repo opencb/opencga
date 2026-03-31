@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
-import htsjdk.variant.vcf.VCFConstants;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -172,7 +171,6 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
             StudyEntry studyEntry = studies.get(0);
             studyEntry.setStudyId(getStudyMetadata().getName());
             studyEntry.getFiles().get(0).setFileId(fileName);
-            studyEntry.getFiles().get(0).getData().remove(VCFConstants.END_KEY);
             for (SampleEntry sample : studyEntry.getSamples()) {
                 sample.setFileIndex(0);
             }
