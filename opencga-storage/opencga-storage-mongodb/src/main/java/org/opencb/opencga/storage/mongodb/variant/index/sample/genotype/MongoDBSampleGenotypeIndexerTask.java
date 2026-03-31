@@ -57,6 +57,8 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
     private final SampleIndexDBAdaptor dbAdaptor;
     /** Per-sample flag: whether to load existing data from DB when creating builders. */
     private final boolean[] rebuildPerSample;
+    /** When true, silently skip duplicate variants instead of throwing (used for FORCE re-load). */
+    private boolean forceOverwrite;
     /** Custom sample-data index fields (source=SAMPLE). */
     private final List<IndexField<String>> sampleCustomFields;
     /** sampleCustomField key → position index, passed to {@link SampleIndexVariantConverter#addSampleDataIndexValues}. */
@@ -140,6 +142,11 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
             }
             fileIdxMap[i] = map;
         }
+    }
+
+    public MongoDBSampleGenotypeIndexerTask setForceOverwrite(boolean forceOverwrite) {
+        this.forceOverwrite = forceOverwrite;
+        return this;
     }
 
     @Override
@@ -241,7 +248,7 @@ public class MongoDBSampleGenotypeIndexerTask implements Task<Document, SampleIn
                         // Exception: if this chunk was evicted and re-loaded during this run, the "duplicate" is
                         // our own data read back from the DB — skip it instead of throwing.
                         if (mergingChunks.contains(indexChunk) && !multiFileIndex[sampleIdx] && builder.containsVariant(entry)) {
-                            if (evictedChunks.contains(indexChunk)) {
+                            if (evictedChunks.contains(indexChunk) || forceOverwrite) {
                                 continue;
                             }
                             throw new IllegalArgumentException("Already loaded variant " + variant);

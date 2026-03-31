@@ -597,6 +597,19 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 } else {
                     logger.info("Loading split data: {}", splitData);
                 }
+            } else if (options.getBoolean(FORCE.key())) {
+                logger.info("Force reload: resetting status for already indexed samples: {}", alreadyIndexedSamples);
+                for (String sample : alreadyIndexedSamples) {
+                    int sId = getMetadataManager().getSampleId(studyId, sample);
+                    getMetadataManager().updateSampleMetadata(studyId, sId,
+                            sm -> sm.setIndexStatus(TaskMetadata.Status.NONE));
+                }
+                // Also reset file status if not already done (e.g. when TRANSFORM_ISOLATE skips preLoad FORCE block)
+                if (fileMetadata.isIndexed()) {
+                    getMetadataManager().updateFileMetadata(studyId, fileMetadata.getId(),
+                            fm -> fm.setIndexStatus(TaskMetadata.Status.NONE));
+                }
+                alreadyIndexedSamples.clear();
             } else {
                 throw StorageEngineException.alreadyLoadedSamples(fileMetadata.getName(), new ArrayList<>(alreadyIndexedSamples));
             }
