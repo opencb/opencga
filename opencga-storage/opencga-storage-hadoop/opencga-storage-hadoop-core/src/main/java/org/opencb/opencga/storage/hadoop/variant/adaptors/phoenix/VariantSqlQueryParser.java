@@ -191,7 +191,9 @@ public class VariantSqlQueryParser {
                 sb.append(" LIMIT ").append(options.getInt(QueryOptions.LIMIT));
             }
 
-            if (options.getInt(QueryOptions.SKIP, -1) >= 0) {
+            // https://issues.apache.org/jira/browse/PHOENIX-7589
+            // OFFSET 0 might fail in PHOENIX v5.2
+            if (options.getInt(QueryOptions.SKIP, -1) > 0) {
                 sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
             }
         }

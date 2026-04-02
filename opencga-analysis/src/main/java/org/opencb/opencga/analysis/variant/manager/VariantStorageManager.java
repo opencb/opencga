@@ -230,6 +230,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     //   Data Operation methods  //
     // --------------------------//
 
+    public List<StoragePipelineResult> index(String study, String fileId, String outDir, VariantIndexParams params, String token)
+            throws CatalogException, StorageEngineException {
+        return index(study, Arrays.asList(StringUtils.split(fileId, ",")), outDir,
+                VariantIndexOperationTool.toVariantStorageOptions(params), token);
+    }
+
     public List<StoragePipelineResult> index(String study, String fileId, String outDir, ObjectMap config, String token)
             throws CatalogException, StorageEngineException {
         return index(study, Arrays.asList(StringUtils.split(fileId, ",")), outDir, config, token);

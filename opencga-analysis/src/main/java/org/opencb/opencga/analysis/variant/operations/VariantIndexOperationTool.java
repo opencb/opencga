@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import io.jsonwebtoken.lang.Collections;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
@@ -63,12 +64,22 @@ public class VariantIndexOperationTool extends OperationTool {
 
         study = getStudyFqn();
 
-        params.put(LOAD, indexParams.isLoad());
-        params.put(TRANSFORM, indexParams.isTransform());
         if (indexParams.isTransform() && !indexParams.isLoad()) {
             // Ensure keeping intermediate files if only transforming
             keepIntermediateFiles = true;
         }
+        toVariantStorageOptions(indexParams, params);
+    }
+
+    public static ObjectMap toVariantStorageOptions(VariantIndexParams indexParams) {
+        ObjectMap params = new ObjectMap();
+        toVariantStorageOptions(indexParams, params);
+        return params;
+    }
+
+    protected static void toVariantStorageOptions(VariantIndexParams indexParams, ObjectMap params) {
+        params.put(LOAD, indexParams.isLoad());
+        params.put(TRANSFORM, indexParams.isTransform());
 
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexParams.getMerge());
 

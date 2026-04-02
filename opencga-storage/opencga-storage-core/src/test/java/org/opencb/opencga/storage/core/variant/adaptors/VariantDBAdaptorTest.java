@@ -301,6 +301,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void limitSkip(Query query, QueryOptions options) {
         VariantQueryResult<Variant> expected = query(query, options);
         int numVariants = expected.getNumResults();
+        logger.info("Expected {} results", numVariants);
 //        expected.getResults().forEach(v -> logger.info("expected variant: == " + v));
         for (int batchSize : new int[]{50, 100, 1000}) {
             List<Variant> variants = new ArrayList<>();
