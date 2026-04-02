@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.studyIdToSearchModel;
 
 public class VariantStorageSolrQueryParser extends SolrQueryParser {
@@ -30,15 +31,22 @@ public class VariantStorageSolrQueryParser extends SolrQueryParser {
 
     @Override
     protected List<String> parseStudyNames(List<String> studiesNames) {
-        Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(studiesNames));
-        List<String> studyNames = new ArrayList<>(studyIds.size());
-        Map<String, Integer> map = variantStorageMetadataManager.getStudies(null);
-        map.forEach((name, id) -> {
-            if (studyIds.contains(id)) {
-                studyNames.add(studyIdToSearchModel(name));
+        Map<String, Integer> studies = variantStorageMetadataManager.getStudies(null);
+        // Build reverse map: id -> name
+        Map<Integer, String> idToName = new HashMap<>(studies.size());
+        studies.forEach((name, id) -> idToName.put(id, name));
+
+        List<String> result = new ArrayList<>(studiesNames.size());
+        for (String studyName : studiesNames) {
+            boolean negated = isNegated(studyName);
+            String rawName = negated ? removeNegation(studyName) : studyName;
+            Integer studyId = variantStorageMetadataManager.getStudyId(rawName, false, studies);
+            if (studyId != null) {
+                String resolved = studyIdToSearchModel(idToName.get(studyId));
+                result.add(negated ? NOT + resolved : resolved);
             }
-        });
-        return studyNames;
+        }
+        return result;
     }
 
     @Override
