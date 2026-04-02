@@ -265,6 +265,15 @@ export default class Study extends OpenCGAParentClass {
         return this._post("studies", study, "permissionRules", null, "update", data, {entity, ...params});
     }
 
+    /** Load a samplesheet to register samples, individuals, and clinical analyses
+    * @param {String} study - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Object} data - Samplesheet load parameters.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    loadSamplesheet(study, data) {
+        return this._post("studies", study, "samplesheet", null, "load", data);
+    }
+
     /** Execute template
     * @param {String} study - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {Object} data - Template loader parameters.

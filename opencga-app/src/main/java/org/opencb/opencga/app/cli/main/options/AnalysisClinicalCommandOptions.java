@@ -39,6 +39,7 @@ public class AnalysisClinicalCommandOptions {
         public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
+        public ImportEmedgeneCommandOptions importEmedgeneCommandOptions;
         public AggregationStatsInterpretationCommandOptions aggregationStatsInterpretationCommandOptions;
         public DistinctInterpretationCommandOptions distinctInterpretationCommandOptions;
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
@@ -89,6 +90,7 @@ public class AnalysisClinicalCommandOptions {
         this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
+        this.importEmedgeneCommandOptions = new ImportEmedgeneCommandOptions();
         this.aggregationStatsInterpretationCommandOptions = new AggregationStatsInterpretationCommandOptions();
         this.distinctInterpretationCommandOptions = new DistinctInterpretationCommandOptions();
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
@@ -571,6 +573,26 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--field"}, description = "Comma separated list of fields for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
+    
+    }
+
+    @Parameters(commandNames = {"emedgene-import"}, commandDescription ="Import a clinical analysis from an Emedgene HL7 v2 JSON file")
+    public class ImportEmedgeneCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--file"}, description = "Path to the Emedgene JSON file", required = false, arity = 1)
+        public String file;
     
     }
 
@@ -1209,17 +1231,20 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--snv-file"}, description = "Catalog path to SNV genotyping file (ThermoFisher export)", required = false, arity = 1)
         public String snvFile;
     
-        @Parameter(names = {"--translation-file"}, description = "Catalog path to translation table file", required = false, arity = 1)
-        public String translationFile;
-    
         @Parameter(names = {"--cnv-file"}, description = "Catalog path to CNV results file", required = false, arity = 1)
         public String cnvFile;
+    
+        @Parameter(names = {"--translation-file"}, description = "Catalog path to translation table file", required = false, arity = 1)
+        public String translationFile;
     
         @Parameter(names = {"--rename-file"}, description = "Catalog path to allele rename file (HGVS nomenclature)", required = false, arity = 1)
         public String renameFile;
     
-        @Parameter(names = {"--compare-to"}, description = "Catalog path to TrueMark detailed results file for comparison benchmark", required = false, arity = 1)
-        public String compareTo;
+        @Parameter(names = {"--diplotype-annotation-file"}, description = "Catalog path to custom diplotype annotation file", required = false, arity = 1)
+        public String diplotypeAnnotationFile;
+    
+        @Parameter(names = {"--compare-to-file"}, description = "Catalog path to TrueMark detailed results file for comparison benchmark", required = false, arity = 1)
+        public String compareToFile;
     
         @Parameter(names = {"--annotate"}, description = "Run CPIC annotation on results", required = false, arity = 1)
         public Boolean annotate;

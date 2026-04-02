@@ -369,7 +369,7 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param file File uuid, id, or name.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param offset Starting byte from which the file will be read.
-        #' @param lines Maximum number of lines to be returned up to a maximum of 1000.
+        #' @param lines Maximum number of lines to be returned up to a maximum of 5000.
         head=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file, subcategory=NULL, subcategoryId=NULL,
                 action="head", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
@@ -401,7 +401,7 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' Show the last lines of a file (up to a limit).
         #' @param file File uuid, id, or name.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param lines Maximum number of lines to be returned up to a maximum of 1000.
+        #' @param lines Maximum number of lines to be returned up to a maximum of 5000.
         tail=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file, subcategory=NULL, subcategoryId=NULL,
                 action="tail", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 

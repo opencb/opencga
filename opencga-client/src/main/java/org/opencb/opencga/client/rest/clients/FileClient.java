@@ -557,7 +557,7 @@ public class FileClient extends ParentClient {
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       offset: Starting byte from which the file will be read.
-     *       lines: Maximum number of lines to be returned up to a maximum of 1000.
+     *       lines: Maximum number of lines to be returned up to a maximum of 5000.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -614,7 +614,7 @@ public class FileClient extends ParentClient {
      * @param file File uuid, id, or name.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       lines: Maximum number of lines to be returned up to a maximum of 1000.
+     *       lines: Maximum number of lines to be returned up to a maximum of 5000.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

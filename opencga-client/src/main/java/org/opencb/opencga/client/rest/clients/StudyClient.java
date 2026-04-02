@@ -34,6 +34,7 @@ import org.opencb.opencga.core.models.study.GroupCreateParams;
 import org.opencb.opencga.core.models.study.GroupSyncParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.SamplesheetLoadParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntryList;
 import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
@@ -348,6 +349,19 @@ public class StudyClient extends ParentClient {
         params.putIfNotNull("entity", entity);
         params.put("body", data);
         return execute("studies", study, "permissionRules", null, "update", params, POST, PermissionRule.class);
+    }
+
+    /**
+     * Load a samplesheet to register samples, individuals, and clinical analyses.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @param data Samplesheet load parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> loadSamplesheet(String study, SamplesheetLoadParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("studies", study, "samplesheet", null, "load", params, POST, ObjectMap.class);
     }
 
     /**

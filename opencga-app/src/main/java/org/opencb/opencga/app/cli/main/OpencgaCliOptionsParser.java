@@ -122,6 +122,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
+        analysisClinicalSubCommands.addCommand("emedgene-import", analysisClinicalCommandOptions.importEmedgeneCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
@@ -357,6 +358,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("notes-update", studiesCommandOptions.updateNotesCommandOptions);
         studiesSubCommands.addCommand("permissionrules", studiesCommandOptions.permissionRulesCommandOptions);
         studiesSubCommands.addCommand("permission-rules-update", studiesCommandOptions.updatePermissionRulesCommandOptions);
+        studiesSubCommands.addCommand("samplesheet-load", studiesCommandOptions.loadSamplesheetCommandOptions);
         studiesSubCommands.addCommand("templates-run", studiesCommandOptions.runTemplatesCommandOptions);
         studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
         studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);

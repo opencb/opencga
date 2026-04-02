@@ -25,6 +25,7 @@
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
 #' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field[*] |
+#' | importEmedgene | /{apiVersion}/analysis/clinical/emedgene/import | study, body[*] |
 #' | aggregationStatsInterpretation | /{apiVersion}/analysis/clinical/interpretation/aggregationStats | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field |
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
@@ -183,6 +184,14 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param field Comma separated list of fields for which to obtain the distinct values.
         distinct=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="distinct", params=params, httpMethod="GET", as.queryParam=c("field"), ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/emedgene/import:
+        #' Import a clinical analysis from an Emedgene HL7 v2 JSON file.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data Parameters to import a clinical analysis from an Emedgene HL7 v2 JSON file.
+        importEmedgene=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/emedgene", subcategoryId=NULL, action="import", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/aggregationStats:
         #' Fetch catalog interpretation aggregation stats.

@@ -35,6 +35,7 @@
 #' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], tagsAction, includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
 #' | updatePermissionRules | /{apiVersion}/studies/{study}/permissionRules/update | study[*], entity[*], action, body[*] |
+#' | loadSamplesheet | /{apiVersion}/studies/{study}/samplesheet/load | study[*], body[*] |
 #' | runTemplates | /{apiVersion}/studies/{study}/templates/run | study[*], jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | uploadTemplates | /{apiVersion}/studies/{study}/templates/upload | file, study[*] |
 #' | deleteTemplates | /{apiVersion}/studies/{study}/templates/{templateId}/delete | study[*], templateId[*] |
@@ -224,6 +225,13 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         updatePermissionRules=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study,
                 subcategory="permissionRules", subcategoryId=NULL, action="update", params=params, httpMethod="POST",
                 as.queryParam=c("entity"), ...),
+
+        #' @section Endpoint /{apiVersion}/studies/{study}/samplesheet/load:
+        #' Load a samplesheet to register samples, individuals, and clinical analyses.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data Samplesheet load parameters.
+        loadSamplesheet=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory="samplesheet",
+                subcategoryId=NULL, action="load", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/studies/{study}/templates/run:
         #' Execute template.

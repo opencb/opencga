@@ -7,6 +7,7 @@ import java.lang.Object;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.models.study.GroupCreateParams;
 import org.opencb.opencga.core.models.study.GroupSyncParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.SamplesheetLoadParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntryList;
 import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
@@ -136,6 +138,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "permission-rules-update":
                 queryResponse = updatePermissionRules();
+                break;
+            case "samplesheet-load":
+                queryResponse = loadSamplesheet();
                 break;
             case "templates-run":
                 queryResponse = runTemplates();
@@ -548,6 +553,32 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), PermissionRule.class);
         }
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
+    }
+
+    private RestResponse<ObjectMap> loadSamplesheet() throws Exception {
+        logger.debug("Executing loadSamplesheet in Studies command line");
+
+        StudiesCommandOptions.LoadSamplesheetCommandOptions commandOptions = studiesCommandOptions.loadSamplesheetCommandOptions;
+
+        SamplesheetLoadParams samplesheetLoadParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/samplesheet/load"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            samplesheetLoadParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SamplesheetLoadParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "samplesheetFile", commandOptions.samplesheetFile, true);
+            putNestedIfNotEmpty(beanParams, "samplesheetContent", commandOptions.samplesheetContent, true);
+
+            samplesheetLoadParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), SamplesheetLoadParams.class);
+        }
+        return openCGAClient.getStudyClient().loadSamplesheet(commandOptions.study, samplesheetLoadParams);
     }
 
     private RestResponse<Job> runTemplates() throws Exception {

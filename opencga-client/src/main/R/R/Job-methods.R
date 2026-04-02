@@ -259,7 +259,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param job Job ID or UUID.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param offset Starting byte from which the file will be read.
-        #' @param lines Maximum number of lines to be returned up to a maximum of 1000.
+        #' @param lines Maximum number of lines to be returned up to a maximum of 5000.
         #' @param type Log file to be shown (stdout or stderr).
         headLog=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=job, subcategory="log", subcategoryId=NULL,
                 action="head", params=params, httpMethod="GET", as.queryParam=NULL, ...),
@@ -268,7 +268,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' Show the last lines of a log file (up to a limit).
         #' @param job Job ID or UUID.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param lines Maximum number of lines to be returned up to a maximum of 1000.
+        #' @param lines Maximum number of lines to be returned up to a maximum of 5000.
         #' @param type Log file to be shown (stdout or stderr).
         tailLog=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=job, subcategory="log", subcategoryId=NULL,
                 action="tail", params=params, httpMethod="GET", as.queryParam=NULL, ...),

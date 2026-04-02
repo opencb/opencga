@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.EmedgeneImportParams;
 import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
@@ -238,6 +239,20 @@ public class ClinicalAnalysisClient extends ParentClient {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("field", field);
         return execute("analysis", null, "clinical", null, "distinct", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Import a clinical analysis from an Emedgene HL7 v2 JSON file.
+     * @param data Parameters to import a clinical analysis from an Emedgene HL7 v2 JSON file.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalAnalysis> importEmedgene(EmedgeneImportParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis", null, "clinical/emedgene", null, "import", params, POST, ClinicalAnalysis.class);
     }
 
     /**

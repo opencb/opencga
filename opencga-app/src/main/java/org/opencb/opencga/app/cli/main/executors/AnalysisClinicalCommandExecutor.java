@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalReport;
 import org.opencb.opencga.core.models.clinical.ClinicalRequest;
 import org.opencb.opencga.core.models.clinical.ClinicalResponsible;
 import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
+import org.opencb.opencga.core.models.clinical.EmedgeneImportParams;
 import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -128,6 +129,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "distinct":
                 queryResponse = distinct();
+                break;
+            case "emedgene-import":
+                queryResponse = importEmedgene();
                 break;
             case "interpretation-aggregation-stats":
                 queryResponse = aggregationStatsInterpretation();
@@ -515,6 +519,38 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
+    }
+
+    private RestResponse<ClinicalAnalysis> importEmedgene() throws Exception {
+        logger.debug("Executing importEmedgene in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.ImportEmedgeneCommandOptions commandOptions = analysisClinicalCommandOptions.importEmedgeneCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        EmedgeneImportParams emedgeneImportParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ClinicalAnalysis> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/emedgene/import"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            emedgeneImportParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), EmedgeneImportParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "file", commandOptions.file, true);
+
+            emedgeneImportParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), EmedgeneImportParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().importEmedgene(emedgeneImportParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsInterpretation() throws Exception {
@@ -983,10 +1019,11 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "snvFile", commandOptions.snvFile, true);
-            putNestedIfNotEmpty(beanParams, "translationFile", commandOptions.translationFile, true);
             putNestedIfNotEmpty(beanParams, "cnvFile", commandOptions.cnvFile, true);
+            putNestedIfNotEmpty(beanParams, "translationFile", commandOptions.translationFile, true);
             putNestedIfNotEmpty(beanParams, "renameFile", commandOptions.renameFile, true);
-            putNestedIfNotEmpty(beanParams, "compareTo", commandOptions.compareTo, true);
+            putNestedIfNotEmpty(beanParams, "diplotypeAnnotationFile", commandOptions.diplotypeAnnotationFile, true);
+            putNestedIfNotEmpty(beanParams, "compareToFile", commandOptions.compareToFile, true);
             putNestedIfNotNull(beanParams, "annotate", commandOptions.annotate, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 

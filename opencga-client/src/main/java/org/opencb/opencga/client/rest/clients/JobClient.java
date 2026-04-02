@@ -379,7 +379,7 @@ public class JobClient extends ParentClient {
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       offset: Starting byte from which the file will be read.
-     *       lines: Maximum number of lines to be returned up to a maximum of 1000.
+     *       lines: Maximum number of lines to be returned up to a maximum of 5000.
      *       type: Log file to be shown (stdout or stderr).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -394,7 +394,7 @@ public class JobClient extends ParentClient {
      * @param job Job ID or UUID.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
-     *       lines: Maximum number of lines to be returned up to a maximum of 1000.
+     *       lines: Maximum number of lines to be returned up to a maximum of 5000.
      *       type: Log file to be shown (stdout or stderr).
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

@@ -172,6 +172,16 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._get("analysis", null, "clinical", null, "distinct", {field, ...params});
     }
 
+    /** Import a clinical analysis from an Emedgene HL7 v2 JSON file
+    * @param {Object} data - Parameters to import a clinical analysis from an Emedgene HL7 v2 JSON file.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    importEmedgene(data, params) {
+        return this._post("analysis", null, "clinical/emedgene", null, "import", data, params);
+    }
+
     /** Fetch catalog interpretation aggregation stats
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.

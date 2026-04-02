@@ -333,6 +333,19 @@ class Study(_ParentRestClient):
         options['entity'] = entity
         return self._post(category='studies', resource='update', query_id=study, subcategory='permissionRules', data=data, **options)
 
+    def load_samplesheet(self, study, data=None, **options):
+        """
+        Load a samplesheet to register samples, individuals, and clinical
+            analyses.
+        PATH: /{apiVersion}/studies/{study}/samplesheet/load
+
+        :param dict data: Samplesheet load parameters. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID. (REQUIRED)
+        """
+
+        return self._post(category='studies', resource='load', query_id=study, subcategory='samplesheet', data=data, **options)
+
     def run_templates(self, study, data=None, **options):
         """
         Execute template.

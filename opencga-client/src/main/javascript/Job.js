@@ -319,7 +319,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {Number} [params.offset] - Starting byte from which the file will be read.
-    * @param {Number} [params.lines = "20"] - Maximum number of lines to be returned up to a maximum of 1000. The default value is 20.
+    * @param {Number} [params.lines = "20"] - Maximum number of lines to be returned up to a maximum of 5000. The default value is 20.
     * @param {String} [params.type] - Log file to be shown (stdout or stderr).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
@@ -331,7 +331,7 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} job - Job ID or UUID.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {Number} [params.lines = "20"] - Maximum number of lines to be returned up to a maximum of 1000. The default value is 20.
+    * @param {Number} [params.lines = "20"] - Maximum number of lines to be returned up to a maximum of 5000. The default value is 20.
     * @param {String} [params.type] - Log file to be shown (stdout or stderr).
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

@@ -49,6 +49,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public UpdateNotesCommandOptions updateNotesCommandOptions;
         public PermissionRulesCommandOptions permissionRulesCommandOptions;
         public UpdatePermissionRulesCommandOptions updatePermissionRulesCommandOptions;
+        public LoadSamplesheetCommandOptions loadSamplesheetCommandOptions;
         public RunTemplatesCommandOptions runTemplatesCommandOptions;
         public UploadTemplatesCommandOptions uploadTemplatesCommandOptions;
         public DeleteTemplatesCommandOptions deleteTemplatesCommandOptions;
@@ -78,6 +79,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
         this.permissionRulesCommandOptions = new PermissionRulesCommandOptions();
         this.updatePermissionRulesCommandOptions = new UpdatePermissionRulesCommandOptions();
+        this.loadSamplesheetCommandOptions = new LoadSamplesheetCommandOptions();
         this.runTemplatesCommandOptions = new RunTemplatesCommandOptions();
         this.uploadTemplatesCommandOptions = new UploadTemplatesCommandOptions();
         this.deleteTemplatesCommandOptions = new DeleteTemplatesCommandOptions();
@@ -604,6 +606,29 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--permissions"}, description = "List of permissions of the permission rule.", required = false, arity = 1)
         public String permissions;
+    
+    }
+
+    @Parameters(commandNames = {"samplesheet-load"}, commandDescription ="Load a samplesheet to register samples, individuals, and clinical analyses")
+    public class LoadSamplesheetCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--samplesheet-file"}, description = "Catalog file ID of the samplesheet (CSV, TSV, or TXT)", required = false, arity = 1)
+        public String samplesheetFile;
+    
+        @Parameter(names = {"--samplesheet-content"}, description = "Samplesheet content as inline string", required = false, arity = 1)
+        public String samplesheetContent;
     
     }
 

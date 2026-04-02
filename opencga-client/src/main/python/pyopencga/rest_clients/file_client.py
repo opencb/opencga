@@ -621,7 +621,7 @@ class File(_ParentRestClient):
             project can be either the ID or UUID.
         :param int offset: Starting byte from which the file will be read.
         :param int lines: Maximum number of lines to be returned up to a
-            maximum of 1000.
+            maximum of 5000.
         """
 
         return self._get(category='files', resource='head', query_id=file, **options)
@@ -678,7 +678,7 @@ class File(_ParentRestClient):
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param int lines: Maximum number of lines to be returned up to a
-            maximum of 1000.
+            maximum of 5000.
         """
 
         return self._get(category='files', resource='tail', query_id=file, **options)

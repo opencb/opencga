@@ -211,6 +211,19 @@ class ClinicalAnalysis(_ParentRestClient):
         options['field'] = field
         return self._get(category='analysis', resource='distinct', subcategory='clinical', **options)
 
+    def import_emedgene(self, data=None, **options):
+        """
+        Import a clinical analysis from an Emedgene HL7 v2 JSON file.
+        PATH: /{apiVersion}/analysis/clinical/emedgene/import
+
+        :param dict data: Parameters to import a clinical analysis from an
+            Emedgene HL7 v2 JSON file. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='analysis', resource='import', subcategory='clinical/emedgene', data=data, **options)
+
     def aggregation_stats_interpretation(self, **options):
         """
         Fetch catalog interpretation aggregation stats.

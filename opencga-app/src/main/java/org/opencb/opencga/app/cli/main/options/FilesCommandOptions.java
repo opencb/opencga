@@ -1055,7 +1055,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", required = false, arity = 1)
         public Long offset; 
     
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 5000", required = false, arity = 1)
         public Integer lines = 20; 
     
     }
@@ -1129,7 +1129,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
+        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 5000", required = false, arity = 1)
         public Integer lines = 20; 
     
     }

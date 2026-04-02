@@ -411,7 +411,7 @@ class Job(_ParentRestClient):
             project can be either the ID or UUID.
         :param int offset: Starting byte from which the file will be read.
         :param int lines: Maximum number of lines to be returned up to a
-            maximum of 1000.
+            maximum of 5000.
         :param str type: Log file to be shown (stdout or stderr).
         """
 
@@ -426,7 +426,7 @@ class Job(_ParentRestClient):
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param int lines: Maximum number of lines to be returned up to a
-            maximum of 1000.
+            maximum of 5000.
         :param str type: Log file to be shown (stdout or stderr).
         """
 
