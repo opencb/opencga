@@ -54,7 +54,8 @@ public class VariantSearchUtils {
                     VariantQueryParam.STATS_MGF,
                     VariantQueryParam.MISSING_ALLELES,
                     VariantQueryParam.MISSING_GENOTYPES,
-                    VariantQueryParam.ANNOT_DRUG)));
+                    VariantQueryParam.ANNOT_DRUG,
+                    VariantQueryParam.ANNOT_TRANSCRIPT_FLAG)));
 
     public static final Set<QueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,

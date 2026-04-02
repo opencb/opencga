@@ -990,6 +990,11 @@ public abstract class SolrQueryParser {
                     } else {
                         addOr = true;
                     }
+                    // When querying REF frequency, the operator is flipped (REF <= X → ALT >= 1-X).
+                    // The addOr semantics must be inverted: missing ALT freq (0) does NOT satisfy >= threshold.
+                    if (type == FreqType.REF) {
+                        addOr = !addOr;
+                    }
                     // concat expression, e.g.: value:[0 TO 12]
                     filters.add(getRange(field + FIELD_SEPARATOR + study + FIELD_SEPARATOR, pop, op, numValue, addOr));
                 } else {
