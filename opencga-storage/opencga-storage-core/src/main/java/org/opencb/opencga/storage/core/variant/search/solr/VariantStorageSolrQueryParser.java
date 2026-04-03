@@ -4,6 +4,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 
 import java.util.*;
@@ -47,6 +49,23 @@ public class VariantStorageSolrQueryParser extends SolrQueryParser {
             }
         }
         return result;
+    }
+
+    @Override
+    protected void parseVariantStatsFilter(VariantQueryParam param, String value, FreqField field, FreqType type,
+                                           String study, String cohort, String op, String numValue,
+                                           boolean addOr, List<String> filters, List<String> auxFilters) {
+        // Resolve study ID/name to canonical study name
+        int studyId = variantStorageMetadataManager.getStudyId(study);
+        String resolvedStudy = variantStorageMetadataManager.getStudyName(studyId);
+
+        // Validate cohort exists
+        Integer cohortId = variantStorageMetadataManager.getCohortId(studyId, cohort);
+        if (cohortId == null) {
+            throw VariantQueryException.cohortNotFound(cohort, studyId, variantStorageMetadataManager);
+        }
+
+        super.parseVariantStatsFilter(param, value, field, type, resolvedStudy, cohort, op, numValue, addOr, filters, auxFilters);
     }
 
     @Override
