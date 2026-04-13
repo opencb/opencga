@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -616,6 +617,11 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.COLLECTION_TRASH.key(), MongoDBVariantStorageOptions.COLLECTION_TRASH.defaultValue() + collectionSufix);
 
         variantStorageEngine.getOptions().putAll(renameCollections);
+        // Also propagate to the StorageConfiguration so that VariantMongoDBAdaptor.getStageCollection()
+        // and other adaptor methods resolve the correct (renamed) collection names.
+        variantStorageEngine.getConfiguration()
+                .getVariantEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)
+                .getOptions().putAll(renameCollections);
         return variantStorageEngine;
     }
 
@@ -771,12 +777,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
         runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
@@ -859,12 +867,14 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
         runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
@@ -874,9 +884,15 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                     if (document.containsKey(DocumentToVariantConverter.STUDIES_FIELD)) {
                         List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
                         studies.sort(Comparator.comparing(o -> o.getInteger(STUDYID_FIELD)));
-                        studies.forEach(study ->
-                                ((List<Document>) study.get(DocumentToStudyEntryConverter.FILES_FIELD, List.class))
-                                .forEach(file -> file.remove(DocumentToStudyEntryConverter.FILEID_FIELD)));
+                    }
+                    // Sort and normalize root files (order and file IDs may differ between engines)
+                    if (document.containsKey(DocumentToVariantConverter.FILES_FIELD)) {
+                        List<Document> files = document.get(DocumentToVariantConverter.FILES_FIELD, List.class);
+                        if (files != null) {
+                            files.sort(Comparator.comparing(
+                                    o -> ((Number) ((Document) o).get(STUDYID_FIELD)).intValue()));
+                            files.forEach(file -> file.remove(DocumentToStudyEntryConverter.FILEID_FIELD));
+                        }
                     }
                     return document;
                 });
@@ -947,6 +963,10 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         if (copyFiles) {
             source.fileMetadataIterator(studyMetadata.getId()).forEachRemaining(f -> {
                 f.setIndexStatus(TaskMetadata.Status.NONE);
+                // Reset stage/merge statuses so the target engine re-stages the file
+                // instead of skipping it as "already staged" (which would leave
+                // VariantFileMetadata missing and no data in the stage collection).
+                f.getStatus().clear();
                 target.unsecureUpdateFileMetadata(newStudy.getId(), f);
             });
         }
