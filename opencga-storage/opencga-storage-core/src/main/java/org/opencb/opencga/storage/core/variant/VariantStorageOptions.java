@@ -122,6 +122,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     SEARCH_LOAD_SHARDS_PER_NODE("search.load.shardsPerNode", 2),             // Number of shards to create per solr node
     SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED("search.stats.functionalQueries.enabled", false),
     SEARCH_STATS_VARIANT_ID_VERSION("search.stats.variantId.version", "v2"),
+    SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE("search.proteinSubstitutionScores.complete", false),
 
 
     SAMPLE_INDEX_QUERY_EXTENDED_REGION_FILTER("storage.hadoop.sampleIndex.query.extendedRegionFilter.default", 5_000_000),

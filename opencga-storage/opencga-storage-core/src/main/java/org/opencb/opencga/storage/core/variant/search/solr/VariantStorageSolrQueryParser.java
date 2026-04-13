@@ -55,17 +55,13 @@ public class VariantStorageSolrQueryParser extends SolrQueryParser {
     protected void parseVariantStatsFilter(VariantQueryParam param, String value, FreqField field, FreqType type,
                                            String study, String cohort, String op, String numValue,
                                            boolean addOr, List<String> filters, List<String> auxFilters) {
-        // Resolve study ID/name to canonical study name
-        int studyId = variantStorageMetadataManager.getStudyId(study);
-        String resolvedStudy = variantStorageMetadataManager.getStudyName(studyId);
-
         // Validate cohort exists
-        Integer cohortId = variantStorageMetadataManager.getCohortId(studyId, cohort);
-        if (cohortId == null) {
+        int studyId = variantStorageMetadataManager.getStudyId(study);
+        if (variantStorageMetadataManager.getCohortId(studyId, cohort) == null) {
             throw VariantQueryException.cohortNotFound(cohort, studyId, variantStorageMetadataManager);
         }
 
-        super.parseVariantStatsFilter(param, value, field, type, resolvedStudy, cohort, op, numValue, addOr, filters, auxFilters);
+        super.parseVariantStatsFilter(param, value, field, type, study, cohort, op, numValue, addOr, filters, auxFilters);
     }
 
     @Override

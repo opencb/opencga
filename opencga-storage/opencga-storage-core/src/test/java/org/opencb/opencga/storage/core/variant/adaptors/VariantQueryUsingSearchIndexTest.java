@@ -1,12 +1,15 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.google.common.base.Throwables;
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+
+import java.util.Arrays;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -15,8 +18,12 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION;
 import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager.SEARCH_ENGINE_ID;
 
 /**
@@ -94,6 +101,23 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    @Override
+    @Test
+    public void testGetAlVariants_polyphenSiftDescription() {
+        // Solr stores aggregated scores (max polyphen, min sift) and their descriptions.
+        // Only the extreme-category descriptions are safe (no false negatives):
+        //   polyphen: "probably damaging" (highest category — if any CT has it, max has it)
+        //   sift: "deleterious" (lowest category — if any CT has it, min has it)
+        // Skip this test entirely when per-CT scores become available.
+        Assume.assumeFalse(SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.defaultValue());
+
+        queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen=probably damaging"), null);
+        assertThat(queryResult, everyResult(allVariantsSummary, hasAnnotation(hasAnyPolyphenDesc(equalTo("probably damaging")))));
+
+        queryResult = query(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=deleterious"), null);
+        assertThat(queryResult, everyResult(allVariantsSummary, hasAnnotation(hasAnySiftDesc(equalTo("deleterious")))));
     }
 
     @Test

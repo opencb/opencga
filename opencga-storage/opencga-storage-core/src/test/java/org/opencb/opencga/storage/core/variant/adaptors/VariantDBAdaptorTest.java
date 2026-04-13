@@ -2141,7 +2141,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(expectedCount, numResults);
         numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"));
         assertEquals(expectedCount, numResults);
-        queryResult = query(new Query(STATS_MAF.key(), "1:cohort1>0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
         queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());

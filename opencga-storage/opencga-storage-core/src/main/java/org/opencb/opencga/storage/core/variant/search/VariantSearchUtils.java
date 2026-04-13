@@ -20,12 +20,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -149,10 +151,19 @@ public class VariantSearchUtils {
     }
 
     public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm) {
+        return getEngineQuery(query, options, scm, null);
+    }
+
+    public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm,
+                                       SearchIndexMetadata indexMetadata) {
         Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
         Query engineQuery = new Query();
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
             engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+        }
+        // Include partially covered params only when Solr can't fully handle them
+        if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
+            engineQuery.put(ANNOT_PROTEIN_SUBSTITUTION.key(), query.get(ANNOT_PROTEIN_SUBSTITUTION.key()));
         }
         // Make sure that all modifiers are present in the engine query
         for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
@@ -174,6 +185,45 @@ public class VariantSearchUtils {
             }
         }
         return engineQuery;
+    }
+
+    /**
+     * Check if the given protein substitution operator is safe for Solr's aggregated scores.
+     * Unsafe directions produce false negatives:
+     *   polyphen &lt; X: Solr stores max, max &lt; X doesn't mean any CT &lt; X
+     *   sift &gt; X: Solr stores min, min &gt; X doesn't mean any CT &gt; X
+     *
+     * @param name Score name (polyphen or sift)
+     * @param op   Operator string
+     * @return true if the operator is safe (no false negatives)
+     */
+    public static boolean isProteinSubstitutionOperatorSafe(String name, String op) {
+        if ("polyphen".equalsIgnoreCase(name) && op.contains("<") && !op.contains("!")) {
+            return false;
+        } else if ("sift".equalsIgnoreCase(name) && op.contains(">")) {
+            return false;
+        }
+        return true;
+    }
+
+    static boolean needsProteinSubstitutionRefinement(Query query, SearchIndexMetadata indexMetadata) {
+        if (!isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+            return false;
+        }
+        if (indexMetadata != null && indexMetadata.getAttributes()
+                .getBoolean(SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.key(),
+                        SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.defaultValue())) {
+            return false;
+        }
+        String value = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+        List<String> values = splitValue(value, checkOperator(value));
+        for (String v : values) {
+            KeyOpValue<String, String> keyOpValue = parseKeyOpValue(v);
+            if (keyOpValue.getKey() != null && !isProteinSubstitutionOperatorSafe(keyOpValue.getKey(), keyOpValue.getOp())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

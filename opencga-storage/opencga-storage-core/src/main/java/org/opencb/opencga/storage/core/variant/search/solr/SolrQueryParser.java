@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.MISSING_VALUE;
@@ -59,6 +61,7 @@ import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.
 public abstract class SolrQueryParser {
 
     private final VariantSearchIdGenerator idGenerator;
+    protected final SearchIndexMetadata indexMetadata;
 
     private static Map<String, String> includeMap;
 
@@ -66,7 +69,6 @@ public abstract class SolrQueryParser {
     public static final String CHROM_DENSITY = "chromDensity";
 
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
-    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(!=?|<=?|>=?|=?)([^=<>!]+.*)$");
 
     private static final Pattern FACET_RANGE_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z]+):([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
@@ -104,6 +106,7 @@ public abstract class SolrQueryParser {
     }
 
     public SolrQueryParser(SearchIndexMetadata indexMetadata) {
+        this.indexMetadata = indexMetadata;
         idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
     }
 
@@ -215,7 +218,11 @@ public abstract class SolrQueryParser {
         key = ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             try {
-                filterList.add(parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
+                String filter = parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key),
+                        !isProteinSubstitutionScoresComplete());
+                if (StringUtils.isNotEmpty(filter)) {
+                    filterList.add(filter);
+                }
             } catch (Exception e) {
                 throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key));
             }
@@ -791,59 +798,62 @@ public abstract class SolrQueryParser {
      * @return             The string with the boolean conditions
      */
     public String parseScoreValue(VariantQueryParam param, String value) {
+        return parseScoreValue(param, value, false);
+    }
+
+    /**
+     * Parse score value filters (protein substitution, conservation, functional scores).
+     *
+     * @param param                          Query parameter
+     * @param value                          Field value
+     * @param skipUnsafeProteinSubstitution  If true, skip operator directions that produce false negatives
+     *                                       for aggregated protein substitution scores (polyphen &lt;, sift &gt;)
+     * @return The string with the boolean conditions, or null if all filters were skipped
+     */
+    public String parseScoreValue(VariantQueryParam param, String value, boolean skipUnsafeProteinSubstitution) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
-        String name = param.key();
-        StringBuilder sb = new StringBuilder();
-        if (StringUtils.isNotEmpty(value)) {
-            QueryOperation queryOperation = parseOrAndFilter(name, value);
-            String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
-
-            Matcher matcher;
-            String[] values = value.split("[,;]");
-            if (values.length == 1) {
-                matcher = SCORE_PATTERN.matcher(value);
-                if (matcher.find()) {
-                    // concat expression, e.g.: value:[0 TO 12]
-                    checkRangeParams(param, matcher.group(1), matcher.group(3));
-                    sb.append(getRange(matcher.group(1), matcher.group(2), matcher.group(3)));
-                } else {
-                    throw new IllegalArgumentException("Invalid expression " +  value);
-                }
-            } else {
-                List<String> list = new ArrayList<>(values.length);
-                String prevName = null;
-                String prevOp = null;
-                for (String v : values) {
-                    matcher = SCORE_PATTERN.matcher(v);
-                    if (matcher.find()) {
-                        // concat expression, e.g.: value:[0 TO 12]
-                        String filterName = matcher.group(1);
-                        String filterOp = matcher.group(2);
-                        String filterValue = matcher.group(3);
-                        if (StringUtils.isEmpty(filterOp)) {
-                            filterName = prevName;
-                            filterOp = prevOp;
-                            filterValue = v;
-                        } else {
-                            prevName = filterName;
-                            prevOp = filterOp;
-                        }
-                        if (StringUtils.isEmpty(filterName)) {
-                            throw VariantQueryException.malformedParam(param, value);
-                        }
-
-                        checkRangeParams(param, filterName, filterValue);
-                        list.add(getRange(filterName, filterOp, filterValue));
-                    } else {
-                        throw new IllegalArgumentException("Invalid expression " +  value);
-                    }
-                }
-                sb.append("(").append(StringUtils.join(list, logicalComparator)).append(")");
-            }
+        if (StringUtils.isEmpty(value)) {
+            return null;
         }
-        return sb.toString();
+        QueryOperation queryOperation = parseOrAndFilter(param.key(), value);
+        String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
+        List<String> values = splitValue(value, queryOperation);
+
+        List<String> list = new ArrayList<>(values.size());
+        String prevName = null;
+        String prevOp = null;
+        for (String v : values) {
+            KeyOpValue<String, String> keyOpValue = parseKeyOpValue(v);
+            String filterName = keyOpValue.getKey();
+            String filterOp = keyOpValue.getOp();
+            String filterValue = keyOpValue.getValue();
+            if (filterName == null || filterName.isEmpty()) {
+                filterName = prevName;
+                filterOp = prevOp;
+                filterValue = v;
+            } else {
+                prevName = filterName;
+                prevOp = filterOp;
+            }
+            if (StringUtils.isEmpty(filterName)) {
+                throw VariantQueryException.malformedParam(param, value);
+            }
+            checkRangeParams(param, filterName, filterValue);
+            if (skipUnsafeProteinSubstitution && !VariantSearchUtils.isProteinSubstitutionOperatorSafe(filterName, filterOp)) {
+                continue;
+            }
+            list.add(getRange(filterName, filterOp, filterValue));
+        }
+
+        if (list.isEmpty()) {
+            return null;
+        } else if (list.size() == 1) {
+            return list.get(0);
+        } else {
+            return "(" + StringUtils.join(list, logicalComparator) + ")";
+        }
     }
 
     private void checkRangeParams(VariantQueryParam param, String source, String value) {
@@ -867,6 +877,13 @@ public abstract class SolrQueryParser {
         if (param != ANNOT_PROTEIN_SUBSTITUTION && !NumberUtils.isNumber(value)) {
             throw new IllegalArgumentException("Invalid expression: value '" +  value + "' must be numeric.");
         }
+    }
+
+    protected boolean isProteinSubstitutionScoresComplete() {
+        return indexMetadata != null
+                && indexMetadata.getAttributes().getBoolean(
+                        SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.key(),
+                        SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.defaultValue());
     }
 
     protected enum FreqField {

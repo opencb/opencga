@@ -125,7 +125,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             Integer approxCountSamplingSize = null;
 
             Query searchEngineQuery = getSearchEngineQuery(query);
-            Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+            Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
             // Do not count for iterator
             if (!iterator) {
@@ -213,7 +213,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
                 Query searchEngineQuery = getSearchEngineQuery(query);
-                Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+                Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
                 DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(indexMetadata, searchEngineQuery, queryOptions);

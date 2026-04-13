@@ -80,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION;
 
@@ -1070,7 +1071,9 @@ public class VariantSearchManager {
                 VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.defaultValue());
         ObjectMap attributes = new ObjectMap()
                 .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled)
-                .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), idVersion);
+                .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), idVersion)
+                .append(SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.key(),
+                        SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.defaultValue());
         return attributes;
     }
 
