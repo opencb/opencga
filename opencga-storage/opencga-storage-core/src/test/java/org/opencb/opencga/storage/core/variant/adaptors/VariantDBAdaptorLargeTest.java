@@ -64,11 +64,11 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 @StorageEngineTest
 public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
-    protected static final String fileName1 = "1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
-    protected static final String fileName2 = "501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
-    protected static final String fileName3 = "1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
-    protected static final String fileName4 = "1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
-    protected static final String fileName5 = "2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    protected static final String fileName1 = "1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    protected static final String fileName2 = "51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    protected static final String fileName3 = "101-150.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    protected static final String fileName4 = "151-200.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    protected static final String fileName5 = "201-250.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     protected static Integer file1;
     protected static Integer file2;
     protected static Integer file3;
@@ -78,7 +78,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     protected static StudyMetadata studyMetadata2;
     protected static StudyMetadata studyMetadata3;
     protected static VariantDBAdaptor dbAdaptor;
-    protected static int NUM_VARIANTS = 9751;
+    protected static int NUM_VARIANTS = 3324;
     protected static long numVariants;
     protected DataResult<Variant> queryResult;
     protected QueryOptions options;
@@ -122,29 +122,29 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             //Study1
             URI file1Uri = getResourceUri("1000g_batches/" + fileName1);
             runDefaultETL(file1Uri, variantStorageEngine, studyMetadata1, options);
-            assertEquals(500, metadataManager.getCohortMetadata(studyMetadata1.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
+            assertEquals(50, metadataManager.getCohortMetadata(studyMetadata1.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
             file1 = metadataManager.getFileId(studyMetadata1.getId(), file1Uri);
 
             URI file2Uri = getResourceUri("1000g_batches/" + fileName2);
             runDefaultETL(file2Uri, variantStorageEngine, studyMetadata1, options);
-            assertEquals(1000, metadataManager.getCohortMetadata(studyMetadata1.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
+            assertEquals(100, metadataManager.getCohortMetadata(studyMetadata1.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
             file2 = metadataManager.getFileId(studyMetadata1.getId(), file2Uri);
 
             //Study2
             URI file3Uri = getResourceUri("1000g_batches/" + fileName3);
             runDefaultETL(file3Uri, variantStorageEngine, studyMetadata2, options);
-            assertEquals(500, metadataManager.getCohortMetadata(studyMetadata2.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
+            assertEquals(50, metadataManager.getCohortMetadata(studyMetadata2.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
             file3 = metadataManager.getFileId(studyMetadata2.getId(), file3Uri);
 
             URI file4Uri = getResourceUri("1000g_batches/" + fileName4);
             runDefaultETL(file4Uri, variantStorageEngine, studyMetadata2, options);
-            assertEquals(1000, metadataManager.getCohortMetadata(studyMetadata2.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
+            assertEquals(100, metadataManager.getCohortMetadata(studyMetadata2.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
             file4 = metadataManager.getFileId(studyMetadata2.getId(), file4Uri);
 
             //Study3
             URI file5Uri = getResourceUri("1000g_batches/" + fileName5);
             runDefaultETL(file5Uri, variantStorageEngine, studyMetadata3, options);
-            assertEquals(504, metadataManager.getCohortMetadata(studyMetadata3.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
+            assertEquals(50, metadataManager.getCohortMetadata(studyMetadata3.getId(), StudyEntry.DEFAULT_COHORT).getSamples().size());
             file5 = metadataManager.getFileId(studyMetadata3.getId(), file5Uri);
 
 
@@ -184,7 +184,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     public void testGetVariantsByType() {
         Set<Variant> snv = new HashSet<>(get(new Query(VariantQueryParam.TYPE.key(), VariantType.SNV), new QueryOptions()).getResults());
         System.out.println("SNV = " + snv.size());
-        assertEquals(9515, snv.size());
+        assertEquals(3170, snv.size());
         snv.forEach(variant -> assertThat(EnumSet.of(VariantType.SNV, VariantType.SNP), hasItem(variant.getType())));
 
         Set<Variant> not_snv = new HashSet<>(get(new Query(VariantQueryParam.TYPE.key(), "!" + VariantType.SNV), new QueryOptions()).getResults());
@@ -599,7 +599,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         query.append(FILE.key(), "!" + fileName1)
                 .append(STUDY.key(), studyMetadata1.getName())
                 .append(UNKNOWN_GENOTYPE.key(), unknownGenotype)
-                .append(INCLUDE_STUDY.key(), studyMetadata1.getName());
+                .append(INCLUDE_STUDY.key(), studyMetadata1.getName())
+                .append(INCLUDE_SAMPLE.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL);
         queryResult = get(query, options);
 
         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata1.getId(), file1);
@@ -862,7 +864,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                     break;
                 }
                 for (SampleEntry sample : studyEntry.getSamples()) {
-                    sampleNames.add(sample.getData().get(sample.getData().size() - 2));
+                    sampleNames.add(sample.getSampleId());
                 }
                 actualNumSamples += numSamples;
 //                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult));

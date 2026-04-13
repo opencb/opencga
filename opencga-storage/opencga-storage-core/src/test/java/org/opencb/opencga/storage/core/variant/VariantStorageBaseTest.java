@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 @Ignore
 public abstract class VariantStorageBaseTest extends GenericTest implements VariantStorageTest {
 
-    public static final int NUM_VARIANTS = 9792;
+    public static final int NUM_VARIANTS = 3324;
     @Deprecated public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
     public static final String STUDY_NAME_1 = STUDY_NAME;

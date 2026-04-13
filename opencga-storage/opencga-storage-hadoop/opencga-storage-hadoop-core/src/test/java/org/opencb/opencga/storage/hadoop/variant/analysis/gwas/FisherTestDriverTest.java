@@ -57,7 +57,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        URI input = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        URI input = getResourceUri("1000g_batches/1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
 //        URI input = smallInputUri;
 //        IntStream controlCohort = IntStream.of(1, 2);
@@ -69,12 +69,12 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         List<String> controlCohort = metadataManager.getIndexedSamples(studyMetadata.getId())
-                .subList(0, 250)
+                .subList(0, 25)
                 .stream()
                 .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
                 .collect(Collectors.toList());
         List<String> caseCohort = metadataManager.getIndexedSamples(studyMetadata.getId())
-                .subList(250, 500)
+                .subList(25, 50)
                 .stream()
                 .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
                 .collect(Collectors.toList());

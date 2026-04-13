@@ -87,7 +87,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
     public void before () throws Exception {
 
-        File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+        File file = opencga.createFile(studyId, "1000g_batches/1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
             List<SampleReferenceParam> sampleIds = file.getSampleIds().subList(file.getSampleIds().size() / coh.length * i,
