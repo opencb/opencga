@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
@@ -535,12 +536,11 @@ public abstract class SolrQueryParser {
                 onlyCobinationPart = combinationPart;
                 break;
             case FLAG:
-                combinationPart = parseCategoryTermValue("other",  "TRANS*" + query.getString(ANNOT_TRANSCRIPT_FLAG.key()));
+                combinationPart = buildFlagFilter(flags);
                 if (CollectionUtils.isNotEmpty(genes)) {
                     geneCombinationPart = "(" + buildXrefOrGeneOrRegion(null, genes, null) + ") AND (" + combinationPart + ")";
                 } else {
                     geneCombinationPart = "";
-                    //geneCombinationPart = "(" + combinationPart + ")";
                 }
                 onlyCobinationPart = combinationPart;
                 break;
@@ -548,7 +548,7 @@ public abstract class SolrQueryParser {
                 combinationPart = parseCategoryTermValue("biotypes", query.getString(ANNOT_BIOTYPE.key()));
                 geneCombinationPart = buildFrom(genes, biotypes);
                 onlyCobinationPart = parseCategoryTermValue("biotypes", query.getString(ANNOT_BIOTYPE.key())) + " AND "
-                        + parseCategoryTermValue("other",  "TRANS*" + query.getString(ANNOT_TRANSCRIPT_FLAG.key()));
+                        + buildFlagFilter(flags);
                 break;
             case NONE:
                 return buildXrefOrGeneOrRegion(xrefs, genes, regions);
@@ -1387,6 +1387,22 @@ public abstract class SolrQueryParser {
                 sb.append(op);
             }
             sb.append("soAcc:\"").append(parseConsequenceType(ct)).append("\"");
+        }
+        return sb.toString();
+    }
+
+    private String buildFlagFilter(List<String> flags) {
+        // Match transcript flags using the soId_flag entries in geneToSoAcc.
+        // Uses a leading wildcard (*_flag) since we don't know which SO accession IDs are present.
+        if (CollectionUtils.isEmpty(flags)) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String flag : flags) {
+            if (sb.length() > 0) {
+                sb.append(" OR ");
+            }
+            sb.append("geneToSoAcc:*_").append(ClientUtils.escapeQueryChars(flag));
         }
         return sb.toString();
     }

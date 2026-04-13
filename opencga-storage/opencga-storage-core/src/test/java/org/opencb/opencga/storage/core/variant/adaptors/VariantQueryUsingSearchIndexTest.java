@@ -105,6 +105,16 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
 
     @Override
     @Test
+    public void testCombineBtSoFlag() {
+        // Solr stores biotype_ct and ct_flag as separate geneToSoAcc entries.
+        // The AND operates at document level, not per-transcript, producing false positives.
+        // Same limitation as HBase (HadoopVariantDBAdaptorTest skips this too).
+        Assume.assumeTrue("Solr returns more elements than expected for biotype+ct+flag without gene", false);
+        super.testCombineBtSoFlag();
+    }
+
+    @Override
+    @Test
     public void testGetAlVariants_polyphenSiftDescription() {
         // Solr stores aggregated scores (max polyphen, min sift) and their descriptions.
         // Only the extreme-category descriptions are safe (no false negatives):

@@ -56,8 +56,7 @@ public class VariantSearchUtils {
                     VariantQueryParam.STATS_MGF,
                     VariantQueryParam.MISSING_ALLELES,
                     VariantQueryParam.MISSING_GENOTYPES,
-                    VariantQueryParam.ANNOT_DRUG,
-                    VariantQueryParam.ANNOT_TRANSCRIPT_FLAG)));
+                    VariantQueryParam.ANNOT_DRUG)));
 
     public static final Set<QueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,
@@ -86,12 +85,19 @@ public class VariantSearchUtils {
                 return false;
             }
         }
+        if (!isTranscriptFlagCovered(query)) {
+            return false;
+        }
         return true;
     }
 
     public static Collection<VariantQueryParam> coveredParams(Query query) {
         Set<VariantQueryParam> params = validParams(query);
-        return coveredParams(params);
+        List<VariantQueryParam> result = coveredParams(params);
+        if (!isTranscriptFlagCovered(query)) {
+            result.remove(ANNOT_TRANSCRIPT_FLAG);
+        }
+        return result;
     }
 
     public static List<VariantQueryParam> coveredParams(Collection<VariantQueryParam> params) {
@@ -107,7 +113,11 @@ public class VariantSearchUtils {
 
     public static Collection<VariantQueryParam> uncoveredParams(Query query) {
         Set<VariantQueryParam> params = validParams(query);
-        return uncoveredParams(params);
+        List<VariantQueryParam> result = uncoveredParams(params);
+        if (!isTranscriptFlagCovered(query) && !result.contains(ANNOT_TRANSCRIPT_FLAG)) {
+            result.add(ANNOT_TRANSCRIPT_FLAG);
+        }
+        return result;
     }
 
     public static List<VariantQueryParam> uncoveredParams(Collection<VariantQueryParam> params) {
@@ -202,6 +212,27 @@ public class VariantSearchUtils {
             return false;
         } else if ("sift".equalsIgnoreCase(name) && op.contains(">")) {
             return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if ANNOT_TRANSCRIPT_FLAG is fully covered by the search engine.
+     * Only flags in {@link VariantQueryUtils#IMPORTANT_TRANSCRIPT_FLAGS} have indexed data in geneToSoAcc.
+     *
+     * @param query Query
+     * @return true if covered (all flags are important or no flag query)
+     */
+    static boolean isTranscriptFlagCovered(Query query) {
+        if (!isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            return true;
+        }
+        List<String> flags = query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key());
+        for (String flag : flags) {
+            String cleanFlag = isNegated(flag) ? removeNegation(flag) : flag;
+            if (!IMPORTANT_TRANSCRIPT_FLAGS.contains(cleanFlag)) {
+                return false;
+            }
         }
         return true;
     }
