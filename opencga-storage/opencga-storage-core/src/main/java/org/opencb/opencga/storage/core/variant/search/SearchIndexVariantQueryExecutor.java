@@ -129,7 +129,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
             // Do not count for iterator
             if (!iterator) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // If the query is fully covered, the numTotalResults from solr is correct.
                     searchCount = new AtomicLong();
                     numTotalResults = searchCount;
@@ -146,7 +146,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             }
 
             if (pagination) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // We can use limit+skip directly in solr
                     variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, limit, skip, searchCount);
 
@@ -263,7 +263,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         if (VariantStorageEngine.UseSearchIndex.from(options) == VariantStorageEngine.UseSearchIndex.NO) {
             return false;
         } // else, YES or AUTO
-        if (isQueryCovered(query) && isIncludeCovered(options)) {
+        if (isQueryCovered(query, indexMetadata) && isIncludeCovered(options)) {
             if (searchActiveAndAlive(indexMetadata)) {
                 return true;
             }

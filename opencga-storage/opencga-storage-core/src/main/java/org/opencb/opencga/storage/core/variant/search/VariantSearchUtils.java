@@ -79,13 +79,16 @@ public class VariantSearchUtils {
 
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
-    public static boolean isQueryCovered(Query query) {
+    public static boolean isQueryCovered(Query query, SearchIndexMetadata indexMetadata) {
         for (QueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
             if (isValidParam(query, nonCoveredParam)) {
                 return false;
             }
         }
         if (!isTranscriptFlagCovered(query)) {
+            return false;
+        }
+        if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
             return false;
         }
         return true;

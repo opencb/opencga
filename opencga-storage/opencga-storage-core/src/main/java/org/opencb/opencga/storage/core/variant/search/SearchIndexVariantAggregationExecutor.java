@@ -25,7 +25,8 @@ public class SearchIndexVariantAggregationExecutor extends VariantAggregationExe
 
     @Override
     protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet, List<String> reason) throws Exception {
-        return VariantSearchUtils.isQueryCovered(query);
+        SearchIndexMetadata indexMetadata = searchManager.getSearchIndexMetadataForQueries();
+        return VariantSearchUtils.isQueryCovered(query, indexMetadata);
     }
 
     @Override
