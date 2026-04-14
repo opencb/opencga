@@ -1734,6 +1734,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>hdi5.1</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
@@ -1762,6 +1763,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
@@ -1775,6 +1777,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
