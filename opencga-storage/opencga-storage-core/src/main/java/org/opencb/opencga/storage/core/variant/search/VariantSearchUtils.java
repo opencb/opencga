@@ -91,6 +91,9 @@ public class VariantSearchUtils {
         if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
             return false;
         }
+        if (needsTraitRefinement(query)) {
+            return false;
+        }
         return true;
     }
 
@@ -178,6 +181,11 @@ public class VariantSearchUtils {
         if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
             engineQuery.put(ANNOT_PROTEIN_SUBSTITUTION.key(), query.get(ANNOT_PROTEIN_SUBSTITUTION.key()));
         }
+        // Trait params use text_en field with stemming — Solr pre-filters but may produce false positives
+        if (needsTraitRefinement(query)) {
+            engineQuery.putIfNotNull(ANNOT_PROTEIN_KEYWORD.key(), query.get(ANNOT_PROTEIN_KEYWORD.key()));
+            engineQuery.putIfNotNull(ANNOT_GENE_TRAIT_NAME.key(), query.get(ANNOT_GENE_TRAIT_NAME.key()));
+        }
         // Make sure that all modifiers are present in the engine query
         for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
             engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
@@ -238,6 +246,19 @@ public class VariantSearchUtils {
             }
         }
         return true;
+    }
+
+    /**
+     * Check if the query uses trait params that need DB refinement.
+     * Solr's traits field (text_en) stores all trait types in the same field with stemming,
+     * producing false positives across trait types (KW, HP, CV, etc.).
+     * Solr pre-filters (no false negatives), but the DB must refine for exact results.
+     *
+     * @param query Query
+     * @return true if trait refinement is needed
+     */
+    static boolean needsTraitRefinement(Query query) {
+        return isValidParam(query, ANNOT_PROTEIN_KEYWORD) || isValidParam(query, ANNOT_GENE_TRAIT_NAME);
     }
 
     static boolean needsProteinSubstitutionRefinement(Query query, SearchIndexMetadata indexMetadata) {

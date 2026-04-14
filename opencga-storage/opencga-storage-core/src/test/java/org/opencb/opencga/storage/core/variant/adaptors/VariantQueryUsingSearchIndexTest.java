@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.Arrays;
+import java.util.Collections;
 import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -34,7 +35,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
 @StorageEngineTest
 public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorTest {
 
-    @ClassRule
+    @ClassRule(order = 10)
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     @Override
@@ -101,6 +102,15 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    @Override
+    @Test
+    public void testGetAllVariants_geneTrait() {
+        // Non-HPO gene traits (e.g., disgenet) are not indexed in Solr's traits field.
+        // Only HPO entries are stored, so non-HPO queries produce false negatives.
+        // Run with HPO-only names/IDs.
+        testGetAllVariants_geneTrait(false, Collections.emptySet());
     }
 
     @Override

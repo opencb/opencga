@@ -218,6 +218,44 @@ public class VariantSearchUtilsTest {
                 new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen<0.5"), complete));
     }
 
+    // ---- needsTraitRefinement ----
+
+    @Test
+    public void testNeedsTraitRefinementNoParam() {
+        assertFalse(VariantSearchUtils.needsTraitRefinement(new Query()));
+    }
+
+    @Test
+    public void testNeedsTraitRefinementProteinKeyword() {
+        assertTrue(VariantSearchUtils.needsTraitRefinement(
+                new Query(ANNOT_PROTEIN_KEYWORD.key(), "acetylation")));
+    }
+
+    @Test
+    public void testNeedsTraitRefinementGeneTraitName() {
+        assertTrue(VariantSearchUtils.needsTraitRefinement(
+                new Query(ANNOT_GENE_TRAIT_NAME.key(), "seizures")));
+    }
+
+    @Test
+    public void testNeedsTraitRefinementOtherTraitParams() {
+        // ANNOT_HPO and ANNOT_GENE_TRAIT_ID do not trigger trait refinement
+        assertFalse(VariantSearchUtils.needsTraitRefinement(
+                new Query(ANNOT_HPO.key(), "HP:0001250")));
+        assertFalse(VariantSearchUtils.needsTraitRefinement(
+                new Query(ANNOT_GENE_TRAIT_ID.key(), "umls:C0007131")));
+    }
+
+    @Test
+    public void testIsQueryCoveredWithTraitRefinement() {
+        // Protein keyword needs refinement — query not fully covered
+        assertFalse(VariantSearchUtils.isQueryCovered(
+                new Query(ANNOT_PROTEIN_KEYWORD.key(), "acetylation"), defaultIndexMetadata()));
+        // Gene trait name needs refinement — query not fully covered
+        assertFalse(VariantSearchUtils.isQueryCovered(
+                new Query(ANNOT_GENE_TRAIT_NAME.key(), "seizures"), defaultIndexMetadata()));
+    }
+
     // ---- coveredParams / uncoveredParams ----
 
     @Test
