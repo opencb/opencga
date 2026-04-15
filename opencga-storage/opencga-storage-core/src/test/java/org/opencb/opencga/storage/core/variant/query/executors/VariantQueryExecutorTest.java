@@ -127,7 +127,9 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
             for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
-                if (variantQueryExecutor instanceof DBAdaptorVariantQueryExecutor) {
+                // Exact class match — subclasses (e.g. RegionVariantQueryExecutor) have
+                // narrower canUseThisExecutor checks and can't serve as the reference.
+                if (variantQueryExecutor.getClass() == DBAdaptorVariantQueryExecutor.class) {
                     dbQueryExecutor = (DBAdaptorVariantQueryExecutor) variantQueryExecutor;
                     break;
                 }
