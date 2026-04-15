@@ -342,118 +342,74 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
     /**
      * 1. Stage file "inputUri"
-     * 2. wait
-     * 3. Merge file "inputUri" (in a different thread)
-     * 4. Try to stage smallInputUri (concurrently)
-     * 5. Assert fail stage
+     * 2. Register a RUNNING merge task for "inputUri" in metadata
+     * 3. Try to stage smallInputUri
+     * 4. Assert stage is rejected because a merge is in progress
      */
     @Test
     public void stageWhileMerging() throws Exception {
         StudyMetadata studyMetadata = newStudyMetadata();
-        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), false)
                 .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false));
-        Thread thread = new Thread(() -> {
-            try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
-                                .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false),
-                        false, true);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        VariantStorageMetadataManager variantStorageMetadataManager = getVariantStorageEngine().getDBAdaptor().getMetadataManager();
-        int secondFileId = 2;
-        try {
-            thread.start();
-            Thread.sleep(200);
 
-            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
-            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(),
-                    RandomUtils.nextInt(1000, 2000),
-                    MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
-            opInProgress.addStatus(TaskMetadata.Status.RUNNING);
-            StorageEngineException expected = MongoVariantStorageEngineException
-                    .otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId), metadataManager);
-            thrown.expect(StoragePipelineException.class);
-            thrown.expectCause(instanceOf(expected.getClass()));
-            thrown.expectCause(hasMessage(is(expected.getMessage())));
+        int firstFileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
 
-            runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
-                    new ObjectMap(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false));
-        } catch (StorageEngineException e) {
-            System.out.println("Interrupt!");
-            thread.interrupt();
-            System.out.println("Join!");
-            thread.join();
-            System.out.println("EXIT");
+        // Deterministically simulate a concurrent merge by registering a RUNNING merge task for the first file.
+        // The thread-based approach this replaces was racy: it relied on Thread.sleep(200) to win the
+        // addRunningTask lock, but ordering depended on file-registration I/O cost and often went the other way.
+        TaskMetadata opInProgress = metadataManager.addRunningTask(studyMetadata.getId(),
+                MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(firstFileId),
+                false, TaskMetadata.Type.LOAD);
 
-            TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
-            // Second file is not staged or merged
-//            int secondFileId = studyMetadata.getFileIds().get(UriUtils.fileName(smallInputUri));
-            List<TaskMetadata> ops = Arrays.stream(tasks).filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
-            System.out.println("ops = " + ops);
-            assertEquals(0, ops.size());
-        }
+        int secondFileId = metadataManager.registerFile(studyMetadata.getId(), smallInputUri.getPath());
+        StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(
+                opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId),
+                metadataManager);
+        thrown.expect(StoragePipelineException.class);
+        thrown.expectCause(instanceOf(expected.getClass()));
+        thrown.expectCause(hasMessage(is(expected.getMessage())));
+
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
+                new ObjectMap(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false));
     }
 
     /**
-     * Try to merge two different files in the same study at the same time.
+     * Try to merge a file while a merge for a different file is already in progress.
      */
     @Test
     public void mergeWhileMerging() throws Exception {
         StudyMetadata studyMetadata = newStudyMetadata();
-        StoragePipelineResult storagePipelineResult = runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata, new ObjectMap()
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true));
 
         StoragePipelineResult storagePipelineResult2 = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap()
                         .append(MongoDBVariantStorageOptions.STAGE.key(), true));
-        int secondFileId = metadataManager.getFileId(studyMetadata.getId(), smallInputUri);
-        Thread thread = new Thread(() -> {
-            try {
-                runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
-                            .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false), false, true);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
 
-        try {
-            thread.start();
-            Thread.sleep(200);
+        int firstFileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
+        int secondFileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(smallInputUri));
 
-            int fileId = metadataManager.getFileId(studyMetadata.getId(), UriUtils.fileName(inputUri));
-            TaskMetadata opInProgress = new TaskMetadata(studyMetadata.getId(), RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(fileId), 0, TaskMetadata.Type.OTHER);
-            opInProgress.addStatus(TaskMetadata.Status.RUNNING);
-            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId), metadataManager);
-            thrown.expect(StoragePipelineException.class);
-            thrown.expectCause(instanceOf(expected.getClass()));
-            thrown.expectCause(hasMessage(is(expected.getMessage())));
+        // Deterministically simulate a concurrent merge by registering a RUNNING merge task for the first file.
+        // The thread-based approach this replaces was racy: it relied on Thread.sleep(200) to win the
+        // addRunningTask lock, but ordering depended on file-registration I/O cost and often went the other way.
+        TaskMetadata opInProgress = metadataManager.addRunningTask(studyMetadata.getId(),
+                MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(firstFileId),
+                false, TaskMetadata.Type.LOAD);
 
-            runDefaultETL(storagePipelineResult2.getTransformResult(), getVariantStorageEngine(), studyMetadata,
-                    new ObjectMap()
-                            .append(MongoDBVariantStorageOptions.MERGE.key(), true)
-                            .append(MongoDBVariantStorageOptions.STAGE.key(), false)
-                            .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false), false, true);
-        } catch (StorageEngineException e) {
-            System.out.println("Interrupt!");
-            thread.interrupt();
-            System.out.println("Join!");
-            thread.join();
-            System.out.println("EXIT");
+        StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(
+                opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId),
+                metadataManager);
+        thrown.expect(StoragePipelineException.class);
+        thrown.expectCause(instanceOf(expected.getClass()));
+        thrown.expectCause(hasMessage(is(expected.getMessage())));
 
-            // Second file is not staged or merged
-            TaskMetadata[] tasks = Iterators.toArray(metadataManager.taskIterator(studyMetadata.getId()), TaskMetadata.class);
-            List<TaskMetadata> ops = Arrays.stream(tasks)
-                    .filter(op -> op.getFileIds().contains(secondFileId))
-                    .collect(Collectors.toList());
-            System.out.println("ops = " + ops);
-            assertEquals(1, ops.size());
-            assertEquals(MongoDBVariantStorageOptions.STAGE.key(), ops.get(0).getName());
-            System.out.println("DONE");
-        }
+        runDefaultETL(storagePipelineResult2.getTransformResult(), getVariantStorageEngine(), studyMetadata,
+                new ObjectMap()
+                        .append(MongoDBVariantStorageOptions.MERGE.key(), true)
+                        .append(MongoDBVariantStorageOptions.STAGE.key(), false)
+                        .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false), false, true);
     }
 
     @Test
