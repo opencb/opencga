@@ -226,6 +226,24 @@ public class SampleIndexQueryParserTest {
     }
 
     @Test
+    public void parseSampleIndexQuery_mixedNegatedStoredAndNonStoredGts() {
+        // Multi-sample AND with one sample negating a mix of stored (0/1) and non-stored (0/0) gts.
+        // The validSampleIndexQuery gate passes because S1 has all-valid gts, so the parser must
+        // process S2 without crashing on the negated values. S2 should not appear in samplesMap
+        // (it's routed to the negatedGenotypesSamples fallback) nor in samplesWithNonStoredGts.
+        // Regression test for the validGenotype crash on negated input.
+        Query query = new Query(GENOTYPE.key(), "S1:1/1;S2:!0/0,!0/1");
+        SampleIndexQuery indexQuery = parse(query);
+
+        assertEquals(Collections.singleton("S1"), indexQuery.getSamplesMap().keySet());
+        assertEquals(Arrays.asList("1/1"), indexQuery.getSamplesMap().get("S1"));
+        assertFalse(indexQuery.hasNonStoredGts("S2"));
+        assertFalse(indexQuery.hasNonStoredGts("S1"));
+        // Genotype param must still be present: the S2 negated filter is not covered by the sample index
+        assertTrue(query.containsKey(GENOTYPE.key()));
+    }
+
+    @Test
     public void parseVariantTpeQuery() {
         Query q;
         SampleIndexQuery sampleIndexQuery;
@@ -1164,9 +1182,9 @@ public class SampleIndexQueryParserTest {
         query = new Query(GENOTYPE.key(), "fam1_child:0/0;fam1_father:0/1;fam1_mother:0/1");
         indexQuery = parse(query);
         assertEquals(3, indexQuery.getSamplesMap().size());
-        assertTrue(indexQuery.isNegated("fam1_child"));
-        assertFalse(indexQuery.isNegated("fam1_father"));
-        assertFalse(indexQuery.isNegated("fam1_mother"));
+        assertTrue(indexQuery.hasNonStoredGts("fam1_child"));
+        assertFalse(indexQuery.hasNonStoredGts("fam1_father"));
+        assertFalse(indexQuery.hasNonStoredGts("fam1_mother"));
 
         query = new Query(GENOTYPE.key(), "fam1_child:0/1;fam1_father:0/1;fam1_mother:0/0")
                 .append(ANNOT_BIOTYPE.key(), "protein_coding")

@@ -39,8 +39,12 @@ public class SampleIndexQuery {
     private final String study;
     private final Map<String, List<String>> samplesMap;
     private final Set<String> multiFileSamplesSet;
-    /** Samples that should be subtracted from the final result. **/
-    private final Set<String> negatedSamples;
+    /**
+     * Samples whose user-supplied genotype filter references gts that are not stored in the sample index
+     * (e.g. "0/0", "./."). Their filter is rewritten in the parser as the complement of the requested gts,
+     * so downstream consumers must subtract the complement from the final result to honour the original intent.
+     **/
+    private final Set<String> samplesWithNonStoredGts;
     /** For each sample with father filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> fatherFilter;
     /** For each sample with mother filter, indicates all the valid GTs codes. **/
@@ -68,7 +72,7 @@ public class SampleIndexQuery {
         this.study = query.study;
         this.samplesMap = query.samplesMap;
         this.multiFileSamplesSet = query.multiFileSamplesSet;
-        this.negatedSamples = query.negatedSamples;
+        this.samplesWithNonStoredGts = query.samplesWithNonStoredGts;
         this.fatherFilter = query.fatherFilter;
         this.motherFilter = query.motherFilter;
         this.fileFilterMap = query.fileFilterMap;
@@ -83,7 +87,7 @@ public class SampleIndexQuery {
     public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, int extendedFilteringRegion,
                             Set<VariantType> variantTypes, String study,
                             Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
-                            Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
+                            Set<String> samplesWithNonStoredGts, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, boolean includeParentColumns,
@@ -95,7 +99,7 @@ public class SampleIndexQuery {
         this.study = study;
         this.samplesMap = samplesMap;
         this.multiFileSamplesSet = multiFileSamplesSet;
-        this.negatedSamples = negatedSamples;
+        this.samplesWithNonStoredGts = samplesWithNonStoredGts;
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
         this.fileFilterMap = fileFilterMap;
@@ -165,12 +169,12 @@ public class SampleIndexQuery {
         return true;
     }
 
-    public Set<String> getNegatedSamples() {
-        return negatedSamples;
+    public Set<String> getSamplesWithNonStoredGts() {
+        return samplesWithNonStoredGts;
     }
 
-    public boolean isNegated(String sample) {
-        return getNegatedSamples().contains(sample);
+    public boolean hasNonStoredGts(String sample) {
+        return getSamplesWithNonStoredGts().contains(sample);
     }
 
     public Map<String, boolean[]> getFatherFilterMap() {

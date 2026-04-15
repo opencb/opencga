@@ -28,7 +28,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getStudy(),
                 Collections.singletonMap(sample, gts),
                 query.getMultiFileSamplesSet(),
-                query.getNegatedSamples(),
+                query.getSamplesWithNonStoredGts(),
                 query.getFatherFilterMap(),
                 query.getMotherFilterMap(),
                 query.getSampleFileIndexQueryMap(),
@@ -61,8 +61,8 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return gts;
     }
 
-    public boolean isNegated() {
-        return super.isNegated(sample);
+    public boolean hasNonStoredGts() {
+        return super.hasNonStoredGts(sample);
     }
 
     public boolean isMultiFileSample() {

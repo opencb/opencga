@@ -125,7 +125,7 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
             String sample = entry.getKey();
             List<String> gts = entry.getValue();
 
-            if (query.isNegated(sample)) {
+            if (query.hasNonStoredGts(sample)) {
                 if (!gts.isEmpty()) {
                     negatedIterators.add(internalIterator(query.forSample(sample, gts), schema));
                 }
@@ -218,7 +218,7 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
             String sample = entry.getKey();
             List<String> gts = entry.getValue();
 
-            if (query.isNegated(sample)) {
+            if (query.hasNonStoredGts(sample)) {
                 if (!gts.isEmpty()) {
                     negatedIterators.add(rawInternalIterator(query.forSample(sample, gts), schema));
                 }

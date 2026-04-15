@@ -164,8 +164,10 @@ public class SampleIndexQueryParser {
         Map<String, List<String>> sampleGenotypeQuery = new HashMap<>();
         // Samples that are returning data from more than one file
         Set<String> multiFileSamples = new HashSet<>();
-        // Samples that are querying
-        Set<String> negatedSamples = new HashSet<>();
+        // Samples whose user-supplied genotype filter references at least one gt that the sample index does
+        // not store (e.g. "0/0" or "./."). Their filter is rewritten to the complement at lines 405-409,
+        // so the sample index can still drive the query as a union of stored gts.
+        Set<String> samplesWithNonStoredGts = new HashSet<>();
         // Samples from the query that can not be used to filter. e.g. samples with invalid or negated genotypes
         // If any, the query is not covered.
         List<String> negatedGenotypesSamples = new LinkedList<>();
@@ -203,8 +205,10 @@ public class SampleIndexQueryParser {
                 }
 
                 List<String> gts = GenotypeClass.filter(entry.getValue(), allGenotypes);
-                if (!gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
-                    negatedSamples.add(sampleName);
+                // Skip negated entries: those are handled below via negatedGenotypesSamples. Checking
+                // validGenotype on "!0/0" would crash in GenotypeClass.parseGenotype.
+                if (!gts.stream().filter(gt -> !isNegated(gt)).allMatch(SampleIndexSchema::validGenotype)) {
+                    samplesWithNonStoredGts.add(sampleName);
                 }
 
                 if (hasNegatedGenotypeFilter(queryOperation, entry.getValue())) {
@@ -286,7 +290,7 @@ public class SampleIndexQueryParser {
 
             // Get parents "tree" from valid samples filter
             for (String sampleName : sampleGenotypeQuery.keySet()) {
-                if (!negatedSamples.contains(sampleName)) {
+                if (!samplesWithNonStoredGts.contains(sampleName)) {
                     SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sampleName, studyId);
 
                     if (sampleMetadata.getFamilyIndexStatus(schema.getVersion()) == TaskMetadata.Status.READY) {
@@ -339,8 +343,8 @@ public class SampleIndexQueryParser {
 
                     if (discardParent) {
                         logger.debug("Discard parent {}", sampleName);
-                        // Remove from negatedSamples (if present)
-                        negatedSamples.remove(sampleName);
+                        // Remove from samplesWithNonStoredGts (if present)
+                        samplesWithNonStoredGts.remove(sampleName);
                         sampleGenotypeQuery.remove(sampleName);
                     }
                 } else if (childrenSet.contains(sampleName)) {
@@ -398,14 +402,15 @@ public class SampleIndexQueryParser {
         }
 
         // If not all genotypes are valid, query is not covered
-        if (!negatedSamples.isEmpty()) {
-            logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}, negSamples: {}", partialGtIndex, negatedSamples);
+        if (!samplesWithNonStoredGts.isEmpty()) {
+            logger.debug("NON_STORED_GTS - Set partialGtIndex to true. Prev value: {}, samples: {}",
+                    partialGtIndex, samplesWithNonStoredGts);
             partialGtIndex = true;
         }
-        for (String negatedSample : negatedSamples) {
-            List<String> negatedGenotypes = new ArrayList<>(validGenotypes);
-            negatedGenotypes.removeAll(sampleGenotypeQuery.get(negatedSample));
-            sampleGenotypeQuery.put(negatedSample, negatedGenotypes);
+        for (String sampleName : samplesWithNonStoredGts) {
+            List<String> complementGenotypes = new ArrayList<>(validGenotypes);
+            complementGenotypes.removeAll(sampleGenotypeQuery.get(sampleName));
+            sampleGenotypeQuery.put(sampleName, complementGenotypes);
         }
         if (!partialGtIndex) {
             if (isValidParam(query, GENOTYPE)) {
@@ -548,7 +553,7 @@ public class SampleIndexQueryParser {
         Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants, extendedFilteringRegion);
 
         return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study,
-                sampleGenotypeQuery, multiFileSamples, negatedSamples,
+                sampleGenotypeQuery, multiFileSamples, samplesWithNonStoredGts,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation, query);
     }
@@ -629,7 +634,10 @@ public class SampleIndexQueryParser {
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
         boolean anyNegated = false;
         for (String gt : gts) {
-            if (queryOperation == QueryOperation.OR && !SampleIndexSchema.validGenotype(gt)) {
+            // Skip negated entries: validGenotype would crash in GenotypeClass.parseGenotype.
+            // The validSampleIndexQuery gate already rejects OR queries containing any negation,
+            // so this branch is unreachable in practice, but guard defensively in case the gate changes.
+            if (queryOperation == QueryOperation.OR && !isNegated(gt) && !SampleIndexSchema.validGenotype(gt)) {
                 // Invalid genotypes (i.e. genotypes not in the index) are not allowed in OR queries
                 throw new IllegalStateException("Genotype '" + gt + "' not in the SampleIndex.");
             }
