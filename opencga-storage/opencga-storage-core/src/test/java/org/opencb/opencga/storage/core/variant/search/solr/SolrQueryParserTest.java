@@ -240,7 +240,7 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1");
-        String expectedFilter = "&fq=(altStats__platinum__ALL:[0+TO+0.1})+OR+(altStats__platinum__ALL:{0.9+TO+*])";
+        String expectedFilter = "&fq=(altStats__platinum__ALL:{-100.0+TO+0.1})+OR+(altStats__platinum__ALL:{0.9+TO+*])";
         String expectedFilterWithStudy = "&fq=studies:\"platinum\"" + expectedFilter;
 
         // Without study
@@ -280,9 +280,9 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1;OTH<0.1");
         String expectedFilter = "&fq="
-                + "((altStats__platinum__ALL:[0+TO+0.1})+OR+(altStats__platinum__ALL:{0.9+TO+*]))"
+                + "((altStats__platinum__ALL:{-100.0+TO+0.1})+OR+(altStats__platinum__ALL:{0.9+TO+*]))"
                 + "+AND+"
-                + "((altStats__platinum__OTH:[0+TO+0.1})+OR+(altStats__platinum__OTH:{0.9+TO+*]))";
+                + "((altStats__platinum__OTH:{-100.0+TO+0.1})+OR+(altStats__platinum__OTH:{0.9+TO+*]))";
         String expectedFilterWithStudy = "&fq=studies:\"platinum\"" + expectedFilter;
 
         // Without study
@@ -310,7 +310,7 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
         query.put(STATS_PASS_FREQ.key(), "ALL<0.1");
-        String expectedFilter = "&fq=(passStats__platinum__ALL:[0+TO+0.1})";
+        String expectedFilter = "&fq=(passStats__platinum__ALL:{-100.0+TO+0.1})";
         String expectedFilterWithStudy = "&fq=studies:\"platinum\"" + expectedFilter;
 
         // Without study
@@ -366,7 +366,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(base + "&fq=(popFreq__1kG_phase3__YRI:[0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))", solrQuery.toString());
+        assertEquals(base + "&fq=(popFreq__1kG_phase3__YRI:{-100.0+TO+0.01}+OR+(*+-popFreq__1kG_phase3__YRI:*))", solrQuery.toString());
     }
 
     @Test
@@ -379,7 +379,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(base + "&fq=(popFreq__1000G__YRI:[0+TO+0.01}+OR+(*+-popFreq__1000G__YRI:*))", solrQuery.toString());
+        assertEquals(base + "&fq=(popFreq__1000G__YRI:{-100.0+TO+0.01}+OR+(*+-popFreq__1000G__YRI:*))", solrQuery.toString());
     }
 
     @Test

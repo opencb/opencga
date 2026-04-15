@@ -1269,7 +1269,11 @@ public abstract class SolrQueryParser {
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("altStats_")
                         || prefix.startsWith("passStats_"))) {
                     sb.append("(");
-                    sb.append(prefix).append(getSolrFieldName(name)).append(":[0 TO ").append(value).append(rightCloseOperator);
+                    // Empty cohorts store -1 in altAlleleFreq (VariantStatsCalculator skips them);
+                    // use MISSING_VALUE as the lower bound so '<=' matches the -1 sentinel, mirroring
+                    // MongoDB's $lte semantics.
+                    sb.append(prefix).append(getSolrFieldName(name)).append(":{")
+                            .append(MISSING_VALUE).append(" TO ").append(value).append(rightCloseOperator);
                     if (addOr) {
                         sb.append(" OR ");
                         sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
