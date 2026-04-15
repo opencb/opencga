@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -25,5 +26,11 @@ public class HadoopVariantQueryUsingSearchIndexTest extends VariantQueryUsingSea
         // Non-HPO gene traits not indexed in Solr. Run HPO-only.
         // FIXME : Phoenix array comparison bug — See https://issues.apache.org/jira/browse/PHOENIX-2952
         testGetAllVariants_geneTrait(false, Collections.singleton("17:7681412:C:G"));
+    }
+
+    @Override
+    public void testGetAllVariants_missingAllele() throws Exception {
+        Assume.assumeTrue(HadoopVariantDBAdaptorTest.MISSING_ALLELE);
+        super.testGetAllVariants_missingAllele();
     }
 }

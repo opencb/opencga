@@ -59,7 +59,6 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSI
 @Category(LongTests.class)
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
-    private static final boolean GROUP_BY = false;
     protected static final boolean MISSING_ALLELE = false;
 
     @ClassRule
@@ -160,34 +159,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 
     @Override
-    public void rank_gene() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.rank_gene();
-    }
-
-    @Override
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
-    }
-
-    @Override
-    @Ignore
-    public void groupBy_gene_limit_0() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.groupBy_gene_limit_0();
-    }
-
-    @Override
-    public void groupBy_gene() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.groupBy_gene();
-    }
-
-    @Override
-    public void rank_ct() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.rank_ct();
     }
 
     @Override

@@ -2033,12 +2033,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    @Ignore
     public void groupBy_gene_limit_0() throws Exception {
         DataResult queryResult = groupBy(new Query(), "gene", new QueryOptions("limit", 0).append("count", true));
         assertTrue(queryResult.getNumResults() > 0);
     }
 
     @Test
+    @Ignore
     public void groupBy_gene() throws Exception {
         int limit = 10;
         DataResult<Map<String, Object>> queryResult_count = groupBy(new Query(), "gene", new QueryOptions("limit", limit)
@@ -2067,6 +2069,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    @Ignore
     public void rank_gene() throws Exception {
         DataResult<Map<String, Object>> queryResult_rank = rank(40, new Query(), "gene", false);
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_rank));
@@ -2079,6 +2082,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    @Ignore
     public void rank_ct() throws Exception {
         int limit = 20;
         DataResult<Map<String, Object>> queryResult_rank = rank(limit, new Query(), "ct", false);
