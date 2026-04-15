@@ -20,12 +20,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -77,18 +79,31 @@ public class VariantSearchUtils {
 
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
-    public static boolean isQueryCovered(Query query) {
+    public static boolean isQueryCovered(Query query, SearchIndexMetadata indexMetadata) {
         for (QueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
             if (isValidParam(query, nonCoveredParam)) {
                 return false;
             }
+        }
+        if (!isTranscriptFlagCovered(query)) {
+            return false;
+        }
+        if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
+            return false;
+        }
+        if (needsTraitRefinement(query)) {
+            return false;
         }
         return true;
     }
 
     public static Collection<VariantQueryParam> coveredParams(Query query) {
         Set<VariantQueryParam> params = validParams(query);
-        return coveredParams(params);
+        List<VariantQueryParam> result = coveredParams(params);
+        if (!isTranscriptFlagCovered(query)) {
+            result.remove(ANNOT_TRANSCRIPT_FLAG);
+        }
+        return result;
     }
 
     public static List<VariantQueryParam> coveredParams(Collection<VariantQueryParam> params) {
@@ -104,7 +119,11 @@ public class VariantSearchUtils {
 
     public static Collection<VariantQueryParam> uncoveredParams(Query query) {
         Set<VariantQueryParam> params = validParams(query);
-        return uncoveredParams(params);
+        List<VariantQueryParam> result = uncoveredParams(params);
+        if (!isTranscriptFlagCovered(query) && !result.contains(ANNOT_TRANSCRIPT_FLAG)) {
+            result.add(ANNOT_TRANSCRIPT_FLAG);
+        }
+        return result;
     }
 
     public static List<VariantQueryParam> uncoveredParams(Collection<VariantQueryParam> params) {
@@ -148,10 +167,24 @@ public class VariantSearchUtils {
     }
 
     public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm) {
+        return getEngineQuery(query, options, scm, null);
+    }
+
+    public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm,
+                                       SearchIndexMetadata indexMetadata) {
         Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
         Query engineQuery = new Query();
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
             engineQuery.put(uncoveredParam.key(), query.get(uncoveredParam.key()));
+        }
+        // Include partially covered params only when Solr can't fully handle them
+        if (needsProteinSubstitutionRefinement(query, indexMetadata)) {
+            engineQuery.put(ANNOT_PROTEIN_SUBSTITUTION.key(), query.get(ANNOT_PROTEIN_SUBSTITUTION.key()));
+        }
+        // Trait params use text_en field with stemming — Solr pre-filters but may produce false positives
+        if (needsTraitRefinement(query)) {
+            engineQuery.putIfNotNull(ANNOT_PROTEIN_KEYWORD.key(), query.get(ANNOT_PROTEIN_KEYWORD.key()));
+            engineQuery.putIfNotNull(ANNOT_GENE_TRAIT_NAME.key(), query.get(ANNOT_GENE_TRAIT_NAME.key()));
         }
         // Make sure that all modifiers are present in the engine query
         for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
@@ -173,6 +206,79 @@ public class VariantSearchUtils {
             }
         }
         return engineQuery;
+    }
+
+    /**
+     * Check if the given protein substitution operator is safe for Solr's aggregated scores.
+     * Unsafe directions produce false negatives:
+     *   polyphen &lt; X: Solr stores max, max &lt; X doesn't mean any CT &lt; X
+     *   sift &gt; X: Solr stores min, min &gt; X doesn't mean any CT &gt; X
+     *
+     * @param name Score name (polyphen or sift)
+     * @param op   Operator string
+     * @return true if the operator is safe (no false negatives)
+     */
+    public static boolean isProteinSubstitutionOperatorSafe(String name, String op) {
+        if ("polyphen".equalsIgnoreCase(name) && op.contains("<") && !op.contains("!")) {
+            return false;
+        } else if ("sift".equalsIgnoreCase(name) && op.contains(">")) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if ANNOT_TRANSCRIPT_FLAG is fully covered by the search engine.
+     * Only flags in {@link VariantQueryUtils#IMPORTANT_TRANSCRIPT_FLAGS} have indexed data in geneToSoAcc.
+     *
+     * @param query Query
+     * @return true if covered (all flags are important or no flag query)
+     */
+    static boolean isTranscriptFlagCovered(Query query) {
+        if (!isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            return true;
+        }
+        List<String> flags = query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key());
+        for (String flag : flags) {
+            String cleanFlag = isNegated(flag) ? removeNegation(flag) : flag;
+            if (!IMPORTANT_TRANSCRIPT_FLAGS.contains(cleanFlag)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if the query uses trait params that need DB refinement.
+     * Solr's traits field (text_en) stores all trait types in the same field with stemming,
+     * producing false positives across trait types (KW, HP, CV, etc.).
+     * Solr pre-filters (no false negatives), but the DB must refine for exact results.
+     *
+     * @param query Query
+     * @return true if trait refinement is needed
+     */
+    static boolean needsTraitRefinement(Query query) {
+        return isValidParam(query, ANNOT_PROTEIN_KEYWORD) || isValidParam(query, ANNOT_GENE_TRAIT_NAME);
+    }
+
+    static boolean needsProteinSubstitutionRefinement(Query query, SearchIndexMetadata indexMetadata) {
+        if (!isValidParam(query, ANNOT_PROTEIN_SUBSTITUTION)) {
+            return false;
+        }
+        if (indexMetadata != null && indexMetadata.getAttributes()
+                .getBoolean(SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.key(),
+                        SEARCH_PROTEIN_SUBSTITUTION_SCORES_COMPLETE.defaultValue())) {
+            return false;
+        }
+        String value = query.getString(ANNOT_PROTEIN_SUBSTITUTION.key());
+        List<String> values = splitValue(value, checkOperator(value));
+        for (String v : values) {
+            KeyOpValue<String, String> keyOpValue = parseKeyOpValue(v);
+            if (keyOpValue.getKey() != null && !isProteinSubstitutionOperatorSafe(keyOpValue.getKey(), keyOpValue.getOp())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

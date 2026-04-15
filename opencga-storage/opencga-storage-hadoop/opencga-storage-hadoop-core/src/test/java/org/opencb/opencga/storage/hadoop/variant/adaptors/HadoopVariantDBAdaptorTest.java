@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -193,6 +194,15 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void limitSkip(Query query, QueryOptions options) {
         Assume.assumeTrue("Unable to paginate queries without sorting", options.getBoolean(QueryOptions.SORT, false));
         super.limitSkip(query, options);
+    }
+
+    @Override
+    @Test
+    public void testGetAllVariants_geneTrait() {
+        // FIXME : Phoenix array comparison bug
+        //  See https://issues.apache.org/jira/browse/PHOENIX-2952
+        //  See org.apache.phoenix.expression.function.ArrayAnyComparisonExpression
+        testGetAllVariants_geneTrait(true, Collections.singleton("17:7681412:C:G"));
     }
 
     @Override

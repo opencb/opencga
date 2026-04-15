@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
+import java.util.Collections;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
@@ -61,6 +62,8 @@ public class SolrQueryParserTest {
         DummyVariantStorageEngine.clear();
         scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         scm.createStudy(studyName);
+        scm.registerCohort(studyName, "ALL", Collections.emptyList());
+        scm.registerCohort(studyName, "OTH", Collections.emptyList());
 
         solrQueryParser = VariantStorageSolrQueryParser.create(scm, new SearchIndexMetadata(1, new Date(), new Date(),
                 SearchIndexMetadata.Status.ACTIVE,
@@ -338,6 +341,7 @@ public class SolrQueryParserTest {
     public void parseProteinSubstitutionScore() {
         QueryOptions queryOptions = new QueryOptions();
 
+        // Description queries are passed through to Solr
         Query query = new Query();
         query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift==tolerated,polyphen==bening");
 
@@ -345,12 +349,12 @@ public class SolrQueryParserTest {
         display(query, queryOptions, solrQuery);
         assertEquals(base + "&fq=(siftDesc:\"tolerated\"+OR+polyphenDesc:\"bening\")", solrQuery.toString());
 
-
         query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen==possibly damaging,probably damaging");
 
         solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(base + "&fq=(polyphenDesc:\"possibly+damaging\"+OR+polyphenDesc:\"probably+damaging\")", solrQuery.toString());
+        assertEquals(base + "&fq=(polyphenDesc:\"possibly+damaging\"+OR+polyphenDesc:\"probably+damaging\")",
+                solrQuery.toString());
     }
 
     @Test
@@ -473,6 +477,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
+        // sift== description — passed through to Solr (not a false-negative direction)
         assertEquals(base + "&fq=siftDesc:\"tolerated\"", solrQuery.toString());
     }
 
@@ -534,6 +539,72 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(base + "&fq=-sift:\\-0.3", solrQuery.toString());
+    }
+
+    @Test
+    public void parseSafePolyphenGt() {
+        // polyphen > X is safe (Solr stores max — if any CT qualifies, max qualifies)
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen>0.5");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base + "&fq=polyphen:{0.5+TO+*]", solrQuery.toString());
+    }
+
+    @Test
+    public void parseSafeSiftLt() {
+        // sift < X is safe (Solr stores min — if any CT qualifies, min qualifies)
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base + "&fq=sift:{-100.0+TO+0.05}", solrQuery.toString());
+    }
+
+    @Test
+    public void parseUnsafePolyphenLt() {
+        // polyphen < X is unsafe (Solr stores max — max < X doesn't mean all CTs < X) — skipped
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen<0.5");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base, solrQuery.toString());
+    }
+
+    @Test
+    public void parseUnsafeSiftGt() {
+        // sift > X is unsafe (Solr stores min — min > X doesn't mean all CTs > X) — skipped
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.5");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base, solrQuery.toString());
+    }
+
+    @Test
+    public void parseMixedSafeUnsafe() {
+        // Mixed: polyphen > (safe) OR sift == (safe — description) → both sent to Solr
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen>0.9,sift==tolerated");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base + "&fq=(polyphen:{0.9+TO+*]+OR+siftDesc:\"tolerated\")", solrQuery.toString());
+    }
+
+    @Test
+    public void parseMixedWithUnsafeNumeric() {
+        // polyphen < (unsafe numeric) OR sift < (safe numeric) → only sift sent to Solr
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen<0.5,sift<0.05");
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(base + "&fq=sift:{-100.0+TO+0.05}", solrQuery.toString());
     }
 
     @Test

@@ -48,6 +48,11 @@ public class MongoDBSampleIndexFromMergeTask implements DataWriter<MongoDBOperat
         this.entryWriter = sampleIndexDBAdaptor.newSampleIndexEntryWriter(studyId, -1, schema, options);
     }
 
+    public MongoDBSampleIndexFromMergeTask setForceOverwrite(boolean forceOverwrite) {
+        this.indexerTask.setForceOverwrite(forceOverwrite);
+        return this;
+    }
+
     @Override
     public boolean open() {
         entryWriter.open();

@@ -45,7 +45,8 @@ public class NoOpVariantQueryExecutor extends VariantQueryExecutor {
                 for (Map.Entry<Object, List<String>> entry : gtMap.entrySet()) {
                     Object thisSample = entry.getKey();
                     List<String> gts = entry.getValue();
-                    if (gts.stream().allMatch(GenotypeClass.MAIN_ALT.predicate())) {
+                    if (gts.stream().noneMatch(VariantQueryUtils::isNegated)
+                            && gts.stream().allMatch(GenotypeClass.MAIN_ALT.predicate())) {
                         sampleQuery = true;
                         sample = thisSample.toString();
                         break;

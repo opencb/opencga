@@ -8,7 +8,6 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
@@ -17,9 +16,9 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.prune.VariantPruneManager;
+import org.opencb.opencga.storage.core.variant.prune.VariantPruneReportRecord;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -31,8 +30,6 @@ import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataD
 import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -45,53 +42,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class VariantPruneManager {
+public class HadoopVariantPruneManager extends VariantPruneManager {
 
     public static final int CHECK_DRY_RUN_LIMIT = 1000000;
-    private Logger logger = LoggerFactory.getLogger(VariantPruneManager.class);
-    public static final String OPERATION_NAME = "VariantPrune";
     private final HadoopVariantStorageEngine engine;
 
-    public VariantPruneManager(HadoopVariantStorageEngine engine) {
+    public HadoopVariantPruneManager(HadoopVariantStorageEngine engine) {
+        super(engine);
         this.engine = engine;
     }
 
-    public void prune(boolean dryMode, boolean resume, URI outdir) throws StorageEngineException {
-        List<TaskMetadata> tasks = pre(dryMode, resume);
-        Thread hook = addHook(tasks);
-        try {
-            runPrune(dryMode, outdir);
-            post(tasks, true);
-        } catch (Exception e) {
-            try {
-                post(tasks, false);
-            } catch (Exception e1) {
-                e.addSuppressed(e1);
-            }
-            throw e;
-        } finally {
-            removeHook(hook);
-        }
-    }
-
-    private void removeHook(Thread hook) {
-        Runtime.getRuntime().removeShutdownHook(hook);
-    }
-
-    private Thread addHook(List<TaskMetadata> tasks) {
-        Thread hook = new Thread(() -> {
-            try {
-                post(tasks, false);
-            } catch (StorageEngineException e) {
-                logger.error("Catch error while running shutdown hook.", e);
-            }
-        });
-        Runtime.getRuntime().addShutdownHook(hook);
-        return hook;
-    }
-
-    private Map<VariantPruneReportRecord.Type, Long> runPrune(boolean dryMode, URI outdir) throws StorageEngineException {
-
+    @Override
+    protected void runPrune(boolean dryMode, URI outdir) throws StorageEngineException {
         try {
             if (!dryMode) {
                 // Do not create table in dry-mode.
@@ -123,7 +85,8 @@ public class VariantPruneManager {
             Map<VariantPruneReportRecord.Type, Long> countByType;
             if (report == null) {
                 logger.info("Nothing to delete!");
-                countByType = Arrays.stream(VariantPruneReportRecord.Type.values()).collect(Collectors.toMap(k -> k, k -> 0L));
+                countByType = Arrays.stream(VariantPruneReportRecord.Type.values())
+                        .collect(Collectors.toMap(k -> k, k -> 0L));
             } else {
                 countByType = Files.lines(report)
                         .map(VariantPruneReportRecord::new)
@@ -140,18 +103,18 @@ public class VariantPruneManager {
                 SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForLoading();
                 if (engine.getVariantSearchManager().isAlive(indexMetadata)) {
                     logger.info("Pruned {} variants, {}", totalCount, countByType);
-                    pruneFromSecondaryIndex(indexMetadata, countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
-                    updateSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.PARTIAL, 0L));
+                    pruneFromSecondaryIndex(indexMetadata,
+                            countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
+                    updateSecondaryIndex(
+                            countByType.getOrDefault(VariantPruneReportRecord.Type.PARTIAL, 0L));
                 }
             }
-            return countByType;
         } catch (IOException e) {
             throw StorageEngineException.ioException(e);
         }
     }
 
     private void checkReportedVariants(Path report, long count) throws IOException, StorageEngineException {
-
         logger.info("Check dry-run report. Found {} variants to prune", count);
         if (report == null || !report.toFile().exists()) {
             if (count == 0) {
@@ -201,7 +164,8 @@ public class VariantPruneManager {
                                 FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
                                 for (Integer study : record.getStudies()) {
                                     filter.addFilter(
-                                            new ColumnPrefixFilter(Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(study))));
+                                            new ColumnPrefixFilter(
+                                                    Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(study))));
                                 }
                                 get.setFilter(filter);
                             }
@@ -218,22 +182,20 @@ public class VariantPruneManager {
                             }
                             progressLogger.increment(1, () -> "up to variant " + variant);
 
-//                            List<String> columns = new ArrayList<>(result.rawCells().length);
                             List<String> sampleOrFileColumns = new ArrayList<>(result.rawCells().length);
                             for (Cell cell : result.rawCells()) {
                                 String column = Bytes.toString(
                                         cell.getQualifierArray(),
                                         cell.getQualifierOffset(),
                                         cell.getQualifierLength());
-//                                columns.add(column);
-                                if (VariantPhoenixSchema.isSampleDataColumn(column) && VariantPhoenixSchema.isFileColumn(column)) {
+                                if (VariantPhoenixSchema.isSampleDataColumn(column)
+                                        && VariantPhoenixSchema.isFileColumn(column)) {
                                     sampleOrFileColumns.add(column);
                                 }
                             }
-                            // TODO: Don't just report, do some checks here
-//                            logger.info("Variant : {}, prune type: {} , columns: {} , {}", variant, record.type, columns.size(), columns);
                             if (!sampleOrFileColumns.isEmpty()) {
-                                logger.warn("Variant : {}, prune type: {} , columns: {} , {}", variant, record.getType(),
+                                logger.warn("Variant : {}, prune type: {} , columns: {} , {}",
+                                        variant, record.getType(),
                                         sampleOrFileColumns.size(),
                                         sampleOrFileColumns);
                                 variantsWithProblems.incrementAndGet();
@@ -251,7 +213,8 @@ public class VariantPruneManager {
             }
             if (variantsWithProblems.get() > 0) {
                 throw new StorageEngineException("Error validating variant prune report!"
-                        + " Found " + variantsWithProblems.get() + " out of " + variantsToCheck + " checked variants with inconsistencies");
+                        + " Found " + variantsWithProblems.get() + " out of " + variantsToCheck
+                        + " checked variants with inconsistencies");
             }
         }
     }
@@ -259,7 +222,8 @@ public class VariantPruneManager {
     private void pruneFromSecondaryIndex(SearchIndexMetadata indexMetadata, long count) throws StorageEngineException {
         logger.info("Deleting {} variants from secondary index", count);
         logger.info("In case of resuming operation, the total number of variants to remove could be larger.");
-        SecondaryIndexPrunePendingVariantsManager manager = new SecondaryIndexPrunePendingVariantsManager(engine.getDBAdaptor());
+        SecondaryIndexPrunePendingVariantsManager manager =
+                new SecondaryIndexPrunePendingVariantsManager(engine.getDBAdaptor());
 
         Task<Variant, Variant> progressTask = new ProgressLogger("Prune variants from secondary index", count)
                 .asTask(variant -> "up to variant " + variant);
@@ -272,7 +236,8 @@ public class VariantPruneManager {
                 progressTask,
                 new HadoopVariantSearchDataDeleter(collection, VariantSearchIdGenerator.getGenerator(indexMetadata),
                         searchManager.getSolrClient(), cleaner),
-                ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(searchManager.getInsertBatchSize()).build());
+                ParallelTaskRunner.Config.builder().setNumTasks(1)
+                        .setBatchSize(searchManager.getInsertBatchSize()).build());
 
         try {
             ptr.run();
@@ -297,60 +262,4 @@ public class VariantPruneManager {
             throw new StorageEngineException("Internal search index error", e);
         }
     }
-
-    private List<TaskMetadata> pre(boolean dryMode, boolean resume) throws StorageEngineException {
-        VariantStorageMetadataManager mm = engine.getMetadataManager();
-
-        List<TaskMetadata> tasks = new LinkedList<>();
-        List<String> studiesWithoutStats = new LinkedList<>();
-
-        // First check no running operations in any study
-        for (Integer studyId : mm.getStudies().values()) {
-            // Do not allow concurrent operations at all.
-            mm.checkTaskCanRun(studyId, OPERATION_NAME, Collections.emptyList(), resume, TaskMetadata.Type.REMOVE, tm -> false);
-        }
-
-        // Check that all variant stats are updated
-        for (Integer studyId : mm.getStudies().values()) {
-            if (!mm.getCohortMetadata(studyId, StudyEntry.DEFAULT_COHORT).isStatsReady()) {
-                studiesWithoutStats.add(mm.getStudyName(studyId));
-            }
-            // FIXME: What if not invalid?
-            //   Might happen if some samples were deleted, or when loading split files?
-        }
-
-        // Discard studies without loaded files.
-        // These can't have the stats computed.
-        studiesWithoutStats.removeIf(study -> mm.getIndexedFiles(mm.getStudyId(study)).isEmpty());
-
-        if (!studiesWithoutStats.isEmpty()) {
-            throw new StorageEngineException("Unable to run variant prune operation. "
-                    + "Please, run variant stats index on cohort '" + StudyEntry.DEFAULT_COHORT + "' for studies " + studiesWithoutStats);
-        }
-
-        // If no dry-mode, add the new tasks
-        if (!dryMode) {
-            for (Integer studyId : mm.getStudies().values()) {
-                // Do not allow concurrent operations at all.
-                tasks.add(mm.addRunningTask(studyId, OPERATION_NAME, Collections.emptyList(), resume,
-                        TaskMetadata.Type.REMOVE, tm -> false));
-            }
-        }
-
-        return tasks;
-    }
-
-    private void post(List<TaskMetadata> tasks, boolean success) throws StorageEngineException {
-        VariantStorageMetadataManager mm = engine.getMetadataManager();
-        for (TaskMetadata task : tasks) {
-            mm.updateTask(task.getStudyId(), task.getId(), t -> {
-                if (success) {
-                    t.addStatus(TaskMetadata.Status.READY);
-                } else {
-                    t.addStatus(TaskMetadata.Status.ERROR);
-                }
-            });
-        }
-    }
-
 }

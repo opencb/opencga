@@ -336,6 +336,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
                 sampleIndexFromMergeTask = new MongoDBSampleIndexFromMergeTask(sampleIndexDBAdaptor, studyId, sampleIds,
                         getOptions(), schema);
+                if (options.getBoolean(VariantStorageOptions.FORCE.key()) || resume) {
+                    sampleIndexFromMergeTask.setForceOverwrite(true);
+                }
             } else {
                 logger.info("Sample Index will NOT be populated");
                 sampleIndexFromMergeTask = null;

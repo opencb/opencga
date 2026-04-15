@@ -65,11 +65,11 @@ public class MongoVariantStorageSearchIntersectTest extends VariantStorageSearch
                 instanceof SearchIndexVariantQueryExecutor);
         assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, true))
+        assertFalse(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
+        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.COUNT, true))
                 instanceof SearchIndexVariantQueryExecutor);
-        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study).append(GENE.key(), "ASDF"), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.SKIP_COUNT, false))
+        assertTrue(engine.getVariantQueryExecutor(new Query(REGION.key(), "3:44-55").append(STUDY.key(), study).append(INCLUDE_STUDY.key(), study).append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"), new QueryOptions(VariantField.SUMMARY, true).append(QueryOptions.COUNT, true))
                 instanceof SearchIndexVariantQueryExecutor);
     }
 }

@@ -64,7 +64,8 @@
         <zookeeper.version>3.6.2</zookeeper.version>
         <jjwt.version>0.11.2</jjwt.version>
         <jetty.version>9.4.53.v20231009</jetty.version>
-        <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
+        <!-- Use default hbase2.0 jetty version -->
+        <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
         <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
@@ -1733,6 +1734,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>hdi5.1</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
@@ -1761,6 +1763,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
@@ -1774,6 +1777,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>

@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.trash.DocumentToTrashVariantConverter;
@@ -74,6 +75,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
+import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexStatsNotSynchronized;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -308,10 +310,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
                 not(elemMatch(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, studyId)))
         );
-        removeStudyFromVariants(studyId, noFilesQuery, timestamp);
 
-        // Purge empty variants
-        removeEmptyVariants();
+        if (autoPruneEmptyVariants()) {
+            removeStudyFromVariants(studyId, noFilesQuery, timestamp);
+            // Purge empty variants
+            removeEmptyVariants();
+        }
     }
 
     /**
@@ -456,7 +460,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
         int batchSize = 500;
 
-        logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
+        int steps = 2;
+        if (autoPruneEmptyVariants()) {
+            steps++;
+        }
+        logger.info("Remove files from stage collection - step 1/" + steps); // Remove study if only contains removed files
         MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
         try (MongoDBIterator<Document> cursor = getVariantsCollection()
@@ -481,30 +489,38 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         List<Bson> studyUpdate = new ArrayList<>(fileIds.size());
 
-        logger.info("Remove files from stage collection - step 2/3"); // Other studies
+        logger.info("Remove files from stage collection - step 2/" + steps); // Other studies
         for (Integer fileId : fileIds) {
             studyUpdate.add(unset(String.valueOf(studyId) + '.' + fileId));
         }
         updatedStageDocuments += stageCollection.update(eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
                 combine(studyUpdate), new QueryOptions(MULTI, true)).getNumUpdated();
 
-        logger.info("Remove files from stage collection - step 3/3"); // purge
-        long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
+        if (autoPruneEmptyVariants()) {
+            logger.info("Remove files from stage collection - step " + 3 + "/" + steps); // purge
+            long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
+            logger.info("Removed " + removedStageDocuments + " documents from stage");
+        }
 
         logger.info("Updated " + updatedStageDocuments + " documents from stage");
-        logger.info("Removed " + removedStageDocuments + " documents from stage");
     }
 
     private DataResult removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
                                                                         List<Integer> fileIds, long timestamp) {
         // Update and remove variants from variants collection
         int studyId = sm.getId();
-        logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
-        long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).getNumUpdated();
+        int step = 0;
+        int steps = 2;
+        if (autoPruneEmptyVariants()) {
+            steps++;
+        }
 
-        // Remove also negated fileIds
-        List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
-        fileIds.addAll(negatedFileIds);
+        long updatedVariantsDocuments = 0;
+        if (autoPruneEmptyVariants()) {
+            // Remove study if only contains removed files
+            logger.info("Remove files from variants collection - step " + (++step) + "/" + steps);
+            updatedVariantsDocuments += removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).getNumUpdated();
+        }
 
         Bson query = in(DocumentToVariantConverter.FILES_FIELD + '.' + FILEID_FIELD, fileIds);
 
@@ -513,15 +529,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeFile: query = " + query.toBsonDocument());
         logger.debug("removeFile: update = " + update.toBsonDocument());
 
-        logger.info("Remove files from variants collection - step 2/3"); // Other studies
+        logger.info("Remove files from variants collection - step " + (++step) + "/" + steps); // Other studies
         DataResult result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
         logger.debug("removeFile: matched  = " + result2.getNumMatches());
         logger.debug("removeFile: modified = " + result2.getNumUpdated());
+        updatedVariantsDocuments += result2.getNumUpdated();
 
-        logger.info("Remove files from variants collection - step 3/3"); // purge
-        long removedVariantsDocuments = removeEmptyVariants();
-        logger.info("Updated " + (updatedVariantsDocuments + result2.getNumUpdated()) + " documents from variants");
-        logger.info("Removed " + removedVariantsDocuments + " documents from variants");
+        if (autoPruneEmptyVariants()) {
+            // Purge empty variants
+            logger.info("Remove files from variants collection - step " + (++step) + "/" + steps);
+            long removedVariantsDocuments = removeEmptyVariants();
+            logger.info("Removed " + removedVariantsDocuments + " documents from variants");
+        }
+        logger.info("Updated " + updatedVariantsDocuments + " documents from variants");
 
         return result2;
     }
@@ -542,13 +562,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Integer studyId = metadataManager.getStudyId(studyName);
         Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
-        boolean purge = options.getBoolean("purge", true);
+        boolean prune = autoPruneEmptyVariants(options);
+        int steps = 1;
+        if (prune) {
+            steps++;
+        }
 
-        logger.info("Remove study from variants collection - step 1/" + (purge ? '2' : '1'));
+        logger.info("Remove study from variants collection - step 1/" + steps);
         DataResult result = removeStudyFromVariants(studyId, query, timestamp);
 
-        if (purge) {
-            logger.info("Remove study from variants collection - step 2/2");
+        if (prune) {
+            logger.info("Remove study from variants collection - step 2/" + steps);
             removeEmptyVariants();
         }
 
@@ -556,11 +580,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
         logger.debug("removeStudy: stage query = " + eq.toBsonDocument());
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument());
-        logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
+        logger.info("Remove study from stage collection - step 1/" + steps);
         getStageCollection(studyId).update(eq, combine, new QueryOptions(MULTI, true));
 
-        if (purge) {
-            logger.info("Remove study from stage collection - step 2/2");
+        if (prune) {
+            logger.info("Remove study from stage collection - step 2/" + steps);
             removeEmptyVariantsFromStage(studyId);
         }
         return result;
@@ -582,6 +606,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: modified = {}", result.getNumUpdated());
 
         return result;
+    }
+
+    private boolean autoPruneEmptyVariants() {
+        return autoPruneEmptyVariants(null);
+    }
+
+    private boolean autoPruneEmptyVariants(ObjectMap options) {
+        if (options != null) {
+            ObjectMap mergedOptions = new ObjectMap(configuration);
+            mergedOptions.putAll(options);
+            options = mergedOptions;
+        } else {
+            options = configuration;
+        }
+        return options.getBoolean(
+                MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.key(),
+                MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.defaultValue());
     }
 
     /**
@@ -637,6 +678,143 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         return deletedDocuments;
+    }
+
+    /**
+     * Scan variants for studies with fileCount==0 in stats. Generate a report and optionally delete/update them.
+     *
+     * @param defaultCohortIds Map of studyId to DEFAULT_COHORT cohortId
+     * @param dryMode          If true, only generate the report without modifying the database
+     * @param outdir           Output directory for the report file
+     * @param timestamp        Timestamp for setIndexNotSynchronized
+     * @return long[]{fullDeleteCount, partialDeleteCount}
+     */
+    public long[] variantsPrune(Map<Integer, Integer> defaultCohortIds, boolean dryMode, java.net.URI outdir, long timestamp) {
+        String statsField = DocumentToVariantConverter.STATS_FIELD;
+
+        // Query: variants with stats.fn==0 OR variants with no studies (empty after removeStudy/removeFiles)
+        Bson query = or(
+                elemMatch(statsField, eq(DocumentToVariantStatsConverter.FILES_NUMBER_FIELD, 0)),
+                exists(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, false)
+        );
+        Bson projection = Projections.include(Arrays.asList(
+                "_id", "chromosome", "start", "end", "reference", "alternate",
+                DocumentToVariantConverter.STUDIES_FIELD, statsField));
+
+        java.nio.file.Path reportPath = java.nio.file.Paths.get(outdir)
+                .resolve("variant_prune_report." + org.opencb.opencga.core.common.TimeUtils.getTime() + ".txt");
+
+        long fullCount = 0;
+        long partialCount = 0;
+        List<String> fullDeleteIds = new ArrayList<>();
+
+        try (java.io.PrintWriter writer = new java.io.PrintWriter(java.nio.file.Files.newBufferedWriter(reportPath));
+             MongoDBIterator<Document> cursor = variantsCollection.nativeQuery()
+                     .find(query, projection, new QueryOptions(MongoDBCollection.BATCH_SIZE, 200))) {
+
+            while (cursor.hasNext()) {
+                Document doc = cursor.next();
+                // Build variant string
+                String chr = doc.getString("chromosome");
+                Integer start = doc.getInteger("start");
+                String ref = doc.getString("reference");
+                String alt = doc.getString("alternate");
+                String variantStr = chr + ":" + start + ":" + ref + ":" + alt;
+
+                // Collect study IDs from studies[] array
+                List<Document> studies = doc.getList(DocumentToVariantConverter.STUDIES_FIELD, Document.class);
+                Set<Integer> studyIds = new HashSet<>();
+                if (studies != null) {
+                    for (Document s : studies) {
+                        studyIds.add(s.getInteger(STUDYID_FIELD));
+                    }
+                }
+
+                // Check stats for fileCount == 0
+                List<Document> stats = doc.getList(statsField, Document.class);
+                List<Integer> emptyStudies = new ArrayList<>();
+                Set<Integer> studiesWithStats = new HashSet<>();
+                if (stats != null) {
+                    for (Document stat : stats) {
+                        int sid = stat.getInteger(DocumentToVariantStatsConverter.STUDY_ID);
+                        int cid = stat.getInteger(DocumentToVariantStatsConverter.COHORT_ID);
+                        Integer defaultCid = defaultCohortIds.get(sid);
+                        if (defaultCid != null && defaultCid.equals(cid)) {
+                            studiesWithStats.add(sid);
+                            Integer fn = stat.getInteger(DocumentToVariantStatsConverter.FILES_NUMBER_FIELD);
+                            if (fn != null && fn == 0) {
+                                emptyStudies.add(sid);
+                            }
+                        }
+                    }
+                }
+
+                // Handle orphan stats (stats without study entry)
+                for (Integer studyWithStats : studiesWithStats) {
+                    if (!studyIds.contains(studyWithStats)) {
+                        studyIds.add(studyWithStats);
+                        if (!emptyStudies.contains(studyWithStats)) {
+                            emptyStudies.add(studyWithStats);
+                        }
+                    }
+                }
+
+                // Classify
+                String studiesCsv = emptyStudies.stream().map(Object::toString).collect(Collectors.joining(","));
+                if (studyIds.isEmpty() || emptyStudies.size() == studyIds.size()) {
+                    // FULL delete
+                    fullCount++;
+                    writer.println(variantStr + "\tFULL\t" + studiesCsv);
+                    if (!dryMode) {
+                        fullDeleteIds.add(doc.getString("_id"));
+                    }
+                } else if (!emptyStudies.isEmpty()) {
+                    // PARTIAL delete — remove data for empty studies
+                    partialCount++;
+                    writer.println(variantStr + "\tPARTIAL\t" + studiesCsv);
+                    if (!dryMode) {
+                        Bson filter = eq("_id", doc.getString("_id"));
+                        List<Bson> pulls = new ArrayList<>();
+                        for (int emptyStudy : emptyStudies) {
+                            pulls.add(pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, emptyStudy)));
+                            pulls.add(pull(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, emptyStudy)));
+                            pulls.add(pull(statsField,
+                                    eq(DocumentToVariantStatsConverter.STUDY_ID, emptyStudy)));
+                        }
+                        pulls.add(getSetIndexNotSynchronized(timestamp));
+                        variantsCollection.update(filter, combine(pulls), null);
+                    }
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException("Error writing prune report to " + reportPath, e);
+        }
+
+        // Execute full deletes in batches
+        if (!dryMode && !fullDeleteIds.isEmpty()) {
+            int batchSize = 1000;
+            for (int i = 0; i < fullDeleteIds.size(); i += batchSize) {
+                List<String> batch = fullDeleteIds.subList(i, Math.min(i + batchSize, fullDeleteIds.size()));
+                variantsCollection.remove(in("_id", batch), new QueryOptions(MULTI, true));
+            }
+            logger.info("Pruned {} variants (full delete) from variants collection", fullDeleteIds.size());
+        }
+
+        if (!dryMode) {
+            // Safety net: also clean any remaining empty variants
+            long extra = removeEmptyVariants();
+            if (extra > 0) {
+                logger.info("Removed {} additional empty variants during safety cleanup", extra);
+            }
+        }
+
+        if (fullCount + partialCount > 0) {
+            logger.info("Prune report written to {}", reportPath);
+        } else {
+            logger.info("No variants to prune");
+        }
+
+        return new long[]{fullCount, partialCount};
     }
 
     public VariantDBIterator trashedVariants(long timeStamp) {
@@ -1172,7 +1350,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     pullUpdatesBulkList.add(pull);
                 }
 
-                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), getSetIndexNotSynchronized(timestamp));
+                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), getSetIndexStatsNotSynchronized(timestamp));
                 pushQueriesBulkList.add(find);
                 pushUpdatesBulkList.add(push);
             }

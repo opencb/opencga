@@ -21,6 +21,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.variant.prune.VariantPruneReportRecord;
 import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -45,7 +46,7 @@ import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.COLUMN_FAMI
 
 public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
-    private Logger logger = LoggerFactory.getLogger(VariantPruneManager.class);
+    private Logger logger = LoggerFactory.getLogger(VariantPruneDriver.class);
     public static final String ATTRIBUTE_DELETION_VARIANT = "d_variant";
     public static final String ATTRIBUTE_DELETION_STUDIES = "d_studies";
     public static final String ATTRIBUTE_DELETION_TYPE = "d_type";

@@ -125,11 +125,11 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             Integer approxCountSamplingSize = null;
 
             Query searchEngineQuery = getSearchEngineQuery(query);
-            Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+            Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
             // Do not count for iterator
             if (!iterator) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // If the query is fully covered, the numTotalResults from solr is correct.
                     searchCount = new AtomicLong();
                     numTotalResults = searchCount;
@@ -146,7 +146,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             }
 
             if (pagination) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // We can use limit+skip directly in solr
                     variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, limit, skip, searchCount);
 
@@ -213,7 +213,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
                 Query searchEngineQuery = getSearchEngineQuery(query);
-                Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+                Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
                 DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(indexMetadata, searchEngineQuery, queryOptions);
@@ -263,7 +263,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         if (VariantStorageEngine.UseSearchIndex.from(options) == VariantStorageEngine.UseSearchIndex.NO) {
             return false;
         } // else, YES or AUTO
-        if (isQueryCovered(query) && isIncludeCovered(options)) {
+        if (isQueryCovered(query, indexMetadata) && isIncludeCovered(options)) {
             if (searchActiveAndAlive(indexMetadata)) {
                 return true;
             }

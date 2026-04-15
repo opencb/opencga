@@ -77,7 +77,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.manager.operations.StatsVariantStorageTest.checkCalculatedStats;
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -117,7 +116,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected FileUtils catalogFileUtils;
     protected VariantStorageManager variantManager;
 
-    protected final String dbName = DB_NAME;
+    protected String dbName;
     protected static final String STORAGE_ENGINE_DUMMY = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
     protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
@@ -155,6 +154,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         projectId = "p1";
         catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
+        dbName = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), ORGANIZATION, projectId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null,
                         Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()),
@@ -473,7 +473,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected DummyVariantDBAdaptor mockVariantDBAdaptor(DummyVariantStorageEngine vsm) throws StorageEngineException {
-        DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(""));
+        DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(vsm.getDBName()));
         doReturn(dbAdaptor).when(vsm).getDBAdaptor();
         return dbAdaptor;
     }

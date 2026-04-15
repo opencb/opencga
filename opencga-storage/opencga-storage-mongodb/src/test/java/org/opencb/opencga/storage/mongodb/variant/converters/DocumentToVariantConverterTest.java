@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
@@ -136,9 +137,16 @@ public class DocumentToVariantConverterTest {
     }
 
     @Test
-    public void testConvertToDataModelTypeWithFiles() {
-        // MongoDB object
+    public void testConvertToDataModelTypeWithFiles() throws StorageEngineException {
+        // Configure DP as an extra format field so the converter returns it
+        metadataManager.updateStudyMetadata(studyId, sm -> {
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Collections.singletonList("DP"));
+            return sm;
+        });
+        studyMetadata = metadataManager.getStudyMetadata(studyId);
+        variantQueryProjection = new VariantQueryProjection(metadataManager, studyMetadata, Arrays.asList(na001, na002), Arrays.asList(fileId));
 
+        // MongoDB object
         Document mongoStudy = new Document(DocumentToStudyEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry.getStudyId()));
 
 //        mongoStudy.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());

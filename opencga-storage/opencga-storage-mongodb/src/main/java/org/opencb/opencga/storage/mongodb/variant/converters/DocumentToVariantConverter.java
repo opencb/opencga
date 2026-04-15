@@ -22,6 +22,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
+import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils;
 
 import java.util.*;
 
@@ -363,7 +366,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
         Document customAnnotation = variantObject.get(CUSTOM_ANNOTATION_FIELD, Document.class);
         boolean hasRelease = variantObject.containsKey(RELEASE_FIELD);
         boolean hasIndex = variantObject.containsKey(INDEX_FIELD);
-        if (mongoAnnotation != null || customAnnotation != null || hasRelease) {
+        if (mongoAnnotation != null || customAnnotation != null || hasRelease || hasIndex) {
             VariantAnnotation annotation;
             if (mongoAnnotation != null) {
                 annotation = variantAnnotationConverter
@@ -395,6 +398,27 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter {
                         .toString();
 
                 additionalAttribute.getAttribute().put(RELEASE.key(), release);
+            }
+            if (hasIndex) {
+                Document indexDoc = variantObject.get(INDEX_FIELD, Document.class);
+                if (indexDoc != null) {
+                    List<Integer> studies = indexDoc.getList(MongoDBVariantSearchIndexUtils.INDEX_STUDIES_FIELD, Integer.class);
+                    if (studies != null && !studies.isEmpty()) {
+                        Set<Integer> studiesSet = new HashSet<>(studies);
+                        Map<Integer, Long> statsHash = null;
+                        String sh = indexDoc.getString(MongoDBVariantSearchIndexUtils.INDEX_STATS_HASH_FIELD);
+                        if (sh != null && !sh.isEmpty()) {
+                            statsHash = new HashMap<>();
+                            for (String entry : sh.split(",")) {
+                                String[] kv = entry.split("=");
+                                statsHash.put(Integer.valueOf(kv[0]), Long.valueOf(kv[1]));
+                            }
+                        }
+                        VariantSearchSyncInfo syncInfo = new VariantSearchSyncInfo(
+                                VariantSearchSyncInfo.Status.STATS_AND_STUDIES_UNKNOWN, studiesSet, statsHash);
+                        VariantSecondaryIndexFilter.addSearchSyncInfoToAnnotation(additionalAttribute, syncInfo);
+                    }
+                }
             }
 
             variant.setAnnotation(annotation);

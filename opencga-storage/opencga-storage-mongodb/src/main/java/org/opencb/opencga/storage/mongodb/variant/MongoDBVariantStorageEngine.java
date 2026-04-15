@@ -50,6 +50,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
+import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -62,6 +63,8 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.index.sample.MongoDBSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.io.MongoDBVariantExporter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.opencb.opencga.storage.mongodb.variant.prune.MongoDBVariantPruneManager;
+import org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchDataWriter;
 import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
 import org.slf4j.Logger;
@@ -186,6 +189,27 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 deletedVariants,
                 searchIndex.getNumInsertedVariants(),
                 searchIndex.getNumLoadedVariantsPartialStatsUpdate());
+    }
+
+    @Override
+    protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
+                                                         Query query, QueryOptions queryOptions, long updateStartTimestamp)
+            throws StorageEngineException, IOException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+
+        if (!overwrite) {
+            query.put(VARIANTS_TO_INDEX.key(), true);
+        }
+        MongoDBVariantSearchDataWriter writer = new MongoDBVariantSearchDataWriter(
+                variantSearchManager, indexMetadata, getDBAdaptor().getVariantsCollection());
+
+        try (VariantDBIterator iterator = getDBAdaptor().iterator(query, queryOptions)) {
+            return variantSearchManager.load(indexMetadata, new VariantDBReader(iterator), writer, null);
+        } catch (StorageEngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageEngineException("Exception building secondary index", e);
+        }
     }
 
     @Override
@@ -418,7 +442,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         AtomicReference<TaskMetadata> taskMetadata = new AtomicReference<>();
         StudyMetadata studyMetadata = metadataManager.updateStudyMetadata(studyName, sm -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
@@ -436,7 +459,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(getOptions());
-            getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
+            getDBAdaptor().removeStudy(studyName, taskMetadata.get().getTimestamp(), new QueryOptions(options));
 
             LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(studyId);
             for (Integer fileId : indexedFiles) {
@@ -452,6 +475,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }
+    }
+
+    @Override
+    public void variantsPrune(boolean dryMode, boolean resume, URI outdir) throws StorageEngineException {
+        new MongoDBVariantPruneManager(this).prune(dryMode, resume, outdir);
     }
 
     @Override

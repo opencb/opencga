@@ -1083,6 +1083,101 @@ public abstract class VariantStorageEngineSplitDataTest extends VariantStorageBa
 
     }
 
+    /**
+     * Load two overlapping VCF files with MULTI split, then FORCE re-index one of them.
+     * Verify that the sample index still contains variants from both files after the re-index.
+     */
+    @Test
+    public void testForceReloadMultiFileSample() throws Exception {
+        URI outDir = newOutputUri();
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+
+        URI file1 = getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz");
+        URI file2 = getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz");
+
+        runETL(variantStorageEngine, file1, outDir, params, true, true, true);
+        runETL(variantStorageEngine, file2, outDir, params, true, true, true);
+
+        // Count variants per sample before FORCE re-index
+        Map<String, Long> countsBefore = new HashMap<>();
+        for (String sample : SAMPLES) {
+            long count = variantStorageEngine.getDBAdaptor()
+                    .count(new Query(VariantQueryParam.SAMPLE.key(), sample)).first();
+            assertTrue("Expected variants for sample " + sample, count > 0);
+            countsBefore.put(sample, count);
+        }
+
+        // FORCE re-index file2
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FORCE.key(), true);
+        variantStorageEngine.getOptions().putAll(params);
+        variantStorageEngine.index(Collections.singletonList(file2), outDir);
+        variantStorageEngine.getOptions().remove(VariantStorageOptions.FORCE.key());
+
+        // Verify variant counts per sample are unchanged
+        for (String sample : SAMPLES) {
+            long countAfter = variantStorageEngine.getDBAdaptor()
+                    .count(new Query(VariantQueryParam.SAMPLE.key(), sample)).first();
+            assertEquals("Variant count changed for sample " + sample + " after FORCE re-index",
+                    countsBefore.get(sample).longValue(), countAfter);
+        }
+    }
+
+    /**
+     * Simulate a crash mid-load by loading a single file fully, then resetting its metadata to a
+     * "loading" state. Resume should handle the already-indexed variants in the sample index
+     * without throwing "Already loaded variant".
+     */
+    @Test
+    public void testResumeAfterCrashedLoad() throws Exception {
+        URI outDir = newOutputUri();
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+
+        // Load a single file normally (no MULTI split — single-file per sample)
+        URI file = getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz");
+        runETL(variantStorageEngine, file, outDir, params, true, true, true);
+
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+        int studyId = mm.getStudyId(STUDY_NAME);
+        String fileName = Paths.get(file).getFileName().toString();
+        int fileId = mm.getFileId(studyId, fileName);
+
+        // Count variants before
+        long countBefore = variantStorageEngine.getDBAdaptor()
+                .count(new Query(VariantQueryParam.STUDY.key(), STUDY_NAME)).first();
+        assertTrue("Expected variants loaded", countBefore > 0);
+
+        // Simulate crash: reset file metadata to non-indexed state.
+        // Keep sample indexStatus and sampleIndexStatus as READY — the sample index data
+        // is already populated, which is the state a real crash would leave.
+        mm.updateFileMetadata(studyId, fileId, fm -> fm.setIndexStatus(TaskMetadata.Status.NONE));
+        mm.taskIterator(studyId).forEachRemaining(task -> {
+            if (task.getFileIds().contains(fileId) && task.getType() == TaskMetadata.Type.LOAD) {
+                try {
+                    mm.updateTask(studyId, task.getId(), t -> t.addStatus(TaskMetadata.Status.ERROR));
+                } catch (StorageEngineException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        // Resume loading the file — the sample index already has its data from the "crashed" load
+        variantStorageEngine.getOptions().putAll(params);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
+        variantStorageEngine.index(Collections.singletonList(file), outDir);
+
+        // Verify variant count unchanged
+        long countAfter = variantStorageEngine.getDBAdaptor()
+                .count(new Query(VariantQueryParam.STUDY.key(), STUDY_NAME)).first();
+        assertEquals("Variant count should be unchanged after resume", countBefore, countAfter);
+    }
+
     public void checkSampleIndex(int studyIdActual, int studyIdExpected) throws Exception {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = variantStorageEngine.getSampleIndexDBAdaptor();
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();

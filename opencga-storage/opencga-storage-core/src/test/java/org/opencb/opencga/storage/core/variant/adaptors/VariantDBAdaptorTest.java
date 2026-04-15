@@ -966,6 +966,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_geneTrait() {
+        testGetAllVariants_geneTrait(true, Collections.emptySet());
+    }
+
+    protected void testGetAllVariants_geneTrait(boolean includeNonHpo, Set<String> skippedVariants) {
         //ANNOT_GENE_TRAIT_ID
         //ANNOT_GENE_TRAIT_NAME
         Query query;
@@ -975,6 +979,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         for (Variant variant : allVariants.getResults()) {
             Set<String> ids = new HashSet<>();
             Set<String> names = new HashSet<>();
+            Set<String> hpoIds = new HashSet<>();
+            Set<String> hpoNames = new HashSet<>();
             Set<String> hpos = new HashSet<>();
             if (variant.getAnnotation().getGeneTraitAssociation() != null) {
                 for (GeneTraitAssociation geneTrait : variant.getAnnotation().getGeneTraitAssociation()) {
@@ -982,18 +988,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     names.add(geneTrait.getName());
                     if (StringUtils.isNotEmpty(geneTrait.getHpo())) {
                         hpos.add(geneTrait.getHpo());
+                        hpoIds.add(geneTrait.getId());
+                        hpoNames.add(geneTrait.getName());
                     }
                 }
             }
             String variantStr = variant.toString();
-            for (String id : ids) {
+            boolean skipVariant = skippedVariants.contains(variantStr);
+            // When includeNonHpo=false, only index this variant for its HPO-sourced names/IDs
+            for (String id : includeNonHpo ? ids : hpoIds) {
                 idsMap.computeIfAbsent(id, k -> new ArrayList<>()).add(variantStr);
             }
-            // FIXME : Why is this not being taken into account?
-            //  See https://issues.apache.org/jira/browse/PHOENIX-2952
-            //  See org.apache.phoenix.expression.function.ArrayAnyComparisonExpression
-            if (!variantStr.equals("17:7681412:C:G")) {
-                for (String name : names) {
+            if (!skipVariant) {
+                for (String name : includeNonHpo ? names : hpoNames) {
                     namesMap.computeIfAbsent(name, k -> new ArrayList<>()).add(variantStr);
                 }
             }
@@ -2146,7 +2153,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals(expectedCount, numResults);
         numResults = count(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"));
         assertEquals(expectedCount, numResults);
-        queryResult = query(new Query(STATS_MAF.key(), "1:cohort1>0.2"), null);
+        queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());
         queryResult = query(new Query(STUDY.key(), STUDY_NAME).append(STATS_MAF.key(), "cohort1>0.2"), null);
         assertEquals(expectedCount, queryResult.getNumResults());

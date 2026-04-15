@@ -1,24 +1,18 @@
-package org.opencb.opencga.storage.hadoop.variant.prune;
+package org.opencb.opencga.storage.core.variant.prune;
 
 import org.hamcrest.MatcherAssert;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
-import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -29,33 +23,20 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-@Category(LongTests.class)
-public class VariantPruneManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+@Ignore
+@StorageEngineTest
+public abstract class VariantPruneManagerTest extends VariantStorageBaseTest {
 
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";
     public static final String STUDY_NAME_5 = "study_5";
 
-    @ClassRule
-    public static HadoopExternalResource externalResource = new HadoopExternalResource();
-    private VariantHadoopDBAdaptor dbAdaptor;
-    private boolean loaded;
-    private HadoopVariantStorageEngine engine;
-
-    @After
-    public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
-    }
+    protected VariantStorageEngine engine;
 
     @Before
     public void before() throws Exception {
         engine = getVariantStorageEngine();
-        dbAdaptor = engine.getDBAdaptor();
         clearDB(DB_NAME);
-//        if (!loaded) {
-//            load();
-//            loaded = true;
-//        }
     }
 
     public void load() throws Exception {
@@ -110,11 +91,8 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         runETL(engine, getResourceUri("variant-test-dense.vcf.gz"), outputUri, params, true, true, true);
         engine.calculateStats(STUDY_NAME_4, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 
-
         // ---------------- Annotate
         this.variantStorageEngine.annotate(outputUri, new QueryOptions());
-
-        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }
 
     @Test
@@ -161,13 +139,13 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         engine.calculateStats(STUDY_NAME_2, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
         runETL(engine, getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
 
-
         checkStatsUpdateRequiredForVariantPrune();
         engine.calculateStats(STUDY_NAME_2, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 
         variantPrune("1_prune_dry", true, 0);
 
-        engine.removeFile(STUDY_NAME_2, "chr22_1-1.variant-test-file.vcf.gz", newOutputUri("2_remove_sample_chr22_1-1.variant-test-file"));
+        engine.removeFile(STUDY_NAME_2, "chr22_1-1.variant-test-file.vcf.gz",
+                newOutputUri("2_remove_sample_chr22_1-1.variant-test-file"));
 
         checkStatsUpdateRequiredForVariantPrune();
         engine.calculateStats(STUDY_NAME_2, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
@@ -176,7 +154,6 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         variantPrune("4_prune_wet", false, variantsToPrune);
         variantPrune("5_prune_dry", true, 0);
     }
-
 
     @Test
     public void testVariantPruneMultiStudy() throws Exception {
@@ -188,7 +165,8 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         checkStatsUpdateRequiredForVariantPrune();
         engine.calculateStats(STUDY_NAME_3, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 
-        engine.removeFile(STUDY_NAME_2, "chr22_1-1.variant-test-file.vcf.gz", newOutputUri("2_remove_sample_chr22_1-1.variant-test-file"));
+        engine.removeFile(STUDY_NAME_2, "chr22_1-1.variant-test-file.vcf.gz",
+                newOutputUri("2_remove_sample_chr22_1-1.variant-test-file"));
         checkStatsUpdateRequiredForVariantPrune();
         engine.calculateStats(STUDY_NAME_2, Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 
@@ -203,13 +181,10 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
 
         variantPrune("remove_study_1_prune_dry", true, 0);
 
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
         engine.removeStudy(STUDY_NAME_3, outputUri);
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
 
         int variantsToPrune = variantPrune("remove_study_2_prune_dry", true);
         variantPrune("remove_study_3_prune_wet", false, variantsToPrune);
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
         variantPrune("remove_study_4_prune_dry", true, 0);
     }
 
@@ -219,30 +194,29 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
 
         variantPrune("remove_study_and_load_1_prune_dry", true, 0);
 
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("pre-remove"));
         engine.removeStudy(STUDY_NAME_3, outputUri);
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
         runETL(engine, getPlatinumFile(8), outputUri, params, true, true, true);
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-remove"));
 
         int variantsToPrune = variantPrune("remove_study_and_load_2_prune_dry", true);
         variantPrune("remove_study_and_load_3_prune_wet", false, variantsToPrune);
-//        VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("post-prune"));
         variantPrune("remove_study_and_load_4_prune_dry", true, 0);
     }
 
-    private int variantPrune(String testName, boolean dryMode) throws Exception {
+    protected int variantPrune(String testName, boolean dryMode) throws Exception {
         return variantPrune(testName, dryMode, null);
     }
 
-    private int variantPrune(String testName, boolean dryMode, Integer expectedPrunedVariants) throws Exception {
+    protected int variantPrune(String testName, boolean dryMode, Integer expectedPrunedVariants) throws Exception {
         URI outdir = newOutputUri(testName);
         getVariantStorageEngine().variantsPrune(dryMode, false, outdir);
 
-        Path report = Files.list(Paths.get(outdir)).filter(p -> p.getFileName().toString().contains("variant_prune_report")).findFirst()
+        Path report = Files.list(Paths.get(outdir))
+                .filter(p -> p.getFileName().toString().contains("variant_prune_report"))
+                .findFirst()
                 .orElse(null);
         int reportedVariants;
         if (report == null) {
@@ -258,7 +232,7 @@ public class VariantPruneManagerTest extends VariantStorageBaseTest implements H
         return reportedVariants;
     }
 
-    private void checkStatsUpdateRequiredForVariantPrune() throws Exception {
+    protected void checkStatsUpdateRequiredForVariantPrune() throws Exception {
         try {
             getVariantStorageEngine().variantsPrune(true, false, outputUri);
             fail("Should fail, as the variant stats are not valid");

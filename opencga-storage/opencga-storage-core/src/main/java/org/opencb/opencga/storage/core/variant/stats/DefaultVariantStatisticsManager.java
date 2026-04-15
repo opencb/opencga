@@ -512,7 +512,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         if (!overwrite) {
             for (String cohortName : cohorts.keySet()) {
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortName);
-                if (cohort.isInvalid()) {
+                if (cohort != null && cohort.isInvalid()) {
                     logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true",
                             cohortName, cohort.getId());
                     overwrite = true;
