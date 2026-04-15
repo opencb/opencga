@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.client.model.Sorts;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.bson.Document;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -25,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorTest;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +37,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 
 /**
@@ -92,6 +102,73 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
             managers.add(storageManager);
             return storageManager;
         }
+    }
+
+    /**
+     * Builds a fresh MongoDBVariantStorageEngine with all collections renamed using the given
+     * suffix, so it can coexist with the main test engine as an independent "expected" instance.
+     * Used for cross-engine document comparisons.
+     */
+    default MongoDBVariantStorageEngine getVariantStorageEngine(String collectionSuffix) throws Exception {
+        MongoDBVariantStorageEngine variantStorageEngine = newVariantStorageEngine();
+        org.opencb.commons.datastore.core.ObjectMap renameCollections = new org.opencb.commons.datastore.core.ObjectMap()
+                .append(MongoDBVariantStorageOptions.COLLECTION_VARIANTS.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_VARIANTS.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_PROJECT.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_PROJECT.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_STUDIES.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_STUDIES.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_FILES.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_FILES.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_SAMPLES.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_SAMPLES.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_TASKS.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_TASKS.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_COHORTS.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_COHORTS.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_STAGE.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_STAGE.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_ANNOTATION.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_ANNOTATION.defaultValue() + collectionSuffix)
+                .append(MongoDBVariantStorageOptions.COLLECTION_TRASH.key(),
+                        MongoDBVariantStorageOptions.COLLECTION_TRASH.defaultValue() + collectionSuffix);
+
+        variantStorageEngine.getOptions().putAll(renameCollections);
+        // Also propagate to the StorageConfiguration so that VariantMongoDBAdaptor.getStageCollection()
+        // and other adaptor methods resolve the correct (renamed) collection names.
+        variantStorageEngine.getConfiguration()
+                .getVariantEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)
+                .getOptions().putAll(renameCollections);
+        return variantStorageEngine;
+    }
+
+    default long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection) {
+        return compareCollections(expectedCollection, actualCollection, d -> d);
+    }
+
+    default long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection,
+                                    Function<Document, Document> map) {
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
+                .append(QueryOptions.EXCLUDE, DocumentToVariantConverter.INDEX_FIELD);
+
+        System.out.println("Comparing " + expectedCollection + " vs " + actualCollection);
+        assertNotEquals(expectedCollection.toString(), actualCollection.toString());
+        assertEquals(expectedCollection.count().getNumMatches(), actualCollection.count().getNumMatches());
+        assertNotEquals(0L, expectedCollection.count().getNumMatches());
+
+        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options);
+        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options);
+
+        long c = 0;
+        while (actualIterator.hasNext() && expectedIterator.hasNext()) {
+            c++;
+            Document actual = map.apply(actualIterator.next());
+            Document expected = map.apply(expectedIterator.next());
+            assertEquals(expected, actual);
+        }
+        assertFalse(actualIterator.hasNext());
+        assertFalse(expectedIterator.hasNext());
+        return c;
     }
 
     default void closeConnections() throws IOException {

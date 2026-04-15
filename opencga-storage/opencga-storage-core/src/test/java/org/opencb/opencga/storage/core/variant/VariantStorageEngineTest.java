@@ -837,48 +837,4 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
-    @Test
-    public void removeFileTest() throws Exception {
-        removeFileTest(new QueryOptions());
-    }
-
-    public void removeFileTest(QueryOptions params) throws Exception {
-        StudyMetadata studyMetadata1 = variantStorageEngine.getMetadataManager().createStudy("Study1");
-        StudyMetadata studyMetadata2 = variantStorageEngine.getMetadataManager().createStudy("Study2");
-
-        ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
-                .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.NO)
-                .append(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO);
-        //Study1
-        runDefaultETL(getResourceUri("1000g_batches/1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyMetadata1, options);
-        runDefaultETL(getResourceUri("1000g_batches/51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyMetadata1, options);
-
-        //Study2
-        runDefaultETL(getResourceUri("1000g_batches/101-150.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyMetadata2, options);
-        runDefaultETL(getResourceUri("1000g_batches/151-200.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyMetadata2, options);
-        runDefaultETL(getResourceUri("1000g_batches/201-250.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngine, studyMetadata2, options);
-
-        variantStorageEngine.removeFile(studyMetadata1.getName(), "51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", outputUri);
-
-        for (Variant variant : variantStorageEngine.getDBAdaptor()) {
-            assertFalse(variant.getStudies().isEmpty());
-            StudyEntry study = variant.getStudy("1");
-            if (study != null) {
-                List<FileEntry> files = study.getFiles();
-                assertEquals(1, files.size());
-                assertEquals("1", files.get(0).getFileId());
-            }
-        }
-
-        variantStorageEngine.getDBAdaptor().getMetadataManager().variantFileMetadataIterator(new Query(), new QueryOptions())
-                .forEachRemaining(vs -> assertNotEquals("2", vs.getId()));
-    }
-
 }

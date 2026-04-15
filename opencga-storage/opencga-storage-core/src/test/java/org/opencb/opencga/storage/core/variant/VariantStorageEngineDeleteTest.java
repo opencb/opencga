@@ -34,6 +34,17 @@ public abstract class VariantStorageEngineDeleteTest  extends VariantStorageBase
     private static Logger logger = LoggerFactory.getLogger(VariantStorageEngineDeleteTest.class);
 
     /**
+     * Hook for backend-specific cross-engine reference comparison after a file removal.
+     * Default is a no-op; Mongo overrides it to compare variant documents against a freshly
+     * built "expected" engine that never loaded the removed file. Called explicitly from
+     * tests where such a comparison is meaningful (not from tests that mutate state via
+     * fill-gaps or multi-file data, where the comparison would not hold).
+     */
+    protected void checkAfterRemoveFileAgainstReference(String removedStudy, String removedFileName,
+                                                        List<String> otherStudies) throws Exception {
+    }
+
+    /**
      * Hook called after file removal. Verifies sample index is cleared for fully removed samples.
      * Override to add additional backend-specific checks.
      */
@@ -176,24 +187,42 @@ public abstract class VariantStorageEngineDeleteTest  extends VariantStorageBase
     @Test
     public void testRemoveFileAndPrune() throws Exception {
         String study = "study_remove_prune";
+        String otherStudy = "study_remove_prune_untouched";
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), study);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATE.key(), false);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        // Load 2 platinum files with different samples
+        // Load 2 platinum files with different samples into study1
         variantStorageEngine.index(Collections.singletonList(getPlatinumFile(0)), outputUri);
         URI file2 = getPlatinumFile(1);
         variantStorageEngine.index(Collections.singletonList(file2), outputUri);
 
+        // Load a 3rd file into a second untouched study, to verify removal from study1 does
+        // not affect variants, files or counts belonging to another study.
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), otherStudy);
+        URI otherFile = getPlatinumFile(2);
+        variantStorageEngine.index(Collections.singletonList(otherFile), outputUri);
+        // Restore active study for the rest of the test
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), study);
+
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
         int studyId = mm.getStudyId(study);
+        int otherStudyId = mm.getStudyId(otherStudy);
 
         variantStorageEngine.calculateStats(study,
+                Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+        // The untouched study also needs ALL-cohort stats so variantsPrune can run over it.
+        variantStorageEngine.calculateStats(otherStudy,
                 Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
 
         long countBefore = variantStorageEngine.getDBAdaptor()
                 .count(new Query(VariantQueryParam.STUDY.key(), study)).first();
         assertTrue("Expected variants loaded", countBefore > 0);
+        long otherCountBefore = variantStorageEngine.getDBAdaptor()
+                .count(new Query(VariantQueryParam.STUDY.key(), otherStudy)).first();
+        assertTrue("Expected variants loaded in untouched study", otherCountBefore > 0);
+        int otherIndexedFilesBefore = mm.getIndexedFiles(otherStudyId).size();
+        assertEquals("Expected 1 indexed file in untouched study", 1, otherIndexedFilesBefore);
 
         // Dry-run prune should find nothing to prune (all files present)
         variantStorageEngine.variantsPrune(true, false, newOutputUri("prune_dry_before"));
@@ -217,12 +246,23 @@ public abstract class VariantStorageEngineDeleteTest  extends VariantStorageBase
         assertTrue("Expected fewer variants after removing file2 + prune",
                 countAfter <= countBefore);
 
+        // The untouched second study must be unaffected by the removal + prune
+        long otherCountAfter = variantStorageEngine.getDBAdaptor()
+                .count(new Query(VariantQueryParam.STUDY.key(), otherStudy)).first();
+        assertEquals("Untouched study's variant count must not change after removing a file "
+                + "from another study", otherCountBefore, otherCountAfter);
+        assertEquals("Untouched study must keep its indexed file", otherIndexedFilesBefore,
+                mm.getIndexedFiles(otherStudyId).size());
+
         // Dry-run prune after wet prune should find 0
         variantStorageEngine.variantsPrune(true, false, newOutputUri("prune_dry_after"));
 
         // Verify only 1 indexed file remains
         assertEquals("Expected 1 indexed file remaining", 1,
                 mm.getIndexedFiles(studyId).size());
+
+        checkAfterRemoveFileAgainstReference(study, file2Name,
+                Collections.singletonList(otherStudy));
     }
 
     @Test

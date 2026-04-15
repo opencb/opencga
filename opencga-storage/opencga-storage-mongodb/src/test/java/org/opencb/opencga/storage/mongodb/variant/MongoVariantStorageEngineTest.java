@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.collect.Iterators;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
 import org.apache.commons.lang3.RandomUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
@@ -601,58 +600,6 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // stage_study_<id> collection. Additionally, BASIC merge mode bypasses the stage entirely
         // for direct loads, making stage comparison unreliable.
     }
-
-    public MongoDBVariantStorageEngine getVariantStorageEngine(String collectionSufix) throws Exception {
-        MongoDBVariantStorageEngine variantStorageEngine = newVariantStorageEngine();
-        ObjectMap renameCollections = new ObjectMap()
-                .append(MongoDBVariantStorageOptions.COLLECTION_VARIANTS.key(), MongoDBVariantStorageOptions.COLLECTION_VARIANTS.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_PROJECT.key(), MongoDBVariantStorageOptions.COLLECTION_PROJECT.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_STUDIES.key(), MongoDBVariantStorageOptions.COLLECTION_STUDIES.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_FILES.key(), MongoDBVariantStorageOptions.COLLECTION_FILES.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_SAMPLES.key(), MongoDBVariantStorageOptions.COLLECTION_SAMPLES.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_TASKS.key(), MongoDBVariantStorageOptions.COLLECTION_TASKS.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_COHORTS.key(), MongoDBVariantStorageOptions.COLLECTION_COHORTS.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_STAGE.key(), MongoDBVariantStorageOptions.COLLECTION_STAGE.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_ANNOTATION.key(), MongoDBVariantStorageOptions.COLLECTION_ANNOTATION.defaultValue() + collectionSufix)
-                .append(MongoDBVariantStorageOptions.COLLECTION_TRASH.key(), MongoDBVariantStorageOptions.COLLECTION_TRASH.defaultValue() + collectionSufix);
-
-        variantStorageEngine.getOptions().putAll(renameCollections);
-        // Also propagate to the StorageConfiguration so that VariantMongoDBAdaptor.getStageCollection()
-        // and other adaptor methods resolve the correct (renamed) collection names.
-        variantStorageEngine.getConfiguration()
-                .getVariantEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)
-                .getOptions().putAll(renameCollections);
-        return variantStorageEngine;
-    }
-
-    public long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection) {
-        return compareCollections(expectedCollection, actualCollection, d -> d);
-    }
-
-    public long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection, Function<Document, Document> map) {
-        QueryOptions options = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
-                .append(QueryOptions.EXCLUDE, DocumentToVariantConverter.INDEX_FIELD);
-
-        System.out.println("Comparing " + expectedCollection + " vs " + actualCollection);
-        assertNotEquals(expectedCollection.toString(), actualCollection.toString());
-        assertEquals(expectedCollection.count().getNumMatches(), actualCollection.count().getNumMatches());
-        assertNotEquals(0L, expectedCollection.count().getNumMatches());
-
-        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), options);
-        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), options);
-
-        long c = 0;
-        while (actualIterator.hasNext() && expectedIterator.hasNext()) {
-            c++;
-            Document actual = map.apply(actualIterator.next());
-            Document expected = map.apply(expectedIterator.next());
-            assertEquals(expected, actual);
-        }
-        assertFalse(actualIterator.hasNext());
-        assertFalse(expectedIterator.hasNext());
-        return c;
-    }
-
 
     @Test
     public void stageAlreadyStagedFileTest() throws Exception {
@@ -1250,68 +1197,4 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         }
     }
 
-    @Test
-    public void removeFileMergeBasicTest() throws Exception {
-        removeFileTest(new QueryOptions(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC));
-    }
-
-    @Override
-    public void removeFileTest(QueryOptions params) throws Exception {
-        MongoDBVariantStorageEngine variantStorageEngineExpected = getVariantStorageEngine("_expected");
-
-        StudyMetadata studyMetadata1 = variantStorageEngineExpected.getMetadataManager().createStudy("Study1");
-        StudyMetadata studyMetadata2 = variantStorageEngineExpected.getMetadataManager().createStudy("Study2");
-
-        ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
-                .append(VariantStorageOptions.ANNOTATE.key(), false);
-        //Study1
-        runDefaultETL(getResourceUri("1000g_batches/1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyMetadata1, options);
-
-        // Register file2, so internal IDs matches with the actual database
-        URI file2Uri = getResourceUri("1000g_batches/51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        int fileId2 = variantStorageEngineExpected.getMetadataManager().registerFile(studyMetadata1.getId(), UriUtils.fileName(file2Uri));
-        variantStorageEngineExpected.getMetadataManager().registerFileSamples(studyMetadata1.getId(), fileId2, variantStorageEngineExpected.getVariantReaderUtils().readVariantFileMetadata(file2Uri));
-//        runDefaultETL(getResourceUri("1000g_batches/51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-//                variantStorageEngineExpected, studyMetadata1, options.append(VariantStorageEngine.Options.FILE_ID.key(), 2));
-
-        //Study2
-        runDefaultETL(getResourceUri("1000g_batches/101-150.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyMetadata2, options);
-        runDefaultETL(getResourceUri("1000g_batches/151-200.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyMetadata2, options);
-        runDefaultETL(getResourceUri("1000g_batches/201-250.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                variantStorageEngineExpected, studyMetadata2, options);
-
-        super.removeFileTest(params);
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-
-        // Stage collection comparison removed: BASIC merge mode (now the default) bypasses the
-        // stage entirely for direct loads, so the stage is not reliably populated.
-
-        // Compare variant documents between expected and actual engines.
-        // With files-to-root schema, genotypes (mgt) and sample data are stored per-file at root level.
-        // The two engines load study 2 files with different options (expected uses defaults, actual uses
-        // LOAD_ARCHIVE=NO/LOAD_SAMPLE_INDEX=NO), causing sample ID assignment to diverge for study 2.
-        // Normalize study 2 files by removing sample-ID-dependent fields; keep study 1 files strict.
-        int studyId = studyMetadata1.getId();
-        compareCollections(
-                variantStorageEngineExpected.getDBAdaptor().getVariantsCollection(),
-                dbAdaptor.getVariantsCollection(),
-                d -> {
-                    List<Document> filesDocs = d.getList(DocumentToVariantConverter.FILES_FIELD, Document.class);
-                    if (filesDocs != null) {
-                        for (Document fileDoc : filesDocs) {
-                            if (fileDoc.getInteger(STUDYID_FIELD) != studyId) {
-                                // Study 2: remove sample-ID-dependent fields (not the focus of this test)
-                                fileDoc.remove(FILE_GENOTYPE_FIELD);
-                                fileDoc.remove(SAMPLE_DATA_FIELD);
-                            }
-                        }
-                    }
-                    return d;
-                });
-
-    }
 }
