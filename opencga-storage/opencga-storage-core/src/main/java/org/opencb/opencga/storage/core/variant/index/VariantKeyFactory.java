@@ -108,9 +108,9 @@ public class VariantKeyFactory {
             if (ciEndL > 0 || ciEndR > 0) {
                 builder.setCiEnd(ciEndL, ciEndR);
             }
-            if (StringUtils.isNotBlank(type)) {
-                builder.setType(VariantType.valueOf(type));
-            }
+            // Do not call builder.setType(type) here: it would suppress VariantBuilder.inferType/inferSV,
+            // leaving sv.copyNumber and sv.type unset for CN subtypes (COPY_NUMBER_LOSS/GAIN/NEUTRAL).
+            // Let the builder derive the type from the alternate; inferSV will populate sv correctly.
             return builder.build();
         } else {
             // Build simple variant

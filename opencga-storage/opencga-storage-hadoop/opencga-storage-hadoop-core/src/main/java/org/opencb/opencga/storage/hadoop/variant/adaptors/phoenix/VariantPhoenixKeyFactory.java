@@ -260,8 +260,15 @@ public class VariantPhoenixKeyFactory extends VariantKeyFactory {
             reference = resultSet.getString(VariantPhoenixSchema.VariantColumn.REFERENCE.column());
             alternate = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALTERNATE.column());
 
-            String alleles = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALLELES.column());
-            String type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
+            // Mirror extractVariantFromResult: TYPE and ALLELES are only needed when ref/alt are hashed
+            // (non-hashed alts infer everything via VariantBuilder; HBaseToVariantConverter re-applies TYPE anyway).
+            String alleles = null;
+            String type = null;
+            if ((reference != null && reference.startsWith(HASH_PREFIX))
+                    || (alternate != null && alternate.startsWith(HASH_PREFIX))) {
+                alleles = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALLELES.column());
+                type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
+            }
 
             return buildVariant(chromosome, start, reference, alternate, type, alleles);
         } catch (RuntimeException | SQLException e) {
