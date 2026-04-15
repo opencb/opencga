@@ -949,6 +949,13 @@ public class VariantSqlQueryParser {
                 }
             }
 
+            // Cache MISSING_GENOTYPES_UPDATED per study to avoid repeated lookups.
+            // When false, a NULL sample column may mean "./." rather than "0/0"
+            // (sample's file not present at the variant and no fill-missing applied).
+            // In that case the negated-homref filter must also include NULL sample columns
+            // whose file column is also NULL.
+            Map<Integer, Boolean> missingGenotypesUpdatedByStudy = new HashMap<>();
+
             List<String> gtFilters = new ArrayList<>(genotypesQuery.getValues().size());
             for (KeyOpValue<SampleMetadata, List<String>> keyOpValue : genotypesQuery.getValues()) {
 
@@ -994,6 +1001,12 @@ public class VariantSqlQueryParser {
                         // Skip non indexed files
                         continue;
                     }
+                    boolean missingGenotypesUpdated = missingGenotypesUpdatedByStudy.computeIfAbsent(studyId, sid -> {
+                        StudyMetadata sm = sid == defaultStudyMetadata.getId()
+                                ? defaultStudyMetadata
+                                : metadataManager.getStudyMetadata(sid);
+                        return sm.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+                    });
                     List<String> sampleFileGtFilters = new ArrayList<>(genotypes.size());
                     for (String genotype : genotypes) {
                         if (negated) {
@@ -1008,10 +1021,26 @@ public class VariantSqlQueryParser {
                         }
                         final String filter;
                         if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
-                            if (negated) {
-                                filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                            // NULL sample column reads as "0/0" when the sample's file is present or
+                            // fill-missing has been applied; otherwise (BASIC mode, file not present) it
+                            // reads as "./." (UNKNOWN_GENOTYPE). The filter must distinguish these.
+                            if (missingGenotypesUpdated) {
+                                // Fill-missing applied: NULL always reads as "0/0".
+                                if (negated) {
+                                    filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                }
                             } else {
-                                filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                // BASIC mode, no fill-missing: NULL reads as "0/0" iff the file column is NOT NULL.
+                                String fileKey = buildFileColumnKey(studyId, sampleFile, new StringBuilder()).toString();
+                                if (negated) {
+                                    filter = "( \"" + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + "' )"
+                                            + " OR ( \"" + key + "\" IS NULL AND \"" + fileKey + "\" IS NULL )";
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' )"
+                                            + " OR ( \"" + key + "\" IS NULL AND \"" + fileKey + "\" IS NOT NULL )";
+                                }
                             }
                         } else {
                             if (negated) {

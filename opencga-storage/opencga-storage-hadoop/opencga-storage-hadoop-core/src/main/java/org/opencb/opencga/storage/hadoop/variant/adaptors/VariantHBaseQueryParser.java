@@ -500,14 +500,32 @@ public class VariantHBaseQueryParser {
                 if (VariantStorageEngine.SplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
                     sampleFiles.addAll(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 }
+                boolean missingGenotypesUpdated = defaultStudy.getAttributes()
+                        .getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+                // For the "null" sample-file placeholder we need the sample's first file to look up the
+                // file column. Only fetched if the sample metadata is actually needed.
+                Integer firstSampleFileId = null;
                 List<Filter> gtSubFilters = new ArrayList<>();
                 for (Integer sampleFile : sampleFiles) {
                     byte[] column;
+                    Integer fileIdForColumn;
                     if (sampleFile == null) {
                         column = buildSampleColumnKey(studyId, sampleId);
+                        if (firstSampleFileId == null) {
+                            List<Integer> sampleFileIds = metadataManager.getSampleMetadata(studyId, sampleId).getFiles();
+                            firstSampleFileId = sampleFileIds.isEmpty() ? null : sampleFileIds.get(0);
+                        }
+                        fileIdForColumn = firstSampleFileId;
                     } else {
                         column = buildSampleColumnKey(studyId, sampleId, sampleFile);
+                        fileIdForColumn = sampleFile;
                     }
+                    // When fill-missing has not been applied, a NULL sample column reads as "0/0"
+                    // only if the sample's file is present at the variant row; otherwise it reads as
+                    // "./.". Include the file column in the filter to disambiguate.
+                    final byte[] fileColumn = (!missingGenotypesUpdated && fileIdForColumn != null)
+                            ? buildFileColumnKey(studyId, fileIdForColumn)
+                            : null;
                     genotypes.stream()
                             .map(genotype -> {
                                 SingleColumnValueFilter filter = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
@@ -515,13 +533,29 @@ public class VariantHBaseQueryParser {
                                 filter.setFilterIfMissing(true);
                                 filter.setLatestVersionOnly(true);
                                 if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
-                                    return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
+                                    if (fileColumn == null) {
+                                        // Fill-missing applied (or no file column available):
+                                        // NULL sample column always reads as "0/0".
+                                        return new FilterList(FilterList.Operator.MUST_PASS_ONE,
+                                                filter, missingColumnFilter(column));
+                                    } else {
+                                        // NULL sample column reads as "0/0" only if the sample's file
+                                        // column is also present at the variant row.
+                                        return new FilterList(FilterList.Operator.MUST_PASS_ONE,
+                                                filter,
+                                                new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                                                        missingColumnFilter(column),
+                                                        existingColumnFilter(fileColumn)));
+                                    }
                                 } else {
                                     return filter;
                                 }
                             })
                             .forEach(gtSubFilters::add);
                     scan.addColumn(family, column);
+                    if (fileColumn != null) {
+                        scan.addColumn(family, fileColumn);
+                    }
                 }
                 if (gtSubFilters.size() == 1) {
                     subFilters.addFilter(gtSubFilters.get(0));
