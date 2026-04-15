@@ -1494,47 +1494,50 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetSortedVariantsDefault() {
+    public void testGetSortedVariantsDefault() throws Exception {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
-        VariantDBIterator iterator = iterator(null, options);
-        Variant next, prev;
-        prev = iterator.next();
-        while (iterator.hasNext()) {
-            next = iterator.next();
-            if (next.getChromosome().equals(prev.getChromosome())) {
-                assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+        try (VariantDBIterator iterator = iterator(null, options)) {
+            Variant next, prev;
+            prev = iterator.next();
+            while (iterator.hasNext()) {
+                next = iterator.next();
+                if (next.getChromosome().equals(prev.getChromosome())) {
+                    assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+                }
+                prev = next;
             }
-            prev = next;
         }
     }
 
     @Test
-    public void testGetSortedVariantsAscending() {
+    public void testGetSortedVariantsAscending() throws Exception {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.ASCENDING);
-        VariantDBIterator iterator = iterator(null, options);
-        Variant next, prev;
-        prev = iterator.next();
-        while (iterator.hasNext()) {
-            next = iterator.next();
-            if (next.getChromosome().equals(prev.getChromosome())) {
-                assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+        try (VariantDBIterator iterator = iterator(null, options)) {
+            Variant next, prev;
+            prev = iterator.next();
+            while (iterator.hasNext()) {
+                next = iterator.next();
+                if (next.getChromosome().equals(prev.getChromosome())) {
+                    assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+                }
+                prev = next;
             }
-            prev = next;
         }
     }
 
     @Test
-    public void testGetSortedVariantsReverse() {
+    public void testGetSortedVariantsReverse() throws Exception {
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.DESCENDING);
-        VariantDBIterator iterator = iterator(null, options);
-        Variant next, prev;
-        prev = iterator.next();
-        while (iterator.hasNext()) {
-            next = iterator.next();
-            if (next.getChromosome().equals(prev.getChromosome())) {
-                assertTrue(prev + " >= " + next, prev.getStart() >= next.getStart());
+        try (VariantDBIterator iterator = iterator(null, options)) {
+            Variant next, prev;
+            prev = iterator.next();
+            while (iterator.hasNext()) {
+                next = iterator.next();
+                if (next.getChromosome().equals(prev.getChromosome())) {
+                    assertTrue(prev + " >= " + next, prev.getStart() >= next.getStart());
+                }
+                prev = next;
             }
-            prev = next;
         }
     }
 
@@ -1808,16 +1811,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testIterator() {
+    public void testIterator() throws Exception {
         int numVariants = 0;
         Query query = new Query(INCLUDE_SAMPLE.key(), ALL);
-        for (VariantDBIterator iterator = iterator(query, new QueryOptions()); iterator.hasNext(); ) {
-            Variant variant = iterator.next();
-            numVariants++;
-            StudyEntry entry = variant.getStudiesMap().entrySet().iterator().next().getValue();
+        try (VariantDBIterator iterator = iterator(query, new QueryOptions())) {
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                numVariants++;
+                StudyEntry entry = variant.getStudiesMap().entrySet().iterator().next().getValue();
 //            assertEquals("6", entry.getFileId());
-            assertEquals(studyMetadata.getName(), entry.getStudyId());
-            assertEquals(sampleNames, new ArrayList<>(entry.getSamplesName()));
+                assertEquals(studyMetadata.getName(), entry.getStudyId());
+                assertEquals(sampleNames, new ArrayList<>(entry.getSamplesName()));
+            }
         }
         assertEquals(NUM_VARIANTS, numVariants);
     }

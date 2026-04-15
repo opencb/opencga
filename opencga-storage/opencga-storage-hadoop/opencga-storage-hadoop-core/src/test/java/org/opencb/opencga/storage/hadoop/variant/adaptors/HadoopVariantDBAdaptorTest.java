@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
@@ -200,16 +201,33 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         super.testCombineBtSoFlag();
     }
 
-    @Test
-    public void testNativeQuery() {
-        int count = 0;
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, true)); iterator.hasNext();) {
-            Variant variant = iterator.next();
-//            System.out.println(variant.toJson());
-            count++;
+    // Force all inherited tests through the Phoenix path so the HBase-native-scan branch
+    // is reserved for HadoopVariantDBAdaptorNativeTest. Without this default, queries that
+    // happen to be natively supported would take the HBase path, leaving the Phoenix path
+    // unexercised in this test class. Subclasses (e.g. HadoopVariantDBAdaptorNativeTest) can
+    // still opt in by setting NATIVE=true before calling super.
+    @Override
+    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
         }
-        assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+        if (!options.containsKey(VariantHadoopDBAdaptor.NATIVE)) {
+            options.put(VariantHadoopDBAdaptor.NATIVE, false);
+        }
+        return super.query(query, options);
     }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (!options.containsKey(VariantHadoopDBAdaptor.NATIVE)) {
+            options.put(VariantHadoopDBAdaptor.NATIVE, false);
+        }
+        return super.iterator(query, options);
+    }
+
 
     @Test
     public void testArchiveIterator() {
