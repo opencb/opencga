@@ -766,6 +766,8 @@ public class VariantSqlQueryParser {
 //        }
         Map<Integer, List<String>> fileFilterMap = new HashMap<>();
         List<String> includeFiles = VariantQueryProjectionParser.getIncludeFilesList(query);
+        ParsedQuery<NegatableValue<ResourceId>> parsedFiles = variantQuery.getStudyQuery().getFiles();
+        boolean hasFileFilter = parsedFiles != null && !parsedFiles.isEmpty();
         QueryOperation filtersOperation = null;
         List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
@@ -773,7 +775,7 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (CollectionUtils.isEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles) && !hasFileFilter) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -786,7 +788,7 @@ public class VariantSqlQueryParser {
             qualOperation = checkOperator(value);
             qualValues = splitValue(value, qualOperation);
             if (!qualValues.isEmpty()) {
-                if (CollectionUtils.isEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles) && !hasFileFilter) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -796,32 +798,32 @@ public class VariantSqlQueryParser {
             addFileDataFilter(query, filters, fileFilterMap, defaultStudyMetadata);
         }
 
-        List<String> files = Collections.emptyList();
+        List<NegatableValue<ResourceId>> files = Collections.emptyList();
         List<Pair<Integer, Integer>> fileIds = Collections.emptyList();
         QueryOperation fileOperation = null;
-        if (isValidParam(query, FILE)) {
-            String value = query.getString(FILE.key());
-            fileOperation = checkOperator(value);
-            files = splitValue(value, fileOperation);
-        } else {
-            if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
-                files = includeFiles;
-                fileOperation = QueryOperation.OR;
+        if (hasFileFilter) {
+            fileOperation = parsedFiles.getOperation();
+            files = parsedFiles.getValues();
+        } else if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
+            fileOperation = QueryOperation.OR;
+            files = new ArrayList<>(includeFiles.size());
+            for (String fileName : includeFiles) {
+                Pair<Integer, Integer> pair = metadataManager.getFileIdPair(fileName, false, defaultStudyMetadata);
+                files.add(new NegatableValue<>(new ResourceId(ResourceId.Type.FILE, pair.getRight(), fileName), false));
             }
         }
 
         if (!files.isEmpty()) {
             fileIds = new ArrayList<>(files.size());
             List<String> fileFilters = new ArrayList<>(files.size());
-            Iterator<String> iterator = files.iterator();
-            while (iterator.hasNext()) {
+            for (NegatableValue<ResourceId> fileValue : files) {
                 StringBuilder sb = new StringBuilder();
-                String file = iterator.next();
-                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
+                String fileName = fileValue.getValue().getName();
+                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(fileName, false, defaultStudyMetadata);
                 fileIds.add(fileIdPair);
 
                 sb.append(" ( ");
-                if (isNegated(file)) {
+                if (fileValue.isNegated()) {
                     // ( "FILE" IS NULL OR "FILE"[3] != 'N' )
 
                     sb.append('"');
