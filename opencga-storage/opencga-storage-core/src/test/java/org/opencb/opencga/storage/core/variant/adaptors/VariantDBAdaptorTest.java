@@ -1778,18 +1778,39 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         }
         Map<String, List<String>> expectedSamples = Collections.singletonMap(studyMetadata.getName(), samplesName);
 
-        Iterator<Variant> it_1 = allVariants.getResults().iterator();
-        Iterator<Variant> it_2 = queryResult.getResults().iterator();
-
+        // Backends may order chromosomes differently (e.g., HBase lex vs Solr padded-numeric).
+        // Match variants by identity (variant.toString()); then assert:
+        //   - same set of variants in both results,
+        //   - within each chromosome, positions are monotonically non-decreasing,
+        //   - chromosomes are uninterrupted (once we leave a chromosome, it never reappears).
         assertEquals(allVariants.getResults().size(), queryResult.getResults().size());
+        Map<String, Variant> allVariantsById = new HashMap<>(allVariants.getResults().size());
+        for (Variant v : allVariants.getResults()) {
+            allVariantsById.put(v.toString(), v);
+        }
 
         LinkedHashMap<String, Integer> samplesPosition1 = null;
         LinkedHashMap<String, Integer> samplesPosition2 = null;
-        for (int i = 0; i < queryResult.getNumResults(); i++) {
-            Variant variant1 = it_1.next();
-            Variant variant2 = it_2.next();
+        String prevChromosome = null;
+        int prevStart = -1;
+        Set<String> seenChromosomes = new HashSet<>();
+        for (Variant variant2 : queryResult.getResults()) {
+            Variant variant1 = allVariantsById.get(variant2.toString());
+            assertNotNull("Variant " + variant2 + " from queryResult not found in allVariants", variant1);
 
-            assertEquals(variant1.toString(), variant2.toString());
+            String chromosome = variant2.getChromosome();
+            if (chromosome.equals(prevChromosome)) {
+                assertTrue("Positions must be non-decreasing within chromosome " + chromosome
+                                + ": " + prevStart + " -> " + variant2.getStart(),
+                        prevStart <= variant2.getStart());
+            } else {
+                assertFalse("Chromosome " + chromosome + " reappears after switching away — chromosomes must be uninterrupted",
+                        seenChromosomes.contains(chromosome));
+                seenChromosomes.add(chromosome);
+            }
+            prevChromosome = chromosome;
+            prevStart = variant2.getStart();
+
             assertEquals(expectedSamples, queryResult.getSamples());
 
             LinkedHashMap<String, Integer> thisSamplesPosition1 = variant1.getStudy(studyMetadata.getName()).getSamplesPosition();
@@ -1812,7 +1833,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             for (String sampleName : samplesName) {
                 String gt1 = variant1.getStudy(studyMetadata.getName()).getSampleData(sampleName, "GT");
                 String gt2 = variant2.getStudy(studyMetadata.getName()).getSampleData(sampleName, "GT");
-                assertEquals(sampleName + " " + variant1.getChromosome() + ":" + variant1.getStart(), gt1, gt2);
+                assertEquals(sampleName + " " + variant2.getChromosome() + ":" + variant2.getStart(), gt1, gt2);
             }
         }
     }

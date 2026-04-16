@@ -177,7 +177,7 @@ public abstract class SolrQueryParser {
             }
 
             // Sort always by id to ensure stable pagination
-            solrQuery.addSort(new SolrQuery.SortClause("id", SolrQuery.ORDER.asc));
+            solrQuery.addSort(new SolrQuery.SortClause("id", getSortOrder(queryOptions)));
         }
 
         //-------------------------------------
@@ -1310,8 +1310,13 @@ public abstract class SolrQueryParser {
     }
 
     public SolrQuery.ORDER getSortOrder(QueryOptions queryOptions) {
-        return queryOptions.getString(QueryOptions.ORDER).equals(QueryOptions.ASCENDING)
-                ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
+        String order = queryOptions.getString(QueryOptions.ORDER, QueryOptions.ASCENDING);
+        if (StringUtils.isBlank(order)
+                || order.equalsIgnoreCase(QueryOptions.ASCENDING)
+                || order.equalsIgnoreCase(QueryOptions.ASC)) {
+            return SolrQuery.ORDER.asc;
+        }
+        return SolrQuery.ORDER.desc;
     }
 
     /**
