@@ -756,6 +756,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             studyMetadata.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", StudyEntry.VCF_ID, "", "1",
                     VCFHeaderLineType.String.toString(), Collections.emptyMap()));
         }
+        // END is a reserved VCF INFO field (commonly emitted for symbolic variants even without a
+        // header declaration). Register it so backends with positional file-attribute storage
+        // (e.g. Hadoop) persist it on round-trip.
+        if (studyMetadata.getVariantHeaderLine("INFO", VCFConstants.END_KEY) == null) {
+            studyMetadata.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", VCFConstants.END_KEY,
+                    "Stop position of the interval", "1", VCFHeaderLineType.Integer.toString(), Collections.emptyMap()));
+        }
     }
 
     @Override
