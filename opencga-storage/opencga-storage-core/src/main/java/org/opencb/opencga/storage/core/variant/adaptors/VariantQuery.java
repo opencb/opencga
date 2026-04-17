@@ -373,6 +373,10 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.SCORE.key());
     }
 
+    public VariantQuery annotationExists(boolean value) {
+        return annotationExists(Boolean.valueOf(value));
+    }
+
     public VariantQuery annotationExists(Boolean value) {
         if (value == null) {
             remove(VariantQueryParam.ANNOTATION_EXISTS.key());
