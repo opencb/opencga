@@ -451,16 +451,27 @@ public class VariantHBaseQueryParser {
             } else {
                 subFilters = filters;
             }
+            // Track non-negated file studies to decide which are individually guaranteed per row.
+            // AND (or single value): every file must be present → every file's study is guaranteed.
+            // OR: only guaranteed when all non-negated files belong to a single study.
+            Set<Integer> orFileStudies = operation == QueryOperation.OR ? new HashSet<>() : null;
             for (String file : values) {
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudy);
                 byte[] column = buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue());
                 if (isNegated(file)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
-                    filteredStudies.add(fileIdPair.getKey());
+                    if (orFileStudies == null) {
+                        filteredStudies.add(fileIdPair.getKey());
+                    } else {
+                        orFileStudies.add(fileIdPair.getKey());
+                    }
                     subFilters.addFilter(existingColumnFilter(column));
                 }
                 scan.addColumn(family, column);
+            }
+            if (orFileStudies != null && orFileStudies.size() == 1) {
+                filteredStudies.addAll(orFileStudies);
             }
         }
 
@@ -581,6 +592,10 @@ public class VariantHBaseQueryParser {
             } else {
                 subFilters = filters;
             }
+            // Only the STUDY=AND (or single-value) case can safely drop atoms guaranteed by a
+            // prior filter: dropping an atom from STUDY=OR narrows the OR by removing a satisfied
+            // alternative while keeping unsatisfied ones.
+            boolean canSkipGuaranteed = operation != QueryOperation.OR;
             for (String studyStr : values) {
                 int studyId = metadataManager.getStudyId(studyStr);
                 byte[] column = VariantPhoenixSchema.getStudyColumn(studyId).bytes();
@@ -588,7 +603,7 @@ public class VariantHBaseQueryParser {
                     subFilters.addFilter(missingColumnFilter(column));
                     scan.addColumn(family, column);
                 } else {
-                    if (!filteredStudies.contains(studyId)) {
+                    if (!canSkipGuaranteed || !filteredStudies.contains(studyId)) {
                         subFilters.addFilter(existingColumnFilter(column));
                         scan.addColumn(family, column);
                     }
