@@ -270,7 +270,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         List<SampleReferenceParam> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(s -> new SampleReferenceParam().setId(s.getId()))
-                .skip(10).limit(100)
+                .skip(2).limit(5)
                 .collect(Collectors.toList());
         catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
                 new QueryOptions(Constants.ACTIONS, Collections.singletonMap(SAMPLES.key(), ParamUtils.BasicUpdateAction.SET)), sessionId);

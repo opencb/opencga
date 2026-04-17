@@ -201,12 +201,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             task.addStatus(TaskMetadata.Status.ERROR);
         });
 
-        // 2) Remove from files collection
-        MongoDataStore dataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
-        MongoDBCollection files = dataStore.getCollection(MongoDBVariantStorageOptions.COLLECTION_FILES.defaultValue());
-        System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).getNumDeleted());
-
-        // 3) Clean some variants from the Stage collection.
+        // 2) Clean some variants from the Stage collection.
+        // Note: file metadata is intentionally preserved. Wiping the files collection here would cause
+        // the next ETL's registerFile() to allocate a new file id, mismatching the existing ERROR task.
         MongoDBCollection stage = dbAdaptor.getStageCollection(studyMetadata.getId());
 
         long stageCount = stage.count().getNumMatches();
