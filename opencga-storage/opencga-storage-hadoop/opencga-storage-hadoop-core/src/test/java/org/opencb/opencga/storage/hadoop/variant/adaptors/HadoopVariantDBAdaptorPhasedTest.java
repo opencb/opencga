@@ -2,10 +2,13 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.experimental.categories.Category;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorPhasedTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 @Ignore // Ignored until phased variants are supported in Hadoop storage engine
+@Category(LongTests.class)
 public class HadoopVariantDBAdaptorPhasedTest extends VariantDBAdaptorPhasedTest implements HadoopVariantStorageTest {
 
     @ClassRule
