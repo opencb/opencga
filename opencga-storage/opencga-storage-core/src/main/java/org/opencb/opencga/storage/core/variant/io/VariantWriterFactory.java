@@ -121,9 +121,12 @@ public class VariantWriterFactory {
                 if (variantStorageMetadataManager.getStudies().size() > 1) {
                     ParsedQuery<NegatableValue<ResourceId>> studies = new VariantQueryParser(null, variantStorageMetadataManager)
                             .parseStudiesQuery(new VariantQuery(query));
+                    int includeStudyId = studyIds.get(0);
                     if (studies == null || (studies.size() > 1 && studies.getOperation() == VariantQueryUtils.QueryOperation.OR)
-                            || studies.getValues().get(0).isNegated()) {
-                        String includeStudy = variantStorageMetadataManager.getStudyName(studyIds.get(0));
+                            || studies.getValues().get(0).isNegated()
+                            || studies.getValues().stream()
+                                    .noneMatch(v -> !v.isNegated() && v.getValue().getId() == includeStudyId)) {
+                        String includeStudy = variantStorageMetadataManager.getStudyName(includeStudyId);
                         String studyFilter = query.getString(VariantQueryParam.STUDY.key());
                         throw new IllegalArgumentException("The study filter '" + studyFilter + "' does not match"
                                 + " the included study '" + includeStudy + "'."
