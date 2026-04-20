@@ -581,17 +581,28 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata securePreStage(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
         String fileName = getMetadataManager().getFileName(studyMetadata.getId(), fileId);
 
-        TaskMetadata operation;
+        TaskMetadata operation = null;
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        if (metadataManager.getFileMetadata(studyMetadata.getId(), fileId).isReady(STAGE.key())) {
+        boolean alreadyStaged = metadataManager.getFileMetadata(studyMetadata.getId(), fileId).isReady(STAGE.key());
+        if (alreadyStaged) {
+            operation = getMetadataManager().searchTask(studyMetadata.getId(), STAGE.key(), Collections.singletonList(fileId));
+            if (operation != null && operation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
+                // File is flagged ready but the stage task is in ERROR — inconsistent state
+                // (e.g. crash mid-stage). Force a re-stage; addRunningTask below will auto-resume
+                // the ERROR task.
+                logger.warn("File \"{}\" ({}) marked staged but stage task is in ERROR; forcing re-stage.",
+                        fileName, fileId);
+                alreadyStaged = false;
+            }
+        }
+        if (alreadyStaged) {
             // Already staged!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
 
-            operation = getMetadataManager().searchTask(studyMetadata.getId(), STAGE.key(), Collections.singletonList(fileId));
-
             if (operation != null && !operation.currentStatus().equals(TaskMetadata.Status.READY)) {
                 // There was an error writing the operation status. Restore to "READY"
-                operation.addStatus(TaskMetadata.Status.READY);
+                operation = metadataManager.updateTask(studyMetadata.getId(), operation.getId(),
+                        t -> t.addStatus(TaskMetadata.Status.READY));
             }
             options.put(STAGE.key(), false);
         } else {
