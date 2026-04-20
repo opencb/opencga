@@ -630,17 +630,36 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_filterWithoutFile_rejected() {
+        // FILTER on its own
+        VariantQueryException ex = assertThrows(VariantQueryException.class,
+                () -> count(new Query(FILTER.key(), "PASS")));
+        assertThat(ex.getMessage(), containsString(FILTER.key()));
+        assertThat(ex.getMessage(), containsString("Missing file context"));
+
+        // FILTER + STUDY but no specific file scope (INCLUDE_FILE=ALL does not narrow)
+        Query studyQuery = new Query(STUDY.key(), studyMetadata1.getId())
+                .append(FILTER.key(), "PASS")
+                .append(INCLUDE_STUDY.key(), ALL)
+                .append(INCLUDE_FILE.key(), ALL)
+                .append(INCLUDE_SAMPLE.key(), ALL);
+        ex = assertThrows(VariantQueryException.class, () -> count(studyQuery));
+        assertThat(ex.getMessage(), containsString(FILTER.key()));
+        assertThat(ex.getMessage(), containsString("Missing file context"));
+    }
+
+    @Test
+    public void testGetAllVariants_qualWithoutFile_rejected() {
+        VariantQueryException ex = assertThrows(VariantQueryException.class,
+                () -> count(new Query(QUAL.key(), ">10")));
+        assertThat(ex.getMessage(), containsString(QUAL.key()));
+        assertThat(ex.getMessage(), containsString("Missing file context"));
+    }
+
+    @Test
     public void testGetAllVariants_filter() {
-        // FILTER
-        Query query = new Query(FILTER.key(), "PASS");
-        long numResults = count(query);
-        assertEquals(allVariants.getNumResults(), numResults);
-
-        query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, count(query).longValue());
-
         // FILTER+FILE1,FILE2
-        query = new Query(FILE.key(), fileName1 + "," + fileName2).append(FILTER.key(), "PASS")
+        Query query = new Query(FILE.key(), fileName1 + "," + fileName2).append(FILTER.key(), "PASS")
                 .append(INCLUDE_STUDY.key(), ALL)
                 .append(INCLUDE_FILE.key(), ALL)
                 .append(INCLUDE_SAMPLE.key(), ALL);
@@ -660,17 +679,6 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = get(query, null);
         assertThat(queryResult, everyResult(allVariants,
                 withStudy(studyMetadata1.getName(), withFileId(allOf(hasItem(fileName1), not(hasItem(fileName2)))))));
-
-        query.append(FILTER.key(), "NO_PASS");
-        assertEquals(0, count(query).longValue());
-
-        // FILTER+STUDY
-        query = new Query(STUDY.key(), studyMetadata1.getId()).append(FILTER.key(), "PASS")
-                .append(INCLUDE_STUDY.key(), ALL)
-                .append(INCLUDE_FILE.key(), ALL)
-                .append(INCLUDE_SAMPLE.key(), ALL);
-        queryResult = get(query, null);
-        assertThat(queryResult, everyResult(allVariants, withStudy(studyMetadata1.getName())));
 
         query.append(FILTER.key(), "NO_PASS");
         assertEquals(0, count(query).longValue());

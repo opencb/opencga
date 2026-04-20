@@ -666,9 +666,12 @@ public class VariantMongoDBQueryParser {
                     fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
                 }
             }
-        } else if (defaultStudy != null && isValidParam(query, INCLUDE_SAMPLE)) {
-            // When INCLUDE_SAMPLE is set, scope FILTER/QUAL/FILE_DATA queries to the included
-            // sample's files (matching HBase column-scoped behavior).
+        } else if (defaultStudy != null) {
+            // Derive fileIds from the projection. Covers INCLUDE_SAMPLE/SAMPLE/GENOTYPE
+            // (anything that scopes the query to a sample, and thus to the sample's files).
+            // Required for FILTER/QUAL to be expressible as per-file $elemMatch (matching HBase
+            // column-scoped behavior). FILTER/QUAL without any file context is rejected upstream
+            // by VariantQueryParser.preProcessStudyParams.
             VariantQueryProjection projection = parsedVariantQuery.getProjection();
             VariantQueryProjection.StudyVariantQueryProjection studyProjection =
                     projection.getStudy(defaultStudy.getId());
@@ -678,12 +681,10 @@ public class VariantMongoDBQueryParser {
         }
 
         // Build per-file and per-sample genotype conditions for multi-file samples.
-        // Used by FILE_DATA to tie conditions to the same file entry, and by SAMPLE_DATA
+        // Used by FILTER/QUAL/FILE_DATA to tie conditions to the same file entry, and by SAMPLE_DATA
         // to tie sfd conditions to the genotype within the same file entry.
         Map<Integer, Bson> fileGenotypeConditions = null;
         Map<Integer, Bson> sampleGenotypeConditions = null;
-        // File IDs inferred from queried samples, used to scope FILTER/QUAL when no explicit FILE constraint.
-        Set<Integer> queriedSampleFileIdSet = null;
         ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> preGenotypesQuery =
                 parsedVariantQuery.getStudyQuery().getGenotypes();
         if (preGenotypesQuery != null && defaultStudy != null) {
@@ -694,13 +695,6 @@ public class VariantMongoDBQueryParser {
                 int sampleId = sample.getId();
                 List<Integer> sampleFileIds = metadataManager.getFileIdsFromSampleId(
                         defaultStudy.getId(), sampleId, true);
-                // Collect sample file IDs for FILTER/QUAL scoping when no explicit FILE constraint
-                if (fileIds.isEmpty()) {
-                    if (queriedSampleFileIdSet == null) {
-                        queriedSampleFileIdSet = new LinkedHashSet<>();
-                    }
-                    queriedSampleFileIdSet.addAll(sampleFileIds);
-                }
                 List<Bson> gtOrConditions = new ArrayList<>();
                 boolean canApply = true;
                 for (String genotype : sampleGt.getValue()) {
@@ -747,38 +741,7 @@ public class VariantMongoDBQueryParser {
             boolean useFileElemMatch = !fileIds.isEmpty();
             boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
-            if (!useFileElemMatch) {
-                // FILTER/QUAL are per file entry. Use $elemMatch with study ID to scope correctly.
-                // When a sample is in the query, also scope to that sample's files.
-                String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
-                List<Bson> fileAttrFilters = new ArrayList<>();
-                if (isValidParam(query, FILTER)) {
-                    getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileAttrFilters);
-                }
-                if (isValidParam(query, QUAL)) {
-                    addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileAttrFilters, false);
-                }
-                if (!fileAttrFilters.isEmpty()) {
-                    if (defaultStudy != null) {
-                        fileAttrFilters.add(eq(DocumentToStudyEntryConverter.STUDYID_FIELD, defaultStudy.getId()));
-                    }
-                    if (sampleGenotypeConditions != null && !sampleGenotypeConditions.isEmpty()) {
-                        // Tie FILTER/QUAL to genotype in the same file entry (matches HBase/Phoenix).
-                        List<Bson> perSampleFilters = new ArrayList<>(sampleGenotypeConditions.size());
-                        for (Bson gtCond : sampleGenotypeConditions.values()) {
-                            List<Bson> combined = new ArrayList<>(fileAttrFilters);
-                            combined.add(gtCond);
-                            perSampleFilters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(combined)));
-                        }
-                        addAll(filters, preGenotypesQuery.getOperation(), perSampleFilters);
-                    } else {
-                        if (queriedSampleFileIdSet != null && !queriedSampleFileIdSet.isEmpty()) {
-                            fileAttrFilters.add(in(DocumentToStudyEntryConverter.FILEID_FIELD, queriedSampleFileIdSet));
-                        }
-                        filters.add(elemMatch(DocumentToVariantConverter.FILES_FIELD, and(fileAttrFilters)));
-                    }
-                }
-            } else {
+            if (useFileElemMatch) {
                 List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
                 String key = DocumentToStudyEntryConverter.ATTRIBUTES_FIELD + '.';
 

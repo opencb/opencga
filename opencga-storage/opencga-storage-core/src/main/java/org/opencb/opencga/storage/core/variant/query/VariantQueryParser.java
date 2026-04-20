@@ -560,6 +560,27 @@ public class VariantQueryParser {
             }
         }
 
+        // FILTER and QUAL are per-file attributes. They require an explicit file context that
+        // narrows the query to specific files: either FILE/FILE_DATA, an explicit list in
+        // INCLUDE_FILE (not ALL/NONE), SAMPLE/GENOTYPE, or an explicit list in INCLUDE_SAMPLE.
+        // ALL/NONE on INCLUDE_FILE/INCLUDE_SAMPLE do not narrow the file scope and are rejected.
+        if (isValidParam(query, FILTER) || isValidParam(query, QUAL)) {
+            boolean hasFileContext = isValidParam(query, FILE)
+                    || isValidParam(query, FILE_DATA)
+                    || isValidParam(query, SAMPLE)
+                    || isValidParam(query, GENOTYPE)
+                    || (isValidParam(query, INCLUDE_FILE) && !isNoneOrAll(query.getString(INCLUDE_FILE.key())))
+                    || (isValidParam(query, INCLUDE_SAMPLE) && !isNoneOrAll(query.getString(INCLUDE_SAMPLE.key())));
+            if (!hasFileContext) {
+                VariantQueryParam param = isValidParam(query, FILTER) ? FILTER : QUAL;
+                throw VariantQueryException.malformedParam(param, query.getString(param.key()),
+                        "Missing file context. Provide one of: "
+                                + FILE.key() + ", " + FILE_DATA.key() + ", "
+                                + SAMPLE.key() + ", " + GENOTYPE.key()
+                                + ", or an explicit list in " + INCLUDE_FILE.key() + " / " + INCLUDE_SAMPLE.key());
+            }
+        }
+
         QueryOperation genotypeOperator = null;
         VariantQueryParam genotypeParam = null;
 
