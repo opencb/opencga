@@ -957,6 +957,11 @@ public class VariantSqlQueryParser {
             // In that case the negated-homref filter must also include NULL sample columns
             // whose file column is also NULL.
             Map<Integer, Boolean> missingGenotypesUpdatedByStudy = new HashMap<>();
+            // If the caller asked to treat unknown as hom-ref (UNKNOWN_GENOTYPE=0/0), a 0/0
+            // filter should also match variants where the sample's file is absent — matching
+            // the display convention that unknown positions render as 0/0.
+            boolean unknownIsHomRef = HBaseFillGapsTask.isHomRefDiploid(
+                    query.getString(UNKNOWN_GENOTYPE.key(), "."));
 
             List<String> gtFilters = new ArrayList<>(genotypesQuery.getValues().size());
             for (KeyOpValue<SampleMetadata, List<String>> keyOpValue : genotypesQuery.getValues()) {
@@ -1028,6 +1033,14 @@ public class VariantSqlQueryParser {
                             // reads as "./." (UNKNOWN_GENOTYPE). The filter must distinguish these.
                             if (missingGenotypesUpdated) {
                                 // Fill-missing applied: NULL always reads as "0/0".
+                                if (negated) {
+                                    filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                }
+                            } else if (unknownIsHomRef) {
+                                // BASIC mode, no fill-missing, but caller treats unknown as 0/0:
+                                // any NULL sample column matches 0/0 (file-present hom-ref OR file-absent unknown).
                                 if (negated) {
                                     filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
                                 } else {

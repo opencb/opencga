@@ -513,6 +513,11 @@ public class VariantHBaseQueryParser {
                 }
                 boolean missingGenotypesUpdated = defaultStudy.getAttributes()
                         .getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+                // If the caller asked to treat unknown as hom-ref (UNKNOWN_GENOTYPE=0/0), a 0/0
+                // filter should also match variants where the sample's file is absent — matching
+                // the display convention that unknown positions render as 0/0.
+                boolean unknownIsHomRef = HBaseFillGapsTask.isHomRefDiploid(
+                        query.getString(UNKNOWN_GENOTYPE.key(), "."));
                 // For the "null" sample-file placeholder we need the sample's first file to look up the
                 // file column. Only fetched if the sample metadata is actually needed.
                 Integer firstSampleFileId = null;
@@ -533,8 +538,9 @@ public class VariantHBaseQueryParser {
                     }
                     // When fill-missing has not been applied, a NULL sample column reads as "0/0"
                     // only if the sample's file is present at the variant row; otherwise it reads as
-                    // "./.". Include the file column in the filter to disambiguate.
-                    final byte[] fileColumn = (!missingGenotypesUpdated && fileIdForColumn != null)
+                    // "./.". Include the file column in the filter to disambiguate — unless the
+                    // caller opted into treating unknown as hom-ref via UNKNOWN_GENOTYPE.
+                    final byte[] fileColumn = (!missingGenotypesUpdated && !unknownIsHomRef && fileIdForColumn != null)
                             ? buildFileColumnKey(studyId, fileIdForColumn)
                             : null;
                     genotypes.stream()
