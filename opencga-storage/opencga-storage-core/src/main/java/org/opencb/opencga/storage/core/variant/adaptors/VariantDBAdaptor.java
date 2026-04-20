@@ -55,7 +55,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return A DataResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        ParsedVariantQuery variantQuery = new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true);
+        ParsedVariantQuery variantQuery = new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options);
         try (VariantDBIterator iterator = iterator(variants, query, options)) {
             return iterator.toDataResult(variantQuery);
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     @Deprecated
     default VariantDBIterator iterator(Query query, QueryOptions options) {
-        return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true));
+        return iterator(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options));
     }
 
     VariantDBIterator iterator(ParsedVariantQuery query);
@@ -89,7 +89,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     @Deprecated
     default VariantQueryResult<Variant> get(Query query, QueryOptions options) {
-        return get(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true));
+        return get(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options));
     }
 
     /**
@@ -112,7 +112,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
     @Deprecated
     default DataResult<Long> count(Query query) {
-        return count(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, QueryOptions.empty(), true));
+        return count(new VariantQueryParser(null, getMetadataManager()).parseQuery(query, QueryOptions.empty()));
     }
 
     /**

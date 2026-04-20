@@ -29,6 +29,7 @@ import org.opencb.biodata.tools.variant.VariantDeduplicationTask;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
@@ -49,6 +50,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.dedup.AbstractDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.dedup.DuplicatedVariantsResolverFactory;
 import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexDBAdaptor;
@@ -898,13 +900,16 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(getStudyId(), fileId);
         String file = getMetadataManager().getFileName(getStudyId(), fileId);
-        Long count = dbAdaptor.count(new Query()
+        // postLoad check runs before the file is marked as indexed, so bypass query preProcessing
+        // (which validates that files exist in the index) by building ParsedVariantQuery directly.
+        VariantQueryParser rawParser = new VariantQueryParser(null, getMetadataManager());
+        Long count = dbAdaptor.count(rawParser.parseQuery(new Query()
                 .append(VariantQueryParam.FILE.key(), file)
-                .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
-        Long overlappedCount = dbAdaptor.count(new Query()
+                .append(VariantQueryParam.STUDY.key(), studyMetadata.getId()), QueryOptions.empty(), true)).first();
+        Long overlappedCount = dbAdaptor.count(rawParser.parseQuery(new Query()
                 .append(VariantQueryParam.FILE.key(), file)
                 .append(OVERLAPPED_FILES_ONLY, true)
-                .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())).first();
+                .append(VariantQueryParam.STUDY.key(), studyMetadata.getId()), QueryOptions.empty(), true)).first();
         long variantsToLoad = 0;
 
         long expectedSkippedVariants = 0;

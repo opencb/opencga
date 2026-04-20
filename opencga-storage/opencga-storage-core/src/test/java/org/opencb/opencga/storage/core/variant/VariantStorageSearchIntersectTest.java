@@ -199,7 +199,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new VariantQuery()
                 .ct("upstream_gene_variant")
                 .biotype("protein_coding")
-                .proteinSubstitution("sift>0.01");
+                .proteinSubstitution("sift<0.5");
         assertEquals(SearchIndexVariantQueryExecutor.class, variantStorageEngine.getVariantQueryExecutor(new Query(query), new QueryOptions()).getClass());
         DataResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
 //        for (Variant variant : queryResult.getResults()) {

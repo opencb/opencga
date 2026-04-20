@@ -101,8 +101,15 @@ public class VariantMongoDBQueryParser {
         List<Bson> regionFilters = new ArrayList<>();
         List<Bson> filters = new ArrayList<>();
         if (parsedVariantQuery != null) {
-            // Copy given query. It may be modified
-            Query query = new Query(parsedVariantQuery.getInputQuery());
+            // Use the pre-processed query (SAMPLE expanded to GENOTYPE, etc.), not the raw input.
+            Query query = new Query(parsedVariantQuery.getQuery());
+            // SAMPLE is expected to be expanded to GENOTYPE by VariantQueryParser#preProcessQuery.
+            // If it reaches this parser, the caller bypassed preProcessing and the filter would be
+            // silently dropped — fail loudly instead.
+            if (isValidParam(query, SAMPLE)) {
+                throw new VariantQueryException("Unexpected " + SAMPLE.key() + " query param in MongoDB query parser."
+                        + " It should have been expanded to " + GENOTYPE.key() + " during query pre-processing.");
+            }
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
             ParsedVariantQuery.VariantQueryXref variantQueryXref = parsedVariantQuery.getXrefs();
 
