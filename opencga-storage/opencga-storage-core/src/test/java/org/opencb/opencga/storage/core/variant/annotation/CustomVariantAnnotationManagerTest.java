@@ -187,7 +187,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
                 AdditionalAttribute annot = additionalAttributes.get(annotKey);
                 assertEquals("other", annot.getAttribute().get("FEATURE"));
                 feat3++;
-            } else if (variant.getChromosome().equals("22") && variant.getStart() == 16050075) {
+            } else if (variant.getChromosome().equals("22") && variant.getStart() == 16050840) {
                 assertTrue(additionalAttributes.containsKey(annotKey));
                 AdditionalAttribute annot = additionalAttributes.get(annotKey);
                 assertEquals("specific", annot.getAttribute().get("FEATURE"));
