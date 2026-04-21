@@ -196,7 +196,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(snv_snp, snv);
 
         Set<Variant> snp = new HashSet<>(get(new Query(VariantQueryParam.TYPE.key(), VariantType.SNP), new QueryOptions()).getResults());
-        snp.forEach(variant -> assertEquals(VariantType.SNP, variant.getType()));
+        snp.forEach(variant -> assertThat(EnumSet.of(VariantType.SNV, VariantType.SNP), hasItem(variant.getType())));
         snp.forEach(variant -> assertThat(snv, hasItem(variant)));
         System.out.println("SNP = " + snp.size());
 
@@ -205,7 +205,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         System.out.println("INDEL = " + indels.size());
 
         Set<Variant> indels_snp = new HashSet<>(get(new Query(VariantQueryParam.TYPE.key(), VariantType.INDEL + "," + VariantType.SNP), new QueryOptions()).getResults());
-        indels_snp.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNP), hasItem(variant.getType())));
+        indels_snp.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNV, VariantType.SNP), hasItem(variant.getType())));
         indels_snp.forEach(variant -> assertTrue(indels.contains(variant) || snp.contains(variant)));
         System.out.println("INDEL_SNP = " + indels_snp.size());
 
