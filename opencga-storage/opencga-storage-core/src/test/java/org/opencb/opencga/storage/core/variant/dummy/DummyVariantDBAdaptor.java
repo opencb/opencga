@@ -124,7 +124,10 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
         Map<String, Variant> db = DummyVariantStorageEngine.VARIANTS.get(dbName);
         if (db == null) {
-            throw new IllegalStateException("Database " + dbName + " not found");
+            // No data has been loaded into this database: behave like a real engine with an empty
+            // collection and return no rows rather than throwing. Tests that exercise solr-only /
+            // intersect paths without loading (e.g. VariantSearchTest#testWhileLoadingEvent) rely on this.
+            return VariantDBIterator.emptyIterator();
         }
         HashSet<String> variantIds = new HashSet<>(variantQuery.getQuery().getAsStringList(VariantQueryUtils.ID_INTERSECT.key()));
         Predicate<Variant> filter = new VariantFilterBuilder().buildFilter(variantQuery);
