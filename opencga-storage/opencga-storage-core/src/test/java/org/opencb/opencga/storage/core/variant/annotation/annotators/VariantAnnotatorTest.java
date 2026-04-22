@@ -188,14 +188,24 @@ public class VariantAnnotatorTest {
     }
 
     public static class TestCachedCellBaseRestVariantAnnotator extends CellBaseRestVariantAnnotator {
-        public static Map<String, VariantAnnotation> ANNOTATION_CACHE = new ConcurrentHashMap<>();
-        public static final AtomicLong LAST_CACHE_UPDATE = new AtomicLong();
-        public static final AtomicLong LAST_CACHE_SAVE = new AtomicLong();
+        private static final Path BASE_CACHE_DIR = Paths.get("target", "test-data", "variant-annotation-cache");
+
+        // Per-(species × assembly × cellbase-version × dataRelease) in-memory caches, keyed by the
+        // on-disk cache directory. Multiple annotator configurations in the same JVM each get their
+        // own map, so an Ensembl-only snapshot from one test class can't leak into a run that
+        // expects current CellBase with RefSeq.
+        private static final Map<Path, Map<String, VariantAnnotation>> ANNOTATION_CACHES = new ConcurrentHashMap<>();
+        private static final Map<Path, AtomicLong> LAST_CACHE_UPDATES = new ConcurrentHashMap<>();
+        private static final Map<Path, AtomicLong> LAST_CACHE_SAVES = new ConcurrentHashMap<>();
+
         protected static Logger logger = LoggerFactory.getLogger(TestCachedCellBaseRestVariantAnnotator.class);
 
         private final Path cacheDir;
-        private final ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         private final Path metadataFile;
+        private final Map<String, VariantAnnotation> annotationCache;
+        private final AtomicLong lastCacheUpdate;
+        private final AtomicLong lastCacheSave;
+        private final ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         private volatile ProjectMetadata.VariantAnnotationMetadata cachedMetadata;
         private int cacheHits = 0;
         private int cacheMisses = 0;
@@ -203,8 +213,20 @@ public class VariantAnnotatorTest {
         public TestCachedCellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
                 throws VariantAnnotatorException {
             super(storageConfiguration, projectMetadata, options);
-            this.cacheDir = Paths.get("target", "test-data", "variant-annotation-cache");
+            this.cacheDir = BASE_CACHE_DIR.resolve(buildCacheSubdir(species, assembly, cellbaseVersion, cellbaseDataRelease));
             this.metadataFile = cacheDir.resolve("variant-annotation-metadata.json");
+            this.annotationCache = ANNOTATION_CACHES.computeIfAbsent(cacheDir, k -> new ConcurrentHashMap<>());
+            this.lastCacheUpdate = LAST_CACHE_UPDATES.computeIfAbsent(cacheDir, k -> new AtomicLong());
+            this.lastCacheSave = LAST_CACHE_SAVES.computeIfAbsent(cacheDir, k -> new AtomicLong());
+        }
+
+        private static String buildCacheSubdir(String species, String assembly, String version, String dataRelease) {
+            String subdir = String.join("_",
+                    StringUtils.defaultString(species, "unknown"),
+                    StringUtils.defaultString(assembly, "unknown"),
+                    StringUtils.defaultString(version, "unknown"),
+                    "dr" + StringUtils.defaultString(dataRelease, "unknown"));
+            return subdir.replaceAll("[^A-Za-z0-9_.-]", "_");
         }
 
         @Override
@@ -229,7 +251,7 @@ public class VariantAnnotatorTest {
             super.pre();
             // Load cache
             if (cacheDir.toFile().exists()) {
-                ANNOTATION_CACHE.putAll(loadAnnotationCache(cacheDir, mapper));
+                annotationCache.putAll(loadAnnotationCache(cacheDir, mapper));
             }
         }
 
@@ -241,11 +263,11 @@ public class VariantAnnotatorTest {
             for (int i = 0; i < variants.size(); i++) {
                 Variant variant = variants.get(i);
                 String variantId = variant.toString();
-                if (ANNOTATION_CACHE.containsKey(variantId)) {
+                if (annotationCache.containsKey(variantId)) {
                     cacheHits++;
                     CellBaseDataResult<VariantAnnotation> result = new CellBaseDataResult<>();
                     result.setId(variantId);
-                    result.setResults(Collections.singletonList(ANNOTATION_CACHE.get(variantId)));
+                    result.setResults(Collections.singletonList(annotationCache.get(variantId)));
                     result.setNumResults(1);
                     results.set(i, result);
                 } else {
@@ -258,8 +280,8 @@ public class VariantAnnotatorTest {
                 List<CellBaseDataResult<VariantAnnotation>> queryResults = super.annotateFiltered(variantsToAnnotate);
                 for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
                     if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
-                        LAST_CACHE_UPDATE.set(System.currentTimeMillis());
-                        ANNOTATION_CACHE.put(queryResult.getId(), queryResult.getResults().get(0));
+                        lastCacheUpdate.set(System.currentTimeMillis());
+                        annotationCache.put(queryResult.getId(), queryResult.getResults().get(0));
                     }
                     results.set(variantIndexMap.get(queryResult.getId()), queryResult);
                 }
@@ -271,8 +293,10 @@ public class VariantAnnotatorTest {
         public void post() throws Exception {
             super.post();
             // Save cache
-            if (saveAnnotationCache(cacheDir, mapper, metadataFile, cachedMetadata)) {
-                logger.info("Annotation cache stats: {} hits, {} misses", cacheHits, cacheMisses);
+            if (saveAnnotationCache(cacheDir, mapper, metadataFile, cachedMetadata,
+                    annotationCache, lastCacheUpdate, lastCacheSave)) {
+                logger.info("Annotation cache stats (dir={}): {} hits, {} misses",
+                        cacheDir.getFileName(), cacheHits, cacheMisses);
             }
         }
 
@@ -296,18 +320,20 @@ public class VariantAnnotatorTest {
         }
 
         private static synchronized boolean saveAnnotationCache(Path dir, ObjectMapper mapper, Path metadataFile,
-                                                             ProjectMetadata.VariantAnnotationMetadata metadata) {
-            if (LAST_CACHE_UPDATE.get() <= LAST_CACHE_SAVE.get()) {
+                                                             ProjectMetadata.VariantAnnotationMetadata metadata,
+                                                             Map<String, VariantAnnotation> annotationCache,
+                                                             AtomicLong lastCacheUpdate, AtomicLong lastCacheSave) {
+            if (lastCacheUpdate.get() <= lastCacheSave.get()) {
                 // Annotation cache not modified since last save. Skip saving.
                 return false;
             } else {
-                logger.info("Saving annotation cache. {} entries to save.", ANNOTATION_CACHE.size());
+                logger.info("Saving annotation cache to {}. {} entries to save.", dir, annotationCache.size());
             }
             try {
                 Path cacheFile = dir.resolve("cache.json.gz");
                 Files.createDirectories(dir);
                 try (BufferedWriter bw = FileUtils.newBufferedWriter(cacheFile)) {
-                    mapper.writerWithDefaultPrettyPrinter().writeValue(bw, ANNOTATION_CACHE);
+                    mapper.writerWithDefaultPrettyPrinter().writeValue(bw, annotationCache);
                 }
                 try (BufferedWriter bw = FileUtils.newBufferedWriter(metadataFile)) {
                     mapper.writerWithDefaultPrettyPrinter().writeValue(bw, metadata);
@@ -315,7 +341,7 @@ public class VariantAnnotatorTest {
             } catch (IOException e) {
                 throw new UncheckedIOException("Error saving annotation cache into " + dir, e);
             }
-            LAST_CACHE_SAVE.set(System.currentTimeMillis());
+            lastCacheSave.set(System.currentTimeMillis());
             return true;
         }
 

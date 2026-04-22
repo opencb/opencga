@@ -85,6 +85,8 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
@@ -404,6 +406,21 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
+        // Force the cached annotator after setConfiguration — otherwise the YAML default
+        // (annotator=cellbase) gets merged in on top via putIfNotNull and we hit live CellBase on
+        // every run. Caches are partitioned by (species × assembly × cellbase-version × dataRelease)
+        // so a refreshed CellBase dataset won't return stale annotations from an older snapshot.
+        // Only override if the subclass didn't explicitly supply its own annotator via
+        // otherStorageConfigurationOptions (tracked pre-setConfiguration so YAML merges don't
+        // alias as an intentional subclass override).
+        if (!otherStorageConfigurationOptions.containsKey(VariantStorageOptions.ANNOTATOR.key())) {
+            engine.getOptions().put(VariantStorageOptions.ANNOTATOR.key(),
+                    VariantAnnotatorFactory.AnnotationEngine.OTHER.name());
+        }
+        if (!otherStorageConfigurationOptions.containsKey(VariantStorageOptions.ANNOTATOR_CLASS.key())) {
+            engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(),
+                    VariantAnnotatorTest.TestCachedCellBaseRestVariantAnnotator.class.getName());
+        }
         engine.mrExecutor = null;
         engine.conf = conf;
         return engine;
