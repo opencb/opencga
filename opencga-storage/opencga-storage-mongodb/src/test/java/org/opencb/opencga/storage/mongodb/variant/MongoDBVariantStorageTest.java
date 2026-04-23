@@ -20,9 +20,11 @@ import com.mongodb.client.model.Sorts;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bson.Document;
+import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.test.EmbeddedMongoDBManager;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -214,5 +217,51 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         Configurator.setLevel("org.mongodb.driver.protocol.command", Level.WARN);
         Configurator.setLevel("org.mongodb.driver.protocol.query", Level.WARN);
         Configurator.setLevel("org.mongodb.driver.protocol.getmore", Level.WARN);
+    }
+
+    /**
+     * JUnit rule mirroring {@code HadoopVariantStorageTest.HadoopExternalResource}: starts the
+     * process-singleton embedded mongod in {@link #before()} and delegates to the
+     * {@link MongoDBVariantStorageTest} defaults for engine access and cleanup.
+     */
+    class MongoDBExternalResource extends ExternalResource implements MongoDBVariantStorageTest {
+
+        @Override
+        public void before() throws Exception {
+            // Silence noisy mongo driver loggers once per class (mirrors logLevel()).
+            Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+            Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
+            Configurator.setLevel("org.mongodb.driver.protocol.command", Level.WARN);
+            EmbeddedMongoDBManager.getInstance().start();
+        }
+
+        @Override
+        public void after() {
+            try {
+                closeConnections();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            // Note: the embedded mongod is a JVM-wide singleton owned by EmbeddedMongoDBManager;
+            // its shutdown hook stops the process on JVM exit.
+        }
+
+        /**
+         * Drops every database on the embedded mongod whose name starts with {@code opencga_}.
+         * Used by the analysis test harness to reset state between runs.
+         */
+        public void clearAllDBs() throws Exception {
+            MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials();
+            try (MongoDataStoreManager mongoManager =
+                         new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+                 com.mongodb.client.MongoClient client = com.mongodb.client.MongoClients.create(
+                         "mongodb://" + EmbeddedMongoDBManager.getInstance().getConnectionString())) {
+                for (String dbName : client.listDatabaseNames()) {
+                    if (dbName.startsWith("opencga_")) {
+                        mongoManager.drop(dbName);
+                    }
+                }
+            }
+        }
     }
 }

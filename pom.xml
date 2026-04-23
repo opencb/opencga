@@ -307,6 +307,13 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-mongodb</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
