@@ -1,0 +1,6 @@
+include:
+  - project: xetabase/xetabase-ci
+    ref: develop
+    file: templates/maven/build.yml
+    inputs:
+      MVN_OPTS: "-P hdi5.1"
