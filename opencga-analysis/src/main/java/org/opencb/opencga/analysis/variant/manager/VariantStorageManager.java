@@ -269,6 +269,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public void removeFile(String study, List<String> files, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
+        // Removing every indexed file is equivalent to removing the whole study from the variant storage,
+        // so route the "all" alias to removeStudy and let the backend take its wholesale path.
+        if (files != null && files.size() == 1 && ParamConstants.ALL.equals(files.get(0))) {
+            removeStudy(study, params, outdir, token);
+            return;
+        }
         secureOperation(VariantFileDeleteOperationTool.ID, study, params, token, engine -> {
             new VariantDeleteOperationManager(this, engine).removeFile(study, files, outdir, token);
             return null;
