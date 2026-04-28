@@ -1057,6 +1057,9 @@ class ClinicalAnalysis(_ParentRestClient):
             or be partial.
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
+        :param str ci_status_id: Clinical interpretation status ID (or list of
+            IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE,
+            CLOSED.
         """
 
         return self._get(category='analysis', resource='query', subcategory='clinical/variant', **options)

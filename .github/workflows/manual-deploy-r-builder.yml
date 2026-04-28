@@ -4,7 +4,7 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+          with:
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
           name: build-folder

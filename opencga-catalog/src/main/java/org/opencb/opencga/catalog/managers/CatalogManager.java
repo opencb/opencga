@@ -89,6 +89,7 @@ public class CatalogManager implements AutoCloseable {
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
     private ExternalToolManager externalToolManager;
+    private FederationManager federationManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -165,6 +166,7 @@ public class CatalogManager implements AutoCloseable {
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         externalToolManager = new ExternalToolManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
+        federationManager = new FederationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
     }
 
     public boolean getDatabaseStatus() throws CatalogDBException {
@@ -411,6 +413,10 @@ public class CatalogManager implements AutoCloseable {
         return panelManager;
     }
 
+    public FederationManager getFederationManager() {
+        return federationManager;
+    }
+
     public Configuration getConfiguration() {
         return configuration;
     }
@@ -429,5 +435,9 @@ public class CatalogManager implements AutoCloseable {
 
     public ExternalToolManager getExternalToolManager() {
         return externalToolManager;
+    }
+
+    public DBAdaptorFactory getDBAdaptorFactory() {
+        return catalogDBAdaptorFactory;
     }
 }

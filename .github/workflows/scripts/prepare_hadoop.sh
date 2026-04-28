@@ -87,9 +87,9 @@ function install(){
   # Build HTTPS clone URL using optional token for private access
   local CLONE_URL
   if [[ -n "${THIRDPARTY_READ_TOKEN:-}" ]]; then
-    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/opencb/${REPO}.git"
+    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/zetta-genomics/${REPO}.git"
   else
-    CLONE_URL="git@github.com:opencb/${REPO}.git"
+    CLONE_URL="git@github.com:zetta-genomics/${REPO}.git"
   fi
 
   # Shallow clone at the requested ref
@@ -100,7 +100,6 @@ function install(){
   ./dev/build.sh "$HADOOP"
   cd - || return 2
 }
-
 
 
 main "$@"

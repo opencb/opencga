@@ -19,6 +19,7 @@ jobs:
           fetch-depth: '10'
           ## This is important to avoid the error in the next step: "fatal: repository 'https://github.com/zetta-genomics/opencga-enterprise.git/' not found"
           persist-credentials: false
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
       - id: get_xetabase_branch
         name: "Get current branch for Xetabase from target branch"
         run: |
@@ -36,7 +37,7 @@ jobs:
     if: github.event.review.state == 'approved'
     name: "Run all tests before merging"
     needs: calculate-xetabase-branch
-    uses: opencb/java-common-libs/.github/workflows/test-xetabase-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/test-xetabase-workflow.yml@develop
     with:
       branch: ${{ needs.calculate-xetabase-branch.outputs.xetabase_branch }}
       task: ${{ github.event.pull_request.head.ref }}

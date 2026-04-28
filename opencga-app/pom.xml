@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>5.0.0-SNAPSHOT</version>
+        <version>6.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -48,6 +48,10 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-clinical</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
@@ -55,6 +59,10 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-master</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-clinical</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>

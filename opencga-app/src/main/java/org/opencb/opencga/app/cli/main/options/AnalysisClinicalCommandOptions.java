@@ -2033,6 +2033,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
     
+        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
+        public String ciStatusId; 
+    
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.")

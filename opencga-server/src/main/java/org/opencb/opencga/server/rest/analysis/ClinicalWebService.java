@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.opencb.opencga.clinical.cvdb.CvdbSolrEngine;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
@@ -61,8 +63,10 @@ import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.*;
+import org.opencb.opencga.server.CvdbWSUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -76,6 +80,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_DESCR;
+import static org.opencb.opencga.clinical.cvdb.parsers.ClinicalQueryParam.CI_STATUS_ID_NAME;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.core.models.variant.VariantQueryParams.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.server.rest.analysis.VariantWebService.getVariantQuery;
@@ -90,6 +96,7 @@ public class ClinicalWebService extends AnalysisWebService {
     private final ClinicalInterpretationManager clinicalInterpretationManager;
     public static final AtomicReference<RgaManager> rgaManagerAtomicRef = new AtomicReference<>();
     public static final AtomicReference<VariantStorageManager> variantStorageManagerAtomicRef = new AtomicReference<>();
+    public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference<>();
 
     public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -127,6 +134,24 @@ public class ClinicalWebService extends AnalysisWebService {
             }
         }
         return variantStorageManager;
+    }
+
+    private CvdbSolrEngine getCvdbEngine() throws IOException {
+        CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
+        if (cvdbEngine == null) {
+            synchronized (cvdbEngineAtomicRef) {
+                cvdbEngine = cvdbEngineAtomicRef.get();
+                if (cvdbEngine == null) {
+                    try {
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager);
+                        cvdbEngineAtomicRef.set(cvdbEngine);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to initialize CVDB engine", e);
+                    }
+                }
+            }
+        }
+        return cvdbEngine;
     }
 
 //    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
@@ -1362,6 +1387,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "source", value = VariantQueryParams.SOURCE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "trait", value = VariantQueryParams.ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = CI_STATUS_ID_NAME, value = CI_STATUS_ID_DESCR, dataType = "string", paramType = "query"),
     })
     public Response variantQuery() {
         // Get all query options
@@ -1376,9 +1403,32 @@ public class ClinicalWebService extends AnalysisWebService {
                 logger.info("Adding the includeInterpretation ({}) to the variant query", includeInterpretation);
                 query.put(INCLUDE_INTERPRETATION, includeInterpretation);
             }
+            if (uriInfo.getQueryParameters().containsKey(CI_STATUS_ID_NAME)) {
+                String interpretationStatusId = uriInfo.getQueryParameters().get(CI_STATUS_ID_NAME).get(0);
+                if (StringUtils.isNotEmpty(interpretationStatusId)) {
+                    logger.info("Adding the interpretation status ID ({}) to the variant query", interpretationStatusId);
+                    query.put(CI_STATUS_ID_NAME, interpretationStatusId);
+                }
+            }
 
-            return clinicalInterpretationManager.get(query, queryOptions, token);
+            // First, get clinical variants
+            OpenCGAResult<ClinicalVariant> cvResult = clinicalInterpretationManager.get(query, queryOptions, token);
+
+            if (!getSkipStats(queryOptions)) {
+                for (ClinicalVariant cv : cvResult.getResults()) {
+                    DataResult<ClinicalVariantSummaryStats> summaryStatsResult = getCvdbEngine().getClinicalVariantSummaryStats(cv.getId(),
+                            null, token);
+                    cv.setStats(summaryStatsResult.getResults());
+                }
+            }
+
+            return cvResult;
         });
+    }
+
+    private boolean getSkipStats(QueryOptions queryOptions) {
+        return (queryOptions != null && queryOptions.containsKey(QueryOptions.EXCLUDE)
+                && queryOptions.getAsStringList(QueryOptions.EXCLUDE).contains("stats"));
     }
 
     //-------------------------------------------------------------------------

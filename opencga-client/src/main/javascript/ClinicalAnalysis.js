@@ -816,6 +816,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or
     *     be partial.
     * @param {String} [params.trait] - List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
+    * @param {String} [params.ciStatusId] - Clinical interpretation status ID (or list of IDs separated by commas). Valid values:
+    *     NOT_STARTED, ACTIVE, DONE, CLOSED.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     queryVariant(params) {

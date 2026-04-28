@@ -13,7 +13,7 @@ on:
 
 jobs:
   compare-branches:
-    uses: opencb/java-common-libs/.github/workflows/compare-vulnerabilities.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/compare-vulnerabilities.yml@develop
     with:
       branch_a: ${{ github.event.inputs.branch_a }}
       branch_b: ${{ github.event.inputs.branch_b }}

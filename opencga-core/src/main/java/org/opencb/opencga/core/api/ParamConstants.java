@@ -34,8 +34,8 @@ public class ParamConstants {
         + ", e.g.: studies;type;numSamples[0..10]:1;format:sum(size)";
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String CREATION_DATE_PARAM = "creationDate";
-    public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +
-            "<201805";
+    public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, "
+            + "<201805";
     public static final String MODIFICATION_DATE_PARAM = "modificationDate";
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
@@ -1641,4 +1641,47 @@ public class ParamConstants {
     public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCR = "Parameters of the variant annotation"
             +" extension based on a key-value map, example of key-value: \"version\"=\"v101\"";
     public static final String VARIANT_ANNOTATION_EXTENSION_OVERWRITE_DESCR = "Overwrite.";
+
+    // CVDB (Clinical Variant Database) constants
+    public static final String CLINICAL_ANALYSES_QUERY_DESCRIPTION = "Filter and fetch clinical analyses from CVDB";
+    public static final String CLINICAL_INTERPRETATION_QUERY_DESCRIPTION = "Filter and fetch clinical interpretations from CVDB";
+    public static final String CLINICAL_VARIANT_QUERY_DESCRIPTION = "Filter and fetch clinical variants from CVDB";
+    public static final String CLINICAL_VARIANT_EVIDENCE_QUERY_DESCRIPTION = "Filter and fetch clinical variant evidences from CVDB";
+    public static final String CLINICAL_VARIANT_SUMMARY_DESCRIPTION = "Get clinical variant summary from CVDB";
+
+    public static final int CVDB_DEFAULT_LIMIT = 100;
+
+    public static final int CVDB_STATS_DEFAULT_LIMIT = 10;
+    public static final String CVDB_STATS_DEFAULT_ORDER = "desc";
+
+    public static final String PROJECT_PARAM_DESCRIPTION = "Project ID";
+    public static final String STUDY_PARAM_DESCRIPTION = "Study ID (or list of study IDs separated by commas)";
+
+    public static final String OPENCGA_STUDY_ID = "OPENCGA_STUDY_ID";
+    public static final String OPENCGA_CLINICAL_ANALYSIS_ID = "OPENCGA_CLINICAL_ANALYSIS_ID";
+    public static final String OPENCGA_INTERPRETATION_ID = "OPENCGA_INTERPRETATION_ID";
+    public static final String OPENCGA_PRIMARY_INTERPRETATION = "OPENCGA_PRIMARY_INTERPRETATION";
+    public static final String OPENCGA_VARIANT_ID = "OPENCGA_VARIANT_ID";
+    public static final String OPENCGA_PRIMARY_FINDING = "OPENCGA_PRIMARY_FINDING";
+
+    // Federation
+    public static final String FEDERATION_CREATE_DESCRIPTION = "JSON containing the new Federation object";
+    public static final String FEDERATION_RESET_DESCRIPTION = "Federation server id to reset";
+    public static final String FEDERATION_UPDATE_SERVER_DESCRIPTION = "JSON containing the Federation server parameters to be updated";
+    public static final String FEDERATION_SERVER_ID_DESCRIPTION = "Federation server id";
+    public static final String FEDERATION_CONNECT_DESCRIPTION = "JSON containing the Federation server configuration";
+    public static final String FEDERATION_CLIENT_ID_SYNC = "Federation client id to be synchronized";
+    public static final String FEDERATION_UPDATE_CLIENT_DESCRIPTION = "JSON containing the Federation client parameters to be updated";
+    public static final String FEDERATION_SHARE_ACTION_DESCRIPTION = "Action to be performed: ADD access or REMOVE access.";
+    public static final String FEDERATION_SHARE_USERS_DESCRIPTION = "JSON containing the list of users to which this action will be applied.";
+    public static final String FEDERATION_CLIENT_ID_DESCRIPTION = "Federation client id";
+    public static final String FEDERATION_REDIRECT_URL_DESCRIPTION = "Original URL";
+    public static final String FEDERATION_REDIRECT_BODY_DESCRIPTION = "JSON containing the POST object";
+
+    // SSO
+    public static final String SSO_CALLBACK_URL_DESCRIPTION = "Callback URL";
+    public static final String SSO_LOGOUT_DESCRIPTION = "Successfully logout from CAS service";
+
+    // CVDB
+    public static final String CLINICAL_VARIANT_VARIANT_ID_DESCRIPTION = "Variant ID (or comma separated list of variant IDs)";
 }

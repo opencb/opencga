@@ -37,14 +37,14 @@ RUN apt-get update -y && \
     ## 3. Install bcftools with liftover and affy2vcf plugins
     wget http://github.com/samtools/bcftools/releases/download/1.22/bcftools-1.22.tar.bz2 && \
     tar xjvf bcftools-1.22.tar.bz2 && \
-    bash -c 'wget -P bcftools-1.22 http://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/stable/{SuiteSparse_config/SuiteSparse_config,CHOLMOD/Include/cholmod}.h' && \
+    bash -c 'wget --wait=2 -P bcftools-1.22 http://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/stable/{SuiteSparse_config/SuiteSparse_config,CHOLMOD/Include/cholmod}.h' && \
     cd bcftools-1.22 && \
     ## liftover plugin
     bash -c '/bin/rm -f plugins/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
-    bash -c 'wget -P plugins http://raw.githubusercontent.com/freeseek/score/master/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
+    bash -c 'wget --wait=2 -P plugins http://raw.githubusercontent.com/freeseek/score/master/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
     ## affy2vcf plugin
     bash -c '/bin/rm -f plugins/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c}' && \
-    bash -c 'wget -P plugins http://raw.githubusercontent.com/freeseek/gtc2vcf/master/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c,BAFregress.c}' && \
+    bash -c 'wget --wait=2 -P plugins http://raw.githubusercontent.com/freeseek/gtc2vcf/master/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c,BAFregress.c}' && \
     make && \
     bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup,idat2gtc,gtc2vcf,affy2vcf,BAFregress}.so /usr/local/bin/' && \
     wget -P /usr/local/bin http://raw.githubusercontent.com/freeseek/score/master/assoc_plot.R && \
@@ -77,7 +77,8 @@ RUN apt-get update -y && \
     R -e "options(timeout = 7200); for(i in 1:3) { tryCatch({ BiocManager::install('BSgenome.Hsapiens.UCSC.hg38'); break }, error = function(e) { Sys.sleep(30); if(i == 3) stop(e) }) }"  && \
 
     ## 7. Install signature.tools.lib
-    R -e "install.packages(c('devtools', 'getopt'), repos='https://cran.rstudio.com/')" && \
+    R -e "install.packages(c('remotes', 'getopt'), repos='https://cran.rstudio.com/')" && \
+    R -e "if (!requireNamespace('remotes', quietly=TRUE)) stop('remotes installation failed')" && \
     R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/GenSA/GenSA_1.1.7.tar.gz', repos=NULL, type='source')" && \
     R -e "if (!requireNamespace('GenSA', quietly=TRUE)) stop('GenSA installation failed')" && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
@@ -87,7 +88,7 @@ RUN apt-get update -y && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+    R -e "options(timeout = 3600);remotes::install_local('.', repos='https://www.stats.bris.ac.uk/R/')" && \
     rm -rf /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 

@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>6.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -44,9 +44,9 @@
 
     <properties>
         <cellbase.version>6.7.0-SNAPSHOT</cellbase.version>
-        <biodata.version>5.0.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>5.0.0-SNAPSHOT</iva.version>
+        <biodata.version>6.0.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>8.0.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>6.0.0-SNAPSHOT</iva.version>
 
 
         <oskar.version>0.2.0</oskar.version>
@@ -83,6 +83,7 @@
         <ga4gh.version>0.6.0a5</ga4gh.version>
         <jansi.version>2.4.0</jansi.version>
         <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
+        <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jcommander.version>1.69</jcommander.version>
         <jackson-codehaus.version>1.9.13</jackson-codehaus.version>
         <adal4j.version>1.6.3</adal4j.version>
@@ -105,6 +106,7 @@
         <httpcore.version>4.4.13</httpcore.version>
         <log4j.version>1.2.17</log4j.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
+        <cas.version>3.6.4</cas.version>
         <jmeter.version>5.6.3</jmeter.version>
         <grep4j.version>1.8.7</grep4j.version>
         <redisson.version>2.2.0</redisson.version>
@@ -257,6 +259,11 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-clinical</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -665,6 +672,11 @@
                 <version>${javax.ws.rs-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.jasig.cas.client</groupId>
+                <artifactId>cas-client-core</artifactId>
+                <version>${cas.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jline</groupId>
                 <artifactId>jline-reader</artifactId>
                 <version>${jline.version}</version>
@@ -971,6 +983,11 @@
                 <groupId>jakarta.ws.rs</groupId>
                 <artifactId>jakarta.ws.rs-api</artifactId>
                 <version>${jakarta.ws.rs-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>${jakarta.annotation-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.beust</groupId>
@@ -1553,6 +1570,27 @@
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.REST.HOST>https://uk.ws.zettagenomics.com/cellbase/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.VERSION>v5.8</OPENCGA.CELLBASE.VERSION>
+
+                <!-- sso -->
+                <OPENCGA.SSO.ACTIVE>false</OPENCGA.SSO.ACTIVE>
+                <OPENCGA.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</OPENCGA.SSO.CAS.SERVER.PREFIX.URL>
+                <OPENCGA.SSO.SERVER.NAME>http://localhost:9090</OPENCGA.SSO.SERVER.NAME>
+                <OPENCGA.SSO.PROTOCOL>SAML1</OPENCGA.SSO.PROTOCOL>
+                <OPENCGA.SSO.ATTRIBUTES.NAME>name</OPENCGA.SSO.ATTRIBUTES.NAME>
+                <OPENCGA.SSO.ATTRIBUTES.SURNAME>surname</OPENCGA.SSO.ATTRIBUTES.SURNAME>
+                <OPENCGA.SSO.ATTRIBUTES.EMAIL>email</OPENCGA.SSO.ATTRIBUTES.EMAIL>
+                <OPENCGA.SSO.ATTRIBUTES.ORGANIZATION>organization</OPENCGA.SSO.ATTRIBUTES.ORGANIZATION>
+                <OPENCGA.SSO.ATTRIBUTES.GROUPS>groups</OPENCGA.SSO.ATTRIBUTES.GROUPS>
+
+                <!-- cvdb -->
+                <OPENCGA.CVDB.ACTIVE>true</OPENCGA.CVDB.ACTIVE>
+                <OPENCGA.CVDB.DATABASE.HOST>http://localhost:8983/solr/</OPENCGA.CVDB.DATABASE.HOST>
+                <OPENCGA.CVDB.DATABASE.MODE>cloud</OPENCGA.CVDB.DATABASE.MODE>
+                <OPENCGA.CVDB.DATABASE.TIMEOUT>30000</OPENCGA.CVDB.DATABASE.TIMEOUT>
+                <OPENCGA.CVDB.CA_CONFIG_SET>opencga-ca-configset-${project.parent.version}</OPENCGA.CVDB.CA_CONFIG_SET>
+                <OPENCGA.CVDB.CI_CONFIG_SET>opencga-ci-configset-${project.parent.version}</OPENCGA.CVDB.CI_CONFIG_SET>
+                <OPENCGA.CVDB.CV_CONFIG_SET>opencga-cv-configset-${project.parent.version}</OPENCGA.CVDB.CV_CONFIG_SET>
+                <OPENCGA.CVDB.CVE_CONFIG_SET>opencga-cve-configset-${project.parent.version}</OPENCGA.CVDB.CVE_CONFIG_SET>
             </properties>
             <build>
                 <plugins>

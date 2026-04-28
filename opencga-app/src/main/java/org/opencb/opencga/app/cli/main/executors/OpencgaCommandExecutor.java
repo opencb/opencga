@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -172,6 +173,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             if (openCGAClient != null) {
                 openCGAClient.setThrowExceptionOnError(true);
             }
+            updateClientConfigurationAttributes();
 
         } catch (IOException e) {
             logger.error("OpencgaCommandExecutorError", e);
@@ -259,15 +261,37 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public boolean checkExpiredSession(String[] args) {
-        ObjectMap claimsMap = null;
+        ObjectMap claimsMap;
         try {
             claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
+            logger.debug("ClaimsMap: {}", claimsMap.toJson());
         } catch (Exception e) {
             return ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
         }
-        Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+        Date expirationDate;
         Date currentDate = new Date();
+        if (claimsMap.containsKey("exp")) {
+            expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
+        } else {
+            logger.debug("Token has no expiration time");
+            // No expiration so adding 1 year to current date
+            Calendar instance = Calendar.getInstance();
+            instance.setTime(currentDate);
+            instance.add(Calendar.YEAR, 1);
+            expirationDate = instance.getTime();
+        }
         return currentDate.before(expirationDate) || ArrayUtils.contains(args, "login") || ArrayUtils.contains(args, "logout") || "anonymous".equals(sessionManager.getSession().getUser());
+    }
+
+    private void updateClientConfigurationAttributes() {
+        Session session = sessionManager.getSession();
+        if (session != null && session.getAttributes() != null && !session.getAttributes().isEmpty()) {
+            if (clientConfiguration.getAttributes() != null) {
+                clientConfiguration.getAttributes().putAll(session.getAttributes());
+            } else {
+                clientConfiguration.setAttributes(session.getAttributes());
+            }
+        }
     }
 
 

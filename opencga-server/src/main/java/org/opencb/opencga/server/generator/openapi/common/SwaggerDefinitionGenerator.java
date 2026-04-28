@@ -154,7 +154,6 @@ public class SwaggerDefinitionGenerator {
 
     public static boolean isOpencbBean(Class<?> fieldType) {
         return fieldType.getName().contains("org.opencb")
-                || fieldType.getName().contains("com.zettagenomics")
                 || fieldType.getName().contains("org.ga4gh");
     }
 

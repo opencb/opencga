@@ -66,6 +66,9 @@ public class Configuration {
 
     private ServerConfiguration server;
 
+    private SsoConfiguration sso;
+    private CvdbConfiguration cvdb;
+
     private static final Set<String> reportedFields = new HashSet<>();
 
     private static final Logger logger;
@@ -88,6 +91,8 @@ public class Configuration {
         server = new ServerConfiguration();
         account = new AccountConfiguration();
         quota = QuotaConfiguration.init();
+        sso = new SsoConfiguration();
+        cvdb = new CvdbConfiguration();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -231,6 +236,53 @@ public class Configuration {
                     case "OPENCGA_SERVER_GRPC_PORT":
                         configuration.getServer().getGrpc().setPort(Integer.parseInt(value));
                         break;
+                    case "OPENCGA_SSO_ACTIVE":
+                        configuration.getSso().setActive(Boolean.parseBoolean(value));
+                        break;
+                    case "OPENCGA_SSO_CAS_SERVER_PREFIX_URL":
+                        configuration.getSso().setCasServerPrefixUrl(value);
+                        break;
+                    case "OPENCGA_SSO_SERVER_NAME":
+                        configuration.getSso().setServerName(value);
+                        break;
+                    case "OPENCGA_SSO_PROTOCOL":
+                        configuration.getSso().setProtocol(value);
+                        break;
+                    case "OPENCGA_SSO_ATTRIBUTES_NAME":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setName(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setName(value));
+                        }
+                        break;
+                    case "OPENCGA_SSO_ATTRIBUTES_SURNAME":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setSurname(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setSurname(value));
+                        }
+                        break;
+                    case "OPENCGA_SSO_ATTRIBUTES_EMAIL":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setEmail(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setEmail(value));
+                        }
+                        break;
+                    case "OPENCGA_SSO_ATTRIBUTES_ORGANIZATION":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setOrganization(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setOrganization(value));
+                        }
+                        break;
+                    case "OPENCGA_SSO_ATTRIBUTES_GROUPS":
+                        if (configuration.getSso().getAttributes() != null) {
+                            configuration.getSso().getAttributes().setGroups(value);
+                        } else {
+                            configuration.getSso().setAttributes(new SsoPrincipalAttributesConfiguration().setGroups(value));
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -287,6 +339,8 @@ public class Configuration {
         sb.append(", analysis=").append(analysis);
         sb.append(", panel=").append(panel);
         sb.append(", server=").append(server);
+        sb.append(", sso=").append(sso);
+        sb.append(", cvdb=").append(cvdb);
         sb.append('}');
         return sb.toString();
     }
@@ -512,6 +566,24 @@ public class Configuration {
 
     public Configuration setHealthCheck(HealthCheck healthCheck) {
         this.healthCheck = healthCheck;
+        return this;
+    }
+
+    public SsoConfiguration getSso() {
+        return sso;
+    }
+
+    public Configuration setSso(SsoConfiguration sso) {
+        this.sso = sso;
+        return this;
+    }
+
+    public CvdbConfiguration getCvdb() {
+        return cvdb;
+    }
+
+    public Configuration setCvdb(CvdbConfiguration cvdb) {
+        this.cvdb = cvdb;
         return this;
     }
 }

@@ -379,6 +379,26 @@ analysis:
       options: # MapReduce configuration from https://hadoop.apache.org/docs/r2.7.2/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
         mapreduce.job.queuename: default
 
+sso:
+  active: ${OPENCGA.SSO.ACTIVE}
+  casServerPrefixUrl: ${OPENCGA.SSO.CAS.SERVER.PREFIX.URL}
+  serverName: ${OPENCGA.SSO.SERVER.NAME}
+  protocol: ${OPENCGA.SSO.PROTOCOL}
+  attributes:
+    name: ${OPENCGA.SSO.ATTRIBUTES.NAME}
+    surname: ${OPENCGA.SSO.ATTRIBUTES.SURNAME}
+    email: ${OPENCGA.SSO.ATTRIBUTES.EMAIL}
+    organization: ${OPENCGA.SSO.ATTRIBUTES.ORGANIZATION}
+    groups: ${OPENCGA.SSO.ATTRIBUTES.GROUPS}
+
+cvdb:
+  active: ${OPENCGA.CVDB.ACTIVE}
+  database:
+    hosts:
+      - ${OPENCGA.CVDB.DATABASE.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+    mode: ${OPENCGA.CVDB.DATABASE.MODE}
+    timeout: ${OPENCGA.CVDB.DATABASE.TIMEOUT}
+
 email:
   host: ${OPENCGA.MAIL.HOST}
   port: ${OPENCGA.MAIL.PORT}

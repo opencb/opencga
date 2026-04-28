@@ -1,0 +1,16 @@
+package org.opencb.opencga.server;
+
+import org.opencb.opencga.clinical.cvdb.CvdbSolrEngine;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CvdbWSUtils {
+
+    protected static Logger logger = LoggerFactory.getLogger(CvdbWSUtils.class);
+
+    public static CvdbSolrEngine getCvdbSolrEngine(CatalogManager catalogManager) {
+        logger.info("Initializing CVDB Solr Engine");
+        return new CvdbSolrEngine(catalogManager.getConfiguration().getCvdb(), catalogManager);
+    }
+}

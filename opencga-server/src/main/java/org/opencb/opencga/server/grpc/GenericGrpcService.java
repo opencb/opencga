@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.grpc.MethodDescriptor;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
@@ -183,8 +184,13 @@ public class GenericGrpcService {
 
         Exception e = null;
         int numResults = -1;
+        boolean cancelled = false;
         try {
             numResults = requestRunner.run(query, queryOptions);
+            cancelled = isCancelled(streamObserver);
+            if (cancelled) {
+                logger.warn("Request cancelled by client");
+            }
             streamObserver.onCompleted();
         } catch (Exception ex) {
             e = ex;
@@ -192,30 +198,36 @@ public class GenericGrpcService {
             streamObserver.onError(ex);
         } finally {
             stopWatch.stop();
-            logEnd(e, stopWatch, numResults, requestDescription);
+            logEnd(e, cancelled, stopWatch, numResults, requestDescription);
         }
 
     }
 
-    private void logEnd(Exception e, StopWatch stopWatch, int numResults, String requestDescription) {
+    protected boolean isCancelled(StreamObserver<?> streamObserver) {
+        return streamObserver instanceof ServerCallStreamObserver
+                && ((ServerCallStreamObserver<?>) streamObserver).isCancelled();
+    }
+
+    private void logEnd(Exception e, boolean cancelled, StopWatch stopWatch, int numResults, String requestDescription) {
         StringBuilder sb = new StringBuilder();
-        boolean ok;
-        if (e == null) {
-            sb.append("OK");
-            ok = true;
-        } else {
+        if (e != null) {
             sb.append("ERROR");
-            ok = false;
+        } else if (cancelled) {
+            sb.append("CANCELLED");
+        } else {
+            sb.append("OK");
         }
         sb.append(", ").append(stopWatch.getTime(TimeUnit.MILLISECONDS)).append("ms");
         if (numResults >= 0) {
             sb.append(", ").append(numResults).append(" results");
         }
         sb.append(", ").append(requestDescription);
-        if (ok) {
-            logger.info(sb.toString());
-        } else {
+        if (e != null) {
             logger.error(sb.toString());
+        } else if (cancelled) {
+            logger.warn(sb.toString());
+        } else {
+            logger.info(sb.toString());
         }
     }
 }

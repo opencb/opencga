@@ -16,6 +16,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: '10'
+          token: ${{ secrets.GH_PRIVATE_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build R client
@@ -32,7 +33,7 @@ jobs:
           path: build/dist/opencga-python-client-${{ steps.version.outputs.version }}.tar.gz
 
   deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    uses: zetta-genomics/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     needs: build-python-client
     with:
       cli: ./clients/python/python-build.sh push

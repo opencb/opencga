@@ -1,0 +1,33 @@
+categories:
+  - name: catalog
+    description: "Catalog commands:"
+    options:
+      - federations
+      - organizations
+      - users
+      - projects
+      - studies
+      - files
+      - jobs
+      - individuals
+      - families
+      - panels
+      - samples
+      - cohorts
+      - tools
+      - meta
+  - name: Analysis
+    description: "Analysis commands:"
+    options:
+      - alignments
+      - variant
+      - clinical
+      - cvdb
+  - name: Operation
+    description: "Operation commands:"
+    options:
+      - operations
+  - name: Administrator
+    description: "Administrator commands:"
+    options:
+      - admin
