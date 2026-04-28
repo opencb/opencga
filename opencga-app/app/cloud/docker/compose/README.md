@@ -51,7 +51,7 @@ Optionally includes HBase + Phoenix for the Hadoop storage engine.
 
 - Docker with Compose plugin (`docker compose`)
 - Built OpenCGA: `mvn clean install -DskipTests`
-- For Hadoop mode: `mvn clean install -DskipTests -Dhadoop=hbase2.5`
+- For Hadoop mode: `mvn clean install -DskipTests -Phbase2.0` (or `-Phdi5.1`, `-Pemr7.5`, ...)
 
 ## Quick Start
 

@@ -41,7 +41,7 @@ jobs:
     with:
       needs_hadoop_preparation: ${{ inputs.variant_storage != 'mongodb' }}
       hadoop_flavour: ${{ inputs.variant_storage == 'mongodb' && 'none' || inputs.variant_storage }}
-      maven_opts: ${{ inputs.variant_storage != 'mongodb' && format('-Dhadoop={0}', inputs.variant_storage) || '' }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: ${{ inputs.variant_storage != 'mongodb' && format('-P{0}', inputs.variant_storage) || '' }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       upload_artifact: ${{ inputs.upload_artifact }}
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
@@ -77,7 +77,7 @@ jobs:
           STORAGE_FLAG=""
           # Set flag only if variant_storage is NOT 'mongodb'
           if [ "${{ inputs.variant_storage }}" != "mongodb" ]; then
-            STORAGE_FLAG="-Dhadoop=${{ inputs.variant_storage }}"
+            STORAGE_FLAG="-P${{ inputs.variant_storage }}"
           fi
       
           # Execute Maven command
@@ -135,7 +135,7 @@ jobs:
           STORAGE_FLAG=""
           # Set flag only if variant_storage is NOT 'mongodb'
           if [ "${{ inputs.variant_storage }}" != "mongodb" ]; then
-            STORAGE_FLAG="-Dhadoop=${{ inputs.variant_storage }}"
+            STORAGE_FLAG="-P${{ inputs.variant_storage }}"
           fi
           
           mvn -B verify surefire-report:report --fail-never \
