@@ -1529,7 +1529,7 @@
                 <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
 
                 <!-- Storage -->
-                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
                 <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
 
                 <!-- Storage Variants general -->
@@ -1729,100 +1729,61 @@
             </build>
         </profile>
 
-        <profile>
-            <id>storage-mongodb</id>
-            <activation>
-                <property>
-                    <name>!hadoop</name>
-                </property>
-            </activation>
-            <properties>
-                <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
-            </properties>
-        </profile>
+        <!-- Hadoop flavour profiles. Activate by id, e.g. -Phbase2.0, -Phdi5.1, -Pemr7.5.
+             When none is selected, MongoDB is the default storage engine. -->
         <profile>
             <id>hbase2.0</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>hbase2.0</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>hbase2.0</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
                 <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>
             <id>hdp3.1</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>hdp3.1</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>hdp3.1</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
                 <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>
             <id>hdi5.1</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>hdi5.1</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>hdi5.1</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
                 <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>
             <id>emr6.1</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>emr6.1</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>emr6.1</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.2</opencga-storage-hadoop-compat.id>
                 <!--  AWS changes the version of Jetty in their custom jar -->
                 <jetty-for-hadoop-test.version>9.4.20.v20190813</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>
             <id>emr6.13</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>emr6.13</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
                 <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>
             <id>emr7.5</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                    <value>emr7.5</value>
-                </property>
-            </activation>
             <properties>
                 <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
                 <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>hadoop</OPENCGA.STORAGE.DEFAULT_ENGINE>
             </properties>
         </profile>
         <profile>

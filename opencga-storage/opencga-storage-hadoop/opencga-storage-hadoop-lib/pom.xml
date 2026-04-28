@@ -69,18 +69,86 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <configuration>
+                        <basedir>${project.parent.basedir}</basedir>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>make-assembly</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                            <configuration>
+                                <descriptors>
+                                    <descriptor>src/main/assembly/src.xml</descriptor>
+                                </descriptors>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>test-jar</id>
+                            <goals>
+                                <goal>test-jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <profiles>
+        <!--
+          Hadoop flavour profiles. Activate by id, e.g. -Phbase2.0, -Phdi5.1, -Pemr7.5.
+          Each profile pulls in only the matching lib sub-module.
+          Without any flavour profile (default mongo build) no lib sub-module is built.
+          Pass -DallHadoopLibs to build all six in one invocation.
+        -->
         <profile>
-            <id>thisHadoopLib</id>
-            <activation>
-                <property>
-                    <name>!allHadoopLibs</name>
-                </property>
-            </activation>
+            <id>hbase2.0</id>
             <modules>
-                <module>${opencga-hadoop-lib.artifactId}</module>
+                <module>opencga-storage-hadoop-lib-hbase2.0</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>hdp3.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-hdp3.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>hdi5.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-hdi5.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>emr6.1</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-emr6.1</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>emr6.13</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-emr6.13</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>emr7.5</id>
+            <modules>
+                <module>opencga-storage-hadoop-lib-emr7.5</module>
             </modules>
         </profile>
         <profile>
@@ -98,54 +166,6 @@
                 <module>opencga-storage-hadoop-lib-emr6.13</module>
                 <module>opencga-storage-hadoop-lib-emr7.5</module>
             </modules>
-        </profile>
-        <profile>
-            <id>storage-hadoop</id>
-            <activation>
-                <property>
-                    <name>hadoop</name>
-                </property>
-            </activation>
-
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <artifactId>maven-assembly-plugin</artifactId>
-                            <version>3.2.0</version>
-                            <configuration>
-                                <basedir>${project.parent.basedir}</basedir>
-                            </configuration>
-                            <executions>
-                                <execution>
-                                    <id>make-assembly</id>
-                                    <phase>package</phase>
-                                    <goals>
-                                        <goal>single</goal>
-                                    </goals>
-                                    <configuration>
-                                        <descriptors>
-                                            <descriptor>src/main/assembly/src.xml</descriptor>
-                                        </descriptors>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-jar-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>test-jar</id>
-                                    <goals>
-                                        <goal>test-jar</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
         </profile>
     </profiles>
 </project>
