@@ -78,6 +78,9 @@ public class SampleIndexEntry {
     }
 
     public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue) {
+        if (mendelianVariantsValue == null) {
+            return setMendelianVariants(null, 0, 0);
+        }
         return setMendelianVariants(mendelianVariantsValue, 0, mendelianVariantsValue.length);
     }
 
@@ -247,10 +250,10 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setVariants(byte[] variants) {
-            this.variants = variants;
-            this.variantsOffset = 0;
-            this.variantsLength = variants.length;
-            return this;
+            if (variants == null) {
+                return setVariants(null, 0, 0);
+            }
+            return setVariants(variants, 0, variants.length);
         }
 
         public int getVariantsLength() {
@@ -288,6 +291,9 @@ public class SampleIndexEntry {
         }
 
         public SampleIndexGtEntry setFileIndex(byte[] fileIndex) {
+            if (fileIndex == null) {
+                return setFileIndex(null, 0, 0);
+            }
             return setFileIndex(fileIndex, 0, fileIndex.length);
         }
 

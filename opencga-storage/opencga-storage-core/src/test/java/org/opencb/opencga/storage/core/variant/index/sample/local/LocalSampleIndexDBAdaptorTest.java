@@ -3,7 +3,11 @@ package org.opencb.opencga.storage.core.variant.index.sample.local;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -15,16 +19,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Test class for LocalSampleIndexDBAdaptor.
- * Tests basic read/write operations, region bounds extraction, and file structure.
- */
-@Ignore
 public class LocalSampleIndexDBAdaptorTest {
 
     @Rule
@@ -51,12 +53,29 @@ public class LocalSampleIndexDBAdaptorTest {
         sampleId1 = metadataManager.getSampleId(studyId, "SAMPLE1");
         sampleId2 = metadataManager.getSampleId(studyId, "SAMPLE2");
 
+        // Register a sample-index configuration on the study (version 1, ACTIVE)
+        metadataManager.updateStudyMetadata(studyId, sm -> {
+            sm.setSampleIndexConfigurations(Collections.singletonList(
+                    new StudyMetadata.SampleIndexConfigurationVersioned(
+                            SampleIndexConfiguration.defaultConfiguration(),
+                            1,
+                            new Date(),
+                            StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE)));
+        });
+        // Mark each sample as having a ready sample-index (and annotation) at version 1
+        for (int sampleId : Arrays.asList(sampleId1, sampleId2)) {
+            metadataManager.updateSampleMetadata(studyId, sampleId, sm -> {
+                sm.setSampleIndexStatus(TaskMetadata.Status.READY, 1);
+                sm.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, 1);
+            });
+        }
+
         // Create schema factory
         SampleIndexSchemaFactory schemaFactory = new SampleIndexSchemaFactory(metadataManager);
-        schema = schemaFactory.getSchema(studyId, 1);
+        schema = schemaFactory.getSchemaForVersion(studyId, 1);
 
         // Create adaptor
-        adaptor = new LocalSampleIndexDBAdaptor(metadataManager, tempDir, true);
+        adaptor = new LocalSampleIndexDBAdaptor(metadataManager, tempDir);
     }
 
     @After
@@ -248,16 +267,62 @@ public class LocalSampleIndexDBAdaptorTest {
 
     @Test
     public void testCount() throws Exception {
-        // Create entries
+        // Smoke test: count() over empty chunk entries returns 0 variants without crashing.
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "1", 0));
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "1", 100000));
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "2", 0));
 
-        // Count
         long count = adaptor.count(adaptor.parseSampleIndexQuery(new VariantQuery().sample("SAMPLE1")));
 
-        // Should have 3 entries
-        assertEquals(3, count);
+        assertEquals(0, count);
+    }
+
+    @Test
+    public void testEntryWriterBatch() throws Exception {
+        // The batch writer (used by indexers via SampleIndexDBAdaptor.newSampleIndexEntryWriter)
+        // delegates to writeEntry per element. Verify a list of entries lands on disk.
+        SampleIndexEntry e1 = new SampleIndexEntry(sampleId1, "1", 0);
+        SampleIndexEntry e2 = new SampleIndexEntry(sampleId1, "1", 100000);
+        SampleIndexEntry e3 = new SampleIndexEntry(sampleId2, "2", 0);
+
+        LocalSampleIndexEntryWriter writer = adaptor.newSampleIndexEntryWriter(
+                studyId, /*fileId*/ 0, schema, /*options*/ null);
+
+        boolean ok = writer.write(Arrays.asList(e1, e2, e3));
+
+        assertTrue(ok);
+        assertNotNull(adaptor.readEntry(studyId, 1, sampleId1, "1", 0));
+        assertNotNull(adaptor.readEntry(studyId, 1, sampleId1, "1", 100000));
+        assertNotNull(adaptor.readEntry(studyId, 1, sampleId2, "2", 0));
+    }
+
+    @Test
+    public void testIteratorByGt() throws Exception {
+        // Three chunks for SAMPLE1, each with empty GT entries for "0/1" and "1/1"
+        SampleIndexEntry e1 = new SampleIndexEntry(sampleId1, "1", 0);
+        e1.getGtEntry("0/1");
+        e1.getGtEntry("1/1");
+        SampleIndexEntry e2 = new SampleIndexEntry(sampleId1, "1", 100000);
+        e2.getGtEntry("0/1");
+        SampleIndexEntry e3 = new SampleIndexEntry(sampleId1, "2", 0);
+        e3.getGtEntry("1/1");
+        adaptor.writeEntry(studyId, 1, e1);
+        adaptor.writeEntry(studyId, 1, e2);
+        adaptor.writeEntry(studyId, 1, e3);
+
+        Iterator<Map<String, List<Variant>>> it = adaptor.iteratorByGt(studyId, sampleId1, schema);
+
+        int chunks = 0;
+        while (it.hasNext()) {
+            Map<String, List<Variant>> byGt = it.next();
+            assertNotNull(byGt);
+            for (List<Variant> variants : byGt.values()) {
+                // Empty entries decode to empty variant lists
+                assertTrue(variants.isEmpty());
+            }
+            chunks++;
+        }
+        assertEquals(3, chunks);
     }
 
     @Test
@@ -278,27 +343,24 @@ public class LocalSampleIndexDBAdaptorTest {
 
     @Test
     public void testRegionBoundsOrder() throws Exception {
-        // Create entries in specific order
+        // Write entries out of order
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "2", 100000));
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "1", 0));
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "2", 0));
         adaptor.writeEntry(studyId, 1, new SampleIndexEntry(sampleId1, "1", 100000));
 
-        // Get region bounds
         List<Region> regions = adaptor.getRegionBounds(studyId, 1, Arrays.asList(sampleId1));
 
-        // Verify order is maintained (insertion order via LinkedHashSet)
+        // Returned in deterministic (chromosome, batchStart) order regardless of write order
         assertNotNull(regions);
         assertEquals(4, regions.size());
-
-        // Regions should be in the order they were encountered
-        assertEquals("2", regions.get(0).getChromosome());
-        assertEquals(100000, regions.get(0).getStart());
+        assertEquals("1", regions.get(0).getChromosome());
+        assertEquals(0, regions.get(0).getStart());
         assertEquals("1", regions.get(1).getChromosome());
-        assertEquals(0, regions.get(1).getStart());
+        assertEquals(100000, regions.get(1).getStart());
         assertEquals("2", regions.get(2).getChromosome());
         assertEquals(0, regions.get(2).getStart());
-        assertEquals("1", regions.get(3).getChromosome());
+        assertEquals("2", regions.get(3).getChromosome());
         assertEquals(100000, regions.get(3).getStart());
     }
 
