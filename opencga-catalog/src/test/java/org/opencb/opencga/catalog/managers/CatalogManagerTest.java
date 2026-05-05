@@ -851,6 +851,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testJobsTopWithStudyFqn() throws CatalogException {
+        // Simulate REST endpoint: top(null, study, query, limit, token) where study is a FQN
+        // This should resolve the organization from the FQN, not use the FQN as the org ID
+        DataResult<JobTop> top = catalogManager.getJobManager().top(null, studyFqn, new Query(), 20, ownerToken);
+        assertEquals(1, top.getNumMatches());
+    }
+
+    @Test
+    public void testJobsTopWithoutStudy() throws CatalogException {
+        // Simulate REST endpoint: top(null, null, query, limit, token) — no study provided
+        // Should derive the organization from the JWT token
+        DataResult<JobTop> top = catalogManager.getJobManager().top(null, null, new Query(), 20, ownerToken);
+        assertEquals(1, top.getNumMatches());
+    }
+
+    @Test
     public void submitJobOwner() throws CatalogException {
         OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE_TOOL, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 ownerToken);

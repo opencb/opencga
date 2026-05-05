@@ -27,7 +27,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -43,7 +43,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoLockManagerTest implements MongoDBVariantStorageTest {
 
     private MongoLockManager mongoLock;

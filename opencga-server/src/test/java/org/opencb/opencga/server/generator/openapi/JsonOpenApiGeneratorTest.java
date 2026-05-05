@@ -70,7 +70,8 @@ public class JsonOpenApiGeneratorTest {
                 .collect(Collectors.toList());
 
         List<String> expectedTags = Arrays.asList(
-                "organizations",
+                "Federations",
+                "Organizations",
                 "Users",
                 "Projects",
                 "Studies",
@@ -86,6 +87,7 @@ public class JsonOpenApiGeneratorTest {
                 "Analysis - Alignment",
                 "Analysis - Variant",
                 "Analysis - Clinical",
+                "Analysis - CVDB",
                 "Operations - Variant Storage",
                 "Meta",
                 "Admin",

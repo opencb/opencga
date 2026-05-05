@@ -137,7 +137,8 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
-        return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values().iterator();
+        return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values().stream()
+                .sorted(Comparator.comparingInt(SampleMetadata::getId)).iterator();
     }
 
     @Override

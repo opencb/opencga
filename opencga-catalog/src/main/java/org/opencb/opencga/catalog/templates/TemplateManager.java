@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.VersionUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -157,23 +158,21 @@ public class TemplateManager {
 //        }
     }
 
-    private void checkVersion(String opencgaVersion, String templateVersion) {
-        if (opencgaVersion.equals(templateVersion)) {
+    private void checkVersion(String opencgaVersionStr, String templateVersionStr) {
+        VersionUtils.Version opencgaVersion = new VersionUtils.Version(opencgaVersionStr);
+        VersionUtils.Version templateVersion = new VersionUtils.Version(templateVersionStr);
+
+        int i = opencgaVersion.compareTo(templateVersion, true);
+        if (i == 0) {
             return;
         }
-        String[] ocgaVersionSplit = opencgaVersion.split("\\.");
-        String[] templateVersionSplit = templateVersion.split("\\.");
-
-        for (int i = 0; i < templateVersionSplit.length; i++) {
-            int ocgaV = Integer.parseInt(ocgaVersionSplit[i]);
-            int tplV = Integer.parseInt(templateVersionSplit[i]);
-            if (ocgaV < tplV) {
-                throw new IllegalArgumentException("Cannot use a template with version higher than the OpenCGA installation version. "
-                        + "Template version: " + templateVersion + ", OpenCGA version: " + opencgaVersion);
-            }
+        if (i < 0) {
+            throw new IllegalArgumentException("Cannot use a template with version higher than the OpenCGA installation version. "
+                    + "Template version: " + templateVersionStr + ", OpenCGA version: " + opencgaVersionStr);
+        } else {
+            logger.warn("Using a template version lower than the OpenCGA installation version. Some things may not work properly. "
+                    + "Template version: {}, OpenCGA version: {}", templateVersionStr, opencgaVersionStr);
         }
-        logger.warn("Using a template version lower than the OpenCGA installation version. Some things may not work properly. "
-                + "Template version: {}, OpenCGA version: {}", templateVersion, opencgaVersion);
     }
 
     private Study getStudy(String organizationId, String projectId, String studyId) throws CatalogException {

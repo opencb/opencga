@@ -19,8 +19,7 @@ package org.opencb.opencga.analysis.variant;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.test.EmbeddedMongoDBManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -37,10 +36,11 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -76,8 +76,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private ToolRunner toolRunner;
     protected Path sourceAnalysisPath;
 
-    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
+    private static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
             = new HadoopVariantStorageTest.HadoopExternalResource();
+    private static MongoDBVariantStorageTest.MongoDBExternalResource mongoExternalResource
+            = new MongoDBVariantStorageTest.MongoDBExternalResource();
 
     public OpenCGATestExternalResource() {
         this(false, Paths.get("../opencga-app/app/analysis/"));
@@ -102,6 +104,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
         before(storageEngine);
     }
 
+    public void setStorageEngine(String storageEngine) {
+        if (initiated) {
+            throw new IllegalArgumentException("Unable to call 'setStorageEngine'. " + getClass().getName() + " already initialized");
+        }
+        this.storageEngine = storageEngine;
+    }
+
     public void before(String storageEngine) throws Exception {
         if (initiated) {
             throw new IllegalArgumentException("Unable to call 'before'. " + getClass().getName() + " already initialized");
@@ -112,6 +121,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
             hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
             hadoopExternalResource.before();
+        } else if (storageEngine.equals(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            mongoExternalResource = new MongoDBVariantStorageTest.MongoDBExternalResource();
+            mongoExternalResource.before();
         }
         opencgaHome = isolateOpenCGA();
         Files.createDirectory(opencgaHome.resolve("storage"));
@@ -136,6 +148,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 throw new RuntimeException(e);
             }
             hadoopExternalResource.after();
+        } else if (storageEngine.equals(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            mongoExternalResource.after();
         }
         catalogManagerExternalResource.after();
         initiated = false;
@@ -241,6 +255,14 @@ public class OpenCGATestExternalResource extends ExternalResource {
             ObjectMap variantHadoopOptions = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
             for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
                 variantHadoopOptions.put(entry.getKey(), entry.getValue());
+            }
+        } else if (storageEngine.equals(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            EmbeddedMongoDBManager embeddedMongo = EmbeddedMongoDBManager.getInstance();
+            if (embeddedMongo.isEnabled()) {
+                storageConfiguration.getVariant().getEngines().stream()
+                        .filter(e -> e.getId().equals(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID))
+                        .forEach(e -> e.getDatabase().setHosts(
+                                java.util.Collections.singletonList(embeddedMongo.getConnectionString())));
             }
         }
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
@@ -367,11 +389,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public void clearStorageDB(String storageEngine, String dbName) {
-        if (storageEngine.equalsIgnoreCase("MONGODB")) {
+        if (MongoDBVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
             logger.info("Cleaning MongoDB {}", dbName);
-            MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
-            MongoDataStore mongoDataStore = mongoManager.get(dbName);
-            mongoManager.drop(dbName);
+            try {
+                mongoExternalResource.clearDB(dbName);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         } else if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)){
             try {
                 hadoopExternalResource.clearDB(dbName);
@@ -379,7 +403,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 throw new RuntimeException(e);
             }
         } else if (DummyVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
-            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+            DummyVariantStorageEngine.clear();
         }
     }
 
@@ -391,7 +415,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 throw new RuntimeException(e);
             }
         } else if (DummyVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
-            DummyVariantStorageMetadataDBAdaptorFactory.clear();
+            DummyVariantStorageEngine.clear();
+        } else if (MongoDBVariantStorageEngine.STORAGE_ENGINE_ID.equals(storageEngine)) {
+            try {
+                mongoExternalResource.clearAllDBs();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         } else {
             throw new UnsupportedOperationException();
         }

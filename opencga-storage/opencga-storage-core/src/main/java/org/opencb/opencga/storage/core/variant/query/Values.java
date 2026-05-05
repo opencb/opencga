@@ -20,6 +20,10 @@ public class Values<V> implements QueryElement, Iterable<V> {
         this.values = values;
     }
 
+    public String getSeparator() {
+        return operation == null ? "" : operation.separator();
+    }
+
     public VariantQueryUtils.QueryOperation getOperation() {
         return operation;
     }
@@ -64,6 +68,11 @@ public class Values<V> implements QueryElement, Iterable<V> {
 
     public <R> Values<R> map(Function<V, R> function) {
         return new Values<>(operation, mapValues(function));
+    }
+
+    public Values<V> removeIf(Predicate<? super V> selector) {
+        values.removeIf(selector);
+        return this;
     }
 
     public <R> List<R> mapValues(Function<V, R> function) {
@@ -115,9 +124,9 @@ public class Values<V> implements QueryElement, Iterable<V> {
 
     @Override
     public void describe(StringBuilder sb) {
-        boolean externalParentesis = values.size() > 1;
+        boolean parenthesis = values.size() > 1;
         boolean first = true;
-        if (externalParentesis) {
+        if (parenthesis) {
             sb.append("( ");
         }
         for (V value : values) {
@@ -131,7 +140,7 @@ public class Values<V> implements QueryElement, Iterable<V> {
                 sb.append("'").append(QueryElement.objectToString(value)).append("'");
             }
         }
-        if (externalParentesis) {
+        if (parenthesis) {
             sb.append(" )");
         }
     }

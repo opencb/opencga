@@ -34,8 +34,12 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +55,9 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 /**
  * Created on 06/12/16.
@@ -69,6 +75,92 @@ public class VariantWriterFactory {
 
     public VariantWriterFactory(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
+    }
+
+    /**
+     * Validates and prepares the query for the given output format.
+     *
+     * <ul>
+     *   <li>{@link VariantOutputFormat#VCF}: sets a default unknown genotype if not specified.</li>
+     *   <li>{@link VariantOutputFormat#JSON_SPARSE}: sets sparse-mode query flags and rejects
+     *       {@code includeGenotype=false}.</li>
+     * </ul>
+     *
+     * For all non-multi-study formats, also checks that the query does not select more than one
+     * study for inclusion. When exactly one study is included and the database contains multiple
+     * studies, the study filter must explicitly target that same study — otherwise variants
+     * matched by a different study would appear in the output with no data for the included study.
+     *
+     * @param outputFormat the requested output format
+     * @param query        the variant query, modified in-place to add defaults
+     * @throws IllegalArgumentException if the query selects multiple studies for a single-study format,
+     *                                  or if the study filter does not match the included study
+     */
+    public void validateQuery(VariantOutputFormat outputFormat, Query query) {
+        switch (outputFormat.inPlain()) {
+            case VCF:
+                validateVcfFormatQuery(query);
+                break;
+            case JSON_SPARSE:
+                VariantWriterFactory.validateSparseQuery(query);
+                break;
+            default:
+                break;
+        }
+        if (!outputFormat.isMultiStudyOutput()) {
+            List<Integer> studyIds = VariantQueryProjectionParser.getIncludeStudies(query, QueryOptions.empty(),
+                    variantStorageMetadataManager);
+            if (studyIds.size() > 1) {
+                throw new IllegalArgumentException("Cannot export more than one study at a time with '"
+                        + outputFormat + "' output format. Please use the '"
+                        + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
+            }
+            // if (studyIds.isEmpty()) { no studies, this is ok }
+            if (studyIds.size() == 1) {
+                // If returning one study, and there are more than one study in the database, it should filter by that study
+                if (variantStorageMetadataManager.getStudies().size() > 1) {
+                    ParsedQuery<NegatableValue<ResourceId>> studies = new VariantQueryParser(null, variantStorageMetadataManager)
+                            .parseStudiesQuery(new VariantQuery(query));
+                    int includeStudyId = studyIds.get(0);
+                    if (studies == null || (studies.size() > 1 && studies.getOperation() == VariantQueryUtils.QueryOperation.OR)
+                            || studies.getValues().get(0).isNegated()
+                            || studies.getValues().stream()
+                                    .noneMatch(v -> !v.isNegated() && v.getValue().getId() == includeStudyId)) {
+                        String includeStudy = variantStorageMetadataManager.getStudyName(includeStudyId);
+                        String studyFilter = query.getString(VariantQueryParam.STUDY.key());
+                        throw new IllegalArgumentException("The study filter '" + studyFilter + "' does not match"
+                                + " the included study '" + includeStudy + "'."
+                                + " When exporting with '" + outputFormat + "' output format,"
+                                + " variants matching the filter may not contain any data for the included study."
+                                + " Please use '" + VariantQueryParam.STUDY.key() + "=" + includeStudy + "'.");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates and prepares the query for VCF export.
+     * Sets the default unknown genotype if not specified, and checks that only one study is selected.
+     */
+    private static void validateVcfFormatQuery(Query query) {
+        if (!isValidParam(query, UNKNOWN_GENOTYPE)) {
+            query.put(UNKNOWN_GENOTYPE.key(), "./.");
+        }
+    }
+
+    /**
+     * Validates the query for JSON_SPARSE export.
+     */
+    private static void validateSparseQuery(Query query) {
+        if (isValidParam(query, VariantQueryParam.INCLUDE_GENOTYPE)
+                && !query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            throw new VariantQueryException(
+                    "Cannot use '" + VariantQueryParam.INCLUDE_GENOTYPE.key() + "=false' with JSON_SPARSE output format."
+                            + " Sparse filtering requires genotype information when available.");
+        }
+        query.put(VariantQueryUtils.SPARSE_SAMPLES.key(), true);
+        query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
     }
 
     public enum VariantOutputFormat {

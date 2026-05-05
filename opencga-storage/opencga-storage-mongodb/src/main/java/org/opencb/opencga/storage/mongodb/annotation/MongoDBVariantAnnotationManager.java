@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
@@ -17,7 +18,7 @@ import java.util.Arrays;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.exists;
 import static com.mongodb.client.model.Projections.include;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 
 /**
@@ -29,8 +30,8 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
     private final VariantMongoDBAdaptor mongoDbAdaptor;
 
     public MongoDBVariantAnnotationManager(VariantAnnotator annotator, VariantMongoDBAdaptor mongoDbAdaptor,
-                                           IOConnectorProvider ioConnectorProvider) {
-        super(annotator, mongoDbAdaptor, ioConnectorProvider);
+                                           IOConnectorProvider ioConnectorProvider, SampleAnnotationIndexer sampleIndexAnnotation) {
+        super(annotator, mongoDbAdaptor, ioConnectorProvider, sampleIndexAnnotation);
         this.mongoDbAdaptor = mongoDbAdaptor;
     }
 
@@ -50,7 +51,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
         mongoDbAdaptor.getVariantsCollection()
                 .aggregate(Arrays.asList(
-                        match(exists(ANNOTATION_FIELD + '.' + ANNOT_ID_FIELD)),
+                        match(exists(ANNOT_ID)),
                         project(include(
                                 CHROMOSOME_FIELD,
                                 START_FIELD,

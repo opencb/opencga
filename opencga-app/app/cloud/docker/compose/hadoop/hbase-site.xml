@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- Standalone mode: ZooKeeper, Master, and RegionServer in one JVM -->
+  <property><name>hbase.cluster.distributed</name><value>false</value></property>
+  <property><name>hbase.unsafe.stream.capability.enforce</name><value>false</value></property>
+
+  <!-- Data directories -->
+  <property><name>hbase.zookeeper.property.dataDir</name><value>/data/zookeeper</value></property>
+  <property><name>hbase.rootdir</name><value>file:///data/hbase</value></property>
+
+  <!-- Bind ZooKeeper to all interfaces (required for Docker networking) -->
+  <property><name>hbase.zookeeper.property.clientPortAddress</name><value>0.0.0.0</value></property>
+
+  <!-- Phoenix co-processors -->
+  <property><name>hbase.regionserver.wal.codec</name><value>org.apache.hadoop.hbase.regionserver.wal.IndexedWALEditCodec</value></property>
+  <property>
+    <name>hbase.region.server.rpc.scheduler.factory.class</name>
+    <value>org.apache.hadoop.hbase.ipc.PhoenixRpcSchedulerFactory</value>
+  </property>
+  <property>
+    <name>hbase.rpc.controllerfactory.class</name>
+    <value>org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory</value>
+  </property>
+
+  <!-- Phoenix namespace mapping (required by OpenCGA) -->
+  <property><name>phoenix.schema.isNamespaceMappingEnabled</name><value>true</value></property>
+</configuration>

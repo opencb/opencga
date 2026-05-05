@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -32,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@StorageEngineTest
 public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest {
 
 

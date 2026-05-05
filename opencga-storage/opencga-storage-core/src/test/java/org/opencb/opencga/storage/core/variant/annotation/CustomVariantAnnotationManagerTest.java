@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -44,6 +45,7 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@StorageEngineTest
 public abstract class CustomVariantAnnotationManagerTest extends VariantStorageBaseTest {
 
 
@@ -185,7 +187,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
                 AdditionalAttribute annot = additionalAttributes.get(annotKey);
                 assertEquals("other", annot.getAttribute().get("FEATURE"));
                 feat3++;
-            } else if (variant.getChromosome().equals("22") && variant.getStart() == 16050075) {
+            } else if (variant.getChromosome().equals("22") && variant.getStart() == 16050840) {
                 assertTrue(additionalAttributes.containsKey(annotKey));
                 AdditionalAttribute annot = additionalAttributes.get(annotKey);
                 assertEquals("specific", annot.getAttribute().get("FEATURE"));

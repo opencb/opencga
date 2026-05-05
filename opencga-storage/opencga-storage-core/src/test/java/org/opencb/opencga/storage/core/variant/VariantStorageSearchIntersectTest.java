@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -65,6 +66,7 @@ import static org.opencb.opencga.storage.core.variant.search.solr.VariantSearchM
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantStorageSearchIntersectTest extends VariantStorageBaseTest {
 
     @ClassRule(order = 10)
@@ -196,8 +198,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public void testGetFromSearch() throws Exception {
         Query query = new VariantQuery()
                 .ct("upstream_gene_variant")
-//                .conservation("gerp>1")
-                .proteinSubstitution("sift>0.01");
+                .biotype("protein_coding")
+                .proteinSubstitution("sift<0.5");
         assertEquals(SearchIndexVariantQueryExecutor.class, variantStorageEngine.getVariantQueryExecutor(new Query(query), new QueryOptions()).getClass());
         DataResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
 //        for (Variant variant : queryResult.getResults()) {

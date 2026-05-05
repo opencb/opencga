@@ -35,17 +35,19 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
 /**
@@ -57,7 +59,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 @Category(LongTests.class)
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
-    private static final boolean GROUP_BY = false;
     protected static final boolean MISSING_ALLELE = false;
 
     @ClassRule
@@ -158,34 +159,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 
     @Override
-    public void rank_gene() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.rank_gene();
-    }
-
-    @Override
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
-    }
-
-    @Override
-    @Ignore
-    public void groupBy_gene_limit_0() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.groupBy_gene_limit_0();
-    }
-
-    @Override
-    public void groupBy_gene() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.groupBy_gene();
-    }
-
-    @Override
-    public void rank_ct() throws Exception {
-        Assume.assumeTrue(GROUP_BY);
-        super.rank_ct();
     }
 
     @Override
@@ -195,21 +171,47 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
+    @Test
+    public void testGetAllVariants_geneTrait() {
+        // FIXME : Phoenix array comparison bug
+        //  See https://issues.apache.org/jira/browse/PHOENIX-2952
+        //  See org.apache.phoenix.expression.function.ArrayAnyComparisonExpression
+        testGetAllVariants_geneTrait(true, Collections.singleton("17:7681412:C:G"));
+    }
+
+    @Override
     public void testCombineBtSoFlag() {
         Assume.assumeTrue("HBase returns more elements than expected", false);
         super.testCombineBtSoFlag();
     }
 
-    @Test
-    public void testNativeQuery() {
-        int count = 0;
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, true)); iterator.hasNext();) {
-            Variant variant = iterator.next();
-//            System.out.println(variant.toJson());
-            count++;
+    // Force all inherited tests through the Phoenix path so the HBase-native-scan branch
+    // is reserved for HadoopVariantDBAdaptorNativeTest. Without this default, queries that
+    // happen to be natively supported would take the HBase path, leaving the Phoenix path
+    // unexercised in this test class. Subclasses (e.g. HadoopVariantDBAdaptorNativeTest) can
+    // still opt in by setting NATIVE=true before calling super.
+    @Override
+    public VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
         }
-        assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+        if (!options.containsKey(VariantHadoopDBAdaptor.NATIVE)) {
+            options.put(VariantHadoopDBAdaptor.NATIVE, false);
+        }
+        return super.query(query, options);
     }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (!options.containsKey(VariantHadoopDBAdaptor.NATIVE)) {
+            options.put(VariantHadoopDBAdaptor.NATIVE, false);
+        }
+        return super.iterator(query, options);
+    }
+
 
     @Test
     public void testArchiveIterator() {

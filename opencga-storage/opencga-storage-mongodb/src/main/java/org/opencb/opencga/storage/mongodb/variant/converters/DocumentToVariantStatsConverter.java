@@ -18,8 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.bson.Document;
-import org.opencb.biodata.models.variant.AllelesCode;
-import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -28,15 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
 public class DocumentToVariantStatsConverter {
-
-    private static final Pattern MISSING_ALLELE = Pattern.compile("-1", Pattern.LITERAL);
 
     public static final String COHORT_ID = "cid";
     public static final String STUDY_ID = "sid";
@@ -63,7 +58,6 @@ public class DocumentToVariantStatsConverter {
 
     private VariantStorageMetadataManager variantStorageMetadataManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
-    private Map<String, Genotype> genotypeMap = new HashMap<>();
 
     public DocumentToVariantStatsConverter() {
     }
@@ -93,30 +87,12 @@ public class DocumentToVariantStatsConverter {
         stats.setMissingGenotypeCount(((Number) object.get(MISSGENOTYPE_FIELD)).intValue());
 
         // Genotype counts
-        int alleleNumber = 0;
-        int samplesCount = 0;
-        boolean missingTotalNumbers;
-        if (object.containsKey(ALLELE_NUMBER_FIELD)) {
-            alleleNumber = object.getInteger(ALLELE_NUMBER_FIELD);
-            samplesCount = object.getInteger(SAMPLES_COUNT_FIELD);
-            missingTotalNumbers = false;
-        } else {
-            missingTotalNumbers = true;
-        }
+        int alleleNumber = object.getInteger(ALLELE_NUMBER_FIELD);
+        int samplesCount = object.getInteger(SAMPLES_COUNT_FIELD);
         Document genotypes = (Document) object.get(GENOTYPE_COUNT_FIELD);
         Map<String, Integer> genotypesCount = new HashMap<>();
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
-            String genotypeStr = o.getKey();
-            int value = ((Number) o.getValue()).intValue();
-            genotypesCount.put(genotypeStr, value);
-
-            if (missingTotalNumbers) {
-                Genotype g = new Genotype(genotypeStr.replace("*", "2"));
-                if (g.getCode() != AllelesCode.ALLELES_MISSING) {
-                    alleleNumber += value * g.getPloidy();
-                    samplesCount += value;
-                }
-            }
+            genotypesCount.put(o.getKey(), ((Number) o.getValue()).intValue());
         }
         stats.setGenotypeCount(genotypesCount);
         stats.setAlleleCount(alleleNumber);
@@ -137,7 +113,6 @@ public class DocumentToVariantStatsConverter {
 
         Object alleleFreq = object.get(ALT_FREQ_FIELD);
         if (alleleFreq != null && ((Number) alleleFreq).floatValue() >= 0) {
-            // This field is not present in files loaded before v1.3.3
             stats.setRefAlleleFreq(((Number) object.get(REF_FREQ_FIELD)).floatValue());
             stats.setAltAlleleFreq(((Number) alleleFreq).floatValue());
             if (alleleNumber == 0) {
@@ -147,35 +122,17 @@ public class DocumentToVariantStatsConverter {
                 stats.setRefAlleleCount(Math.round(stats.getRefAlleleFreq() * alleleNumber));
                 stats.setAltAlleleCount(Math.round(stats.getAltAlleleFreq() * alleleNumber));
             }
+        } else if (alleleNumber == 0) {
+            stats.setRefAlleleCount(0);
+            stats.setAltAlleleCount(0);
         } else if (stats.getGenotypeCount().isEmpty()) {
             // Aggregated files usually don't have Genotype Count
-            if (variant.getReference().equals(stats.getMafAllele())) {
+            if (variant != null && variant.getReference().equals(stats.getMafAllele())) {
                 stats.setRefAlleleFreq(stats.getMaf());
                 stats.setAltAlleleFreq(1 - stats.getMaf());
-            } else {
+            } else if (variant != null) {
                 stats.setAltAlleleFreq(stats.getMaf());
                 stats.setRefAlleleFreq(1 - stats.getMaf());
-            }
-        } else {
-            // To calculate the alleleFrequency and so on, we need to get the alleleCounts from the genotypeCounts
-            // This code should not be called with datasets loaded after v1.3.3
-            int[] alleleCounts = {0, 0};
-            for (Map.Entry<String, Integer> entry : stats.getGenotypeCount().entrySet()) {
-                for (int i : new Genotype(entry.getKey()).getAllelesIdx()) {
-                    if (i == 0 || i == 1) {
-                        alleleCounts[i] += entry.getValue();
-                    }
-                }
-            }
-
-            stats.setRefAlleleCount(alleleCounts[0]);
-            stats.setAltAlleleCount(alleleCounts[1]);
-            if (alleleNumber == 0) {
-                stats.setRefAlleleFreq(-1F);
-                stats.setAltAlleleFreq(-1F);
-            } else {
-                stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
-                stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
 
@@ -201,15 +158,6 @@ public class DocumentToVariantStatsConverter {
 
 
         return stats;
-    }
-
-    private Genotype getGenotype(String genotypeStr) {
-        Genotype genotype = genotypeMap.get(genotypeStr);
-        if (genotype == null) {
-            genotype = new Genotype(MISSING_ALLELE.matcher(genotypeStr).replaceAll("."));
-            genotypeMap.put(genotypeStr, genotype);
-        }
-        return genotype;
     }
 
     public Document convertToStorageType(VariantStats vs) {

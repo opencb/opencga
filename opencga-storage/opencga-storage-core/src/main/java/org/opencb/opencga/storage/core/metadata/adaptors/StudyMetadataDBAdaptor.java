@@ -48,7 +48,9 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     }
 
     @Deprecated
-    DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    default DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+        throw new UnsupportedOperationException("");
+    }
 
     StudyMetadata getStudyMetadata(int id, Long timeStamp);
 

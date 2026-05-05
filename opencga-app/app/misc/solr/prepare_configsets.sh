@@ -36,10 +36,10 @@ for name in variant rga rga-aux; do
     cp -v "$OPENCGA_HOME/opencga-storage/opencga-storage-core/target/solr/${CONFIG_SET_NAME}/managed-schema" "$CONFIG_SET_DIR/conf"
   elif [ $name == "rga" ]; then
     CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
-    cp -v "$OPENCGA_HOME/opencga-clinical/target/classes/rga/managed-schema" "$CONFIG_SET_DIR/conf"
+    cp -v "$OPENCGA_HOME/opencga-analysis/target/classes/rga/managed-schema" "$CONFIG_SET_DIR/conf"
   elif [ $name == "rga-aux" ]; then
     CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
-    cp -v "$OPENCGA_HOME/opencga-clinical/target/classes/rga/aux-managed-schema" "$CONFIG_SET_DIR/conf/managed-schema"
+    cp -v "$OPENCGA_HOME/opencga-analysis/target/classes/rga/aux-managed-schema" "$CONFIG_SET_DIR/conf/managed-schema"
   else
     CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
     cp -v "$OPENCGA_HOME/opencga-catalog/target/classes/solr/$name-managed-schema" "$CONFIG_SET_DIR/conf/managed-schema"

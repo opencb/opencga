@@ -21,7 +21,6 @@ import com.google.common.collect.ListMultimap;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStoragePipeline;
@@ -38,18 +37,16 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageConverterTask implements Task<Variant, ListMultimap<Document, Binary>> {
+public class MongoDBVariantStageConverterTask implements Task<Variant, StageWriteOperations> {
 
-    private final ProgressLogger progressLogger;
     private final AtomicLong skippedVariants;
     private ComplexTypeConverter<Variant, Binary> variantConverter;
 
-    public MongoDBVariantStageConverterTask(ProgressLogger progressLogger) {
-        this(progressLogger, VARIANT_CONVERTER_DEFAULT);
+    public MongoDBVariantStageConverterTask() {
+        this(VARIANT_CONVERTER_DEFAULT);
     }
 
-    public MongoDBVariantStageConverterTask(ProgressLogger progressLogger, ComplexTypeConverter<Variant, Binary> variantConverter) {
-        this.progressLogger = progressLogger;
+    public MongoDBVariantStageConverterTask(ComplexTypeConverter<Variant, Binary> variantConverter) {
         skippedVariants = new AtomicLong(0);
         this.variantConverter = variantConverter;
     }
@@ -64,12 +61,12 @@ public class MongoDBVariantStageConverterTask implements Task<Variant, ListMulti
     }
 
     @Override
-    public List<ListMultimap<Document, Binary>> apply(List<Variant> variants) throws RuntimeException {
-        ListMultimap<Document, Binary> ids = convert(variants);
+    public List<StageWriteOperations> apply(List<Variant> variants) throws RuntimeException {
+        StageWriteOperations ids = convert(variants);
         return Collections.singletonList(ids);
     }
 
-    public ListMultimap<Document, Binary> convert(List<Variant> variants) {
+    public StageWriteOperations convert(List<Variant> variants) {
 //        final long start = System.nanoTime();
         int localSkippedVariants = 0;
 
@@ -85,12 +82,9 @@ public class MongoDBVariantStageConverterTask implements Task<Variant, ListMulti
 
             ids.put(id, binary);
         }
-        if (progressLogger != null) {
-            progressLogger.increment(variants.size(), () -> "up to variant " + variants.get(variants.size() - 1));
-        }
 
         skippedVariants.addAndGet(localSkippedVariants);
-        return ids;
+        return new StageWriteOperations(ids);
     }
 
     public long getSkippedVariants() {

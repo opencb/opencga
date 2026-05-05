@@ -57,7 +57,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTest;
+import org.opencb.opencga.storage.core.variant.gaps.FillGapsTest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -501,7 +501,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         
         */
 
-        boolean missingUpdated = studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
+        boolean missingUpdated = studyMetadata.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
         String defaultGenotype = missingUpdated ? "0/0" : "?/?";
 
         List<String> errors = new ArrayList<>();

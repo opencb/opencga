@@ -29,6 +29,7 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
 
     DIRECT_LOAD("storage.mongodb.directLoad", false),
     DIRECT_LOAD_PARALLEL_WRITE("storage.mongodb.directLoad.parallelWrite", false),
+    LOAD_WRITE_CONCERN("storage.mongodb.load.writeConcern", ""),
 
     MERGE("storage.mongodb.merge", false),
     MERGE_SKIP("storage.mongodb.merge.skip", false), // Internal use only
@@ -37,9 +38,13 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
     MERGE_PARALLEL_WRITE("storage.mongodb.merge.parallelWrite", false),
     MERGE_BATCH_SIZE("storage.mongodb.merge.batchSize", 10),          //Number of files to merge directly from first to second collection
 
+    AUTO_PRUNE_EMPTY_VARIANTS("storage.mongodb.autoPrune", false),
 
     EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
     DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0"));
+
+    /** File-metadata attribute key listing which FORMAT fields have queryable sfd data. */
+    public static final String SFD_FIELDS_KEY = "sfd.fields";
 
     private final String key;
     private final Object value;

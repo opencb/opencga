@@ -4,14 +4,13 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,15 +39,15 @@ public class VariantMetadataFactory {
     }
 
     public VariantMetadata makeVariantMetadata(Query query, QueryOptions queryOptions, boolean skipFiles) throws StorageEngineException {
-        if (skipFiles) {
-            if (query == null) {
-                query = new Query();
-            } else {
-                query = new Query(query);
-            }
-            query.put(VariantQueryParam.INCLUDE_FILE.key(), ParamConstants.NONE);
-        }
+        // Parse projection BEFORE clearing INCLUDE_FILE, so that FILE→sample derivation is preserved.
+        // Setting INCLUDE_FILE=NONE before parsing would break the chain that resolves samples from files.
         VariantQueryProjection queryFields = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, metadataManager);
+        if (skipFiles) {
+            // Clear file entries from the projection — the VCF writer only needs sample metadata, not file metadata.
+            for (VariantQueryProjection.StudyVariantQueryProjection study : queryFields.getStudies().values()) {
+                study.setFiles(Collections.emptyList());
+            }
+        }
 
         return makeVariantMetadata(queryFields, queryOptions);
     }
@@ -64,7 +63,7 @@ public class VariantMetadataFactory {
 
         for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
             StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
-            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFiles();
+            List<Integer> fileIds = queryFields.getStudy(studyMetadata.getId()).getFileIds();
             if (fileIds != null && !fileIds.isEmpty()) {
                 if (fileIds.size() < 50) {
                     Query query = new Query()

@@ -5,7 +5,7 @@ import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
-import org.opencb.opencga.storage.core.VariantStorageEngineDeleteTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngineDeleteTest;
 
 @Category(LongTests.class)
 public class HadoopVariantStorageEngineDeleteTest extends VariantStorageEngineDeleteTest implements HadoopVariantStorageTest {
@@ -24,5 +24,8 @@ public class HadoopVariantStorageEngineDeleteTest extends VariantStorageEngineDe
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
     }
 
-
+    @Override
+    protected void printVariants(String label) throws Exception {
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(label));
+    }
 }

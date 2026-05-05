@@ -65,6 +65,10 @@ public class VariantQueryException extends IllegalArgumentException {
         return malformedParam(queryParam.key(), value, message);
     }
 
+    public static VariantQueryException malformedParam(QueryParam queryParam, Query query, String message) {
+        return malformedParam(queryParam.key(), query.getString(queryParam.key()), message);
+    }
+
     public static VariantQueryException malformedParam(String param, String value, String message) {
         return new VariantQueryException("Malformed \"" + param + "\" query : \"" + value + "\". " +  message);
     }

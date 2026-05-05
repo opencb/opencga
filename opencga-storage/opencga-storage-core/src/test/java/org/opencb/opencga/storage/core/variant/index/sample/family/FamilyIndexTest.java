@@ -1,0 +1,385 @@
+package org.opencb.opencga.storage.core.variant.index.sample.family;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.IssueType;
+import org.opencb.biodata.tools.pedigree.MendelianError;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.index.sample.query.AbstractSampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+
+import java.net.URI;
+import java.util.*;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+
+/**
+ * Abstract test for the sample family index (Mendelian errors, de-novo variants, parent GT encoding).
+ *
+ * {@link #postLoad}.
+ */
+@Ignore
+@StorageEngineTest
+public abstract class FamilyIndexTest extends VariantStorageBaseTest {
+
+    protected static boolean loaded = false;
+    protected static final String study = "study";
+    protected static final String father = "NA12877";
+    protected static final String mother = "NA12878";
+    // NA12879 is the child of NA12877 (father) and NA12878 (mother) in the Platinum Genomes pedigree
+    protected static final String child = "NA12879";
+
+    protected static Set<String> mendelianErrorVariants;
+    protected static Set<String> deNovoVariants;
+    protected static Set<String> deNovoStrictVariants;
+
+    protected SampleIndexQueryParser sampleIndexQueryParser;
+
+    @Before
+    public void before() throws Exception {
+        configureEngine();
+        if (!loaded) {
+            URI outputUri = newOutputUri();
+
+            ObjectMap params = new ObjectMap()
+                    .append(VariantStorageOptions.ANNOTATE.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                    .append(VariantStorageOptions.STUDY.key(), study);
+            runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
+            runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);
+            runETL(variantStorageEngine, getPlatinumFile(12879), outputUri, params, true, true, true);
+            runETL(variantStorageEngine, getResourceUri("variant-test-me.vcf"), outputUri, params, true, true, true);
+
+
+            Trio family = new Trio(father, mother, child);
+            Trio family2 = new Trio("FATHER", "MOTHER", "PROBAND");
+            // Fill genotype gaps (needed for HBase; no-op for MongoDB)
+            fillGaps(family, outputUri);
+
+            variantStorageEngine.familyIndex(study, Collections.singletonList(family), new ObjectMap());
+            variantStorageEngine.familyIndex(study, Collections.singletonList(family2), new ObjectMap());
+
+            variantStorageEngine.annotate(outputUri, new ObjectMap());
+
+            postLoad(outputUri);
+
+            mendelianErrorVariants = new HashSet<>();
+            deNovoVariants = new HashSet<>();
+            deNovoStrictVariants = new HashSet<>();
+            for (Variant variant : variantStorageEngine.iterable(new VariantQuery().includeSampleAll().unknownGenotype("./."), new QueryOptions())) {
+                Genotype fatherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(father, "GT"));
+                Genotype motherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(mother, "GT"));
+                Genotype childGenotype = new Genotype(variant.getStudies().get(0).getSampleData(child, "GT"));
+                int meCode = MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome());
+                if (meCode != 0) {
+                    if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, childGenotype.toString(), SampleIndexQuery.MendelianErrorType.ALL)) {
+                        mendelianErrorVariants.add(variant.toString());
+                        if (AbstractSampleIndexEntryFilter.isDeNovo(meCode)) {
+                            deNovoVariants.add(variant.toString());
+                        }
+                        if (AbstractSampleIndexEntryFilter.isDeNovoStrict(meCode)) {
+                            deNovoStrictVariants.add(variant.toString());
+                        }
+                    }
+                }
+            }
+            System.out.println("deNovoVariants = " + deNovoVariants);
+            System.out.println("deNovoStrictVariants = " + deNovoStrictVariants);
+
+            loaded = true;
+        }
+        sampleIndexQueryParser = new SampleIndexQueryParser(metadataManager);
+    }
+
+    /**
+     * Hook to configure the storage engine before data loading (e.g. CellBase URL, assembly).
+     * Default is no-op; subclasses may override.
+     */
+    protected void configureEngine() throws Exception {
+    }
+
+    /**
+     * Hook to fill genotype gaps after loading all files.
+     * Required for HBase ({@code aggregateFamily}); no-op for MongoDB.
+     */
+    protected void fillGaps(Trio family, URI outputUri) throws Exception {
+    }
+
+    /**
+     * Hook called after annotation, for optional debug output (e.g. printing HBase tables).
+     */
+    protected void postLoad(URI outputUri) throws Exception {
+    }
+
+    // ─── Mendelian-error tests ──────────────────────────────────────────────
+
+    @Test
+    public void testMendelianErrors() throws Exception {
+        testMendelianErrorVariants(new VariantQuery());
+    }
+
+    @Test
+    public void testMendelianErrorsBT() throws Exception {
+        testMendelianErrorVariants(new VariantQuery().biotype("processed_transcript"));
+    }
+
+    @Test
+    public void testMendelianErrorsBTGene() throws Exception {
+        testMendelianErrorVariants(new VariantQuery().biotype("processed_transcript").gene("DDX11L1"));
+    }
+
+    @Test
+    public void testMendelianErrorsQual() throws Exception {
+        testMendelianErrorVariants(new VariantQuery()
+                .file("1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .qual(">30"));
+    }
+
+    // ─── De-novo tests ──────────────────────────────────────────────────────
+
+    @Test
+    public void testDeNovo() throws Exception {
+        testDeNovoVariants(new VariantQuery());
+    }
+
+    @Test
+    public void testDeNovoBT() throws Exception {
+        testDeNovoVariants(new VariantQuery().biotype("processed_transcript"));
+    }
+
+    @Test
+    public void testDeNovoQual() throws Exception {
+        testDeNovoVariants(new VariantQuery()
+                .file("1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .qual(">30"));
+    }
+
+    // ─── De-novo strict tests ───────────────────────────────────────────────
+
+    @Test
+    public void testDeNovoStrict() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery());
+    }
+
+    @Test
+    public void testDeNovoStrictBT() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery().biotype("processed_transcript"));
+    }
+
+    @Test
+    public void testDeNovoStrictQual() throws Exception {
+        testDeNovoStrictVariants(new VariantQuery()
+                .file("1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .qual(">30"));
+    }
+
+    // ─── Multi-allelic Mendelian-error test ─────────────────────────────────
+
+    @Test
+    public void testMultiAllelicMendelianError() {
+        Set<String> multiMendelianErrorVariants = new HashSet<>();
+        Set<String> multiDeNovoVariants = new HashSet<>();
+        for (Variant variant : variantStorageEngine.iterable(new VariantQuery().file("variant-test-me.vcf"), new QueryOptions())) {
+            Genotype probandGt = new Genotype(variant.getStudies().get(0).getSample("PROBAND").getData().get(0));
+            Genotype fatherGt = new Genotype(variant.getStudies().get(0).getSample("FATHER").getData().get(0));
+            Genotype motherGt = new Genotype(variant.getStudies().get(0).getSample("MOTHER").getData().get(0));
+            int meCode = MendelianError.compute(fatherGt, motherGt, probandGt, variant.getChromosome());
+            if (meCode != 0) {
+                if (AbstractSampleIndexEntryFilter.testDeNovo(meCode, probandGt.toString(), SampleIndexQuery.MendelianErrorType.ALL)) {
+                    multiMendelianErrorVariants.add(variant.toString());
+                    if (AbstractSampleIndexEntryFilter.isDeNovo(meCode)) {
+                        multiDeNovoVariants.add(variant.toString());
+                    }
+                }
+            }
+        }
+        assertFalse(multiMendelianErrorVariants.isEmpty());
+        assertFalse(multiDeNovoVariants.isEmpty());
+
+        for (Variant var : variantStorageEngine.get(
+                new VariantQuery().includeSampleId(true).sample("PROBAND:denovo"), new QueryOptions()).getResults()) {
+            List<StudyEntry> studies = var.getStudies();
+            assertTrue(GenotypeClass.MAIN_ALT.test(studies.get(0).getSampleData("PROBAND", "GT")));
+            assertEquals(1, studies.get(0).getIssues().size());
+            assertEquals(IssueType.DE_NOVO, studies.get(0).getIssues().get(0).getType());
+            assertTrue(multiDeNovoVariants.remove(var.toString()));
+        }
+        assertTrue(multiDeNovoVariants.isEmpty());
+
+        System.out.println("#multiMendelianErrorVariants=" + multiMendelianErrorVariants.size());
+        for (String multiMendelianErrorVariant : multiMendelianErrorVariants) {
+            System.out.println(" - " + multiMendelianErrorVariant);
+        }
+        for (Variant var : variantStorageEngine.get(
+                new VariantQuery().includeSampleId(true).sample("PROBAND:mendelianerror"), new QueryOptions()).getResults()) {
+            List<StudyEntry> studies = var.getStudies();
+            assertEquals(1, studies.get(0).getIssues().size());
+            if (studies.get(0).getIssues().get(0).getType().equals(IssueType.DE_NOVO)) {
+                String gt = studies.get(0).getSampleData("PROBAND", "GT");
+                assertTrue(GenotypeClass.MAIN_ALT.test(gt));
+            } else {
+                assertEquals(IssueType.MENDELIAN_ERROR, studies.get(0).getIssues().get(0).getType());
+            }
+            assertTrue(multiMendelianErrorVariants.remove(var.toString()));
+        }
+        assertEquals("Remaining ME variants not returned by mendelianerror query: ",
+                Collections.emptySet(), multiMendelianErrorVariants);
+    }
+
+    // ─── Parent-GT encoding tests ────────────────────────────────────────────
+
+    @Test
+    public void testParentGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL), new QueryOptions());
+
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + mother + ":0/0")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL);
+
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
+        assertNull(sampleIndexQuery.getFatherFilterMap().get(child));
+
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResults()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(mother, "GT", is("0/0"))))));
+    }
+
+    @Test
+    public void testParentsGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL), new QueryOptions());
+
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + father + ":0/0"
+                        + ";" + mother + ":0/0")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL);
+
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
+
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResults()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(father, "GT", is("0/0")),
+                withSampleData(mother, "GT", is("0/0"))))));
+    }
+
+    @Test
+    public void testParentsMissingGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(
+                new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
+
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + father + ":./."
+                        + ";" + mother + ":./.")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL);
+
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(query)));
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
+
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResults()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamples());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(father, "GT", is("./.")),
+                withSampleData(mother, "GT", is("./."))))));
+    }
+
+    @Test
+    public void testParentsMissingAllGtCode() {
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1,./."
+                        + ";" + father + ":./."
+                        + ";" + mother + ":./.")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL);
+
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(query)));
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private void testDeNovoVariants(Query baseQuery) {
+        Query query = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":denovo");
+        Query plainQuery = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child);
+        testQuery(deNovoVariants, query, plainQuery);
+    }
+
+    private void testDeNovoStrictVariants(Query baseQuery) {
+        Query query = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":denovostrict");
+        Query plainQuery = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child);
+        testQuery(deNovoStrictVariants, query, plainQuery);
+    }
+
+    private void testMendelianErrorVariants(Query baseQuery) {
+        Query query = new Query(baseQuery)
+                .append(VariantQueryParam.SAMPLE.key(), child + ":MendelianError");
+        Query plainQuery = new Query(baseQuery);
+        testQuery(mendelianErrorVariants, query, plainQuery);
+    }
+
+    private void testQuery(Set<String> expectedVariants, Query query, Query plainQuery) {
+        Assume.assumeFalse("No expected variants in raw data (requires gap filling or multi-sample VCF)",
+                expectedVariants.isEmpty());
+        Set<String> plainQueryVariants = new HashSet<>();
+        for (Variant variant : variantStorageEngine.iterable(plainQuery, new QueryOptions())) {
+            plainQueryVariants.add(variant.toString());
+        }
+        VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        System.out.println(VariantQueryUtils.toVcfDebug(result.getResults().iterator()));
+        for (Variant variant : result.getResults()) {
+            assertThat("expected plain filter", plainQueryVariants, hasItem(variant.toString()));
+            assertThat("expected with familyIndex filter", expectedVariants, hasItem(variant.toString()));
+        }
+        assertNotEquals(0, result.getNumResults());
+    }
+}

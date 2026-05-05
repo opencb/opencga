@@ -39,8 +39,8 @@ import java.util.*;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILEID_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.FILES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.FILEID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.FILES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter.ID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.NEW_STUDY_FIELD;
@@ -155,8 +155,6 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         }
         fillGapsVariants.stop();
 
-        updateStage(mongoDBOps);
-
         long updatesNewStudyExistingVariant = mongoDBOps.getNewStudy().getUpdates().size() - newVariants;
         long updatesWithDataExistingStudy = mongoDBOps.getExistingStudy().getUpdates().size() - mongoDBOps.getMissingVariants();
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(newVariants,
@@ -186,28 +184,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             cleanStage(mongoDBOps);
         }
 
-        long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
-                + mongoDBOps.getExistingStudy().getQueries().size()
-                + mongoDBOps.getMissingVariantsNoFillGaps();
-        logProgress(processedVariants);
+        logProgress(mongoDBOps);
         return writeResult;
-    }
-
-    private void updateStage(MongoDBOperations mongoDBOps) {
-
-        MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
-        if (!alternates.getQueries().isEmpty()) {
-            DataResult update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
-            if (update.getNumMatches() != alternates.getQueries().size()) {
-                onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
-            }
-        }
-
-        long cleanDocuments = 0;
-        if (cleanWhileLoading) {
-            cleanDocuments = cleanStage(mongoDBOps);
-        }
-
     }
 
     private long cleanStage(MongoDBOperations mongoDBOps) {
@@ -324,7 +302,9 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         List<DataResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: {}", queryResults.size());
 
-        for (DataResult<Document> r : queryResults) {
+        for (int i = 0; i < queryResults.size(); i++) {
+            DataResult<Document> r = queryResults.get(i);
+            logger.info("query: '{}'", queries.get(i).toBsonDocument().toJson());
             logger.info("result: '{}'", r);
             if (!r.getResults().isEmpty()) {
                 String id = r.first().get("_id", String.class);
@@ -340,10 +320,16 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         throw new RuntimeException(sb.toString());
     }
 
-
-    protected void logProgress(long processedVariants) {
+    protected void logProgress(MongoDBOperations mongoDBOps) {
         if (progressLogger != null) {
-            progressLogger.increment(processedVariants);
+            long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
+                    + mongoDBOps.getExistingStudy().getQueries().size()
+                    + mongoDBOps.getMissingVariantsNoFillGaps();
+            progressLogger.increment(processedVariants, () -> "up to variant " + (
+                    mongoDBOps.getNewStudy().getIds().isEmpty()
+                            ? mongoDBOps.getExistingStudy().getIds().get(0)
+                            : mongoDBOps.getNewStudy().getIds().get(0)
+                    ));
         }
     }
 

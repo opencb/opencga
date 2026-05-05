@@ -51,8 +51,11 @@ public class SolrNativeIterator implements Iterator<VariantSearchModel>, AutoClo
         this.collection = collection;
         this.solrQuery = solrQuery;
 
-        // Make sure that query is sorted
-        this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
+        // Make sure that query is sorted — cursorMark requires a sort that includes the uniqueKey as a tiebreaker.
+        // If the caller already set a sort (e.g. SolrQueryParser), keep it; otherwise fall back to id asc.
+        if (this.solrQuery.getSorts().isEmpty()) {
+            this.solrQuery.setSort(SolrQuery.SortClause.asc("id"));
+        }
 
         // This is the limit of the user, or the default limit if it is not passed
         this.remaining = (solrQuery.getRows() == null || solrQuery.getRows() < 0)

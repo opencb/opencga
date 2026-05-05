@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load.stage;
 
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -126,7 +127,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         } else {
             bson = and(studyFilter, or(chrFilters)); // Be in any of these chromosomes
         }
-        logger.debug("stage filter: " +  bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+        logger.debug("stage filter: " +  bson.toBsonDocument(Document.class, MongoClientSettings.getDefaultCodecRegistry()));
         return bson;
     }
 

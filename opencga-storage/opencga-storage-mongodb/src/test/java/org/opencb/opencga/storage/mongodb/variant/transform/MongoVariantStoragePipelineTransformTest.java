@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.transform;
 
 import org.junit.experimental.categories.Category;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.transform.VariantStoragePipelineTransformTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -26,6 +26,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoVariantStoragePipelineTransformTest extends VariantStoragePipelineTransformTest implements MongoDBVariantStorageTest {
 }

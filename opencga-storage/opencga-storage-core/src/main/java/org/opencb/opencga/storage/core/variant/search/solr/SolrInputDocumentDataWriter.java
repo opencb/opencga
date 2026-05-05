@@ -100,6 +100,9 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     }
 
     protected void add(List<SolrInputDocument> batch) throws Exception {
+        if (batch.isEmpty()) {
+            return;
+        }
         UpdateResponse response = retry(() -> solrClient.add(collection, batch));
         for (SolrInputDocument document : batch) {
             long docSize = getSize(document);

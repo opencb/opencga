@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexOnlyVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +38,7 @@ public class SampleIndexDuplicatedVariantsTest extends VariantStorageBaseTest im
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantHadoopDBAdaptor dbAdaptor;
-    private SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
 
     @Before
     public void before() throws Exception {

@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.mongodb.metadata;
 
+import org.bson.Document;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -43,6 +45,6 @@ public class MongoDBCohortMetadataDBAdaptor extends AbstractMongoDBAdaptor<Cohor
 
     @Override
     public void removeCohort(int studyId, int cohortId) {
-        throw new UnsupportedOperationException("remove cohort");
+        collection.remove(new Document("_id", buildPrivateId(studyId, cohortId)), new QueryOptions());
     }
 }

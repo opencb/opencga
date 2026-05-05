@@ -31,7 +31,9 @@ import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -117,6 +119,28 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             solrStatus.put("live_nodes", liveNodes);
             solrStatus.put("collections", collections);
             status.put("solr", solrStatus);
+
+            String defaultEngineId = factory.getDefaultStorageEngineId();
+            ObjectMap variantStorageEngineStatus = new ObjectMap();
+            variantStorageEngineStatus.put("id", defaultEngineId);
+            boolean storageAlive;
+            try {
+                factory.getVariantStorageEngine(defaultEngineId, "test_connection").testConnection();
+                storageAlive = true;
+            } catch (Exception e) {
+                logger.warn("Variant storage engine not alive", e);
+                storageAlive = false;
+            }
+            variantStorageEngineStatus.put("alive", storageAlive);
+            if ("mongodb".equals(defaultEngineId)) {
+                DatabaseCredentials credentials = storageConfiguration.getVariantEngine(defaultEngineId).getDatabase();
+                ObjectMap credentialsMap = new ObjectMap();
+                credentialsMap.put("mongodbUri", MongoDBUtils.getMongoDBUri(credentials));
+                credentialsMap.put("mongodbUriRedacted", MongoDBUtils.getMongoDBUriRedacted(credentials));
+                credentialsMap.put("mongodbCliOpts", MongoDBUtils.getMongoDBCliOpts(credentials));
+                variantStorageEngineStatus.put("credentials", credentialsMap);
+            }
+            status.put("variantStorageEngines", Collections.singletonList(variantStorageEngineStatus));
 
             List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
             logger.info("OrganizationIds: {}", organizationIds);

@@ -40,6 +40,8 @@ import java.util.concurrent.Executors;
 public class LocalExecutor implements BatchExecutor {
 
     public static final String MAX_CONCURRENT_JOBS = "local.maxConcurrentJobs";
+    public static final String LOCAL_JAVA_HEAP = "local.javaHeap";
+    public static final String LOCAL_JAVA_OFFHEAP = "local.javaOffHeap";
 
     private static int threadInitNumber;
     private static Logger logger;
@@ -47,11 +49,25 @@ public class LocalExecutor implements BatchExecutor {
     private final Map<String, String> jobStatus;
     private final Map<String, Command> runningJobs;
     private final int maxConcurrentJobs;
+    private final Map<String, String> jobEnvironment;
 
     public LocalExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
         maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
         threadPool = Executors.newFixedThreadPool(maxConcurrentJobs);
+
+        // Build environment variables for child job processes
+        jobEnvironment = new LinkedHashMap<>();
+        // Clean JAVA_OPTS
+        jobEnvironment.put("JAVA_OPTS", "");
+        String javaHeap = execution.getOptions().getString(LOCAL_JAVA_HEAP);
+        if (javaHeap != null && !javaHeap.isEmpty()) {
+            jobEnvironment.put("JAVA_HEAP", javaHeap);
+        }
+        String javaOffHeap = execution.getOptions().getString(LOCAL_JAVA_OFFHEAP);
+        if (javaOffHeap != null && !javaOffHeap.isEmpty()) {
+            jobEnvironment.put("JAVA_OFF_HEAP", javaOffHeap);
+        }
         jobStatus = Collections.synchronizedMap(new LinkedHashMap<String, String>(1000) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
@@ -80,6 +96,10 @@ public class LocalExecutor implements BatchExecutor {
                 Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
                 logger.info("Ready to run - {}", commandLine);
                 Command com = new Command(commandLine);
+                if (!jobEnvironment.isEmpty()) {
+                    logger.info("Setting job environment: {}", jobEnvironment);
+                    com.setEnvironmentMap(jobEnvironment);
+                }
                 runningJobs.put(jobId, com);
                 jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
 

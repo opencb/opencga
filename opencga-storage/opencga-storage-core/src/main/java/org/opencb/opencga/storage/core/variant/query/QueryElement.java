@@ -29,6 +29,8 @@ public interface QueryElement {
             return ((StudyResourceMetadata<?>) v).getName();
         } else if (v instanceof Collection) {
             return ((Collection<?>) v).stream().map(QueryElement::objectToString).collect(Collectors.joining(","));
+        } else if (v instanceof QueryElement) {
+            return ((QueryElement) v).toQuery();
         } else {
             return v.toString();
         }
@@ -37,6 +39,8 @@ public interface QueryElement {
     static <T> String objectToDescriptionString(T v) {
         if (v instanceof StudyResourceMetadata<?>) {
             return ((StudyResourceMetadata<?>) v).getName();
+        } else if (v instanceof QueryElement) {
+            return ((QueryElement) v).describe();
         } else {
             return v.toString();
         }

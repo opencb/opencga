@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
+import org.opencb.biodata.models.variant.Variant;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AbstractDocumentConverter {
+    private final VariantStringIdConverter idConverter = new VariantStringIdConverter();
 
     //Utils
     protected final Document putNotNull(Document document, String key, Object obj) {
@@ -153,5 +155,13 @@ public class AbstractDocumentConverter {
     @SuppressWarnings("unchecked")
     protected <T> List<T> getList(Document document, String key) {
         return (List<T>) document.get(key, List.class);
+    }
+
+    public String buildStorageId(Variant v) {
+        return idConverter.buildId(v);
+    }
+
+    public String buildStorageId(String chromosome, int start, String reference, String alternate) {
+        return idConverter.buildId(chromosome, start, reference, alternate);
     }
 }

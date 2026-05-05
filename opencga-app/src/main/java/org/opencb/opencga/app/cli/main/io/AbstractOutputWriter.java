@@ -78,6 +78,23 @@ public abstract class AbstractOutputWriter {
     }
 
     /**
+     * Check if the response contains any error event, without printing anything.
+     *
+     * @param dataResponse dataResponse object
+     * @return true if the response contains error events.
+     */
+    public <T> boolean hasErrors(RestResponse<T> dataResponse) {
+        if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
+            for (Event event : dataResponse.getEvents()) {
+                if (event.getType() == Event.Type.ERROR) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Print login message.
      *
      * @param dataResponse dataResponse object

@@ -30,6 +30,9 @@ public final class MRExecutorFactory {
             case "ssh":
                 mrExecutor = new SshMRExecutor();
                 break;
+            case "embedded":
+                mrExecutor = new EmbeddedMRExecutor();
+                break;
             default:
                 try {
                     logger.info("Creating new instance of MRExecutor '{}'", executor);
