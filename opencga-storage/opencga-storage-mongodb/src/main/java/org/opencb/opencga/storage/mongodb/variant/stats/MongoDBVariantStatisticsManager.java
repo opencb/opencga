@@ -72,8 +72,12 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             cohorts = new LinkedHashMap<>();
         }
 
-        preCalculateStats(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite, options);
+        // Check overwrite BEFORE preCalculateStats, because preCalculateStats sets the cohort
+        // status to RUNNING, which clears the INVALID flag that checkOverwrite relies on.
         overwrite = checkOverwrite(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite);
+        // Propagate overwrite to options so loadStats/updateStats will use it
+        options.put(VariantStorageOptions.STATS_OVERWRITE.key(), overwrite);
+        preCalculateStats(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite, options);
 
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyMetadata.getStudyId()));
 

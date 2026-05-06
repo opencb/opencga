@@ -17,14 +17,14 @@
 package org.opencb.opencga.storage.mongodb.variant.stats;
 
 import org.junit.experimental.categories.Category;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 /**
  * Created by hpccoll1 on 01/06/15.
  */
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class MongoVariantStatisticsManagerTest extends VariantStatisticsManagerTest implements MongoDBVariantStorageTest {
 
 }

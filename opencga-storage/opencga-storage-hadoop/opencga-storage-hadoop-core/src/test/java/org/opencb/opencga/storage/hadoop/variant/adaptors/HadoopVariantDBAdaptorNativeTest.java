@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -90,4 +91,14 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
         limitSkip(new Query(VariantQueryParam.REGION.key(), "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"), new QueryOptions(QueryOptions.SORT, true));
     }
 
+    @Test
+    public void testNativeQuery() {
+        int count = 0;
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), new QueryOptions(VariantHadoopDBAdaptor.NATIVE, true)); iterator.hasNext();) {
+            Variant variant = iterator.next();
+//            System.out.println(variant.toJson());
+            count++;
+        }
+        assertEquals(dbAdaptor.count(new Query()).first().intValue(), count);
+    }
 }

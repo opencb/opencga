@@ -126,10 +126,20 @@ public class VariantMatchers {
                         + '(' + missingValues.size() + " missing, " + extraValues.size() + " extra)");
 
                 if (!missingValues.isEmpty()) {
-                    mismatchDescription.appendValueList(" , missing values [", ", ", "] ", missingValues);
+                    if (missingValues.size() > 50) {
+                        mismatchDescription.appendValueList(" , missing values [", ", ", "... ", missingValues.subList(0, 20));
+                        mismatchDescription.appendValueList("", ", ", "] ", missingValues.subList(missingValues.size() - 20, missingValues.size()));
+                    } else {
+                        mismatchDescription.appendValueList(" , missing values [", ", ", "] ", missingValues);
+                    }
                 }
                 if (!extraValues.isEmpty()) {
-                    mismatchDescription.appendValueList(" , extra values [", ", ", "] ", extraValues);
+                    if (extraValues.size() > 50) {
+                        mismatchDescription.appendValueList(" , extra values [", ", ", "... ", extraValues.subList(0, 20));
+                        mismatchDescription.appendValueList("", ", ", "] ", extraValues.subList(extraValues.size() - 20, extraValues.size()));
+                    } else {
+                        mismatchDescription.appendValueList(" , extra values [", ", ", "] ", extraValues);
+                    }
                 }
                 return false;
             }

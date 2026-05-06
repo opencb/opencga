@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
@@ -235,7 +236,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     @Override
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
-        studyMetadata.getAttributes().put(MISSING_GENOTYPES_UPDATED, false);
+        studyMetadata.getAttributes().put(VariantStorageEngine.MISSING_GENOTYPES_UPDATED, false);
     }
 
 

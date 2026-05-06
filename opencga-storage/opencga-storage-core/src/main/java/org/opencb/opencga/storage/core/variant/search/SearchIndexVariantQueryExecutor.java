@@ -125,11 +125,11 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             Integer approxCountSamplingSize = null;
 
             Query searchEngineQuery = getSearchEngineQuery(query);
-            Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+            Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
             // Do not count for iterator
             if (!iterator) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // If the query is fully covered, the numTotalResults from solr is correct.
                     searchCount = new AtomicLong();
                     numTotalResults = searchCount;
@@ -145,10 +145,11 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 }
             }
 
+            String order = options.getString(QueryOptions.ORDER, null);
             if (pagination) {
-                if (isQueryCovered(query)) {
+                if (isQueryCovered(query, indexMetadata)) {
                     // We can use limit+skip directly in solr
-                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, limit, skip, searchCount);
+                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, limit, skip, searchCount, order);
 
                     // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                     options = new QueryOptions(options);
@@ -157,10 +158,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 } else {
                     logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
                     // Can't limit+skip only from solr. Need to limit+skip also in client side
-                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery);
+                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, Integer.MAX_VALUE, 0, null, order);
                 }
             } else {
-                variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, Integer.MAX_VALUE, 0, searchCount);
+                variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, Integer.MAX_VALUE, 0, searchCount, order);
             }
 
             logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
@@ -213,7 +214,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, sampling);
 
                 Query searchEngineQuery = getSearchEngineQuery(query);
-                Query engineQuery = getEngineQuery(query, options, getMetadataManager());
+                Query engineQuery = getEngineQuery(query, options, getMetadataManager(), indexMetadata);
 
                 DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(indexMetadata, searchEngineQuery, queryOptions);
@@ -263,7 +264,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         if (VariantStorageEngine.UseSearchIndex.from(options) == VariantStorageEngine.UseSearchIndex.NO) {
             return false;
         } // else, YES or AUTO
-        if (isQueryCovered(query) && isIncludeCovered(options)) {
+        if (isQueryCovered(query, indexMetadata) && isIncludeCovered(options)) {
             if (searchActiveAndAlive(indexMetadata)) {
                 return true;
             }
@@ -326,17 +327,25 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     }
 
     protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query) {
-        return variantIdIteratorFromSearch(indexMetadata, query, Integer.MAX_VALUE, 0, null);
+        return variantIdIteratorFromSearch(indexMetadata, query, Integer.MAX_VALUE, 0, null, null);
     }
 
     protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query, int limit, int skip,
                                                             AtomicLong numTotalResults) {
+        return variantIdIteratorFromSearch(indexMetadata, query, limit, skip, numTotalResults, null);
+    }
+
+    protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query, int limit, int skip,
+                                                            AtomicLong numTotalResults, String order) {
         VariantSearchIdGenerator idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
         Iterator<Variant> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)
                 .append(QueryOptions.SKIP, skip)
                 .append(QueryOptions.INCLUDE, VariantField.ID.fieldName());
+        if (order != null) {
+            queryOptions.put(QueryOptions.ORDER, order);
+        }
         try {
             // Do not iterate for small queries
             if (limit < 10000) {

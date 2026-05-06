@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.manager.operations.StatsVariantStorageTest.checkCalculatedStats;
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -108,17 +106,17 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     private List<File> files;
     private final static String[] FILE_NAMES = {
-            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
+            "1000g_batches/1-50.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/51-100.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/101-150.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/151-200.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/201-250.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
 
     protected FileMetadataReader fileMetadataReader;
     protected FileUtils catalogFileUtils;
     protected VariantStorageManager variantManager;
 
-    protected final String dbName = DB_NAME;
+    protected String dbName;
     protected static final String STORAGE_ENGINE_DUMMY = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
     protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
@@ -156,6 +154,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         projectId = "p1";
         catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
+        dbName = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), ORGANIZATION, projectId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
                         "Study 1", null, null, null,
                         Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()),
@@ -181,7 +180,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
     @After
     public void tearDown() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(opencga.getOpencgaHome());
+        DummyVariantStorageEngine.writeAndClear(opencga.getOpencgaHome());
     }
 
     protected String getStorageEngine() {
@@ -474,7 +473,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     }
 
     protected DummyVariantDBAdaptor mockVariantDBAdaptor(DummyVariantStorageEngine vsm) throws StorageEngineException {
-        DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(""));
+        DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(vsm.getDBName()));
         doReturn(dbAdaptor).when(vsm).getDBAdaptor();
         return dbAdaptor;
     }

@@ -10,18 +10,16 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,20 +41,16 @@ public class RgaEngineTest {
     public HadoopVariantStorageTest.HadoopSolrSupport solrSupport = new HadoopVariantStorageTest.HadoopSolrSupport();
 
     @Rule(order = 1)
+    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
+
+    @Rule(order = 2)
     public RgaSolrExtenalResource solr = new RgaSolrExtenalResource();
 
     @Before
     public void before() throws IOException, CatalogException, RgaException, SolrServerException {
-        try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
-            storageConfiguration = StorageConfiguration.load(is);
-        }
-        Configuration configuration;
-        try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("configuration-test.yml")) {
-            configuration = Configuration.load(is);
-        }
-        this.catalogManager = new CatalogManager(configuration);
-
-        this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
+        storageConfiguration = opencga.getStorageConfiguration();
+        catalogManager = opencga.getCatalogManager();
+        variantStorageManager = opencga.getVariantStorageManager();
 
         rgaEngine = solr.configure(storageConfiguration);
 

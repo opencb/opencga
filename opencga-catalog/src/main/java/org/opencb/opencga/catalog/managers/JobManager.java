@@ -1913,6 +1913,10 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult<JobTop> top(String organizationId, String studyStr, Query baseQuery, int limit, String token)
             throws CatalogException {
         if (StringUtils.isEmpty(studyStr)) {
+            if (StringUtils.isEmpty(organizationId)) {
+                JwtPayload jwtPayload = userManager.validateToken(token);
+                organizationId = jwtPayload.getOrganization();
+            }
             return top(organizationId, baseQuery, limit, token);
         } else {
             return top(Collections.singletonList(studyStr), baseQuery, limit, token);

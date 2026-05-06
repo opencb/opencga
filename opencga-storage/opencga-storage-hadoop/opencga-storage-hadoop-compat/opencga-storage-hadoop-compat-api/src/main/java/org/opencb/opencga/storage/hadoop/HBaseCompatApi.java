@@ -15,6 +15,9 @@ public abstract class HBaseCompatApi {
     private static HBaseCompatApi instance;
     public static HBaseCompatApi getInstance() {
         if (instance == null) {
+            if (!isHBaseCompatAvailable()) {
+                throw new IllegalStateException("HBase compatibility layer is not available.");
+            }
             try {
                 instance = Class.forName("org.opencb.opencga.storage.hadoop.HBaseCompat")
                         .asSubclass(HBaseCompatApi.class)
@@ -25,6 +28,15 @@ public abstract class HBaseCompatApi {
             }
         }
         return instance;
+    }
+
+    public static boolean isHBaseCompatAvailable() {
+        try {
+            Class.forName("org.opencb.opencga.storage.hadoop.HBaseCompat");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     public abstract PhoenixCompatApi getPhoenixCompat();

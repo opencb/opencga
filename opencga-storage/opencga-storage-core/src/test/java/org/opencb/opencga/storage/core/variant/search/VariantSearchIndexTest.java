@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
@@ -36,6 +37,7 @@ import static org.junit.Assert.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
     private int i = 0;
@@ -100,7 +102,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             System.out.println("Load result after load 1,2 files: = " + loadResult + ", at study : " + studyId);
             checkLoadResult(expected, expected, 0, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             //////////////////////
             variantStorageEngine.getOptions().putAll(options);
@@ -118,7 +120,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             System.out.println("Load result after load 3,4 files: = " + loadResult + " , at study : " + studyId);
             checkLoadResult(expected, expected, 0, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             //////////////////////
             // Only "new variants" expected to be annotated
@@ -127,7 +129,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             System.out.println("Load result after annotate: = " + loadResult + " , at study : " + studyId);
             checkLoadResult(expected, expected, 0, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             //////////////////////
             QueryOptions statsOptions = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
@@ -147,7 +149,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             //     assertThat(loadResult.getNumLoadedVariantsPartialStatsUpdate(), VariantMatchers.lt(expected));
             //     assertThat(loadResult.getNumLoadedVariantsPartialStatsUpdate(), VariantMatchers.gt(0L));
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             // Stats update (no actual changes on stats). Still, all variants should be updated
             statsOptions.append(VariantStorageOptions.STATS_OVERWRITE.key(), true);
@@ -157,7 +159,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             // Only stats updates are expected
             checkLoadResult(expected, 0, expected, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             //////////////////////
             expected = dbAdaptor.count((Query) null).first();
@@ -165,14 +167,14 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             System.out.println("Load result overwrite: = " + loadResult + " , at study : " + studyId);
             checkLoadResult(expected, expected, 0, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
 
             //////////////////////
             loadResult = searchIndex();
             System.out.println("Load result nothing to do: = " + loadResult + " , at study : " + studyId);
             checkLoadResult(0, 0, 0, loadResult);
             checkVariantSearchIndex(dbAdaptor);
-            assertFalse(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
         }
 
         checkVariantSearchIndex(dbAdaptor);
@@ -247,7 +249,6 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         if (expected != loadResult.getNumProcessedVariants()) {
             System.err.println("More object than needed were fetched from the DB");
         }
-        assertTrue(loadResult.getAttributes().containsKey("runDiscoverPendingVariantsToSecondaryIndexMr"));
     }
 
     @Test

@@ -11,8 +11,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -87,6 +89,7 @@ public class VariantQueryParser {
         }
     }
 
+
     protected static List<String> parseClinicalCombinationsList(Query query) {
         return parseClinicalCombinationsList(query, false);
     }
@@ -148,6 +151,46 @@ public class VariantQueryParser {
         return clinicalCombinations;
     }
 
+    public static ParsedVariantQuery.ConsequenceTypeCombinations parseGeneBtSoFlagCombination(List<String> genes, Query query) {
+        List<ParsedVariantQuery.ConsequenceTypeCombination> combinations = new ArrayList<>();
+
+        List<String> bt = VariantQueryUtils.splitValues(query.getString(ANNOT_BIOTYPE.key())).getValues();
+        List<String> ct = VariantQueryUtils.splitValues(query.getString(ANNOT_CONSEQUENCE_TYPE.key())).getValues();
+        List<String> flags = VariantQueryUtils.splitValues(query.getString(ANNOT_TRANSCRIPT_FLAG.key())).getValues();
+        int nullCount = 0;
+        if (genes == null || genes.isEmpty()) {
+            genes = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (bt == null || bt.isEmpty()) {
+            bt = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (ct == null || ct.isEmpty()) {
+            ct = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (flags == null || flags.isEmpty()) {
+            flags = Collections.singletonList(null);
+            nullCount++;
+        }
+        if (nullCount >= 3) {
+            // No combination possible if 3 or more parameters are not defined
+            return null;
+        }
+
+        for (String gene : genes) {
+            for (String biotype : bt) {
+                for (String consequenceType : ct) {
+                    for (String flag : flags) {
+                        combinations.add(new ParsedVariantQuery.ConsequenceTypeCombination(gene, biotype, consequenceType, flag));
+                    }
+                }
+            }
+        }
+        return new ParsedVariantQuery.ConsequenceTypeCombinations(combinations);
+    }
+
     public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {
         return parseQuery(query, options, false);
     }
@@ -167,6 +210,8 @@ public class VariantQueryParser {
         variantQuery.setLimit(limit == -1 ? null : limit);
         variantQuery.setSkip(options.getInt(QueryOptions.SKIP, 0));
         variantQuery.setCount(options.getBoolean(QueryOptions.COUNT, false));
+        variantQuery.setSort(options.getBoolean(QueryOptions.SORT, false),
+                QueryOptions.ASCENDING.equalsIgnoreCase(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING)));
         variantQuery.setApproximateCountSamplingSize(options.getInt(
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
@@ -185,18 +230,46 @@ public class VariantQueryParser {
         variantQuery.setGeneRegions(geneRegions == null ? Collections.emptyList() : geneRegions);
         List<Region> regions = Region.parseRegions(query.region(), true);
         variantQuery.setRegions(regions == null ? Collections.emptyList() : regions);
-        variantQuery.setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
-        variantQuery.setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
+
+        if (isValidParam(query, TYPE)) {
+            variantQuery.setType(resolveVariantTypes(query.getAsList(TYPE.key())));
+        }
+
+        variantQuery.getAnnotationQuery()
+                .setClinicalCombination(VariantQueryParser.parseClinicalCombination(query, false));
+        variantQuery.getAnnotationQuery()
+                .setClinicalCombinationList(VariantQueryParser.parseClinicalCombinationsList(query, false));
+        variantQuery.getAnnotationQuery()
+                .setGeneCombinations(VariantQueryParser.parseGeneBtSoFlagCombination(variantQuery.getXrefs().getGenes(), query));
 
         ParsedVariantQuery.VariantStudyQuery studyQuery = variantQuery.getStudyQuery();
 
+        studyQuery.setIncludeSampleId(query.includeSampleId());
         StudyMetadata defaultStudy = getDefaultStudy(query);
         studyQuery.setDefaultStudy(defaultStudy);
         if (isValidParam(query, STUDY)) {
-            studyQuery.setStudies(VariantQueryUtils.splitValue(query, STUDY));
+            studyQuery.setStudies(parseStudiesQuery(query));
+        }
+        if (isValidParam(query, FILE)) {
+            ParsedQuery<NegatableValue<ResourceId>> files = splitValue(query, FILE)
+                    .map(fileName -> {
+                        boolean negated = false;
+                        if (isNegated(fileName)) {
+                            fileName = removeNegation(fileName);
+                            negated = true;
+                        }
+                        Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(fileName, false, defaultStudy);
+                        if (fileIdPair == null) {
+                            throw VariantQueryException.fileNotFound(fileName, defaultStudy.getName());
+                        }
+                        return new NegatableValue<>(new ResourceId(ResourceId.Type.FILE, fileIdPair.getRight(), fileName), negated
+                        );
+                    });
+
+            studyQuery.setFiles(files);
         }
         if (isValidParam(query, GENOTYPE)) {
-            HashMap<Object, List<String>> map = new HashMap<>();
+            HashMap<Object, List<String>> map = new LinkedHashMap<>();
             QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.genotype(), map);
 
             if (defaultStudy == null) {
@@ -207,10 +280,7 @@ public class VariantQueryParser {
 
             List<KeyOpValue<SampleMetadata, List<String>>> values = new ArrayList<>();
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey());
-                if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(entry.getKey(), defaultStudy.getName());
-                }
+                int sampleId = metadataManager.getSampleIdOrFail(defaultStudy.getId(), entry.getKey());
                 values.add(new KeyOpValue<>(metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId), "=", entry.getValue()));
             }
 
@@ -230,6 +300,23 @@ public class VariantQueryParser {
             logger.warn("Slow parsed query in {}", TimeUtils.durationToString(stopWatch));
         }
         return variantQuery;
+    }
+
+    public ParsedQuery<NegatableValue<ResourceId>> parseStudiesQuery(VariantQuery query) {
+        if (isValidParam(query, STUDY)) {
+            return splitValue(query, STUDY)
+                    .map(studyName -> {
+                        boolean negated = false;
+                        if (isNegated(studyName)) {
+                            studyName = removeNegation(studyName);
+                            negated = true;
+                        }
+                        int studyId = metadataManager.getStudyId(studyName);
+                        studyName = metadataManager.getStudyName(studyId);
+                        return new NegatableValue<>(new ResourceId(ResourceId.Type.STUDY, studyId, studyName), negated);
+                    });
+        }
+        return null;
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
@@ -260,39 +347,10 @@ public class VariantQueryParser {
         preProcessXrefs(query, cellBaseUtils);
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
-            Set<VariantType> types = new HashSet<>();
+            // Resolve types first (maps deprecated SNP→SNV, MNP→MNV, handles negation and subtypes)
+            // then validate that no unresolvable deprecated types remain.
             List<String> typesFromQuery = query.getAsStringList(TYPE.key());
-            if (typesFromQuery.contains(VariantType.SNP.name()) && !typesFromQuery.contains(VariantType.SNV.name())) {
-                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by SNP");
-            }
-            if (typesFromQuery.contains(VariantType.MNP.name()) && !typesFromQuery.contains(VariantType.MNV.name())) {
-                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by MNP");
-            }
-            if (query.getString(TYPE.key()).contains(NOT)) {
-                // Invert negations
-                types.addAll(Arrays.asList(VariantType.values()));
-                for (String type : typesFromQuery) {
-                    if (isNegated(type)) {
-                        type = removeNegation(type);
-                    } else {
-                        throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
-                    }
-                    // Expand types to subtypes
-                    VariantType variantType = parseVariantType(type);
-                    Set<VariantType> subTypes = Variant.subTypes(variantType);
-                    types.remove(variantType);
-                    types.removeAll(subTypes);
-                }
-            } else {
-                // Expand types to subtypes
-                for (String type : typesFromQuery) {
-                    VariantType variantType = parseVariantType(type);
-                    Set<VariantType> subTypes = Variant.subTypes(variantType);
-                    types.add(variantType);
-                    types.addAll(subTypes);
-                }
-            }
-            query.put(TYPE.key(), new ArrayList<>(types));
+            query.put(TYPE.key(), resolveVariantTypes(typesFromQuery));
         }
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)
@@ -301,9 +359,7 @@ public class VariantQueryParser {
             query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
         }
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
-            String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
-            QueryOperation operator = VariantQueryUtils.checkOperator(v);
-            List<String> values = VariantQueryUtils.splitValue(v, operator);
+            ParsedQuery<String> values = splitValue(query, ANNOT_CLINICAL_SIGNIFICANCE);
             List<String> clinicalSignificanceList = new ArrayList<>(values.size());
             for (String clinicalSignificance : values) {
                 ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
@@ -325,7 +381,7 @@ public class VariantQueryParser {
                 clinicalSignificanceList.add(clinicalSignificance);
             }
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(),
-                    String.join(operator == null ? "" : operator.separator(), clinicalSignificanceList));
+                    String.join(values.getSeparator(), clinicalSignificanceList));
         }
 
         if (isValidParam(query, ANNOT_SIFT)) {
@@ -373,6 +429,41 @@ public class VariantQueryParser {
                     ? parsedCts
                     : String.join(values.operation.separator(), parsedCts));
         }
+    }
+
+    /**
+     * Resolve variant types from a list of type values, handling negation and subtype expansion.
+     * Accepts both raw strings (possibly negated like "!SNV") and pre-processed VariantType objects.
+     */
+    private List<VariantType> resolveVariantTypes(List<?> typeValues) {
+        boolean hasNegation = typeValues.stream().anyMatch(o -> o instanceof String && isNegated(o.toString()));
+        Set<VariantType> types;
+        if (hasNegation) {
+            types = new LinkedHashSet<>(Arrays.asList(VariantType.values()));
+            for (Object o : typeValues) {
+                String s = o.toString();
+                if (isNegated(s)) {
+                    VariantType vt = parseVariantType(removeNegation(s));
+                    types.remove(vt);
+                    types.removeAll(Variant.subTypes(vt));
+                } else {
+                    throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
+                }
+            }
+        } else {
+            types = new LinkedHashSet<>();
+            for (Object o : typeValues) {
+                VariantType vt;
+                if (o instanceof VariantType) {
+                    vt = (VariantType) o;
+                } else {
+                    vt = parseVariantType(o.toString());
+                }
+                types.add(vt);
+                types.addAll(Variant.subTypes(vt));
+            }
+        }
+        return new ArrayList<>(types);
     }
 
     private VariantType parseVariantType(String type) {
@@ -466,6 +557,27 @@ public class VariantQueryParser {
                 if (!metadataManager.isFileIndexed(fileIdPair.getKey(), fileIdPair.getValue())) {
                     throw VariantQueryException.fileNotIndexed(file, metadataManager.getStudyName(fileIdPair.getKey()));
                 }
+            }
+        }
+
+        // FILTER and QUAL are per-file attributes. They require an explicit file context that
+        // narrows the query to specific files: either FILE/FILE_DATA, an explicit list in
+        // INCLUDE_FILE (not ALL/NONE), SAMPLE/GENOTYPE, or an explicit list in INCLUDE_SAMPLE.
+        // ALL/NONE on INCLUDE_FILE/INCLUDE_SAMPLE do not narrow the file scope and are rejected.
+        if (isValidParam(query, FILTER) || isValidParam(query, QUAL)) {
+            boolean hasFileContext = isValidParam(query, FILE)
+                    || isValidParam(query, FILE_DATA)
+                    || isValidParam(query, SAMPLE)
+                    || isValidParam(query, GENOTYPE)
+                    || (isValidParam(query, INCLUDE_FILE) && !isNoneOrAll(query.getString(INCLUDE_FILE.key())))
+                    || (isValidParam(query, INCLUDE_SAMPLE) && !isNoneOrAll(query.getString(INCLUDE_SAMPLE.key())));
+            if (!hasFileContext) {
+                VariantQueryParam param = isValidParam(query, FILTER) ? FILTER : QUAL;
+                throw VariantQueryException.malformedParam(param, query.getString(param.key()),
+                        "Missing file context. Provide one of: "
+                                + FILE.key() + ", " + FILE_DATA.key() + ", "
+                                + SAMPLE.key() + ", " + GENOTYPE.key()
+                                + ", or an explicit list in " + INCLUDE_FILE.key() + " / " + INCLUDE_SAMPLE.key());
             }
         }
 
@@ -585,6 +697,13 @@ public class VariantQueryParser {
         if (isValidParam(query, GENOTYPE)) {
             genotypeParam = GENOTYPE;
 
+            if (defaultStudy == null) {
+                Map<Object, List<String>> gtMap = new LinkedHashMap<>();
+                VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+                throw VariantQueryException.missingStudyForSamples(
+                        gtMap.keySet().stream().map(Object::toString).collect(Collectors.toSet()),
+                        metadataManager.getStudyNames());
+            }
             List<String> loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {
                 loadedGenotypes = Arrays.asList(
@@ -993,12 +1112,8 @@ public class VariantQueryParser {
     public StudyMetadata getDefaultStudy(Query query) {
         final StudyMetadata defaultStudy;
         if (isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-
-            // Check that the study exists
-            QueryOperation studiesOperation = checkOperator(value);
-            List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
+            ParsedQuery<String> studies = splitValue(query, STUDY);
+            List<Integer> studyIds = metadataManager.getStudyIds(studies.getValues()); // Non negated studyIds
             if (studyIds.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
@@ -1088,6 +1203,44 @@ public class VariantQueryParser {
             }
         }
         return removedRegions;
+    }
+
+    /**
+     * Get fixed format for the VARCHAR ARRAY sample columns.
+     * @param studyMetadata study metadata
+     * @return  List of fixed formats
+     */
+    public static List<String> getFixedFormat(StudyMetadata studyMetadata) {
+        List<String> format;
+        List<String> extraFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
+        if (extraFields.isEmpty()) {
+            extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
+        }
+
+        boolean excludeGenotypes = studyMetadata.getAttributes()
+                .getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue());
+
+        if (excludeGenotypes) {
+            format = new ArrayList<>(extraFields);
+        } else {
+            format = new ArrayList<>(1 + extraFields.size());
+            format.add(VariantMerger.GT_KEY);
+            format.addAll(extraFields);
+        }
+        return format;
+    }
+
+    public static List<String> getFixedAttributes(StudyMetadata studyMetadata) {
+        return getFixedAttributes(studyMetadata.getVariantHeader());
+    }
+
+    public static List<String> getFixedAttributes(VariantFileHeader variantHeader) {
+        return variantHeader
+                .getComplexLines()
+                .stream()
+                .filter(line -> line.getKey().equalsIgnoreCase("INFO"))
+                .map(VariantFileHeaderComplexLine::getId)
+                .collect(Collectors.toList());
     }
 
 }

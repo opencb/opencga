@@ -50,7 +50,7 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
     private final Map<Integer, Integer> samplesFileMap;
     private final Map<Integer, byte[]> fileToNonRefColumnMap = new HashMap<>();
     private final Logger logger = LoggerFactory.getLogger(FillGapsFromVariantTask.class);
-    private FillGapsTask fillGapsTask;
+    private HBaseFillGapsTask fillGapsTask;
 
     public FillGapsFromVariantTask(HBaseManager hBaseManager,
                                    String archiveTableName,
@@ -81,7 +81,7 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
         String gapsGenotype = configuration.get(
                 FILL_GAPS_GAP_GENOTYPE.key(),
                 FILL_GAPS_GAP_GENOTYPE.defaultValue());
-        fillGapsTask = new FillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
+        fillGapsTask = new HBaseFillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
     }
 
     @Override

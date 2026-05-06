@@ -45,11 +45,10 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
-import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.opencb.opencga.storage.hadoop.variant.gaps.HBaseFillGapsTask;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,17 +70,6 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  */
 public class VariantSqlQueryParser {
 
-    public static final List<String> DEFAULT_LOADED_GENOTYPES = Collections.unmodifiableList(Arrays.asList(
-            ".", "./.",
-            "0/0", "0|0",
-            "0/1", "1/0", "1/1",
-            "0/2", "1/2", "2/2",
-            "0/3", "1/3", "2/3", "3/3",
-            ".|.",
-            "0|1", "1|0", "1|1",
-            "0|2", "2|0", "2|1", "1|2", "2|2",
-            "0|3", "1|3", "2|3", "3|3",
-            "3|0", "3|1", "3|2"));
     private final Configuration conf;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
@@ -243,7 +231,7 @@ public class VariantSqlQueryParser {
                 }
 
                 if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                    for (Integer fileId : study.getFiles()) {
+                    for (Integer fileId : study.getFileIds()) {
                         sb.append(",\"");
                         buildFileColumnKey(studyId, fileId, sb);
                         sb.append('"');
@@ -251,7 +239,7 @@ public class VariantSqlQueryParser {
                 }
 
                 if (returnedFields.contains(VariantField.STUDIES_SAMPLES)) {
-                    for (Integer sampleId : study.getSamples()) {
+                    for (Integer sampleId : study.getSampleIds()) {
                         if (study.getMultiFileSamples().contains(sampleId)) {
                             // Files to be included
                             List<Integer> fileIds = study.getMultiFileSampleFiles().get(sampleId);
@@ -283,8 +271,8 @@ public class VariantSqlQueryParser {
 
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
-                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples(), true);
-                    List<Integer> includeFiles = projection.getStudy(studyId).getFiles();
+                    Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds(), true);
+                    List<Integer> includeFiles = projection.getStudy(studyId).getFileIds();
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
                             sb.append(",\"");
@@ -727,36 +715,42 @@ public class VariantSqlQueryParser {
 
         final StudyMetadata defaultStudyMetadata = variantQuery.getStudyQuery().getDefaultStudy();
         if (isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-            QueryOperation operation = checkOperator(value);
-            List<String> values = splitValue(value, operation);
+            ParsedQuery<NegatableValue<ResourceId>> studies = variantQuery.getStudyQuery().getStudies();
             StringBuilder sb = new StringBuilder();
-            Iterator<String> iterator = values.iterator();
-            Map<String, Integer> studies = metadataManager.getStudies(options);
             Set<Integer> notNullStudies = new HashSet<>();
+            Iterator<NegatableValue<ResourceId>> iterator = studies.getValues().iterator();
             while (iterator.hasNext()) {
-                String study = iterator.next();
-                Integer studyId = metadataManager.getStudyId(study, false, studies);
-                if (isNegated(study)) {
+                NegatableValue<ResourceId> studyValue = iterator.next();
+                int studyId = studyValue.getValue().getId();
+                if (studyValue.isNegated()) {
                     sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
                     sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
-                    if (operation == null || operation.equals(QueryOperation.AND)) {
+                    if (studies.getOperation() == QueryOperation.AND) {
                         sb.append(" AND ");
                     } else {
                         sb.append(" OR ");
                     }
                 }
             }
+            final String filter;
             // Skip this filter if contains all the existing studies (union of all studies), or if there is only one study
-            if (studies.size() == notNullStudies.size() && notNullStudies.containsAll(studies.values())
-                    && (operation == QueryOperation.OR || studies.size() == 1)) {
-                logger.debug("Skip studies filter to phoenix");
+            if (studies.getOperation() == QueryOperation.OR || studies.size() == 1) {
+                Map<String, Integer> allStudies = metadataManager.getStudies(options);
+                if (allStudies.size() == notNullStudies.size() && notNullStudies.containsAll(allStudies.values())) {
+                    logger.debug("Skip studies filter to phoenix");
+                    filter = null;
+                } else {
+                    filter = sb.toString();
+                }
             } else {
-                filters.add(sb.toString());
+                filter = sb.toString();
+            }
+            if (filter != null) {
+                filters.add(filter);
             }
         }
 //        else {
@@ -772,6 +766,8 @@ public class VariantSqlQueryParser {
 //        }
         Map<Integer, List<String>> fileFilterMap = new HashMap<>();
         List<String> includeFiles = VariantQueryProjectionParser.getIncludeFilesList(query);
+        ParsedQuery<NegatableValue<ResourceId>> parsedFiles = variantQuery.getStudyQuery().getFiles();
+        boolean hasFileFilter = parsedFiles != null && !parsedFiles.isEmpty();
         QueryOperation filtersOperation = null;
         List<String> filterValues = Collections.emptyList();
         if (isValidParam(query, FILTER)) {
@@ -779,7 +775,7 @@ public class VariantSqlQueryParser {
             filtersOperation = checkOperator(value);
             filterValues = splitValue(value, filtersOperation);
             if (!filterValues.isEmpty()) {
-                if (CollectionUtils.isEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles) && !hasFileFilter) {
                     throw VariantQueryException.malformedParam(FILTER, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -792,7 +788,7 @@ public class VariantSqlQueryParser {
             qualOperation = checkOperator(value);
             qualValues = splitValue(value, qualOperation);
             if (!qualValues.isEmpty()) {
-                if (CollectionUtils.isEmpty(includeFiles)) {
+                if (CollectionUtils.isEmpty(includeFiles) && !hasFileFilter) {
                     throw VariantQueryException.malformedParam(QUAL, value, "Missing \"" + FILE.key() + "\" filter");
                 }
             }
@@ -802,32 +798,32 @@ public class VariantSqlQueryParser {
             addFileDataFilter(query, filters, fileFilterMap, defaultStudyMetadata);
         }
 
-        List<String> files = Collections.emptyList();
+        List<NegatableValue<ResourceId>> files = Collections.emptyList();
         List<Pair<Integer, Integer>> fileIds = Collections.emptyList();
         QueryOperation fileOperation = null;
-        if (isValidParam(query, FILE)) {
-            String value = query.getString(FILE.key());
-            fileOperation = checkOperator(value);
-            files = splitValue(value, fileOperation);
-        } else {
-            if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
-                files = includeFiles;
-                fileOperation = QueryOperation.OR;
+        if (hasFileFilter) {
+            fileOperation = parsedFiles.getOperation();
+            files = parsedFiles.getValues();
+        } else if (!qualValues.isEmpty() || !filterValues.isEmpty()) {
+            fileOperation = QueryOperation.OR;
+            files = new ArrayList<>(includeFiles.size());
+            for (String fileName : includeFiles) {
+                Pair<Integer, Integer> pair = metadataManager.getFileIdPair(fileName, false, defaultStudyMetadata);
+                files.add(new NegatableValue<>(new ResourceId(ResourceId.Type.FILE, pair.getRight(), fileName), false));
             }
         }
 
         if (!files.isEmpty()) {
             fileIds = new ArrayList<>(files.size());
             List<String> fileFilters = new ArrayList<>(files.size());
-            Iterator<String> iterator = files.iterator();
-            while (iterator.hasNext()) {
+            for (NegatableValue<ResourceId> fileValue : files) {
                 StringBuilder sb = new StringBuilder();
-                String file = iterator.next();
-                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
+                String fileName = fileValue.getValue().getName();
+                Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(fileName, false, defaultStudyMetadata);
                 fileIds.add(fileIdPair);
 
                 sb.append(" ( ");
-                if (isNegated(file)) {
+                if (fileValue.isNegated()) {
                     // ( "FILE" IS NULL OR "FILE"[3] != 'N' )
 
                     sb.append('"');
@@ -955,6 +951,18 @@ public class VariantSqlQueryParser {
                 }
             }
 
+            // Cache MISSING_GENOTYPES_UPDATED per study to avoid repeated lookups.
+            // When false, a NULL sample column may mean "./." rather than "0/0"
+            // (sample's file not present at the variant and no fill-missing applied).
+            // In that case the negated-homref filter must also include NULL sample columns
+            // whose file column is also NULL.
+            Map<Integer, Boolean> missingGenotypesUpdatedByStudy = new HashMap<>();
+            // If the caller asked to treat unknown as hom-ref (UNKNOWN_GENOTYPE=0/0), a 0/0
+            // filter should also match variants where the sample's file is absent — matching
+            // the display convention that unknown positions render as 0/0.
+            boolean unknownIsHomRef = HBaseFillGapsTask.isHomRefDiploid(
+                    query.getString(UNKNOWN_GENOTYPE.key(), "."));
+
             List<String> gtFilters = new ArrayList<>(genotypesQuery.getValues().size());
             for (KeyOpValue<SampleMetadata, List<String>> keyOpValue : genotypesQuery.getValues()) {
 
@@ -1000,6 +1008,12 @@ public class VariantSqlQueryParser {
                         // Skip non indexed files
                         continue;
                     }
+                    boolean missingGenotypesUpdated = missingGenotypesUpdatedByStudy.computeIfAbsent(studyId, sid -> {
+                        StudyMetadata sm = sid == defaultStudyMetadata.getId()
+                                ? defaultStudyMetadata
+                                : metadataManager.getStudyMetadata(sid);
+                        return sm.getAttributes().getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+                    });
                     List<String> sampleFileGtFilters = new ArrayList<>(genotypes.size());
                     for (String genotype : genotypes) {
                         if (negated) {
@@ -1013,11 +1027,35 @@ public class VariantSqlQueryParser {
                             key = buildSampleColumnKey(studyId, sampleId, sampleFile, new StringBuilder()).toString();
                         }
                         final String filter;
-                        if (FillGapsTask.isHomRefDiploid(genotype)) {
-                            if (negated) {
-                                filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                        if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
+                            // NULL sample column reads as "0/0" when the sample's file is present or
+                            // fill-missing has been applied; otherwise (BASIC mode, file not present) it
+                            // reads as "./." (UNKNOWN_GENOTYPE). The filter must distinguish these.
+                            if (missingGenotypesUpdated) {
+                                // Fill-missing applied: NULL always reads as "0/0".
+                                if (negated) {
+                                    filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                }
+                            } else if (unknownIsHomRef) {
+                                // BASIC mode, no fill-missing, but caller treats unknown as 0/0:
+                                // any NULL sample column matches 0/0 (file-present hom-ref OR file-absent unknown).
+                                if (negated) {
+                                    filter = '"' + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + '\'';
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                }
                             } else {
-                                filter = "( \"" + key + "\"[1] = '" + genotype + "' OR \"" + key + "\" IS NULL )";
+                                // BASIC mode, no fill-missing: NULL reads as "0/0" iff the file column is NOT NULL.
+                                String fileKey = buildFileColumnKey(studyId, sampleFile, new StringBuilder()).toString();
+                                if (negated) {
+                                    filter = "( \"" + key + "\" IS NOT NULL AND \"" + key + "\"[1] != '" + genotype + "' )"
+                                            + " OR ( \"" + key + "\" IS NULL AND \"" + fileKey + "\" IS NULL )";
+                                } else {
+                                    filter = "( \"" + key + "\"[1] = '" + genotype + "' )"
+                                            + " OR ( \"" + key + "\" IS NULL AND \"" + fileKey + "\" IS NOT NULL )";
+                                }
                             }
                         } else {
                             if (negated) {
@@ -1145,7 +1183,7 @@ public class VariantSqlQueryParser {
 //        Map<String, String> infoValuesMap = pair.getValue();
 
         if (!parsedQuery.getValues().isEmpty()) {
-            List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyMetadata);
+            List<String> fixedAttributes = VariantQueryParser.getFixedAttributes(defaultStudyMetadata);
 
             List<String> fileDataFilters = new ArrayList<>(parsedQuery.size());
             for (KeyValues<String, KeyOpValue<String, String>> fileDataValues : parsedQuery.getValues()) {
@@ -1241,7 +1279,7 @@ public class VariantSqlQueryParser {
         ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery = query.getStudyQuery().getSampleDataQuery();
 
         if (!sampleDataQuery.isEmpty()) {
-            List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(defaultStudyMetadata);
+            List<String> fixedFormat = VariantQueryParser.getFixedFormat(defaultStudyMetadata);
 
             int i = -1;
             List<String> samplesFilters = new LinkedList<>();
@@ -1510,32 +1548,31 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
         if (isValidParam(query, ANNOT_GO_GENES)) {
-            String value = query.getString(ANNOT_GO_GENES.key());
-            if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            Values<String> genesByGo = splitValue(query, ANNOT_GO_GENES);
+            if (genesByGo.getOperation() == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, query, "Unimplemented AND operator");
             }
-            List<String> genesByGo = splitValue(value, QueryOperation.OR);
             if (genesByGo.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
                 filters.add(getVoidFilter());
             } else {
-                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
+                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo.getValues()), ANNOT_GO, VariantColumn.GENES, filters);
             }
 
         }
         if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
-            String value = query.getString(ANNOT_EXPRESSION.key());
-            if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            Values<String> genesByExpression = splitValue(query, ANNOT_EXPRESSION);
+            if (genesByExpression.getOperation() == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, query, "Unimplemented AND operator");
             }
-            List<String> genesByExpression = splitValue(value, QueryOperation.OR);
             if (genesByExpression.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
                 filters.add(getVoidFilter());
             } else {
-                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
+                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression.getValues()),
+                        ANNOT_EXPRESSION, VariantColumn.GENES, filters);
             }
         }
 

@@ -6,7 +6,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormatBase;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.io.IOException;
 import java.util.List;

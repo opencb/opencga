@@ -46,7 +46,7 @@ import static com.mongodb.client.model.Updates.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Document, Binary>> {
+public class MongoDBVariantStageLoader implements DataWriter<StageWriteOperations> {
 
     public static final String NEW_STUDY_FIELD = "new";
     public static final boolean NEW_STUDY_DEFAULT = true;
@@ -96,9 +96,9 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     }
 
     @Override
-    public boolean write(List<ListMultimap<Document, Binary>> batch) {
-        for (ListMultimap<Document, Binary> map : batch) {
-            insert(map);
+    public boolean write(List<StageWriteOperations> batch) {
+        for (StageWriteOperations map : batch) {
+            insert(map.getDocuments());
         }
         return true;
     }
@@ -169,6 +169,7 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
                     bsons.add(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList));
                 }
                 bsons.add(addEachToSet(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFileValue));
+                bsons.add(setOnInsert(StageDocumentToVariantConverter.VAR_ID_FIELD, id.get(StageDocumentToVariantConverter.VAR_ID_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.END_FIELD, id.get(StageDocumentToVariantConverter.END_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.REF_FIELD, id.get(StageDocumentToVariantConverter.REF_FIELD)));
                 bsons.add(setOnInsert(StageDocumentToVariantConverter.ALT_FIELD, id.get(StageDocumentToVariantConverter.ALT_FIELD)));

@@ -38,16 +38,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -162,6 +160,15 @@ public class VariantExporter {
             progressTask = batch -> batch;
         }
 
+        // Sparse filtering: if enabled, filter out samples with default/unknown genotypes.
+        // Backends with native sparse support (e.g. MongoDB) handle this in their converter;
+        // for others, apply VariantSparseFilterTask as a post-processing step.
+        if (query.getBoolean(VariantQueryUtils.SPARSE_SAMPLES.key(), false) && !supportsNativeSparseFilter()) {
+            Task<Variant, Variant> prevTask = progressTask;
+            VariantSparseFilterTask sparseFilter = new VariantSparseFilterTask();
+            progressTask = batch -> sparseFilter.apply(prevTask.apply(batch));
+        }
+
         // DataWriter
         DataWriter<Variant> variantDataWriter = newVariantDataWriter(outputFile, outputStream, outputFormat, query, queryOptions);
 
@@ -182,6 +189,19 @@ public class VariantExporter {
     protected DataWriter<Variant> newVariantDataWriter(URI outputFile, OutputStream outputStream, VariantOutputFormat outputFormat,
                                                        Query query, QueryOptions queryOptions) throws IOException {
         return variantWriterFactory.newDataWriter(outputFormat, outputStream, query, queryOptions);
+    }
+
+    /**
+     * Whether this exporter's backend natively supports sparse sample filtering in its converter.
+     * When true, the exporter skips the {@link VariantSparseFilterTask} post-processing step,
+     * relying on the backend converter to filter samples directly.
+     *
+     * <p>Delegates to {@link VariantStorageEngine#supportsNativeSparseFilter()}.
+     *
+     * @return true if the backend handles sparse filtering natively.
+     */
+    protected boolean supportsNativeSparseFilter() {
+        return engine.supportsNativeSparseFilter();
     }
 
     protected void writeMetadata(VariantMetadata metadata, URI metadataFile) throws IOException {
@@ -236,13 +256,25 @@ public class VariantExporter {
 
     private Iterator<Variant> toVariantsIterator(URI variantsFile) {
         VariantStudyMetadata metadata = new VariantFileMetadata("", variantsFile.getPath()).toVariantStudyMetadata("");
+        int[] lineNumber = {0};
         return new VariantVcfReader(metadata, variantsFile.getPath(),
                 (variantStudyMetadata, s) -> {
-                    String[] split = s.split("\t");
+                    lineNumber[0]++;
+                    String[] split = s.split("\t", -1);
                     if (split.length < 5) {
-                        throw new IllegalArgumentException("Not enough fields provided (min 5)");
+                        throw new IllegalArgumentException(
+                                "Not enough fields provided (min 5). Found " + split.length
+                                        + " at line " + lineNumber[0] + ": '" + s + "'");
                     }
-                    return Collections.singletonList(new Variant(split[0], Integer.valueOf(split[1]), split[3], split[4]));
+                    String pos = split[1];
+                    if (pos.contains("-")) {
+                        String[] posRange = pos.split("-");
+                        int start = Integer.parseInt(posRange[0]);
+                        int end = Integer.parseInt(posRange[1]);
+                        return Collections.singletonList(new Variant(split[0], start, end, split[3], split[4]));
+                    } else {
+                        return Collections.singletonList(new Variant(split[0], Integer.valueOf(pos), split[3], split[4]));
+                    }
                 }).iterator();
     }
 

@@ -28,9 +28,11 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,14 +58,12 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
             .setStatus(Phenotype.Status.OBSERVED);
     public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
     private ToolRunner toolRunner;
-    private static String father = "NA19661";
-    private static String mother = "NA19660";
-    private static String son = "NA19685";
-    private static String daughter = "NA19600";
 
-    public static final String CANCER_STUDY = "cancer";
-    private static String cancer_sample = "AR2.10039966-01T";
-    private static String germline_sample = "AR2.10039966-01G";
+    private CatalogManager catalogManager;
+    private VariantStorageManager variantStorageManager;
+
+    @Rule
+    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -71,52 +71,39 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
     @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
-//                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
-                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
+                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
+                {DummyVariantStorageEngine.STORAGE_ENGINE_ID}
+//                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
 
     public VariantAnnotationExtensionConfigureOperationToolTest(String storageEngine) {
-        if (!storageEngine.equals(VariantAnnotationExtensionConfigureOperationToolTest.storageEngine)) {
-            indexed = false;
-        }
         VariantAnnotationExtensionConfigureOperationToolTest.storageEngine = storageEngine;
+        opencga.setStorageEngine(storageEngine);
     }
 
 
-    private CatalogManager catalogManager;
-    private VariantStorageManager variantStorageManager;
-
-    public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
-//    public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
-
     private static String storageEngine;
-    private static boolean indexed = false;
     private static String token;
 
     @Before
     public void setUp() throws Throwable {
 //        System.setProperty("opencga.log.level", "INFO");
 //        Configurator.reconfigure();
-        if (!indexed) {
-            opencga.after();
-            opencga.before(storageEngine);
+        catalogManager = opencga.getCatalogManager();
+        variantStorageManager = opencga.getVariantStorageManager();
+        variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE);
 
-            catalogManager = opencga.getCatalogManager();
-            variantStorageManager = opencga.getVariantStorageManager();
-            variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE);
+        setUpCatalogManager();
 
-            setUpCatalogManager();
+        VariantOperationsTest.dummyVariantSetup(variantStorageManager, STUDY, token);
 
-            VariantOperationsTest.dummyVariantSetup(variantStorageManager, STUDY, token);
-
-            opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
-            VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
-            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
-            }
-            indexed = true;
+        opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
+        VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
+        if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
         }
+
         // Reset engines
         opencga.getStorageEngineFactory().close();
         catalogManager = opencga.getCatalogManager();
@@ -126,10 +113,6 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
         token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
     }
 
-    @AfterClass
-    public static void afterClass() {
-        opencga.after();
-    }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(), opencga.getAdminToken());

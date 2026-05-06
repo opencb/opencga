@@ -72,14 +72,17 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         delegatedVariantQuery.setInputOptions(options);
 
         if (getIterator) {
+            // Track VCF IDs of pairs already added across batches.
+            // Safety net for when the DB sort order differs from VARIANT_COMPARATOR order.
+            Set<String> addedPairIds = new HashSet<>();
             VariantDBIterator iterator = delegatedQueryExecutor.iterator(delegatedVariantQuery);
-            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), 100);
+            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, addedPairIds, l), 100);
             iterator = iterator.localLimitSkip(limit, skip);
             return iterator;
         } else {
             VariantQueryResult<Variant> queryResult = delegatedQueryExecutor.get(delegatedVariantQuery);
             List<Variant> results = queryResult.getResults();
-            results = getBreakendPairs(0, baseQuery, variantLocalFilter, results);
+            results = getBreakendPairs(0, baseQuery, variantLocalFilter, new HashSet<>(), results);
             if (queryResult.getNumMatches() < delegatedVariantQuery.getLimitOr(-1)) {
                 // Exact count!!
                 queryResult.setApproximateCount(false);
@@ -123,7 +126,8 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         return subQuery;
     }
 
-    private List<Variant> getBreakendPairs(int samplePosition, Query baseQuery, Predicate<Variant> filter, List<Variant> variants) {
+    private List<Variant> getBreakendPairs(int samplePosition, Query baseQuery, Predicate<Variant> filter,
+                                            Set<String> addedPairIds, List<Variant> variants) {
         if (variants.isEmpty()) {
             return variants;
         }
@@ -164,34 +168,44 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         for (Variant variant : variants) {
             StudyEntry studyEntry = variant.getStudies().get(0);
             FileEntry file = studyEntry.getFile(studyEntry.getSample(samplePosition).getFileIndex());
+            String id = file.getData().get(StudyEntry.VCF_ID);
             String mateid = file.getData().get("MATEID");
             Variant mateVariant = mateVariantsMap.get(mateid);
             if (mateVariant == null) {
                 throw new VariantQueryException("Unable to find mate of variant " + variant + " with MATEID=" + mateid);
             }
 
-            addPair(filter, variantPairs, variant, mateVariant);
+            addPair(filter, addedPairIds, id, mateid, variantPairs, variant, mateVariant);
         }
         return variantPairs;
     }
 
-    private boolean addPair(Predicate<Variant> filter, List<Variant> variantPairs, Variant variant, Variant mateVariant) {
+    private boolean addPair(Predicate<Variant> filter, Set<String> addedPairIds, String id, String mateid,
+                             List<Variant> variantPairs, Variant variant, Variant mateVariant) {
         // Check for duplicated pairs
         if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
-            // The mate variant is "before" the main variant
-            // This pair might be discarded if the mate matches the given query
-            if (!filter.test(mateVariant)) {
-                // Otherwise, both variants are added to the list of variant pairs.
-                // But first the "mate" to respect order
-                variantPairs.add(mateVariant);
-                variantPairs.add(variant);
-                return true;
-            } else {
+            // The mate variant is "before" the main variant in genomic order.
+            // Safety: skip if already added due to DB sort order differing from VARIANT_COMPARATOR.
+            if (addedPairIds.contains(mateid)) {
                 return false;
             }
+            // Primary check: skip if the mate matches the query — it will be processed separately
+            // and will add the pair itself (with mate first, respecting order).
+            if (filter.test(mateVariant)) {
+                return false;
+            }
+            variantPairs.add(mateVariant);
+            variantPairs.add(variant);
+            addedPairIds.add(mateid);
+            return true;
         } else {
+            // Safety: skip if already added when the mate arrived first due to DB sort order mismatch.
+            if (addedPairIds.contains(id)) {
+                return false;
+            }
             variantPairs.add(variant);
             variantPairs.add(mateVariant);
+            addedPairIds.add(id);
             return true;
         }
     }

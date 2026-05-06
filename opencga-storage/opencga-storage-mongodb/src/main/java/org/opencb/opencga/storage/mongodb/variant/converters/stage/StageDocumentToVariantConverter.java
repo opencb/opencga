@@ -27,11 +27,11 @@ import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConv
 public class StageDocumentToVariantConverter implements ComplexTypeConverter<Variant, Document> {
 
     public static final String ID_FIELD = "_id";
+    public static final String VAR_ID_FIELD = "id";
     public static final String END_FIELD = "end";
     public static final String REF_FIELD = "ref";
     public static final String ALT_FIELD = "alt";
     public static final String STUDY_FILE_FIELD = "_i";
-    public static final String SECONDARY_ALTERNATES_FIELD = "alts";
     private VariantStringIdConverter idConverter = new VariantStringIdConverter();
 
     @Override
@@ -46,6 +46,7 @@ public class StageDocumentToVariantConverter implements ComplexTypeConverter<Var
     public Document convertToStorageType(Variant variant) {
         return new Document(ID_FIELD, idConverter.buildId(variant))
                 .append(REF_FIELD, variant.getReference())
+                .append(VAR_ID_FIELD, variant.toString())
                 // Add left and right SvInsSeq to the alternate
                 .append(ALT_FIELD, idConverter.buildSVAlternate(variant.getAlternate(), variant.getSv()))
                 .append(END_FIELD, variant.getEnd());

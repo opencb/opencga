@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -46,6 +47,7 @@ import static org.junit.Assert.*;
  * Created by hpccoll1 on 01/06/15.
  */
 @Ignore
+@StorageEngineTest
 public abstract class VariantStatisticsManagerAggregatedTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-aggregated-file.vcf.gz";

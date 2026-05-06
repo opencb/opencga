@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StorageEngineTest;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -37,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 @Ignore
+@StorageEngineTest
 public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryExecutorTest.class);
@@ -125,7 +127,9 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
             for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
-                if (variantQueryExecutor instanceof DBAdaptorVariantQueryExecutor) {
+                // Exact class match — subclasses (e.g. RegionVariantQueryExecutor) have
+                // narrower canUseThisExecutor checks and can't serve as the reference.
+                if (variantQueryExecutor.getClass() == DBAdaptorVariantQueryExecutor.class) {
                     dbQueryExecutor = (DBAdaptorVariantQueryExecutor) variantQueryExecutor;
                     break;
                 }
@@ -275,11 +279,11 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
             emptyQuery.putIfNotNull(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), query.get(VariantQueryParam.INCLUDE_SAMPLE_DATA.key()));
             for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
                 studyNames.add(study.getStudyMetadata().getName());
-                for (Integer file : study.getFiles()) {
+                for (Integer file : study.getFileIds()) {
                     String fileName = metadataManager.getFileName(study.getStudyMetadata().getId(), file);
                     fileNames.add(fileName);
                 }
-                for (Integer sample : study.getSamples()) {
+                for (Integer sample : study.getSampleIds()) {
                     String sampleName = metadataManager.getSampleName(study.getStudyMetadata().getId(), sample);
                     sampleNames.add(sampleName);
                 }

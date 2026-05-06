@@ -73,7 +73,24 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     Integer getFileId(int studyId, String fileName);
 
-    LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial);
+    default LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
+        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
+        fileIterator(studyId).forEachRemaining(file -> {
+            if (file.isIndexed()) {
+                if (!includePartial) {
+                    // Exclude partial files
+                    if (file.getType() == FileMetadata.Type.PARTIAL
+                            && file.getAttributes().get(FileMetadata.VIRTUAL_PARENT) != null) {
+                        // This is a partial file. Skip it
+                        return;
+                    }
+                }
+                indexedFiles.add(file.getId());
+            }
+        });
+
+        return indexedFiles;
+    }
 
     default DataResult count() {
         return count(new Query());

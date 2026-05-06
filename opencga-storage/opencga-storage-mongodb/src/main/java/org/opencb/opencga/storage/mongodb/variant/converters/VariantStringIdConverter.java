@@ -57,9 +57,12 @@ public class VariantStringIdConverter {
     protected static final int CI_END_R = 7;
     protected static final int SV_SPLIT_LENGTH = CI_END_R + 1;
     protected static final char INS_SEQ_SEPARATOR = '_';
+    // Pad size for the position field. Value of 10 matches Integer.MAX_VALUE length.
+    // For positions < 10 digits, splitVariantId uses the leading space to find the CHR:POS boundary.
+    private static final int POS_PAD_SIZE = 10;
 
     public Variant buildVariant(String variantId, int end, String reference, String alternate) {
-        String[] split = variantId.split(SEPARATOR, -1);
+        String[] split = splitVariantId(variantId);
         String chr = split[CHR].trim();
         int start = Integer.parseInt(split[POS].trim());
         StructuralVariation sv = buildSv(split, reference, alternate);
@@ -80,6 +83,37 @@ public class VariantStringIdConverter {
             variant.setSv(sv);
         }
         return variant;
+    }
+
+    /**
+     * Split a variant ID into its components (CHR, POS, REF, ALT, [CI fields]).
+     * Tries a simple split first, which works for chromosomes without ':'.
+     * If the split produces an unexpected number of fields, the chromosome likely contains ':'
+     * and we fall back to finding the CHR:POS boundary using the space-padded position field
+     * (chromosome names cannot contain spaces per VCF spec).
+     *
+     * @param variantId the variant ID string
+     * @return array of split components
+     */
+    protected static String[] splitVariantId(String variantId) {
+        String[] split = variantId.split(SEPARATOR, -1);
+        // Expected: 4 fields (CHR:POS:REF:ALT) or SV_SPLIT_LENGTH (8) for structural variants
+        if (split.length == ALT + 1 || split.length == SV_SPLIT_LENGTH) {
+            return split;
+        }
+        // Chromosome contains ':', find the boundary using the space-padded POS field
+        for (int i = 0; i < variantId.length() - 1; i++) {
+            if (variantId.charAt(i) == SEPARATOR_CHAR && variantId.charAt(i + 1) == ' ') {
+                String chr = variantId.substring(0, i);
+                String rest = variantId.substring(i + 1);
+                String[] restSplit = rest.split(SEPARATOR, -1);
+                String[] result = new String[restSplit.length + 1];
+                result[0] = chr;
+                System.arraycopy(restSplit, 0, result, 1, restSplit.length);
+                return result;
+            }
+        }
+        return split;
     }
 
     private StructuralVariation buildSv(String[] split, String reference, String alternate) {
@@ -227,7 +261,7 @@ public class VariantStringIdConverter {
 
         appendChromosome(chromosome, stringBuilder)
                 .append(SEPARATOR_CHAR)
-                .append(StringUtils.leftPad(Integer.toString(start), 10, " "));
+                .append(StringUtils.leftPad(Integer.toString(start), POS_PAD_SIZE, " "));
         return stringBuilder;
     }
 

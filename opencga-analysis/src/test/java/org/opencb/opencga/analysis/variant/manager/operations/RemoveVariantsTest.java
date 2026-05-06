@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
@@ -132,6 +133,26 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
 
         removeFile(files.subList(0, files.size() / 2), new QueryOptions());
 
+    }
+
+    @Test
+    public void testLoadAndRemoveAll() throws Exception {
+        File file77 = create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        File file78 = create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        indexFile(file77, new QueryOptions(VariantStorageOptions.ANNOTATE.key(), true), outputId);
+        indexFile(file78, new QueryOptions(VariantStorageOptions.ANNOTATE.key(), true), outputId);
+
+        // Sanity check: both files indexed as READY before removal.
+        Query readyQuery = new Query(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY);
+        assertEquals(2L, catalogManager.getFileManager().count(studyFqn, readyQuery, sessionId).getNumTotalResults());
+
+        // The "all" alias must be expanded by variantManager.removeFile to mean "every indexed file".
+        Path outdir = Paths.get(opencga.createTmpOutdir(studyFqn, "_REMOVE_", sessionId));
+        variantManager.removeFile(studyFqn, Collections.singletonList(ParamConstants.ALL), new QueryOptions(),
+                outdir.toUri(), sessionId);
+
+        // Every previously-indexed file should have been removed from the variant storage.
+        assertEquals(0L, catalogManager.getFileManager().count(studyFqn, readyQuery, sessionId).getNumTotalResults());
     }
 
     @Test

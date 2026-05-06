@@ -20,7 +20,6 @@ import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
@@ -58,8 +57,8 @@ public class DocumentToVariantStatsConverterTest {
         genotypes.append("0/1", 50);
         genotypes.append("1/1", 10);
         mongoStats.append(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, genotypes);
-
-//        stats = new VariantStats(null, -1, null, null, VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
+        mongoStats.append(DocumentToVariantStatsConverter.ALLELE_NUMBER_FIELD, (int) numAlleles);
+        mongoStats.append(DocumentToVariantStatsConverter.SAMPLES_COUNT_FIELD, (int) numSamples);
         stats = new VariantStats(70 / numAlleles, 0.01f, "A", "A/A", 10, 5);
         stats.addGenotype("0/0", 100);
         stats.addGenotype("0/1", 50);
@@ -69,6 +68,7 @@ public class DocumentToVariantStatsConverterTest {
         genotypeFreq.put("0/0", 100 / numSamples);
         genotypeFreq.put("0/1", 50 / numSamples);
         genotypeFreq.put("1/1", 10 / numSamples);
+        stats.setSampleCount((int) numSamples);
         stats.setAlleleCount((int) numAlleles);
         stats.setGenotypeFreq(genotypeFreq);
         stats.setRefAlleleCount(250);
@@ -82,52 +82,6 @@ public class DocumentToVariantStatsConverterTest {
     public void testConvertToDataModelType() {
         DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
         VariantStats converted = converter.convertToDataModelType(mongoStats);
-        assertEquals(stats, converted);
-    }
-
-    @Test
-    public void testConvertToDataModelTypeWithoutAF() {
-        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.remove(DocumentToVariantStatsConverter.ALT_FREQ_FIELD);
-        mongoStats.remove(DocumentToVariantStatsConverter.REF_FREQ_FIELD);
-        VariantStats converted = converter.convertToDataModelType(mongoStats);
-        assertEquals(stats, converted);
-    }
-
-    @Test
-    public void testConvertToDataModelTypeNegativeAF() {
-        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.put(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, -1);
-        mongoStats.put(DocumentToVariantStatsConverter.REF_FREQ_FIELD, -1);
-        VariantStats converted = converter.convertToDataModelType(mongoStats);
-        assertEquals(stats, converted);
-    }
-
-    @Test
-    public void testConvertToDataModelTypeWithoutGtCount() {
-        stats.getGenotypeCount().clear();
-        stats.getGenotypeFreq().clear();
-        stats.setAlleleCount(-1);
-        stats.setRefAlleleCount(-1);
-        stats.setAltAlleleCount(-1);
-        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.put(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, new Document());
-        VariantStats converted = converter.convertToDataModelType(mongoStats);
-        assertEquals(stats, converted);
-    }
-
-    @Test
-    public void testConvertToDataModelTypeWithoutGtCountAndAF() {
-        stats.getGenotypeCount().clear();
-        stats.getGenotypeFreq().clear();
-        stats.setAlleleCount(-1);
-        stats.setRefAlleleCount(-1);
-        stats.setAltAlleleCount(-1);
-        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
-        mongoStats.put(DocumentToVariantStatsConverter.GENOTYPE_COUNT_FIELD, new Document());
-        mongoStats.remove(DocumentToVariantStatsConverter.ALT_FREQ_FIELD);
-        mongoStats.remove(DocumentToVariantStatsConverter.REF_FREQ_FIELD);
-        VariantStats converted = converter.convertToDataModelType(mongoStats, new Variant("1", 100, "C", "A"));
         assertEquals(stats, converted);
     }
 

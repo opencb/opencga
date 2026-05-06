@@ -206,8 +206,12 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, options);
+        // Check overwrite BEFORE preCalculateStats, because preCalculateStats sets the cohort
+        // status to RUNNING, which clears the INVALID flag that checkOverwrite relies on.
         overwrite = checkOverwrite(metadataManager, studyMetadata, cohorts, overwrite);
+        // Propagate overwrite to options so loadStats/updateStats will use it
+        options.put(VariantStorageOptions.STATS_OVERWRITE.key(), overwrite);
+        preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, options);
 
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getId()));
 
@@ -508,7 +512,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         if (!overwrite) {
             for (String cohortName : cohorts.keySet()) {
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortName);
-                if (cohort.isInvalid()) {
+                if (cohort != null && cohort.isInvalid()) {
                     logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true",
                             cohortName, cohort.getId());
                     overwrite = true;

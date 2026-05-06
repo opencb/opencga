@@ -269,6 +269,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public void removeFile(String study, List<String> files, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
+        // Removing every indexed file is equivalent to removing the whole study from the variant storage,
+        // so route the "all" alias to removeStudy and let the backend take its wholesale path.
+        if (files != null && files.size() == 1 && ParamConstants.ALL.equals(files.get(0))) {
+            removeStudy(study, params, outdir, token);
+            return;
+        }
         secureOperation(VariantFileDeleteOperationTool.ID, study, params, token, engine -> {
             new VariantDeleteOperationManager(this, engine).removeFile(study, files, outdir, token);
             return null;
@@ -743,11 +749,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     //TODO: GroupByFieldEnum
+    @Deprecated
     public DataResult groupBy(String field, Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         return (DataResult) secure(query, queryOptions, token, engine -> engine.groupBy(query, field, queryOptions));
     }
 
+    @Deprecated
     public DataResult rank(Query query, String field, int limit, boolean asc, String token)
             throws StorageEngineException, CatalogException, IOException {
         int limitMax = 30;
@@ -761,6 +769,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 engine -> engine.count(query));
     }
 
+    @Deprecated
     public DataResult distinct(Query query, String field, String token)
             throws CatalogException, IOException, StorageEngineException {
         return (DataResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), token,
@@ -773,6 +782,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 engine -> engine.getPhased(variant.toString(), study, sample, options, 5000));
     }
 
+    @Deprecated
     public DataResult getFrequency(Query query, int interval, String token)
             throws CatalogException, IOException, StorageEngineException {
         return (DataResult) secure(query, null, token, engine -> {

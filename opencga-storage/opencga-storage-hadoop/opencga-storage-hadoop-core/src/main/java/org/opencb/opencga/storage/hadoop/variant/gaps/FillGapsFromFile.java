@@ -9,7 +9,6 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantSorterTask;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.ProgressLogger;
@@ -24,11 +23,13 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.gaps.VcfFileVariantIterator;
+import org.opencb.opencga.storage.core.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.VariantNormalizerFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,10 +80,10 @@ public class FillGapsFromFile {
         }
         StopWatch stopWatch = StopWatch.createStarted();
 
-        FillGapsTask fillGapsTask = new FillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
+        HBaseFillGapsTask fillGapsTask = new HBaseFillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
 
         long filesLengthBytes = 0;
-        List<VariantIterator> fileIterators = new ArrayList<>();
+        List<VcfFileVariantIterator> fileIterators = new ArrayList<>();
         for (URI inputFile : inputFiles) {
             File file = Paths.get(inputFile).toFile();
             if (!file.exists()) {
@@ -116,7 +117,8 @@ public class FillGapsFromFile {
             reader = reader.then(normalizer);
             VariantSorterTask sorter = new VariantSorterTask(100, SampleIndexSchema.VARIANT_COMPARATOR);
             reader = reader.then(sorter);
-            fileIterators.add(new VariantIterator(file, fileName, fileId, sampleIds, reader.iterator(), sizeInputStream, maxBufferSize));
+            fileIterators.add(new VcfFileVariantIterator(file, fileName, fileId, sampleIds, reader.iterator(),
+                    sizeInputStream, maxBufferSize));
         }
 
         int numVariants = 0;
@@ -158,215 +160,6 @@ public class FillGapsFromFile {
             bufferedMutator.flush();
         } catch (Exception e) {
             throw new StorageEngineException("Error computing aggregation family operation", e);
-        }
-    }
-
-
-    private static class VariantIterator implements ListIterator<Variant> {
-
-        private final File file;
-        private final String fileName;
-        private final int fileId;
-        private final LinkedHashSet<Integer> sampleIds;
-        private final Iterator<Variant> variantIterator;
-        private final StringDataReader.SizeInputStream sizeInputStream;
-        private long lastAvailable;
-        private String chromosome;
-
-        // Variants buffer from the current chromosome
-        private RandomAccessDequeue<Variant> buffer;
-        private ListIterator<Variant> bufferIterator;
-
-        private final Set<String> prevChromosomes = new HashSet<>();
-        // Buffer for other chromosomes
-        private final Map<String, RandomAccessDequeue<Variant>> bufferByChr = new LinkedHashMap<>();
-        private final int maxBufferSize;
-
-
-        VariantIterator(File file, String fileName, int fileId, LinkedHashSet<Integer> sampleIds,
-                        Iterator<Variant> variantIterator, StringDataReader.SizeInputStream sizeInputStream, int maxBufferSize) {
-            this.file = file;
-            this.fileName = fileName;
-            this.fileId = fileId;
-            this.sampleIds = sampleIds;
-            this.variantIterator = variantIterator;
-            this.sizeInputStream = sizeInputStream;
-            this.maxBufferSize = maxBufferSize;
-            buffer = newBuffer();
-            bufferIterator = buffer.listIterator();
-            this.lastAvailable = sizeInputStream.availableLong();
-        }
-
-        private RandomAccessDequeue<Variant> newBuffer() {
-            return new RandomAccessDequeue<>(this.maxBufferSize * 2);
-        }
-
-        public long getReadBytes() {
-            long newAvailable = sizeInputStream.availableLong();
-            long readBytes = lastAvailable - newAvailable;
-            lastAvailable = newAvailable;
-            return readBytes;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (bufferIterator.hasNext()) {
-                return true;
-            } else {
-                return addToBuffer() != null;
-            }
-        }
-
-        @Override
-        public Variant next() {
-            if (!bufferIterator.hasNext()) {
-                if (addToBuffer() == null) {
-                    throw new NoSuchElementException();
-                }
-            }
-            return bufferIterator.next();
-        }
-
-        private int getBufferSize() {
-            return buffer.size() + bufferByChr.values().stream().mapToInt(RandomAccessDequeue::size).sum();
-        }
-
-        @Override
-        public boolean hasPrevious() {
-            return bufferIterator.hasPrevious();
-        }
-
-        @Override
-        public Variant previous() {
-            return bufferIterator.previous();
-        }
-
-        @Override
-        public int nextIndex() {
-            return bufferIterator.nextIndex();
-        }
-
-        @Override
-        public int previousIndex() {
-            return bufferIterator.previousIndex();
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void set(Variant variant) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void add(Variant variant) {
-            throw new UnsupportedOperationException();
-        }
-
-        private Variant addToBuffer() {
-            if (variantIterator.hasNext()) {
-                if (buffer.isEmpty() && getBufferSize() > maxBufferSize) {
-                    // This chromosome is empty, and we're already reading from another chromosome
-                    // Do not overflow the buffer
-                    return null;
-                }
-                Variant variant = variantIterator.next();
-                if (chromosome == null) {
-                    chromosome = variant.getChromosome();
-                }
-                if (variant.getChromosome().equals(chromosome)) {
-                    buffer.add(variant);
-                    return variant;
-                } else {
-                    bufferByChr.computeIfAbsent(variant.getChromosome(), k -> newBuffer()).add(variant);
-                    if (prevChromosomes.contains(variant.getChromosome())) {
-                        throw new IllegalStateException("Chromosome \"" + variant.getChromosome() + "\" already processed!"
-                                + " Unordered chromosomes in file \"" + file + "\"");
-                    }
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        public Variant getNextVariant(Variant prevVariant) {
-            // Look for an actual variant in the buffer
-            int i = nextIndex();
-            Variant variant = null;
-            while (i < buffer.size() && !isNextVariant(prevVariant, variant)) {
-                variant = buffer.get(i);
-                i++;
-            }
-            if (!isNextVariant(prevVariant, variant)) {
-                // Look for an actual variant in the iterator
-                variant = addToBuffer();
-                while (variant != null && !isNextVariant(prevVariant, variant)) {
-                    variant = addToBuffer();
-                }
-            }
-            return variant;
-        }
-
-        protected static boolean isNextVariant(Variant prevVariant, Variant variant) {
-            if (variant == null) {
-                return false;
-            } else if (isVariant(variant)) {
-                if (prevVariant == null) {
-                    return true;
-                } else {
-                    if (variant.getChromosome().equals(prevVariant.getChromosome())) {
-                        int compare = SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(prevVariant, variant);
-                        return compare < 0;
-//                        if (variant.getStart() < nextVariant.getStart()) {
-//                            nextVariant = variant;
-//                        }
-                    } else {
-                        return true;
-                    }
-                }
-            } else {
-                return false;
-            }
-        }
-
-        private static boolean isVariant(Variant variant) {
-            return variant.getType() != VariantType.NO_VARIATION;
-        }
-
-        public void trim() {
-            // Remove all variants before the current variant
-            while (bufferIterator.nextIndex() > 0) {
-                buffer.removeHead();
-            }
-        }
-
-        public void setChromosome(String newChromosome) {
-            if (this.chromosome != null && !this.chromosome.equals(newChromosome)) {
-                // When changing chromosome, change the buffer
-                prevChromosomes.add(this.chromosome);
-                RandomAccessDequeue<Variant> chrBuffer = bufferByChr.remove(newChromosome);
-                buffer = chrBuffer == null ? newBuffer() : chrBuffer;
-                bufferIterator = buffer.listIterator();
-            }
-            this.chromosome = newChromosome;
-        }
-
-        public String getNextChromosome() {
-            if (chromosome == null) {
-                Variant variant = getNextVariant(null);
-                if (variant == null) {
-                    return null;
-                } else {
-                    return variant.getChromosome(); // First chromosome
-                }
-            } else if (bufferByChr.isEmpty()) {
-                return null;
-            } else {
-                return bufferByChr.keySet().iterator().next();
-            }
         }
     }
 
@@ -413,8 +206,8 @@ public class FillGapsFromFile {
         }
     }
 
-    private static String getNextChromosome(List<VariantIterator> fileIterators) {
-        for (VariantIterator fileIterator : fileIterators) {
+    private static String getNextChromosome(List<VcfFileVariantIterator> fileIterators) {
+        for (VcfFileVariantIterator fileIterator : fileIterators) {
             String chromosome = fileIterator.getNextChromosome();
             if (chromosome != null) {
                 return chromosome;
@@ -441,12 +234,12 @@ public class FillGapsFromFile {
         }
     }
 
-    private Result fillGapsChromosome(String chromosome, List<VariantIterator> fileIterators, FillGapsTask fillGapsTask,
-                                      ProgressLogger progressLogger, OutputStream os)
+    private Result fillGapsChromosome(String chromosome, List<VcfFileVariantIterator> fileIterators,
+                                      HBaseFillGapsTask fillGapsTask, ProgressLogger progressLogger, OutputStream os)
             throws IOException {
         int numVariants = 0;
         int numPuts = 0;
-        for (VariantIterator fileIterator : fileIterators) {
+        for (VcfFileVariantIterator fileIterator : fileIterators) {
             fileIterator.setChromosome(chromosome);
         }
         Variant variant = getNextVariant(fileIterators, null);
@@ -455,13 +248,10 @@ public class FillGapsFromFile {
             Integer start = variant.getStart();
             numVariants++;
             Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
-            for (VariantIterator fileIterator : fileIterators) {
-//                int prevNextIndex = fileIterator.nextIndex();
+            for (VcfFileVariantIterator fileIterator : fileIterators) {
                 VariantOverlappingStatus overlappingStatus = fillGapsTask.fillGaps(
-                        variant, fileIterator.sampleIds, put, fileIterator.fileId, fileIterator);
+                        variant, fileIterator.getSampleIds(), put, fileIterator.getFileId(), fileIterator);
                 overlappingStatusCount.merge(overlappingStatus, 1, Integer::sum);
-//                System.out.println(fileIterator.fileName + "(" + prevNextIndex + " -> " + fileIterator.nextIndex() + ") : "
-//                        + overlappingStatus);
                 // The fillGapsTask may have consumed some variants from the iterator
                 // Trim the buffer to remove the consumed variants
                 fileIterator.trim();
@@ -480,9 +270,9 @@ public class FillGapsFromFile {
         return new Result(numVariants, numPuts);
     }
 
-    private Variant getNextVariant(List<VariantIterator> files, Variant prevVariant) {
+    private Variant getNextVariant(List<VcfFileVariantIterator> files, Variant prevVariant) {
         Variant nextVariant = null;
-        for (VariantIterator file : files) {
+        for (VcfFileVariantIterator file : files) {
             Variant variant = file.getNextVariant(prevVariant);
             if (variant != null) {
                 if (nextVariant == null) {
@@ -495,6 +285,4 @@ public class FillGapsFromFile {
         }
         return nextVariant;
     }
-
-
 }

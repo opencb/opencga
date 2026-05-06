@@ -308,7 +308,7 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>!skipStorageHadoop</name>
+                    <name>hadoop</name>
                 </property>
             </activation>
 
@@ -341,6 +341,20 @@
                     </resource>
                 </resources>
             </build>
+        </profile>
+        <profile>
+            <id>storage-mongodb</id>
+            <activation>
+                <property>
+                    <name>!hadoop</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-mongodb</artifactId>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 

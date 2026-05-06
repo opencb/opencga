@@ -35,7 +35,6 @@
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
-
     </properties>
 
     <dependencies>
@@ -110,6 +109,10 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -576,6 +579,43 @@
                         </goals>
                     </execution>
                     <execution>
+                        <!-- Activated by any hadoop flavour profile (-Phbase2.0, -Phdi5.1, -Pemr7.5, ...).
+                             Each flavour profile re-binds this execution to phase 'install'. -->
+                        <id>install-hadoop</id>
+                        <phase>none</phase>
+                        <configuration>
+                            <target>
+                                <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-lib/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}/target/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}-${project.parent.version}-jar-with-dependencies.jar"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-storage-hadoop.sh"/>
+                                    <arg value="${build.dir}/misc/scripts/"/>
+                                </exec>
+                                <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
+                                <exec executable="sed" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
+                                    <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
+                                </exec>
+                                <echo>Ensure that only one opencga-hadoop-shaded*.jar and opencga-storage-hadoop-compat*.jar libs are included</echo>
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="-c"/>
+                                    <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
+                                </exec>
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="-c"/>
+                                    <arg value="find ${build.dir}/libs/ -name 'opencga-storage-hadoop-compat-hbase*' | wc -l | grep -q '^1$'"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>opencga-client</id>
                         <phase>install</phase>
                         <configuration>
@@ -736,13 +776,17 @@
                 </plugins>
             </build>
         </profile>
+        <!--
+          Hadoop flavour profiles. Activate by id, e.g. -Phbase2.0, -Phdi5.1, -Pemr7.5.
+          Each profile pulls the hadoop runtime deps, declares the opencga-storage-hadoop.sh
+          appassembler program, and re-binds the top-level 'install-hadoop' antrun execution
+          (default phase 'none') to phase 'install' so it actually runs.
+
+          The bodies are identical except for the artifactId placeholders that resolve to
+          per-flavour values via the matching profile in the root pom.
+        -->
         <profile>
-            <id>storage-hadoop</id>
-            <activation>
-                <property>
-                    <name>!skipStorageHadoop</name>
-                </property>
-            </activation>
+            <id>hbase2.0</id>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
@@ -764,17 +808,8 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>appassembler-maven-plugin</artifactId>
-                        <version>1.10</version>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>assemble</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                         <configuration>
-                            <programs>
+                            <programs combine.children="append">
                                 <program>
                                     <id>opencga-storage-hadoop.sh</id>
                                     <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
@@ -787,42 +822,245 @@
                     </plugin>
                     <plugin>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.8</version>
                         <executions>
                             <execution>
                                 <id>install-hadoop</id>
                                 <phase>install</phase>
-                                <configuration>
-                                    <target>
-                                        <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
-                                        <exec executable="cp" failonerror="true">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-lib/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}/target/opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}-${project.parent.version}-jar-with-dependencies.jar"/>
-                                            <arg value="${build.dir}"/>
-                                        </exec>
-                                        <exec executable="cp" failonerror="true">
-                                            <arg value="${project.basedir}/target/appassembler/bin/opencga-storage-hadoop.sh"/>
-                                            <arg value="${build.dir}/misc/scripts/"/>
-                                        </exec>
-                                        <!-- We need to modify the BASEDIR to one level up, as this script will be at a sub folder-->
-                                        <exec executable="sed" failonerror="true">
-                                            <arg value="-i"/>
-                                            <arg value='s/BASEDIR=`cd "$PRGDIR\/.."/BASEDIR=`cd "$PRGDIR\/..\/.."/g'/>
-                                            <arg value="${build.dir}/misc/scripts/opencga-storage-hadoop.sh"/>
-                                        </exec>
-                                        <echo>Ensure that only one opencga-hadoop-shaded*.jar and opencga-storage-hadoop-compat*.jar libs are included</echo>
-                                        <exec executable="bash" failonerror="true">
-                                            <arg value="-c"/>
-                                            <arg value="find ${build.dir}/libs/ -name 'opencga-hadoop-shaded*' | wc -l | grep -q '^1$'"/>
-                                        </exec>
-                                        <exec executable="bash" failonerror="true">
-                                            <arg value="-c"/>
-                                            <arg value="find ${build.dir}/libs/ -name 'opencga-storage-hadoop-compat-hbase*' | wc -l | grep -q '^1$'"/>
-                                        </exec>
-                                    </target>
-                                </configuration>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>hdp3.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+                    <version>${project.parent.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <programs combine.children="append">
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>hdi5.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+                    <version>${project.parent.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <programs combine.children="append">
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>emr6.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+                    <version>${project.parent.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <programs combine.children="append">
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>emr6.13</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+                    <version>${project.parent.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <programs combine.children="append">
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>emr7.5</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
+                    <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
+                    <version>${project.parent.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>appassembler-maven-plugin</artifactId>
+                        <configuration>
+                            <programs combine.children="append">
+                                <program>
+                                    <id>opencga-storage-hadoop.sh</id>
+                                    <mainClass>org.opencb.opencga.storage.hadoop.app.Main</mainClass>
+                                    <platforms>
+                                        <platform>unix</platform>
+                                    </platforms>
+                                </program>
+                            </programs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
                             </execution>
                         </executions>
                     </plugin>

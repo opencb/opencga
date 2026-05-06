@@ -1,0 +1,38 @@
+package org.opencb.opencga.storage.core.variant.index.sample.query;
+
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+
+import java.util.Comparator;
+
+public class SampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Variant> {
+
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query) {
+        super(query);
+    }
+
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query, LocusQuery locusQuery) {
+        super(query, locusQuery);
+    }
+
+    @Override
+    protected Variant getNext(SampleIndexEntryIterator variants) {
+        return variants.next();
+    }
+
+    @Override
+    protected Variant toVariant(Variant v) {
+        return v;
+    }
+
+    @Override
+    protected boolean sameGenomicVariant(Variant v1, Variant v2) {
+        return v1.sameGenomicVariant(v2);
+    }
+
+    @Override
+    protected Comparator<Variant> getComparator() {
+        return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
+    }
+}

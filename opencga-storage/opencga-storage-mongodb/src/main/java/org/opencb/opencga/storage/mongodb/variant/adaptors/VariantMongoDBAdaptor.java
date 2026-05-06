@@ -23,8 +23,6 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.json.JsonMode;
-import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -35,29 +33,33 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.trash.DocumentToTrashVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,14 +68,14 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexNotSynchronized;
+import static org.opencb.opencga.storage.mongodb.variant.search.MongoDBVariantSearchIndexUtils.getSetIndexStatsNotSynchronized;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -99,6 +101,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
+    public static final int CHUNK_SIZE_LARGE = 1000000;
     // Number of opened dbAdaptors
     public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
 
@@ -180,17 +183,242 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return credentials;
     }
 
+//    /**
+//     * Remove all the variants from the database resulting of executing the query.
+//     *
+//     * @param query   Query to be executed in the database
+//     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+//     * @return A DataResult with the number of deleted variants
+//     */
+//    public DataResult remove(Query query, QueryOptions options) {
+//        Bson mongoQuery = queryParser.parseQuery(query);
+//        logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
+//        return variantsCollection.remove(mongoQuery, options);
+//    }
+
     /**
-     * Remove all the variants from the database resulting of executing the query.
+     * Remove specific samples from partially deleted files. For each variant containing a partially deleted file,
+     * the sample IDs are removed from the genotype map (mgt) and sample data fields. If a file doc ends up with
+     * no samples in the mgt, it is removed entirely.
      *
-     * @param query   Query to be executed in the database
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A DataResult with the number of deleted variants
+     * @param studyId           Study ID
+     * @param sampleIds         Set of sample IDs to remove
+     * @param partialFileIds    Set of file IDs that are partially deleted (some samples remain)
+     * @param timestamp         Timestamp of the operation
      */
-    public DataResult remove(Query query, QueryOptions options) {
-        Bson mongoQuery = queryParser.parseQuery(query);
-        logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
-        return variantsCollection.remove(mongoQuery, options);
+    @SuppressWarnings("unchecked")
+    public void removeSamples(int studyId, Set<Integer> sampleIds, Set<Integer> partialFileIds, long timestamp) {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        boolean compressExtraParams = studyMetadata.getAttributes()
+                .getBoolean(EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+
+        for (Integer fileId : partialFileIds) {
+            // Get the file's sample list (ordered) BEFORE metadata update to know protobuf positions
+            LinkedHashSet<Integer> fileSampleIds = metadataManager.getSampleIdsFromFileId(studyId, fileId);
+            // Build the set of positions to keep (positions of non-removed samples)
+            List<Integer> fileSampleList = new ArrayList<>(fileSampleIds);
+            Set<Integer> positionsToRemove = new HashSet<>();
+            for (int i = 0; i < fileSampleList.size(); i++) {
+                if (sampleIds.contains(fileSampleList.get(i))) {
+                    positionsToRemove.add(i);
+                }
+            }
+
+            // Find all variants containing this file
+            Bson fileQuery = elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                    and(eq(STUDYID_FIELD, studyId), eq(FILEID_FIELD, fileId)));
+
+            List<Bson> updateQueries = new ArrayList<>();
+            List<Bson> updateUpdates = new ArrayList<>();
+
+            try (MongoDBIterator<Document> cursor = variantsCollection.nativeQuery()
+                    .find(fileQuery, null, new QueryOptions(MongoDBCollection.BATCH_SIZE, 200))) {
+                while (cursor.hasNext()) {
+                    Document doc = cursor.next();
+                    Object docId = doc.get("_id");
+                    List<Document> files = doc.getList(DocumentToVariantConverter.FILES_FIELD, Document.class);
+
+                    for (Document fileDoc : files) {
+                        if (fileDoc.getInteger(STUDYID_FIELD) != studyId
+                                || fileDoc.getInteger(FILEID_FIELD) != fileId) {
+                            continue;
+                        }
+
+                        // Remove sample IDs from each genotype entry in mgt.
+                        // Note: mgt only stores non-default genotypes (default is usually 0/0).
+                        // An empty mgt means all remaining samples have the default genotype —
+                        // we must still keep the file doc so those samples are present.
+                        Document mgt = fileDoc.get(FILE_GENOTYPE_FIELD, Document.class);
+                        Document newMgt = new Document();
+                        if (mgt != null) {
+                            for (Map.Entry<String, Object> entry : mgt.entrySet()) {
+                                String gt = entry.getKey();
+                                List<Integer> gtSamples = new ArrayList<>((List<Integer>) entry.getValue());
+                                gtSamples.removeIf(sampleIds::contains);
+                                if (!gtSamples.isEmpty()) {
+                                    newMgt.put(gt, gtSamples);
+                                }
+                            }
+                        }
+
+                        // Always update the file doc in place (partially deleted files always
+                        // have remaining samples — the file doc must be kept).
+                        Bson filter = and(eq("_id", docId),
+                                elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                                        and(eq(STUDYID_FIELD, studyId), eq(FILEID_FIELD, fileId))));
+
+                        List<Bson> setFields = new ArrayList<>();
+                        setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                + FILE_GENOTYPE_FIELD, newMgt));
+
+                        // Rewrite protobuf sampleData, removing positions for deleted samples
+                        Document sampleData = fileDoc.get(SAMPLE_DATA_FIELD, Document.class);
+                        if (sampleData != null) {
+                            Document newSampleData = rewriteSampleData(
+                                    sampleData, positionsToRemove, compressExtraParams);
+                            setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                    + SAMPLE_DATA_FIELD, newSampleData));
+                        }
+
+                        // Remove sample filterable data entries (sfd is keyed by sampleId)
+                        Document sfd = fileDoc.get(SAMPLE_FILTERABLE_DATA_FIELD, Document.class);
+                        if (sfd != null) {
+                            Document newSfd = removeSampleEntriesFromSfd(sfd, sampleIds);
+                            setFields.add(set(DocumentToVariantConverter.FILES_FIELD + ".$."
+                                    + SAMPLE_FILTERABLE_DATA_FIELD, newSfd));
+                        }
+
+                        setFields.add(getSetIndexNotSynchronized(timestamp));
+                        updateQueries.add(filter);
+                        updateUpdates.add(combine(setFields));
+                        break; // Found the file doc for this fileId
+                    }
+
+                    // Batch execute
+                    if (updateQueries.size() >= 500) {
+                        flushBulkUpdates(updateQueries, updateUpdates);
+                    }
+                }
+            }
+            // Final batch
+            flushBulkUpdates(updateQueries, updateUpdates);
+        }
+
+        // Cleanup: remove study entries from variants that no longer have any files for this study
+        Bson noFilesQuery = and(
+                elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                not(elemMatch(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, studyId)))
+        );
+
+        if (autoPruneEmptyVariants()) {
+            removeStudyFromVariants(studyId, noFilesQuery, timestamp);
+            // Purge empty variants
+            removeEmptyVariants();
+        }
+    }
+
+    /**
+     * Rewrite the sampleData document by removing protobuf values at the given positions.
+     * Each key in sampleData is a FORMAT field name (e.g., "gl", "dp"), and each value is a
+     * protobuf-encoded byte array containing one value per sample in file order.
+     */
+    private Document rewriteSampleData(Document sampleData, Set<Integer> positionsToRemove, boolean compressExtraParams) {
+        Document result = new Document();
+        for (Map.Entry<String, Object> entry : sampleData.entrySet()) {
+            if (!(entry.getValue() instanceof org.bson.types.Binary)) {
+                result.put(entry.getKey(), entry.getValue());
+                continue;
+            }
+            byte[] byteArray = ((org.bson.types.Binary) entry.getValue()).getData();
+            if (compressExtraParams && byteArray.length > 0) {
+                try {
+                    byteArray = CompressionUtils.decompress(byteArray);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } catch (java.util.zip.DataFormatException ignore) {
+                    // Not compressed
+                }
+            }
+            try {
+                if (byteArray.length == 0) {
+                    result.put(entry.getKey(), entry.getValue());
+                    continue;
+                }
+                VariantMongoDBProto.OtherFields otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
+                VariantMongoDBProto.OtherFields.Builder builder = VariantMongoDBProto.OtherFields.newBuilder();
+
+                if (otherFields.getIntValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getIntValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addIntValues(otherFields.getIntValues(i));
+                        }
+                    }
+                } else if (otherFields.getFloatValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getFloatValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addFloatValues(otherFields.getFloatValues(i));
+                        }
+                    }
+                } else if (otherFields.getStringValuesCount() > 0) {
+                    for (int i = 0; i < otherFields.getStringValuesCount(); i++) {
+                        if (!positionsToRemove.contains(i)) {
+                            builder.addStringValues(otherFields.getStringValues(i));
+                        }
+                    }
+                }
+
+                byte[] newBytes = builder.build().toByteArray();
+                if (compressExtraParams && newBytes.length > 50) {
+                    try {
+                        newBytes = CompressionUtils.compress(newBytes);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }
+                result.put(entry.getKey(), newBytes);
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw new UncheckedIOException(new IOException(e));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Remove sample ID entries from the sfd document (field → {sampleId → value}).
+     */
+    private Document removeSampleEntriesFromSfd(Document sfd, Set<Integer> sampleIds) {
+        Document result = new Document();
+        for (Map.Entry<String, Object> fieldEntry : sfd.entrySet()) {
+            if (fieldEntry.getValue() instanceof Document) {
+                Document fieldData = (Document) fieldEntry.getValue();
+                Document newFieldData = new Document();
+                for (Map.Entry<String, Object> e : fieldData.entrySet()) {
+                    try {
+                        int sid = Integer.parseInt(e.getKey());
+                        if (!sampleIds.contains(sid)) {
+                            newFieldData.put(e.getKey(), e.getValue());
+                        }
+                    } catch (NumberFormatException ex) {
+                        newFieldData.put(e.getKey(), e.getValue());
+                    }
+                }
+                if (!newFieldData.isEmpty()) {
+                    result.put(fieldEntry.getKey(), newFieldData);
+                }
+            } else {
+                result.put(fieldEntry.getKey(), fieldEntry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private void flushBulkUpdates(List<Bson> queries, List<Bson> updates) {
+        if (!queries.isEmpty()) {
+            variantsCollection.update(queries, updates, new QueryOptions());
+            queries.clear();
+            updates.clear();
+        }
     }
 
     /**
@@ -216,15 +444,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             return removeStudy(study, timestamp, new QueryOptions("purge", true));
         }
 
-        // Remove all the study entries that does not contain any of the other indexed files.
-        // This include studies only with the files to remove and with negated fileIds (overlapped files)
-        Bson studiesToRemoveQuery = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                and(
-                        eq(STUDYID_FIELD, studyId),
-//                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds),
-                        nin(FILES_FIELD + '.' + FILEID_FIELD, otherIndexedFiles)
-                )
-        );
+        // Find variant documents where this study has ONLY the files being removed (no otherIndexedFiles remain).
+        // These variants need the entire study entry removed; the others just need the specific file entries pulled.
+        // Since files are now stored at root level (files[]), check root files[] instead of the old studies[].files.
+        List<Integer> allOtherFileIds = new ArrayList<>(otherIndexedFiles);
+        Bson studiesToRemoveQuery = and(
+                elemMatch(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                not(elemMatch(DocumentToVariantConverter.FILES_FIELD,
+                        and(eq(STUDYID_FIELD, studyId), in(FILEID_FIELD, allOtherFileIds)))));
         removeFilesFromStageCollection(studiesToRemoveQuery, studyId, fileIds);
 
         return removeFilesFromVariantsCollection(studiesToRemoveQuery, studyMetadata, fileIds, timestamp);
@@ -233,7 +460,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
         int batchSize = 500;
 
-        logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
+        int steps = 2;
+        if (autoPruneEmptyVariants()) {
+            steps++;
+        }
+        logger.info("Remove files from stage collection - step 1/" + steps); // Remove study if only contains removed files
         MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
         try (MongoDBIterator<Document> cursor = getVariantsCollection()
@@ -258,72 +489,59 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         List<Bson> studyUpdate = new ArrayList<>(fileIds.size());
 
-        logger.info("Remove files from stage collection - step 2/3"); // Other studies
+        logger.info("Remove files from stage collection - step 2/" + steps); // Other studies
         for (Integer fileId : fileIds) {
             studyUpdate.add(unset(String.valueOf(studyId) + '.' + fileId));
         }
         updatedStageDocuments += stageCollection.update(eq(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()),
                 combine(studyUpdate), new QueryOptions(MULTI, true)).getNumUpdated();
 
-        logger.info("Remove files from stage collection - step 3/3"); // purge
-        long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
+        if (autoPruneEmptyVariants()) {
+            logger.info("Remove files from stage collection - step " + 3 + "/" + steps); // purge
+            long removedStageDocuments = removeEmptyVariantsFromStage(studyId);
+            logger.info("Removed " + removedStageDocuments + " documents from stage");
+        }
 
         logger.info("Updated " + updatedStageDocuments + " documents from stage");
-        logger.info("Removed " + removedStageDocuments + " documents from stage");
     }
 
     private DataResult removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
                                                                         List<Integer> fileIds, long timestamp) {
-        Set<Integer> sampleIds = new HashSet<>();
-        for (Integer fileId : fileIds) {
-            sampleIds.addAll(metadataManager.getFileMetadata(sm.getId(), fileId).getSamples());
-        }
-
         // Update and remove variants from variants collection
         int studyId = sm.getId();
-        logger.info("Remove files from variants collection - step 1/3"); // Remove study if only contains removed files
-        long updatedVariantsDocuments = removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).getNumUpdated();
-
-        // Remove also negated fileIds
-        List<Integer> negatedFileIds = fileIds.stream().map(i -> -i).collect(Collectors.toList());
-        fileIds.addAll(negatedFileIds);
-
-        Bson query;
-        // If default genotype is not the unknown genotype, we must iterate over all the documents in the study
-        if (!sm.getAttributes().getString(DEFAULT_GENOTYPE.key()).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-            query = eq(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId);
-        } else {
-            query = elemMatch(DocumentToVariantConverter.STUDIES_FIELD,
-                    and(
-                            eq(STUDYID_FIELD, studyId),
-                            in(FILES_FIELD + '.' + FILEID_FIELD, fileIds)
-                    )
-            );
+        int step = 0;
+        int steps = 2;
+        if (autoPruneEmptyVariants()) {
+            steps++;
         }
 
-        List<Bson> updates = new ArrayList<>();
-        updates.add(
-                pull(DocumentToVariantConverter.STUDIES_FIELD + ".$." + FILES_FIELD,
-                        in(FILEID_FIELD, fileIds)));
-        for (String gt : sm.getAttributes().getAsStringList(LOADED_GENOTYPES.key())) {
-            updates.add(
-                    pullByFilter(
-                            in(DocumentToVariantConverter.STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt, sampleIds)));
+        long updatedVariantsDocuments = 0;
+        if (autoPruneEmptyVariants()) {
+            // Remove study if only contains removed files
+            logger.info("Remove files from variants collection - step " + (++step) + "/" + steps);
+            updatedVariantsDocuments += removeStudyFromVariants(studyId, studiesToRemoveQuery, timestamp).getNumUpdated();
         }
 
-        Bson update = combine(updates);
+        Bson query = in(DocumentToVariantConverter.FILES_FIELD + '.' + FILEID_FIELD, fileIds);
+
+        // Pull the file documents from root files[]; mgt is inside the file doc so GT is removed atomically.
+        Bson update = pull(DocumentToVariantConverter.FILES_FIELD, in(FILEID_FIELD, fileIds));
         logger.debug("removeFile: query = " + query.toBsonDocument());
         logger.debug("removeFile: update = " + update.toBsonDocument());
 
-        logger.info("Remove files from variants collection - step 2/3"); // Other studies
+        logger.info("Remove files from variants collection - step " + (++step) + "/" + steps); // Other studies
         DataResult result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
         logger.debug("removeFile: matched  = " + result2.getNumMatches());
         logger.debug("removeFile: modified = " + result2.getNumUpdated());
+        updatedVariantsDocuments += result2.getNumUpdated();
 
-        logger.info("Remove files from variants collection - step 3/3"); // purge
-        long removedVariantsDocuments = removeEmptyVariants();
-        logger.info("Updated " + (updatedVariantsDocuments + result2.getNumUpdated()) + " documents from variants");
-        logger.info("Removed " + removedVariantsDocuments + " documents from variants");
+        if (autoPruneEmptyVariants()) {
+            // Purge empty variants
+            logger.info("Remove files from variants collection - step " + (++step) + "/" + steps);
+            long removedVariantsDocuments = removeEmptyVariants();
+            logger.info("Removed " + removedVariantsDocuments + " documents from variants");
+        }
+        logger.info("Updated " + updatedVariantsDocuments + " documents from variants");
 
         return result2;
     }
@@ -344,13 +562,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Integer studyId = metadataManager.getStudyId(studyName);
         Bson query = queryParser.parseQuery(new Query(STUDY.key(), studyId));
 
-        boolean purge = options.getBoolean("purge", true);
+        boolean prune = autoPruneEmptyVariants(options);
+        int steps = 1;
+        if (prune) {
+            steps++;
+        }
 
-        logger.info("Remove study from variants collection - step 1/" + (purge ? '2' : '1'));
+        logger.info("Remove study from variants collection - step 1/" + steps);
         DataResult result = removeStudyFromVariants(studyId, query, timestamp);
 
-        if (purge) {
-            logger.info("Remove study from variants collection - step 2/2");
+        if (prune) {
+            logger.info("Remove study from variants collection - step 2/" + steps);
             removeEmptyVariants();
         }
 
@@ -358,11 +580,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Bson combine = combine(pull(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyId.toString()), unset(studyId.toString()));
         logger.debug("removeStudy: stage query = " + eq.toBsonDocument());
         logger.debug("removeStudy: stage update = " + combine.toBsonDocument());
-        logger.info("Remove study from stage collection - step 1/" + (purge ? '2' : '1'));
+        logger.info("Remove study from stage collection - step 1/" + steps);
         getStageCollection(studyId).update(eq, combine, new QueryOptions(MULTI, true));
 
-        if (purge) {
-            logger.info("Remove study from stage collection - step 2/2");
+        if (prune) {
+            logger.info("Remove study from stage collection - step 2/" + steps);
             removeEmptyVariantsFromStage(studyId);
         }
         return result;
@@ -372,6 +594,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
+                pull(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, studyId)),
                 pull(DocumentToVariantConverter.STATS_FIELD, eq(DocumentToVariantStatsConverter.STUDY_ID, studyId)),
                 getSetIndexNotSynchronized(timestamp)
         );
@@ -383,6 +606,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: modified = {}", result.getNumUpdated());
 
         return result;
+    }
+
+    private boolean autoPruneEmptyVariants() {
+        return autoPruneEmptyVariants(null);
+    }
+
+    private boolean autoPruneEmptyVariants(ObjectMap options) {
+        if (options != null) {
+            ObjectMap mergedOptions = new ObjectMap(configuration);
+            mergedOptions.putAll(options);
+            options = mergedOptions;
+        } else {
+            options = configuration;
+        }
+        return options.getBoolean(
+                MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.key(),
+                MongoDBVariantStorageOptions.AUTO_PRUNE_EMPTY_VARIANTS.defaultValue());
     }
 
     /**
@@ -440,6 +680,143 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return deletedDocuments;
     }
 
+    /**
+     * Scan variants for studies with fileCount==0 in stats. Generate a report and optionally delete/update them.
+     *
+     * @param defaultCohortIds Map of studyId to DEFAULT_COHORT cohortId
+     * @param dryMode          If true, only generate the report without modifying the database
+     * @param outdir           Output directory for the report file
+     * @param timestamp        Timestamp for setIndexNotSynchronized
+     * @return long[]{fullDeleteCount, partialDeleteCount}
+     */
+    public long[] variantsPrune(Map<Integer, Integer> defaultCohortIds, boolean dryMode, java.net.URI outdir, long timestamp) {
+        String statsField = DocumentToVariantConverter.STATS_FIELD;
+
+        // Query: variants with stats.fn==0 OR variants with no studies (empty after removeStudy/removeFiles)
+        Bson query = or(
+                elemMatch(statsField, eq(DocumentToVariantStatsConverter.FILES_NUMBER_FIELD, 0)),
+                exists(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, false)
+        );
+        Bson projection = Projections.include(Arrays.asList(
+                "_id", "chromosome", "start", "end", "reference", "alternate",
+                DocumentToVariantConverter.STUDIES_FIELD, statsField));
+
+        java.nio.file.Path reportPath = java.nio.file.Paths.get(outdir)
+                .resolve("variant_prune_report." + org.opencb.opencga.core.common.TimeUtils.getTime() + ".txt");
+
+        long fullCount = 0;
+        long partialCount = 0;
+        List<String> fullDeleteIds = new ArrayList<>();
+
+        try (java.io.PrintWriter writer = new java.io.PrintWriter(java.nio.file.Files.newBufferedWriter(reportPath));
+             MongoDBIterator<Document> cursor = variantsCollection.nativeQuery()
+                     .find(query, projection, new QueryOptions(MongoDBCollection.BATCH_SIZE, 200))) {
+
+            while (cursor.hasNext()) {
+                Document doc = cursor.next();
+                // Build variant string
+                String chr = doc.getString("chromosome");
+                Integer start = doc.getInteger("start");
+                String ref = doc.getString("reference");
+                String alt = doc.getString("alternate");
+                String variantStr = chr + ":" + start + ":" + ref + ":" + alt;
+
+                // Collect study IDs from studies[] array
+                List<Document> studies = doc.getList(DocumentToVariantConverter.STUDIES_FIELD, Document.class);
+                Set<Integer> studyIds = new HashSet<>();
+                if (studies != null) {
+                    for (Document s : studies) {
+                        studyIds.add(s.getInteger(STUDYID_FIELD));
+                    }
+                }
+
+                // Check stats for fileCount == 0
+                List<Document> stats = doc.getList(statsField, Document.class);
+                List<Integer> emptyStudies = new ArrayList<>();
+                Set<Integer> studiesWithStats = new HashSet<>();
+                if (stats != null) {
+                    for (Document stat : stats) {
+                        int sid = stat.getInteger(DocumentToVariantStatsConverter.STUDY_ID);
+                        int cid = stat.getInteger(DocumentToVariantStatsConverter.COHORT_ID);
+                        Integer defaultCid = defaultCohortIds.get(sid);
+                        if (defaultCid != null && defaultCid.equals(cid)) {
+                            studiesWithStats.add(sid);
+                            Integer fn = stat.getInteger(DocumentToVariantStatsConverter.FILES_NUMBER_FIELD);
+                            if (fn != null && fn == 0) {
+                                emptyStudies.add(sid);
+                            }
+                        }
+                    }
+                }
+
+                // Handle orphan stats (stats without study entry)
+                for (Integer studyWithStats : studiesWithStats) {
+                    if (!studyIds.contains(studyWithStats)) {
+                        studyIds.add(studyWithStats);
+                        if (!emptyStudies.contains(studyWithStats)) {
+                            emptyStudies.add(studyWithStats);
+                        }
+                    }
+                }
+
+                // Classify
+                String studiesCsv = emptyStudies.stream().map(Object::toString).collect(Collectors.joining(","));
+                if (studyIds.isEmpty() || emptyStudies.size() == studyIds.size()) {
+                    // FULL delete
+                    fullCount++;
+                    writer.println(variantStr + "\tFULL\t" + studiesCsv);
+                    if (!dryMode) {
+                        fullDeleteIds.add(doc.getString("_id"));
+                    }
+                } else if (!emptyStudies.isEmpty()) {
+                    // PARTIAL delete — remove data for empty studies
+                    partialCount++;
+                    writer.println(variantStr + "\tPARTIAL\t" + studiesCsv);
+                    if (!dryMode) {
+                        Bson filter = eq("_id", doc.getString("_id"));
+                        List<Bson> pulls = new ArrayList<>();
+                        for (int emptyStudy : emptyStudies) {
+                            pulls.add(pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, emptyStudy)));
+                            pulls.add(pull(DocumentToVariantConverter.FILES_FIELD, eq(STUDYID_FIELD, emptyStudy)));
+                            pulls.add(pull(statsField,
+                                    eq(DocumentToVariantStatsConverter.STUDY_ID, emptyStudy)));
+                        }
+                        pulls.add(getSetIndexNotSynchronized(timestamp));
+                        variantsCollection.update(filter, combine(pulls), null);
+                    }
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException("Error writing prune report to " + reportPath, e);
+        }
+
+        // Execute full deletes in batches
+        if (!dryMode && !fullDeleteIds.isEmpty()) {
+            int batchSize = 1000;
+            for (int i = 0; i < fullDeleteIds.size(); i += batchSize) {
+                List<String> batch = fullDeleteIds.subList(i, Math.min(i + batchSize, fullDeleteIds.size()));
+                variantsCollection.remove(in("_id", batch), new QueryOptions(MULTI, true));
+            }
+            logger.info("Pruned {} variants (full delete) from variants collection", fullDeleteIds.size());
+        }
+
+        if (!dryMode) {
+            // Safety net: also clean any remaining empty variants
+            long extra = removeEmptyVariants();
+            if (extra > 0) {
+                logger.info("Removed {} additional empty variants during safety cleanup", extra);
+            }
+        }
+
+        if (fullCount + partialCount > 0) {
+            logger.info("Prune report written to {}", reportPath);
+        } else {
+            logger.info("No variants to prune");
+        }
+
+        return new long[]{fullCount, partialCount};
+    }
+
     public VariantDBIterator trashedVariants(long timeStamp) {
         MongoDBCollection collection = getTrashCollection();
         return VariantMongoDBIterator.persistentIterator(
@@ -470,35 +847,43 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return getStageCollection(studyId).remove(purgeQuery, new QueryOptions(MULTI, true)).getNumDeleted();
     }
 
+
     @Override
-    public VariantQueryResult<Variant> get(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
         } else {
             options = new QueryOptions(options);
         }
-        if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+        boolean doCount = options.getBoolean(QueryOptions.COUNT);
+        if (doCount && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Long> count = count(variantQuery);
             DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
-            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
-        } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+            return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
+        } else if (!doCount && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
-            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
+            return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
         }
 
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
-        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
 
         if (options.getBoolean("explain", false)) {
-            Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
-            logger.debug("MongoDB Explain = {}",
-                    explain.toJson(JsonWriterSettings.builder().outputMode(JsonMode.SHELL).indent(true).build()));
+            logger.debug("MongoDB explain is not supported for aggregation pipelines");
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
-        return addSamplesMetadataIfRequested(variantsCollection.find(mongoQuery, projection, converter, options),
-                variantQuery.getQuery(), options, getMetadataManager());
+        DataResult<Variant> result = variantsCollection.aggregate(pipeline, converter.asComplexTypeConverter(), options);
+        if (doCount) {
+            // The aggregate() path does not perform a separate count; do it explicitly so that numMatches is
+            // set to the total number of matching documents rather than just the (limited) result set size.
+            result.setNumMatches(count(variantQuery).first());
+        } else {
+            result.setNumMatches(-1);
+        }
+        return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
     }
 
     @Override
@@ -529,7 +914,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     query.remove(REFERENCE.key());
                     query.remove(ALTERNATE.key());
                     query.remove(INCLUDE_STUDY.key());
-                    query.remove(INCLUDE_SAMPLE.key());
                     queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
                     Iterator<Variant> iterator = queryResult.getResults().iterator();
                     while (iterator.hasNext()) {
@@ -544,12 +928,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     queryResult.setNumMatches(queryResult.getResults().size());
                     watch.stop();
                     queryResult.setTime(((int) watch.getTime()));
-                    return addSamplesMetadataIfRequested(queryResult, query, options, metadataManager);
+                    return queryResult;
                 }
             }
         }
         watch.stop();
-        return new VariantQueryResult<>(((int) watch.getTime()), 0, 0, null, Collections.emptyList(), null,
+        return new VariantQueryResult<>(((int) watch.getTime()), 0, 0, null, Collections.emptyList(),
                 MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
@@ -558,8 +942,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         query = query == null ? new Query() : query;
         validateAnnotationQuery(query);
         options = validateAnnotationQueryOptions(options);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
+        Bson mongoQuery = queryParser.parseQuery(query);
+        Bson projection = queryParser.createProjection(query, options);
 
         MongoDBCollection annotationCollection;
         if (name.equals(VariantAnnotationManager.CURRENT)) {
@@ -571,19 +955,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
-        DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
+
+        // JSON_RAW stores the full annotation blob, so MongoDB-level field exclusion doesn't apply to
+        // annotation sub-fields. Configure the Jackson reader to skip excluded fields during deserialization.
+        Set<VariantField> requestedFields = VariantQueryProjectionParser
+                .parseVariantQueryFields(query, options, metadataManager).getFields();
+        if (!requestedFields.containsAll(VariantField.ANNOTATION.getChildren())) {
+            converter.setIncludeFields(requestedFields);
+        }
+
+        DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter.asComplexTypeConverter(), options);
 
         List<VariantAnnotation> annotations = result.getResults()
                 .stream()
                 .map(Variant::getAnnotation)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
         return new DataResult<>(result.getTime(), result.getEvents(), annotations.size(), annotations, result.getNumMatches());
     }
 
     @Override
     public DataResult<Long> count(ParsedVariantQuery variantQuery) {
-        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Bson mongoQuery = queryParser.parseQuery(variantQuery);
+        logger.info("Mongo Query : " + mongoQuery.toBsonDocument().toJson());
         DataResult<Long> count = variantsCollection.count(mongoQuery);
         count.setResults(Collections.singletonList(count.getNumMatches()));
         return count;
@@ -595,83 +990,76 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         switch (field) {
             case "gene":
             case "ensemblGene":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID;
                 break;
             case "ensemblTranscript":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID;
                 break;
             case "ct":
             case "consequence_type":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_SO_ACCESSION;
                 break;
             default:
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_GENE_NAME;
                 break;
         }
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
         return variantsCollection.distinct(documentPath, mongoQuery);
     }
 
     @Override
-    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
         }
-        return iteratorFinal(variantQuery, options);
-    }
-
-    private VariantDBIterator iteratorFinal(final ParsedVariantQuery variantQuery, final QueryOptions options) {
-        VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Document mongoQuery = queryParser.parseQuery(variantQuery);
-        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
-        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+
+        List<Bson> pipeline = queryParser.createAggregationPipeline(variantQuery, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
+
+        // Ignore COUNT option, as the iterator will return all the results, and the count is not needed.
+        options.remove(QueryOptions.COUNT);
+
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQuery.getProjection());
 
         // Short unsorted queries with timeout or limit don't need the persistent cursor.
         if (options.containsKey(QueryOptions.TIMEOUT)
                 || options.containsKey(QueryOptions.LIMIT)
                 || !options.getBoolean(QueryOptions.SORT, false)) {
             StopWatch stopWatch = StopWatch.createStarted();
+            final QueryOptions finalOptions = options;
             VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(
-                    () -> variantsCollection.nativeQuery().find(mongoQuery, projection, options), converter);
+                    () -> variantsCollection.iterator(pipeline, null, finalOptions), converter);
             dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
             return dbIterator;
         } else {
-            logger.debug("Using mongodb persistent iterator");
-            return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
+            return VariantMongoDBIterator.persistentIterator(variantsCollection, pipeline, options, converter);
         }
     }
 
+    @Deprecated
     public MongoDBIterator<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
-        if (query == null) {
-            query = new Query();
-        }
-        if (options == null) {
-            options = new QueryOptions();
-        }
+        ParsedVariantQuery variantQuery = new VariantQueryParser(null, getMetadataManager()).parseQuery(query, options, true);
+        return nativeIterator(variantQuery, options, persistent);
+    }
 
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
-        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
-
+    public MongoDBIterator<Document> nativeIterator(ParsedVariantQuery query, QueryOptions options, boolean persistent) {
+        List<Bson> pipeline = queryParser.createAggregationPipeline(query, options);
+        options = queryParser.parseAggregationPipelineQueryOptions(pipeline, options);
 
         if (persistent) {
             logger.debug("Using mongodb persistent iterator");
-            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options), -1);
+            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, pipeline, options), -1);
         } else {
-            return variantsCollection.nativeQuery().find(mongoQuery, projection, options);
+            return variantsCollection.iterator(pipeline, null, options);
         }
     }
 
     @Override
+    @Deprecated
     public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]},
@@ -694,10 +1082,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         andArr.add(new Document(DocumentToVariantConverter.START_FIELD, start));
 
         // Parsing the rest of options
-        Document mongoQuery = queryParser.parseQuery(query);
-        if (!mongoQuery.isEmpty()) {
-            andArr.add(mongoQuery);
-        }
+        Bson mongoQuery = queryParser.parseQuery(query);
+//        if (!mongoQuery.isEmpty()) {
+//            andArr.add(mongoQuery);
+//        }
+        andArr.add(mongoQuery);
         Document match = new Document("$match", new Document("$and", andArr));
 
 //        qb.and("_at.chunkIds").in(chunkIds);
@@ -780,6 +1169,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult rank(Query query, String field, int numResults, boolean asc) {
         QueryOptions options = new QueryOptions();
         options.put("limit", numResults);
@@ -790,6 +1180,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult groupBy(Query query, String field, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
@@ -803,32 +1194,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         switch (field) {
             case "gene":
             case "ensemblGene":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
-                unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID;
+                unwindPath = DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
 
                 break;
             case "ct":
             case "consequence_type":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
-                unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_SO_ACCESSION;
+                unwindPath = DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
                 numUnwinds = 3;
                 break;
             default:
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_GENE_NAME;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
                 break;
         }
 
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
 
         boolean count = options.getBoolean("count", false);
         int order = options.getInt("order", -1);
@@ -897,18 +1280,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
         logger.warn(warningMsg);
         DataResult queryResult = groupBy(query, fields.get(0), options);
         queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, warningMsg)));
         return queryResult;
-    }
-
-    @Override
-    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
-        StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
-        return updateStats(variantStatsWrappers, sm, timestamp, options);
     }
 
     @Override
@@ -972,7 +1350,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     pullUpdatesBulkList.add(pull);
                 }
 
-                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), getSetIndexNotSynchronized(timestamp));
+                Bson push = combine(pushEach(DocumentToVariantConverter.STATS_FIELD, cohorts), getSetIndexStatsNotSynchronized(timestamp));
                 pushQueriesBulkList.add(find);
                 pushUpdatesBulkList.add(push);
             }
@@ -1041,7 +1419,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
-                    set(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", convertedVariantAnnotation),
+                    set(DocumentToVariantConverter.ANNOTATION_FIELD, convertedVariantAnnotation),
                     getSetIndexNotSynchronized(timestamp));
             queries.add(find);
             updates.add(update);
@@ -1052,7 +1430,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
                                                QueryOptions options) {
-        Document queryDocument = queryParser.parseQuery(query);
+        Bson queryDocument = queryParser.parseQuery(query);
         Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
         return variantsCollection.update(queryDocument,
                 combine(set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + '.' + name, updateDocument),
@@ -1061,10 +1439,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public DataResult removeAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("deleteAnnotation: query = {}", mongoQuery);
 
-        Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", null));
+        Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD, null));
         logger.debug("deleteAnnotation: update = {}", update);
         return variantsCollection.update(mongoQuery, update, new QueryOptions(MULTI, true));
     }
@@ -1087,15 +1465,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Integer> returnedStudies = selectVariantElements.getStudyIds();
         DocumentToSamplesConverter samplesConverter;
         samplesConverter = new DocumentToSamplesConverter(metadataManager, selectVariantElements);
-        samplesConverter.setSampleDataKeys(getIncludeSampleData(query));
         samplesConverter.setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key()));
+        if (query.containsKey(SPARSE_SAMPLES.key())) {
+            samplesConverter.setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false));
+        }
         if (query.containsKey(UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setUnknownGenotype(query.getString(UNKNOWN_GENOTYPE.key()));
         }
 
-        DocumentToStudyVariantEntryConverter studyEntryConverter;
+        DocumentToStudyEntryConverter studyEntryConverter;
 
-        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
+        studyEntryConverter = new DocumentToStudyEntryConverter(false, selectVariantElements.getFiles(), samplesConverter);
         studyEntryConverter.setMetadataManager(metadataManager);
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         Map<Integer, String> annotationIds;
@@ -1128,8 +1508,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * - IDs
      * <p>
      * Study indices
-     * - StudyId
-     * - FileId
+     * - StudyId (studies.sid)
+     * File indices
+     * - FileId (files.fid)
      * <p>
      * Stats indices
      * - StatsMaf
@@ -1138,7 +1519,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Annotation indices
      * - XRef.id
      * - ConsequenceType.so
-     * - _gn_so : SPARSE
+     * - _ct_combined : SPARSE
      * - PopulationFrequency Study + Population + AlternateFrequency : SPARSE
      * - Clinical.Clinvar.clinicalSignificance  : SPARSE
      * ConservedRegionScore
@@ -1174,14 +1555,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)
                 .append(DocumentToVariantConverter.START_FIELD, 1)
                 .append(DocumentToVariantConverter.END_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.IDS_FIELD, 1), onBackground);
-
         // Study indices
         ////////////////
         variantsCollection.createIndex(
                 new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, 1), onBackground);
         variantsCollection.createIndex(
-                new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
+                new Document(DocumentToVariantConverter.FILES_FIELD + '.' + FILEID_FIELD, 1), onBackground);
 
         // Stats indices
         ////////////////
@@ -1195,104 +1574,64 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // XRefs.id
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.XREFS_ID, 1),
                 onBackground);
         // ConsequenceType.so
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, 1),
                 onBackground);
-        // _gn_so : SPARSE
+        // CT_COMBINED : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_COMBINED, 1),
                 onBackgroundSparse);
         // Population frequency : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1)
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY, 1)
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP, 1)
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY, 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "pop_freq"));
         // Clinical clinvar : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS, 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "clinical"));
 
         // Conserved region score (phastCons, phylop, gerp)
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_SCORE, 1),
                 onBackground);
 
         // Functional score (cadd_scaled, cadd_raw)
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_SCORE, 1),
                 onBackground);
 
         // Drugs : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.DRUG_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.DRUG_NAME, 1),
                 onBackgroundSparse);
         // Protein substitution score (polyphen , sift) : SPARSE
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_SCORE, 1),
                 onBackgroundSparse);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_SCORE, 1),
                 onBackgroundSparse);
 
         // Protein substitution score description (polyphen , sift) : SPARSE
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_DESCRIPTION, 1),
                 onBackgroundSparse);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_DESCRIPTION, 1),
                 onBackgroundSparse);
 
         // Protein Keywords : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
                 onBackgroundSparse);
         // TranscriptAnnotationFlags : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
                 onBackgroundSparse);
 
         // _index.ts
@@ -1313,4 +1652,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.metadataManager = variantStorageMetadataManager;
     }
 
+    public MongoDataStoreManager getMongoDataStoreManager() {
+        return mongoManager;
+    }
 }

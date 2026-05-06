@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
@@ -46,7 +47,7 @@ public class HBaseToStudyEntryConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        DummyVariantStorageEngine.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sm = mm.createStudy("S1");
         studyId = sm.getId();
@@ -75,7 +76,7 @@ public class HBaseToStudyEntryConverterTest {
         return new HBaseToStudyEntryConverter(mm, null)
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setIncludeSampleId(false)
-                        .setProjection(new VariantQueryProjection(mm.getStudyMetadata(sm.getId()),
+                        .setProjection(new VariantQueryProjection(mm, mm.getStudyMetadata(sm.getId()),
                                 Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4, sampleId5, sampleId6), Collections.emptyList()))
                         .build());
     }

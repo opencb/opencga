@@ -12,7 +12,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,7 +23,7 @@ public class AutoScaleHBaseTableTest extends VariantStorageBaseTest implements H
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantHadoopDBAdaptor dbAdaptor;
-    private SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private HadoopVariantStorageEngine engine;
 
     @Before

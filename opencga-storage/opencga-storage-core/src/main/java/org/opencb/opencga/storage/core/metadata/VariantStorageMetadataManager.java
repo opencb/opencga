@@ -1062,7 +1062,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         for (Integer fileId : fileIds) {
             String name = updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY))
                     .getName();
-            logger.info("Register file " + name + " as INDEXED");
+            logger.info("Register file " + name + " (" + fileId + ") as INDEXED");
         }
         updateVariantIndexTimestamp();
         fileIdsFromSampleIdCache.clear();
@@ -1698,18 +1698,26 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return taskDBAdaptor.getTask(studyId, taskId, null);
     }
 
-    // Use taskId to filter task!
-    @Deprecated
-    public TaskMetadata getTask(int studyId, String taskName, List<Integer> fileIds) {
+    public TaskMetadata searchTask(int studyId, String taskName, List<Integer> fileIds) {
         TaskMetadata task = null;
         Iterator<TaskMetadata> it = taskIterator(studyId, null, true);
         while (it.hasNext()) {
             TaskMetadata t = it.next();
             if (t != null && t.getName().equals(taskName) && t.getFileIds().equals(fileIds)) {
+                if (t.currentStatus() == TaskMetadata.Status.READY) {
+                    continue;
+                }
                 task = t;
                 break;
             }
         }
+        return task;
+    }
+
+    // Use taskId to filter task!
+    @Deprecated
+    public TaskMetadata getTask(int studyId, String taskName, List<Integer> fileIds) {
+        TaskMetadata task = searchTask(studyId, taskName, fileIds);
         if (task == null) {
             throw new IllegalStateException("Batch task " + taskName + " for files " + fileIds + " not found!");
         }
@@ -1865,6 +1873,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         } else {
             if (!(obj instanceof String)) {
+                if (obj == null) {
+                    throw new IllegalArgumentException("Unable to parse null obj");
+                }
                 throw new IllegalArgumentException("Unable to parse obj type " + obj.getClass());
             }
             String str = obj.toString();
@@ -2219,11 +2230,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the file is not valid for being loaded
      */
     private int registerFile(int studyId, String filePath, FileMetadata.Type type) throws StorageEngineException {
+        String fileName = Paths.get(filePath).getFileName().toString();
         Integer fileId = getFileId(studyId, filePath);
         if (fileId != null) {
+            FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+            if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
+                throw StorageEngineException.invalidFileStatus(fileMetadata.getId(), fileName);
+            }
             return fileId;
         }
-        String fileName = Paths.get(filePath).getFileName().toString();
         fileId = getFileIdOrDuplicated(studyId, fileName);
 
         if (fileId != null) {
@@ -2292,13 +2307,41 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         } else {
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
-                logger.info("Register new file '{}' with id {}", fileName, fileId);
-                FileMetadata fileMetadata = new FileMetadata()
-                        .setId(fileId)
-                        .setName(fileName)
-                        .setPath(filePath)
-                        .setType(type);
-                unsecureUpdateFileMetadata(studyId, fileMetadata);
+                // Re-check for concurrent registration of the same filename.
+                // fileIdCache does not cache null values, so this always hits the DB inside the lock.
+                Integer concurrentFileId = getFileIdOrDuplicated(studyId, fileName);
+                if (concurrentFileId != null) {
+                    if (concurrentFileId != DUPLICATED_NAME_ID) {
+                        FileMetadata existingFm = getFileMetadata(studyId, concurrentFileId);
+                        if (existingFm.getPath().equals(filePath)) {
+                            // Same file was registered concurrently — return the existing ID
+                            return concurrentFileId;
+                        }
+                        if (!existingFm.isDuplicatedName()) {
+                            logger.info("File '{}' already registered with a different path (concurrent registration).", fileName);
+                            markFileAsDuplicated(studyId, concurrentFileId);
+                        }
+                        fileIdCache.clear();
+                        fileNameCache.clear();
+                    }
+                    // Register new file with full path since name is duplicated
+                    logger.info("A file with name '{}' is already indexed (concurrent). Register with file path as file name", fileName);
+                    FileMetadata fm = new FileMetadata()
+                            .setId(fileId)
+                            .setName(filePath)
+                            .setPath(filePath)
+                            .setDuplicatedName(fileName)
+                            .setType(type);
+                    unsecureUpdateFileMetadata(studyId, fm);
+                } else {
+                    logger.info("Register new file '{}' with id {}", fileName, fileId);
+                    FileMetadata fileMetadata = new FileMetadata()
+                            .setId(fileId)
+                            .setName(fileName)
+                            .setPath(filePath)
+                            .setType(type);
+                    unsecureUpdateFileMetadata(studyId, fileMetadata);
+                }
             }
         }
 
@@ -2562,23 +2605,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return previousStatus.get();
     }
 
-    @Deprecated
-    public TaskMetadata.Status setStatus(int studyId, String taskName, List<Integer> fileIds, TaskMetadata.Status status)
-            throws StorageEngineException {
-        TaskMetadata task = getTask(studyId, taskName, fileIds);
-        TaskMetadata.Status previousStatus = task.currentStatus();
-        task.addStatus(Calendar.getInstance().getTime(), status);
-        unsecureUpdateTask(studyId, task);
-
-        return previousStatus;
-    }
-
-    @Deprecated
-    public TaskMetadata.Status atomicSetStatus(int studyId, TaskMetadata.Status status, String operationName,
-                                               List<Integer> files) throws StorageEngineException {
-        return setStatus(studyId, operationName, files, status);
-    }
-
     public TaskMetadata addRunningTask(int studyId, String jobOperationName, List<Integer> fileIds) throws StorageEngineException {
         return addRunningTask(studyId, jobOperationName, fileIds, false, TaskMetadata.Type.OTHER);
     }
@@ -2667,7 +2693,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         TaskMetadata task;
         if (resumeTask == null) {
-            task = new TaskMetadata(newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
+            task = new TaskMetadata(studyId, newTaskId(studyId), jobOperationName, fileIds, System.currentTimeMillis(), type);
             task.addStatus(Calendar.getInstance().getTime(), TaskMetadata.Status.RUNNING);
             unsecureUpdateTask(studyId, task);
         } else {

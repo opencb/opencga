@@ -388,7 +388,7 @@ public class JobWSServer extends OpenCGAWSServer {
         if (limit == 0) {
             limit = 20;
         }
-        return run(() -> catalogManager.getJobManager().top(study, query, limit, token));
+        return run(() -> catalogManager.getJobManager().top(null, study, query, limit, token));
     }
 
 

@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
+import org.opencb.opencga.storage.hadoop.variant.gaps.HBaseFillGapsTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -399,11 +399,11 @@ public class VariantHBaseQueryParser {
 
                 scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
 
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSampleIds())) {
                     scan.addColumn(family, buildFileColumnKey(studyId, fileId));
                 }
 
-                for (Integer sampleId : study.getSamples()) {
+                for (Integer sampleId : study.getSampleIds()) {
                     Collection<Integer> requiredFilesFromSample = study.getMultiFileSampleFiles().get(sampleId);
                     List<Integer> allFilesFromSample = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
                     if (requiredFilesFromSample == null || requiredFilesFromSample.isEmpty()) {
@@ -422,7 +422,7 @@ public class VariantHBaseQueryParser {
                 }
 
                 scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
-                for (Integer fileId : study.getFiles()) {
+                for (Integer fileId : study.getFileIds()) {
                     scan.addColumn(family, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
                 }
             }
@@ -451,16 +451,27 @@ public class VariantHBaseQueryParser {
             } else {
                 subFilters = filters;
             }
+            // Track non-negated file studies to decide which are individually guaranteed per row.
+            // AND (or single value): every file must be present → every file's study is guaranteed.
+            // OR: only guaranteed when all non-negated files belong to a single study.
+            Set<Integer> orFileStudies = operation == QueryOperation.OR ? new HashSet<>() : null;
             for (String file : values) {
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudy);
                 byte[] column = buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue());
                 if (isNegated(file)) {
                     subFilters.addFilter(missingColumnFilter(column));
                 } else {
-                    filteredStudies.add(fileIdPair.getKey());
+                    if (orFileStudies == null) {
+                        filteredStudies.add(fileIdPair.getKey());
+                    } else {
+                        orFileStudies.add(fileIdPair.getKey());
+                    }
                     subFilters.addFilter(existingColumnFilter(column));
                 }
                 scan.addColumn(family, column);
+            }
+            if (orFileStudies != null && orFileStudies.size() == 1) {
+                filteredStudies.addAll(orFileStudies);
             }
         }
 
@@ -500,28 +511,68 @@ public class VariantHBaseQueryParser {
                 if (VariantStorageEngine.SplitData.MULTI.equals(metadataManager.getLoadSplitData(studyId, sampleId))) {
                     sampleFiles.addAll(metadataManager.getFileIdsFromSampleId(studyId, sampleId));
                 }
+                boolean missingGenotypesUpdated = defaultStudy.getAttributes()
+                        .getBoolean(VariantStorageEngine.MISSING_GENOTYPES_UPDATED);
+                // If the caller asked to treat unknown as hom-ref (UNKNOWN_GENOTYPE=0/0), a 0/0
+                // filter should also match variants where the sample's file is absent — matching
+                // the display convention that unknown positions render as 0/0.
+                boolean unknownIsHomRef = HBaseFillGapsTask.isHomRefDiploid(
+                        query.getString(UNKNOWN_GENOTYPE.key(), "."));
+                // For the "null" sample-file placeholder we need the sample's first file to look up the
+                // file column. Only fetched if the sample metadata is actually needed.
+                Integer firstSampleFileId = null;
                 List<Filter> gtSubFilters = new ArrayList<>();
                 for (Integer sampleFile : sampleFiles) {
                     byte[] column;
+                    Integer fileIdForColumn;
                     if (sampleFile == null) {
                         column = buildSampleColumnKey(studyId, sampleId);
+                        if (firstSampleFileId == null) {
+                            List<Integer> sampleFileIds = metadataManager.getSampleMetadata(studyId, sampleId).getFiles();
+                            firstSampleFileId = sampleFileIds.isEmpty() ? null : sampleFileIds.get(0);
+                        }
+                        fileIdForColumn = firstSampleFileId;
                     } else {
                         column = buildSampleColumnKey(studyId, sampleId, sampleFile);
+                        fileIdForColumn = sampleFile;
                     }
+                    // When fill-missing has not been applied, a NULL sample column reads as "0/0"
+                    // only if the sample's file is present at the variant row; otherwise it reads as
+                    // "./.". Include the file column in the filter to disambiguate — unless the
+                    // caller opted into treating unknown as hom-ref via UNKNOWN_GENOTYPE.
+                    final byte[] fileColumn = (!missingGenotypesUpdated && !unknownIsHomRef && fileIdForColumn != null)
+                            ? buildFileColumnKey(studyId, fileIdForColumn)
+                            : null;
                     genotypes.stream()
                             .map(genotype -> {
                                 SingleColumnValueFilter filter = new SingleColumnValueFilter(family, column, CompareFilter.CompareOp.EQUAL,
                                         new BinaryPrefixComparator(Bytes.toBytes(genotype)));
                                 filter.setFilterIfMissing(true);
                                 filter.setLatestVersionOnly(true);
-                                if (FillGapsTask.isHomRefDiploid(genotype)) {
-                                    return new FilterList(FilterList.Operator.MUST_PASS_ONE, filter, missingColumnFilter(column));
+                                if (HBaseFillGapsTask.isHomRefDiploid(genotype)) {
+                                    if (fileColumn == null) {
+                                        // Fill-missing applied (or no file column available):
+                                        // NULL sample column always reads as "0/0".
+                                        return new FilterList(FilterList.Operator.MUST_PASS_ONE,
+                                                filter, missingColumnFilter(column));
+                                    } else {
+                                        // NULL sample column reads as "0/0" only if the sample's file
+                                        // column is also present at the variant row.
+                                        return new FilterList(FilterList.Operator.MUST_PASS_ONE,
+                                                filter,
+                                                new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                                                        missingColumnFilter(column),
+                                                        existingColumnFilter(fileColumn)));
+                                    }
                                 } else {
                                     return filter;
                                 }
                             })
                             .forEach(gtSubFilters::add);
                     scan.addColumn(family, column);
+                    if (fileColumn != null) {
+                        scan.addColumn(family, fileColumn);
+                    }
                 }
                 if (gtSubFilters.size() == 1) {
                     subFilters.addFilter(gtSubFilters.get(0));
@@ -547,6 +598,10 @@ public class VariantHBaseQueryParser {
             } else {
                 subFilters = filters;
             }
+            // Only the STUDY=AND (or single-value) case can safely drop atoms guaranteed by a
+            // prior filter: dropping an atom from STUDY=OR narrows the OR by removing a satisfied
+            // alternative while keeping unsatisfied ones.
+            boolean canSkipGuaranteed = operation != QueryOperation.OR;
             for (String studyStr : values) {
                 int studyId = metadataManager.getStudyId(studyStr);
                 byte[] column = VariantPhoenixSchema.getStudyColumn(studyId).bytes();
@@ -554,7 +609,7 @@ public class VariantHBaseQueryParser {
                     subFilters.addFilter(missingColumnFilter(column));
                     scan.addColumn(family, column);
                 } else {
-                    if (!filteredStudies.contains(studyId)) {
+                    if (!canSkipGuaranteed || !filteredStudies.contains(studyId)) {
                         subFilters.addFilter(existingColumnFilter(column));
                         scan.addColumn(family, column);
                     }
