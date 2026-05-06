@@ -115,6 +115,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
             boolean annotateAll = queryParams.isEmpty();
             boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+            boolean forceNewAnnotationSet = params.getBoolean(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(),
+                    VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.defaultValue());
 
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip MapReduce to discover variants to annotate.");
@@ -152,7 +154,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                             pm.getAttributes().put(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
-                        updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                        updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, forceNewAnnotationSet,
+                                variantAnnotator.getVariantAnnotationMetadata());
                     }
                 }
             }

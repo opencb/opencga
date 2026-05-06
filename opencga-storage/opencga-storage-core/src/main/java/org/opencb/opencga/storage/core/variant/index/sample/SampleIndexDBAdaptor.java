@@ -4,6 +4,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -89,6 +90,64 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         return iterator(parseSampleIndexQuery(query));
+    }
+
+    /**
+     * Emit a non-fatal warning event for every sample whose stored Sample Index annotationSetId
+     * differs from the project's current annotationSetId. Backcompat: a stored value of {@code 0}
+     * means "unknown — assume current" and is silently skipped.
+     *
+     * <p>If the query does not consult annotation bits ({@link SampleIndexQuery#emptyAnnotationIndex()}),
+     * the check is skipped — there is nothing stale being read.
+     *
+     * @param sampleIndexQuery The parsed sample index query.
+     * @param events           The event list to append warnings to (typically
+     *                         {@code ParsedVariantQuery.getEvents()}).
+     */
+    public void emitStaleAnnotationSetIdEvents(SampleIndexQuery sampleIndexQuery, List<Event> events) {
+        if (sampleIndexQuery == null || events == null) {
+            return;
+        }
+        if (sampleIndexQuery.emptyAnnotationIndex()) {
+            // Query does not read annotation bits from the SSI — drift can not affect this result.
+            return;
+        }
+        int projectAnnotationSetId;
+        try {
+            projectAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
+        } catch (NullPointerException e) {
+            // No annotation metadata yet — nothing to compare against.
+            return;
+        }
+        if (projectAnnotationSetId <= 1) {
+            // Project never had an annotation overwrite — drift impossible.
+            return;
+        }
+        Integer studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
+        if (studyId == null) {
+            return;
+        }
+        int ssiVersion = sampleIndexQuery.getSchema().getVersion();
+        for (String sampleName : sampleIndexQuery.getSamplesMap().keySet()) {
+            Integer sampleId = metadataManager.getSampleId(studyId, sampleName, true);
+            if (sampleId == null) {
+                continue;
+            }
+            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
+            if (sm == null) {
+                continue;
+            }
+            int stored = sm.getSampleIndexAnnotationSetId(ssiVersion);
+            if (stored != 0 && stored != projectAnnotationSetId) {
+                events.add(new Event(Event.Type.WARNING,
+                        "Sample '" + sampleName + "' Sample Index annotation is stale "
+                                + "(stored annotationSetId=" + stored
+                                + ", project current=" + projectAnnotationSetId + "). "
+                                + "Filtering by annotation-derived bits (clinical-significance, biotype, "
+                                + "consequence-type, ...) may return outdated results. "
+                                + "Run variant-secondary-sample-index --annotate to refresh."));
+            }
+        }
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query) {

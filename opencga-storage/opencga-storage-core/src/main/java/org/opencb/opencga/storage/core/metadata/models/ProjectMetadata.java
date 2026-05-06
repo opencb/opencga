@@ -126,6 +126,13 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         private List<ObjectMap> sourceVersion;
         private DataRelease dataRelease;
         private List<String> privateSources;
+        /**
+         * Free-form description of this annotation snapshot. Populated automatically when the
+         * annotationSetId is bumped by {@code VariantAnnotationManager} to record why
+         * (e.g. "annotator changed: ...; dataRelease changed: 4 -> 7"). Nullable for backwards
+         * compatibility with snapshots created before this field existed.
+         */
+        private String description;
 
         public VariantAnnotationMetadata() {
             extensions = new HashMap<>();
@@ -135,6 +142,12 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
                                          Map<String, ObjectMap> extensions, List<ObjectMap> sourceVersion, DataRelease dataRelease,
                                          List<String> privateSources) {
+            this(id, name, creationDate, annotator, extensions, sourceVersion, dataRelease, privateSources, null);
+        }
+
+        public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
+                                         Map<String, ObjectMap> extensions, List<ObjectMap> sourceVersion, DataRelease dataRelease,
+                                         List<String> privateSources, String description) {
             this.id = id;
             this.name = name;
             this.creationDate = creationDate;
@@ -143,6 +156,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
             this.privateSources = privateSources;
+            this.description = description;
         }
 
         public VariantAnnotationMetadata(VariantAnnotationMetadata other) {
@@ -157,6 +171,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             }
             this.dataRelease = other.dataRelease == null ? null : JacksonUtils.copySafe(other.dataRelease, DataRelease.class);
             this.privateSources = other.privateSources != null ? new ArrayList<>(other.privateSources) : null;
+            this.description = other.description;
         }
 
         public int getId() {
@@ -235,6 +250,15 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return this;
         }
 
+        public String getDescription() {
+            return description;
+        }
+
+        public VariantAnnotationMetadata setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -250,12 +274,14 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
                     && Objects.equals(extensions, that.extensions)
                     && Objects.equals(sourceVersion, that.sourceVersion)
                     && Objects.equals(dataRelease, that.dataRelease)
-                    && Objects.equals(privateSources, that.privateSources);
+                    && Objects.equals(privateSources, that.privateSources)
+                    && Objects.equals(description, that.description);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, name, creationDate, annotator, extensions, sourceVersion, dataRelease, privateSources);
+            return Objects.hash(id, name, creationDate, annotator, extensions, sourceVersion, dataRelease, privateSources,
+                    description);
         }
     }
 

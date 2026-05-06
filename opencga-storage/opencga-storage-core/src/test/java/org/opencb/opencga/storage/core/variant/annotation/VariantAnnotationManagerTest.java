@@ -88,6 +88,104 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     }
 
     @Test
+    public void testAnnotationSetIdBumpsOnAnnotatorChange() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        // First annotation. annotationSetId starts at 1.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        ProjectMetadata.VariantAnnotationSets sets =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals(1, sets.getCurrent().getId());
+        int savedBefore = sets.getSaved().size();
+
+        // After the first annotation pass, every indexed sample/file must be stamped with id=1.
+        int studyIdAfterFirst = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
+        for (Integer sampleId : variantStorageEngine.getMetadataManager().getIndexedSamples(studyIdAfterFirst)) {
+            assertEquals("Sample annotationSetId must be stamped after a full annotate pass",
+                    1, variantStorageEngine.getMetadataManager().getSampleMetadata(studyIdAfterFirst, sampleId)
+                            .getAnnotationSetId());
+        }
+        variantStorageEngine.getMetadataManager().fileMetadataIterator(studyIdAfterFirst).forEachRemaining(fm -> {
+            if (fm.isIndexed()) {
+                assertEquals("File annotationSetId must be stamped after a full annotate pass",
+                        1, fm.getAnnotationSetId());
+            }
+        });
+
+        // Different annotator with overwrite. annotationSetId must bump, previous metadata moves to saved
+        // and the auto-snapshot's description records why.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals(2, sets.getCurrent().getId());
+        assertEquals("v2", sets.getCurrent().getAnnotator().getVersion());
+        assertEquals(savedBefore + 1, sets.getSaved().size());
+        ProjectMetadata.VariantAnnotationMetadata snapshot = sets.getSaved().get(sets.getSaved().size() - 1);
+        assertEquals(1, snapshot.getId());
+        assertEquals("v1", snapshot.getAnnotator().getVersion());
+        assertNotNull("Auto-snapshot must record a bump reason in description", snapshot.getDescription());
+        assertThat(snapshot.getDescription(), containsString("annotator changed"));
+
+        // After the second pass under overwrite, every indexed sample/file (newly-annotated AND
+        // already-annotated re-stamped via alreadyAnnotatedFiles/alreadyAnnotatedSamples) must be at id=2.
+        int studyId = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
+        for (Integer sampleId : variantStorageEngine.getMetadataManager().getIndexedSamples(studyId)) {
+            assertEquals("Sample annotationSetId must advance to 2 after overwrite with annotator change",
+                    2, variantStorageEngine.getMetadataManager().getSampleMetadata(studyId, sampleId)
+                            .getAnnotationSetId());
+        }
+        variantStorageEngine.getMetadataManager().fileMetadataIterator(studyId).forEachRemaining(fm -> {
+            if (fm.isIndexed()) {
+                assertEquals("File annotationSetId must advance to 2 after overwrite with annotator change",
+                        2, fm.getAnnotationSetId());
+            }
+        });
+
+        // Same annotator again with overwrite. annotationSetId must NOT bump.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals("Same annotator must not bump annotationSetId",
+                2, sets.getCurrent().getId());
+        assertEquals(savedBefore + 1, sets.getSaved().size());
+    }
+
+    @Test
+    public void testAnnotationSetIdBumpsOnForceNewAnnotationSet() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        // First annotation
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        ProjectMetadata.VariantAnnotationSets sets =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals(1, sets.getCurrent().getId());
+        int savedBefore = sets.getSaved().size();
+
+        // Same annotator + overwrite + forceNewAnnotationSet -> bumps even though nothing else changed
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)
+                .append(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(), true));
+        sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals(2, sets.getCurrent().getId());
+        assertEquals(savedBefore + 1, sets.getSaved().size());
+        ProjectMetadata.VariantAnnotationMetadata snapshot = sets.getSaved().get(sets.getSaved().size() - 1);
+        assertNotNull(snapshot.getDescription());
+        assertThat(snapshot.getDescription(), containsString("forceNewAnnotationSet"));
+    }
+
+    @Test
     public void testChangeAnnotatorFail() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),

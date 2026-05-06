@@ -50,6 +50,13 @@ public abstract class VariantAnnotationManager {
     public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
     public static final String CURRENT = "CURRENT";
 
+    /**
+     * Marker prefix used in {@link VariantAnnotationMetadata#getName()} for snapshots created by
+     * {@link #bumpAnnotationSetId}. Used as an idempotency marker to detect whether a transition
+     * has already been bumped within the current annotate() call.
+     */
+    private static final String AUTO_SNAPSHOT_PREFIX = "snapshot_";
+
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
     public abstract long annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
@@ -61,23 +68,24 @@ public abstract class VariantAnnotationManager {
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
             throws VariantAnnotatorException {
-//        VariantAnnotatorProgram newAnnotator = annotator.getVariantAnnotatorProgram();
-//        List<ObjectMap> newSourceVersion = annotator.getVariantAnnotatorSourceVersion();
+        return checkCurrentAnnotation(annotator, projectMetadata, overwrite, false);
+    }
 
-//        if (newSourceVersion == null) {
-//            newSourceVersion = Collections.emptyList();
-//        }
-//        if (newAnnotator == null) {
-//            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
-//        }
-//        if (newSourceVersion.isEmpty()) {
-//            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-//        }
+    protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
+                                                                     boolean overwrite, boolean forceNewAnnotationSet)
+            throws VariantAnnotatorException {
         ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = annotator.getVariantAnnotationMetadata();
-        return checkCurrentAnnotation(projectMetadata, overwrite, newVariantAnnotationMetadata);
+        return checkCurrentAnnotation(projectMetadata, overwrite, forceNewAnnotationSet, newVariantAnnotationMetadata);
     }
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,
+                                                                     VariantAnnotationMetadata newVariantAnnotationMetadata)
+            throws VariantAnnotatorException {
+        return checkCurrentAnnotation(projectMetadata, overwrite, false, newVariantAnnotationMetadata);
+    }
+
+    protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,
+                                                                     boolean forceNewAnnotationSet,
                                                                      VariantAnnotationMetadata newVariantAnnotationMetadata)
             throws VariantAnnotatorException {
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
@@ -88,6 +96,14 @@ public abstract class VariantAnnotationManager {
             current.setName(CURRENT);
         }
         boolean firstAnnotation = current.getAnnotator() == null;
+
+        // Reasons accumulated for bumping the annotationSetId. Each branch below that "would have
+        // failed without overwrite" appends a human-readable reason. At the end of this method, if
+        // the list is non-empty (or forceNewAnnotationSet is true), we snapshot current and bump.
+        List<String> bumpReasons = new ArrayList<>();
+        if (forceNewAnnotationSet && !firstAnnotation) {
+            bumpReasons.add("forceNewAnnotationSet requested");
+        }
 
         // Check using same annotator and same source version
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
@@ -102,6 +118,7 @@ public abstract class VariantAnnotationManager {
                         + ", attempting to annotate with " + newAnnotator.toString();
                 if (overwrite) {
                     logger.info(msg);
+                    bumpReasons.add("annotator changed: " + currentAnnotator + " -> " + newAnnotator);
                 } else {
                     throw new VariantAnnotatorException(msg);
                 }
@@ -114,6 +131,7 @@ public abstract class VariantAnnotationManager {
                 } else {
                     logger.warn(msg);
                 }
+                // Patch-only difference: not enough on its own to bump annotationSetId.
             }
         }
 
@@ -125,6 +143,7 @@ public abstract class VariantAnnotationManager {
 
             if (overwrite) {
                 logger.info(msg);
+                bumpReasons.add("dataRelease dropped (was " + current.getDataRelease().getRelease() + ")");
             } else {
                 throw new VariantAnnotatorException(msg);
             }
@@ -145,6 +164,7 @@ public abstract class VariantAnnotationManager {
 
             if (overwrite) {
                 logger.info(msg);
+                bumpReasons.add("privateSources changed: " + currentPrivateSources + " -> " + newPrivateSources);
             } else {
                 throw new VariantAnnotatorException(msg);
             }
@@ -161,6 +181,8 @@ public abstract class VariantAnnotationManager {
 
                     if (overwrite) {
                         logger.info(msg);
+                        bumpReasons.add("dataRelease changed: " + current.getDataRelease().getRelease()
+                                + " -> " + newVariantAnnotationMetadata.getDataRelease().getRelease());
                     } else {
                         throw new VariantAnnotatorException(msg);
                     }
@@ -184,6 +206,7 @@ public abstract class VariantAnnotationManager {
 
                 if (overwrite) {
                     logger.info(msg);
+                    bumpReasons.add("annotator sourceVersion changed");
                 } else {
                     // List of sources from cellbase 5.0.x is not reliable, and should
                     // not be taken into account to force a full annotation overwrite
@@ -213,9 +236,16 @@ public abstract class VariantAnnotationManager {
 
             if (overwrite) {
                 logger.info(msg);
+                bumpReasons.add("annotator extensions changed");
             } else {
                 throw new VariantAnnotatorException(msg);
             }
+        }
+
+        if (!bumpReasons.isEmpty()) {
+            // Bump BEFORE the annotation MR so freshly written rows are stamped with the new id.
+            // Idempotent within a single annotate() call (preflight + post-load both call here).
+            bumpAnnotationSetId(projectMetadata, current, String.join("; ", bumpReasons));
         }
 
         return current;
@@ -261,14 +291,9 @@ public abstract class VariantAnnotationManager {
         return newSourceVersionSet.containsAll(currentSourceVersion);
     }
 
-    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata, boolean overwrite)
-            throws VariantAnnotatorException {
-        updateCurrentAnnotation(annotator, projectMetadata, overwrite, annotator.getVariantAnnotationMetadata());
-    }
-
-
     protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
-                                                 boolean overwrite, VariantAnnotationMetadata newAnnotationMetadata)
+                                                 boolean overwrite, boolean forceNewAnnotationSet,
+                                                 VariantAnnotationMetadata newAnnotationMetadata)
             throws VariantAnnotatorException {
         List<ObjectMap> newSourceVersion = newAnnotationMetadata.getSourceVersion();
         VariantAnnotatorProgram newAnnotator = newAnnotationMetadata.getAnnotator();
@@ -279,7 +304,7 @@ public abstract class VariantAnnotationManager {
             throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
         }
 
-        checkCurrentAnnotation(projectMetadata, overwrite, newAnnotationMetadata);
+        checkCurrentAnnotation(projectMetadata, overwrite, forceNewAnnotationSet, newAnnotationMetadata);
 
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         current.setAnnotator(newAnnotator);
@@ -287,6 +312,50 @@ public abstract class VariantAnnotationManager {
         current.setDataRelease(newAnnotationMetadata.getDataRelease());
         current.setPrivateSources(newAnnotationMetadata.getPrivateSources());
         current.setExtensions(newAnnotationMetadata.getExtensions());
+    }
+
+    /**
+     * Snapshot the outgoing {@link VariantAnnotationMetadata} into {@code saved} and bump
+     * {@code current.id}. The caller is responsible for verifying that something has actually
+     * changed; the {@code reason} argument records why for human auditing.
+     *
+     * <p>The bumped id (the project-wide annotationSetId) lets per-sample SSI metadata, the
+     * pending-annotation discovery MR and query-time SSI reads detect annotation drift after a
+     * {@code variant-annotation-index --overwrite} run.
+     *
+     * <p>This must run BEFORE the annotation MR so newly written variant rows are stamped with the
+     * bumped id. {@link #checkCurrentAnnotation} can be called multiple times in a single annotate()
+     * (preflight + post-load); idempotency is preserved by detecting an already-recorded auto-snapshot
+     * whose id is exactly {@code current.id - 1} and whose annotator matches the outgoing one.
+     *
+     * @param projectMetadata Mutable project metadata. The {@code saved} list and {@code current.id}
+     *                        are modified in place.
+     * @param current         The current annotation metadata (the snapshot of state before the bump).
+     * @param reason          Human-readable description of why the bump happened. Stored on the
+     *                        snapshot's {@link VariantAnnotationMetadata#getDescription()} for
+     *                        auditability.
+     */
+    private void bumpAnnotationSetId(ProjectMetadata projectMetadata, VariantAnnotationMetadata current, String reason) {
+        VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
+        List<VariantAnnotationMetadata> saved = projectMetadata.getAnnotation().getSaved();
+        if (!saved.isEmpty()) {
+            VariantAnnotationMetadata last = saved.get(saved.size() - 1);
+            if (last.getId() == current.getId() - 1
+                    && last.getName() != null
+                    && last.getName().startsWith(AUTO_SNAPSHOT_PREFIX)
+                    && Objects.equals(currentAnnotator, last.getAnnotator())) {
+                // This transition has already been bumped (e.g. by an earlier preflight call within
+                // the same annotate() run). Don't snapshot again.
+                return;
+            }
+        }
+        VariantAnnotationMetadata snapshot = new VariantAnnotationMetadata(current);
+        snapshot.setName(AUTO_SNAPSHOT_PREFIX + snapshot.getId() + "_" + System.currentTimeMillis());
+        snapshot.setDescription(reason);
+        saved.add(snapshot);
+        current.setId(current.getId() + 1);
+        logger.info("Bumped annotationSetId to {} (previous {} archived as '{}'): {}",
+                current.getId(), snapshot.getId(), snapshot.getName(), reason);
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,

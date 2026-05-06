@@ -100,6 +100,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
     protected Map<Integer, Collection<Integer>> samplesToBeAnnotated = new HashMap<>();
+    protected Map<Integer, Collection<Integer>> alreadyAnnotatedSamples = new HashMap<>();
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
@@ -135,6 +136,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             doLoad = true;
         }
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+        boolean forceNewAnnotationSet = params.getBoolean(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(),
+                VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.defaultValue());
         if (overwrite) {
             query.remove(VariantQueryParam.ANNOTATION_EXISTS.key());
         } else {
@@ -145,16 +148,22 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(),
                 VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.defaultValue());
 
-        preAnnotate(query, doCreate, doLoad, params);
-
+        // checkCurrentAnnotation may bump the project's annotationSetId (when the annotator,
+        // dataRelease, extensions, etc. have changed under overwrite=true, or when
+        // forceNewAnnotationSet=true). This must run BEFORE preAnnotate, because preAnnotate's
+        // discovery loop partitions indexed files/samples by whether their stored annotationSetId
+        // matches the project's *current* one — if we ran preAnnotate first it would see the
+        // pre-bump value and treat about-to-become-stale rows as fresh.
         if (doCreate && doLoad) {
             ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                checkCurrentAnnotation(projectMetadata, overwrite, newVariantAnnotationMetadata);
+                checkCurrentAnnotation(projectMetadata, overwrite, forceNewAnnotationSet, newVariantAnnotationMetadata);
                 return projectMetadata;
             });
         }
+
+        preAnnotate(query, doCreate, doLoad, params);
 
         long variants = 0;
         if (checkpointSize > 0 && doLoad && doCreate && doBatchAnnotation(params)) {
@@ -463,42 +472,66 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         if (annotateAll) {
+            // A file/sample is "fresh" iff its annotationStatus is READY *and* its annotationSetId
+            // matches the project's current id. annotationSetId == 0 means "unstamped" and is
+            // treated as fresh for backwards compatibility (existing projects pre-dating this field
+            // would otherwise trigger a mass re-annotation on the first run).
+            int currentAnnotationSetId = metadataManager.getProjectMetadata()
+                    .getAnnotation().getCurrent().getId();
             List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
                 Collection<Integer> samples;
                 List<Integer> annotatedFiles = new LinkedList<>();
+                Collection<Integer> annotatedSamples = new LinkedList<>();
                 if (!filesFilter.isEmpty()) {
                     samples = new HashSet<>();
+                    annotatedSamples = new HashSet<>();
                     for (String file : filesFilter) {
                         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
                         if (fileMetadata != null) {
-                            if (fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
-                                files.add(fileMetadata.getId());
+                            if (fileMetadata.isIndexed()) {
+                                if (isFreshAnnotation(fileMetadata.isAnnotated(), fileMetadata.getAnnotationSetId(),
+                                        currentAnnotationSetId)) {
+                                    annotatedFiles.add(fileMetadata.getId());
+                                } else {
+                                    files.add(fileMetadata.getId());
+                                }
                             }
                             for (Integer sample : fileMetadata.getSamples()) {
                                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sample);
-                                if (sampleMetadata.isIndexed() && !sampleMetadata.isAnnotated()) {
-                                    samples.add(sample);
+                                if (sampleMetadata.isIndexed()) {
+                                    if (isFreshAnnotation(sampleMetadata.isAnnotated(), sampleMetadata.getAnnotationSetId(),
+                                            currentAnnotationSetId)) {
+                                        annotatedSamples.add(sample);
+                                    } else {
+                                        samples.add(sample);
+                                    }
                                 }
                             }
                         }
                     }
                 } else {
                     samples = new LinkedList<>();
+                    Collection<Integer> annotatedSamplesRef = annotatedSamples;
                     metadataManager.fileMetadataIterator(studyId).forEachRemaining(fileMetadata -> {
                         if (fileMetadata.isIndexed()) {
-                            if (fileMetadata.isAnnotated()) {
+                            if (isFreshAnnotation(fileMetadata.isAnnotated(), fileMetadata.getAnnotationSetId(),
+                                    currentAnnotationSetId)) {
                                 annotatedFiles.add(fileMetadata.getId());
                             } else {
                                 files.add(fileMetadata.getId());
                             }
                         }
                     });
+                    Collection<Integer> samplesRef = samples;
                     metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                         if (sampleMetadata.isIndexed()) {
-                            if (!sampleMetadata.isAnnotated()) {
-                                samples.add(sampleMetadata.getId());
+                            if (isFreshAnnotation(sampleMetadata.isAnnotated(), sampleMetadata.getAnnotationSetId(),
+                                    currentAnnotationSetId)) {
+                                annotatedSamplesRef.add(sampleMetadata.getId());
+                            } else {
+                                samplesRef.add(sampleMetadata.getId());
                             }
                         }
                     });
@@ -506,12 +539,26 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 filesToBeAnnotated.put(studyId, files);
                 samplesToBeAnnotated.put(studyId, samples);
                 alreadyAnnotatedFiles.put(studyId, annotatedFiles);
+                alreadyAnnotatedSamples.put(studyId, annotatedSamples);
             }
-            logger.info("Annotating {} new files and {} new samples",
+            logger.info("Annotating {} files and {} samples (annotationSetId target = {})",
                     filesToBeAnnotated.values().stream().mapToInt(Collection::size).sum(),
-                    samplesToBeAnnotated.values().stream().mapToInt(Collection::size).sum()
+                    samplesToBeAnnotated.values().stream().mapToInt(Collection::size).sum(),
+                    currentAnnotationSetId
             );
         }
+    }
+
+    /**
+     * @param isAnnotated         Whether the file/sample's annotationStatus is READY.
+     * @param storedSetId         The file/sample's stored annotationSetId (0 = unstamped).
+     * @param currentSetId        The project's current annotationSetId.
+     * @return {@code true} iff the file/sample is at the current annotation generation. Backwards
+     *         compatibility: a stored value of {@code 0} is treated as fresh so existing projects
+     *         do not trigger a mass re-annotation on the first run after this field is introduced.
+     */
+    private static boolean isFreshAnnotation(boolean isAnnotated, int storedSetId, int currentSetId) {
+        return isAnnotated && (storedSetId == 0 || storedSetId == currentSetId);
     }
 
     /**
@@ -538,20 +585,26 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
         if (doLoad && doCreate) {
             ProjectMetadata.VariantAnnotationMetadata newAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
+            boolean forceNewAnnotationSet = params.getBoolean(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(),
+                    VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.defaultValue());
 
             metadataManager.updateProjectMetadata(projectMetadata -> {
-                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotationMetadata);
+                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, forceNewAnnotationSet, newAnnotationMetadata);
             });
             metadataManager.updateAnnotationIndexTimestamp(annotateAll, annotationStartTimestamp);
         }
 
         if (doLoad && filesToBeAnnotated != null) {
+            int currentAnnotationSetId = metadataManager.getProjectMetadata()
+                    .getAnnotation().getCurrent().getId();
+
             for (Map.Entry<Integer, Collection<Integer>> entry : samplesToBeAnnotated.entrySet()) {
                 Integer studyId = entry.getKey();
                 Collection<Integer> sampleIds = entry.getValue();
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         sampleMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
+                        sampleMetadata.setAnnotationSetId(currentAnnotationSetId);
                     });
                 }
             }
@@ -563,6 +616,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 for (Integer file : fileIds) {
                     metadataManager.updateFileMetadata(studyId, file, fileMetadata -> {
                         fileMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
+                        fileMetadata.setAnnotationSetId(currentAnnotationSetId);
                     });
                 }
             }
@@ -585,6 +639,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             // Nothing to do!
             return;
         } else {
+            int currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
             // Run on all pending samples
             for (Integer studyId : studies) {
                 Set<Integer> samplesToUpdate = new HashSet<>();
@@ -593,6 +648,35 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 }
                 for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
                     samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
+                }
+                // Also include samples whose SSI annotation was stamped against an older annotationSetId
+                // (e.g. an annotation overwrite bumped the project-wide id but their files were already
+                // annotated). Gate on the sample's general annotationSetId: a sample whose underlying
+                // variants are still stale (e.g. mid-catch-up after a partial annotation pass) is NOT
+                // a candidate — rebuilding its SSI from a mixed-version variants table would produce
+                // mixed SSI bits stamped as fresh. Wait until the next full annotation pass advances
+                // the sample.annotationSetId, then rebuild.
+                // Backcompat: a stored SSI value of 0 means "unknown" — treat as current and skip.
+                Set<Integer> staleSamples = new HashSet<>();
+                for (Integer sampleId : metadataManager.getIndexedSamples(studyId)) {
+                    SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
+                    if (sm.getAnnotationSetId() != currentAnnotationSetId) {
+                        // Sample's variants are still stale; defer SSI rebuild to the next full pass.
+                        continue;
+                    }
+                    Integer ssiVersion = sm.getSampleIndexAnnotationVersion();
+                    if (ssiVersion == null) {
+                        continue;
+                    }
+                    int stored = sm.getSampleIndexAnnotationSetId(ssiVersion);
+                    if (stored != 0 && stored != currentAnnotationSetId && samplesToUpdate.add(sampleId)) {
+                        staleSamples.add(sampleId);
+                    }
+                }
+                if (!staleSamples.isEmpty()) {
+                    logger.info("Auto-triggering SSI annotation rebuild for {} sample(s) in study {} "
+                                    + "with stale annotationSetId (project current = {})",
+                            staleSamples.size(), studyId, currentAnnotationSetId);
                 }
                 if (!samplesToUpdate.isEmpty()) {
                     sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);

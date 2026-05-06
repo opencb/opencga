@@ -5,6 +5,7 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -25,6 +26,7 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsTable
     public static final byte[] COLUMN = Bytes.toBytes("v");
     public static final byte[] VALUE = new byte[0];
     private static final byte[] SO_BYTES = SO.bytes();
+    private static final byte[] ANNOTATION_ID_BYTES = ANNOTATION_ID.bytes();
 
     private static Logger logger = LoggerFactory.getLogger(AnnotationPendingVariantsDescriptor.class);
 
@@ -52,14 +54,24 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsTable
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SO.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ANNOTATION_ID_BYTES);
         return scan;
     }
 
 
     public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
+        // Resolve the project-wide annotationSetId once. A value of 0 means "no project metadata available
+        // / first annotation never ran" — in that case fall back to the legacy "missing SO cell" check.
+        int currentAnnotationSetId;
+        try {
+            currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
+        } catch (NullPointerException e) {
+            currentAnnotationSetId = 0;
+        }
+        final int projectAnnotationSetId = currentAnnotationSetId;
         return value -> {
             byte[] alleles = null;
-            if (overwrite || isPending(value)) {
+            if (overwrite || isPending(value, projectAnnotationSetId)) {
                 for (Cell cell : value.rawCells()) {
                     if (cell.getValueLength() > 0) {
                         if (Bytes.equals(
@@ -81,17 +93,46 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsTable
         };
     }
 
-    private boolean isPending(Result value) {
+    /**
+     * A variant is pending annotation if any of these is true:
+     * <ul>
+     *   <li>It has no SO cell at all (never annotated).</li>
+     *   <li>Its stored annotationSetId is older than the project's current annotationSetId
+     *       (annotation has been overwritten with a different annotator since this row was written).</li>
+     * </ul>
+     * If the project's current annotationSetId can not be resolved ({@code projectAnnotationSetId == 0}),
+     * only the legacy "missing SO" check is used — backcompat.
+     */
+    private boolean isPending(Result value, int projectAnnotationSetId) {
+        boolean hasSo = false;
+        Cell annotationIdCell = null;
         for (Cell cell : value.rawCells()) {
             if (cell.getValueLength() > 0) {
                 if (Bytes.equals(
                         cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
                         SO_BYTES, 0, SO_BYTES.length)) {
-                    return false;
+                    hasSo = true;
+                } else if (Bytes.equals(
+                        cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
+                        ANNOTATION_ID_BYTES, 0, ANNOTATION_ID_BYTES.length)) {
+                    annotationIdCell = cell;
                 }
             }
         }
-        return true;
+        if (!hasSo) {
+            // Never annotated.
+            return true;
+        }
+        if (projectAnnotationSetId <= 1 || annotationIdCell == null) {
+            // No drift possible (first annotation set, or row pre-dates ANNOTATION_ID stamping).
+            return false;
+        }
+        byte[] annotationIdBytes = CellUtil.cloneValue(annotationIdCell);
+        if (annotationIdBytes.length == 0) {
+            return false;
+        }
+        Integer rowAnnotationSetId = (Integer) PInteger.INSTANCE.toObject(annotationIdBytes);
+        return rowAnnotationSetId != null && rowAnnotationSetId < projectAnnotationSetId;
     }
 
 }

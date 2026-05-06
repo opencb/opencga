@@ -84,6 +84,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         Query query = new Query(variantQuery.getQuery());
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
+        sampleIndexDBAdaptor.emitStaleAnnotationSetIdEvents(sampleIndexQuery, variantQuery.getEvents());
 
         return getOrIterator(variantQuery, iterator, sampleIndexQuery);
     }

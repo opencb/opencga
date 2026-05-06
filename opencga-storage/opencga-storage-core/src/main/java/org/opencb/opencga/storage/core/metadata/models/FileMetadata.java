@@ -129,6 +129,25 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
         return setStatus("annotation", annotationStatus);
     }
 
+    /**
+     * Project-wide annotationSetId stamp recording which annotation generation this file's
+     * variants are at. Set by {@code DefaultVariantAnnotationManager.postAnnotate} when this file
+     * is part of a full ({@code annotateAll=true}) annotation pass. A value of {@code 0} means
+     * "unstamped / unknown" and is treated as fresh for backwards compatibility.
+     *
+     * @return The stored annotationSetId, or {@code 0} if never stamped.
+     */
+    @JsonIgnore
+    public int getAnnotationSetId() {
+        return getAttributes().getInt("annotationSetId", 0);
+    }
+
+    @JsonIgnore
+    public FileMetadata setAnnotationSetId(int annotationSetId) {
+        getAttributes().put("annotationSetId", annotationSetId);
+        return this;
+    }
+
     @JsonIgnore
     public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
         return getStatus("secondaryAnnotationIndex");

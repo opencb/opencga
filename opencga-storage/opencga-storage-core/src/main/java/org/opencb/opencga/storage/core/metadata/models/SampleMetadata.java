@@ -47,6 +47,9 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     private static final String SAMPLE_INDEX_VERSIONS = "sampleIndexGenotypesReadyVersions";
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX = "sampleIndexAnnotation_";
     private static final String SAMPLE_INDEX_ANNOTATION_VERSIONS = "sampleIndexAnnotationReadyVersions";
+    // annotationSetId stamped onto the SSI annotation for a given sample-index version.
+    // Used to detect drift after a project-wide annotation overwrite.
+    private static final String SAMPLE_INDEX_ANNOTATION_SET_ID_PREFIX = "sampleIndexAnnotationSetId_";
     private static final String FAMILY_INDEX_STATUS_PREFIX = "familyIndex_";
     private static final String FAMILY_INDEX_VERSIONS = "familyIndexReadyVersions";
     private static final String FAMILY_INDEX_DEFINED = "familyIndexDefined";
@@ -218,6 +221,26 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return setStatus("annotation", annotationStatus);
     }
 
+    /**
+     * Project-wide annotationSetId stamp recording which annotation generation this sample's
+     * variants are at. Set by {@code DefaultVariantAnnotationManager.postAnnotate} when this sample
+     * is part of a full ({@code annotateAll=true}) annotation pass. A value of {@code 0} means
+     * "unstamped / unknown" and is treated as fresh for backwards compatibility — discovery and the
+     * SSI auto-rebuild gate will not single such samples out as stale on its own.
+     *
+     * @return The stored annotationSetId, or {@code 0} if never stamped.
+     */
+    @JsonIgnore
+    public int getAnnotationSetId() {
+        return getAttributes().getInt("annotationSetId", 0);
+    }
+
+    @JsonIgnore
+    public SampleMetadata setAnnotationSetId(int annotationSetId) {
+        getAttributes().put("annotationSetId", annotationSetId);
+        return this;
+    }
+
     @JsonIgnore
     public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
         return getStatus("secondaryAnnotationIndex");
@@ -269,6 +292,17 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     public SampleMetadata setSampleIndexAnnotationStatus(TaskMetadata.Status status, int version) {
         registerVersion(SAMPLE_INDEX_ANNOTATION_VERSIONS, status, version);
         this.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX + version, status);
+        return this;
+    }
+
+    @JsonIgnore
+    public int getSampleIndexAnnotationSetId(int sampleIndexVersion) {
+        return getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_SET_ID_PREFIX + sampleIndexVersion, 0);
+    }
+
+    @JsonIgnore
+    public SampleMetadata setSampleIndexAnnotationSetId(int annotationSetId, int sampleIndexVersion) {
+        getAttributes().put(SAMPLE_INDEX_ANNOTATION_SET_ID_PREFIX + sampleIndexVersion, annotationSetId);
         return this;
     }
 

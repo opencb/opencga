@@ -1255,4 +1255,95 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
 //        assertEquals(expectedVariants, actualVariants);
         assertEquals(count, actualVariants.size());
     }
+
+    @Test
+    public void testStaleAnnotationSetIdEmitsWarning() throws Exception {
+        VariantStorageEngine engine = getVariantStorageEngine();
+        org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager mm = engine.getMetadataManager();
+
+        // Fixture invariant: load() ran a single annotate pass, so the project annotationSetId
+        // and every per-sample SSI stamp must equal 1.
+        int originalProjectId = mm.getProjectMetadata().getAnnotation().getCurrent().getId();
+        assertEquals("Fixture should have annotationSetId = 1 after load",
+                1, originalProjectId);
+
+        int studyId = mm.getStudyId(STUDY_NAME);
+        Integer staleSampleId = mm.getSampleId(studyId, "NA19600", true);
+        Integer freshSampleId = mm.getSampleId(studyId, "NA19660", true);
+        assertNotNull(staleSampleId);
+        assertNotNull(freshSampleId);
+
+        SampleMetadata staleSm = mm.getSampleMetadata(studyId, staleSampleId);
+        SampleMetadata freshSm = mm.getSampleMetadata(studyId, freshSampleId);
+        Integer staleSsiVersion = staleSm.getSampleIndexAnnotationVersion();
+        Integer freshSsiVersion = freshSm.getSampleIndexAnnotationVersion();
+        assertNotNull("Sample must have a SSI annotation version after load", staleSsiVersion);
+        assertNotNull("Sample must have a SSI annotation version after load", freshSsiVersion);
+        int originalStaleStamp = staleSm.getSampleIndexAnnotationSetId(staleSsiVersion);
+        int originalFreshStamp = freshSm.getSampleIndexAnnotationSetId(freshSsiVersion);
+        assertEquals("Post-load: SSI annotationSetId stamped against project current",
+                originalProjectId, originalStaleStamp);
+        assertEquals("Post-load: SSI annotationSetId stamped against project current",
+                originalProjectId, originalFreshStamp);
+
+        try {
+            // Simulate a project-wide annotation overwrite that bumped the id to 7 without
+            // refreshing NA19600's SSI stamp. NA19660 is "refreshed" to id 7 (its own SSI version).
+            mm.updateProjectMetadata(pm -> {
+                pm.getAnnotation().getCurrent().setId(7);
+                return pm;
+            });
+            mm.updateSampleMetadata(studyId, freshSampleId,
+                    s -> s.setSampleIndexAnnotationSetId(7, freshSsiVersion));
+
+            // Query that consults the SSI annotation bits (consequence type) for the stale sample.
+            VariantQueryResult<Variant> staleResult = engine.get(
+                    new Query()
+                            .append(STUDY.key(), STUDY_NAME)
+                            .append(SAMPLE.key(), "NA19600")
+                            .append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"),
+                    new QueryOptions());
+            assertTrue("Expected stale-SSI WARNING for NA19600 — events were: " + staleResult.getEvents(),
+                    staleResult.getEvents().stream()
+                            .anyMatch(e -> e.getType() == Event.Type.WARNING
+                                    && e.getMessage().contains("annotation is stale")
+                                    && e.getMessage().contains("NA19600")));
+
+            // Same query but on the refreshed sample — must NOT warn for NA19660.
+            VariantQueryResult<Variant> freshResult = engine.get(
+                    new Query()
+                            .append(STUDY.key(), STUDY_NAME)
+                            .append(SAMPLE.key(), "NA19660")
+                            .append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"),
+                    new QueryOptions());
+            assertFalse("Sample NA19660 has fresh stamp (7) — no stale warning expected. Events: "
+                            + freshResult.getEvents(),
+                    freshResult.getEvents().stream()
+                            .anyMatch(e -> e.getType() == Event.Type.WARNING
+                                    && e.getMessage().contains("annotation is stale")
+                                    && e.getMessage().contains("NA19660")));
+
+            // Genotype-only queries do not consult SSI annotation bits — no warning even on stale sample.
+            VariantQueryResult<Variant> noAnnotResult = engine.get(
+                    new Query()
+                            .append(STUDY.key(), STUDY_NAME)
+                            .append(SAMPLE.key(), "NA19600"),
+                    new QueryOptions());
+            assertFalse("Genotype-only query must not emit stale-SSI warning. Events: "
+                            + noAnnotResult.getEvents(),
+                    noAnnotResult.getEvents().stream()
+                            .anyMatch(e -> e.getType() == Event.Type.WARNING
+                                    && e.getMessage().contains("annotation is stale")));
+        } finally {
+            // Restore fixture state for downstream tests.
+            mm.updateProjectMetadata(pm -> {
+                pm.getAnnotation().getCurrent().setId(originalProjectId);
+                return pm;
+            });
+            mm.updateSampleMetadata(studyId, staleSampleId,
+                    s -> s.setSampleIndexAnnotationSetId(originalStaleStamp, staleSsiVersion));
+            mm.updateSampleMetadata(studyId, freshSampleId,
+                    s -> s.setSampleIndexAnnotationSetId(originalFreshStamp, freshSsiVersion));
+        }
+    }
 }

@@ -29,10 +29,17 @@ public class VariantAnnotationIndexParams extends ToolParams {
     public VariantAnnotationIndexParams(String outdir, String outputFileName, String annotator,
                                         boolean overwriteAnnotations, String region, boolean create, String load, String customName,
                                         YesNoAuto sampleIndexAnnotation) {
+        this(outdir, outputFileName, annotator, overwriteAnnotations, false, region, create, load, customName, sampleIndexAnnotation);
+    }
+
+    public VariantAnnotationIndexParams(String outdir, String outputFileName, String annotator,
+                                        boolean overwriteAnnotations, boolean forceNewAnnotationSet, String region, boolean create,
+                                        String load, String customName, YesNoAuto sampleIndexAnnotation) {
         this.outdir = outdir;
         this.outputFileName = outputFileName;
         this.annotator = annotator;
         this.overwriteAnnotations = overwriteAnnotations;
+        this.forceNewAnnotationSet = forceNewAnnotationSet;
         this.region = region;
         this.create = create;
         this.load = load;
@@ -44,6 +51,13 @@ public class VariantAnnotationIndexParams extends ToolParams {
     private String outputFileName;
     private String annotator;
     private boolean overwriteAnnotations;
+    /**
+     * Force this annotation pass to be recorded as a new annotation generation, bumping the project's
+     * annotationSetId even if no inputs (annotator, dataRelease, extensions, sources) appear to have
+     * changed. Use when the underlying annotation data could have changed in ways the metadata does
+     * not capture (e.g. a custom CellBase deployment with rolled datasets).
+     */
+    private boolean forceNewAnnotationSet;
     private String region;
     private boolean create;
     private String load;
@@ -74,6 +88,15 @@ public class VariantAnnotationIndexParams extends ToolParams {
 
     public VariantAnnotationIndexParams setOverwriteAnnotations(boolean overwriteAnnotations) {
         this.overwriteAnnotations = overwriteAnnotations;
+        return this;
+    }
+
+    public boolean isForceNewAnnotationSet() {
+        return forceNewAnnotationSet;
+    }
+
+    public VariantAnnotationIndexParams setForceNewAnnotationSet(boolean forceNewAnnotationSet) {
+        this.forceNewAnnotationSet = forceNewAnnotationSet;
         return this;
     }
 
