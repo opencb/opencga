@@ -115,6 +115,14 @@
             <artifactId>opencga-storage-mongodb</artifactId>
         </dependency>
         <dependency>
+            <!-- Test-scope only: MigrationsTest uses HBaseCompatApi to skip hadoop-only migrations
+                 when no hadoop runtime is available. The API artifact is profile-independent;
+                 hadoop profiles add it as compile-scope alongside opencga-storage-hadoop-core. -->
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
         </dependency>
