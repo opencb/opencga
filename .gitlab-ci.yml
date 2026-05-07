@@ -1,0 +1,6 @@
+include:
+  - project: xetabase/xetabase-ci
+    ref: develop
+    file: templates/maven/build-with-script.yml
+    inputs:
+      SCRIPT: "./build.sh"
