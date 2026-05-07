@@ -589,6 +589,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
+        @Parameter(names = {"--force-new-annotation-set"}, description = "Force a new annotation set even if no relevant inputs changed")
+        public boolean forceNewAnnotationSet;
+
         @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: dbName", arity = 1)
         public String outputFileName;
 

@@ -521,6 +521,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                         ? null
                         : cliOptions.genericVariantAnnotateOptions.annotator.toString(),
                 cliOptions.genericVariantAnnotateOptions.overwriteAnnotations,
+                cliOptions.genericVariantAnnotateOptions.forceNewAnnotationSet,
                 cliOptions.genericVariantAnnotateOptions.region,
                 cliOptions.genericVariantAnnotateOptions.create,
                 cliOptions.genericVariantAnnotateOptions.load,

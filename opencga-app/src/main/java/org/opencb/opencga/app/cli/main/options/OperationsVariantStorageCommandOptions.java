@@ -315,6 +315,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "The body web service overwriteAnnotations parameter", required = false, help = true, arity = 0)
         public boolean overwriteAnnotations = false;
     
+        @Parameter(names = {"--force-new-annotation-set"}, description = "The body web service forceNewAnnotationSet parameter", required = false, help = true, arity = 0)
+        public boolean forceNewAnnotationSet = false;
+    
         @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
         public String region;
     
