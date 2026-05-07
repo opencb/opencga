@@ -426,7 +426,8 @@ usage_logs() {
     cat <<'EOF'
 Usage: ./deploy.sh logs [options] [service...]
 
-Tail logs from services. Pass service names to filter, e.g.:
+Tail logs from services. Accepts service names or full container names
+(as shown by 'top', e.g. opencga-local-opencga-master-1). For example:
   ./deploy.sh logs opencga-rest opencga-master
   ./deploy.sh logs hbase solr
 
@@ -498,6 +499,23 @@ dc() {
         compose_files+=(-f "${SCRIPT_DIR}/docker-compose.hadoop.yml")
     fi
     docker compose "${compose_files[@]}" "$@"
+}
+
+# Normalize args from container names (as shown by 'top') to compose service names.
+# e.g. "opencga-local-opencga-master-1" → "opencga-master"; service names pass through.
+# Result is written to the global array NORMALIZED_SERVICES.
+normalize_service_names() {
+    NORMALIZED_SERVICES=()
+    local arg stripped
+    for arg in "$@"; do
+        stripped="$arg"
+        if [[ "$stripped" == "${COMPOSE_PROJECT}-"* ]]; then
+            stripped="${stripped#"${COMPOSE_PROJECT}-"}"
+        fi
+        # Strip trailing replica index like "-1"
+        stripped="${stripped%-[0-9]*}"
+        NORMALIZED_SERVICES+=("$stripped")
+    done
 }
 
 # Copy compose files, scripts, and hadoop/ into the instance directory.
@@ -919,13 +937,17 @@ init_conf() {
 }
 EOJSON
 
-    # Hadoop storage engine configuration
+    # Storage engine configuration. The bundled storage-configuration.yml has
+    # defaultEngine baked in by Maven resource filtering — "mongodb" by default,
+    # but "hadoop" when built with a Hadoop profile (-Phbase2.0, -Phdi5.1, -Pemr*,
+    # etc.). Force the value to match the requested compose mode regardless of
+    # build profile, otherwise `deploy.sh up` on a Hadoop-flavored build would
+    # route variant ops to the Hadoop engine while no HBase container is running.
     if [ "${OPENCGA_STORAGE_ENGINE:-mongodb}" = "hadoop" ]; then
         log_step "Patching storage-configuration.yml for Hadoop mode"
 
         local storage_conf="${CONF_TARGET}/storage-configuration.yml"
 
-        # Set default engine to hadoop
         sed -i 's|defaultEngine:.*|defaultEngine: "hadoop"|' "${storage_conf}"
 
         # Set MR executor to embedded (no hadoop binary needed in container)
@@ -956,6 +978,8 @@ EOJSON
 </configuration>
 EOXML
         log_info "Generated hbase-site.xml for Docker containers"
+    else
+        sed -i 's|defaultEngine:.*|defaultEngine: "mongodb"|' "${CONF_TARGET}/storage-configuration.yml"
     fi
 
     # Validate patching succeeded
@@ -1465,14 +1489,33 @@ do_clean() {
     log_info "Stopping and removing containers for instance '${INSTANCE_NAME}'..."
     docker compose "${all_compose[@]}" down --remove-orphans 2>/dev/null || true
 
-    # Remove project volumes (match by project name prefix)
+    # Remove project volumes (match by project name prefix).
+    # Containers may take a moment to fully release a volume after `compose down`
+    # (e.g. solr can be slow to shut down), so retry up to 10 minutes per volume.
     local vol
+    local timeout=600
     for vol in $(docker volume ls -q 2>/dev/null | grep "^${COMPOSE_PROJECT}_"); do
-        if docker volume rm "$vol" >/dev/null 2>&1; then
-            log_info "Removed volume: $vol"
-        else
-            log_warn "Failed to remove volume: $vol (in use?)"
-        fi
+        local elapsed=0
+        local notified=false
+        while true; do
+            if docker volume rm "$vol" >/dev/null 2>&1; then
+                log_info "Removed volume: $vol"
+                break
+            fi
+            if ! docker volume inspect "$vol" >/dev/null 2>&1; then
+                break  # already gone
+            fi
+            if [ "$elapsed" -ge "$timeout" ]; then
+                log_warn "Failed to remove volume: $vol (still in use after ${timeout}s)"
+                break
+            fi
+            if [ "$notified" = false ]; then
+                log_info "Waiting for volume to be released: $vol"
+                notified=true
+            fi
+            sleep 2
+            elapsed=$((elapsed + 2))
+        done
     done
 
     clean_files
@@ -1630,8 +1673,9 @@ case "${COMMAND}" in
             # Recreate specific services — picks up any compose file changes
             # (env vars, mem_limit, restart policy, etc.) unlike plain "restart"
             export_heap_vars
-            log_info "Recreating (${INSTANCE_NAME}): ${RESTART_SERVICES[*]}"
-            dc up -d --no-deps "${RESTART_SERVICES[@]}"
+            normalize_service_names "${RESTART_SERVICES[@]}"
+            log_info "Recreating (${INSTANCE_NAME}): ${NORMALIZED_SERVICES[*]}"
+            dc up -d --no-deps "${NORMALIZED_SERVICES[@]}"
         else
             # Full restart (down + up)
             do_down
@@ -1713,7 +1757,8 @@ case "${COMMAND}" in
         log_args=()
         if [ "${LOG_FOLLOW}" = "true" ]; then log_args+=(-f); fi
         if [ -n "${LOG_TAIL}" ]; then log_args+=(--tail "${LOG_TAIL}"); fi
-        dc logs "${log_args[@]}" "${EXTRA_ARGS[@]}"
+        normalize_service_names "${EXTRA_ARGS[@]}"
+        dc logs "${log_args[@]}" "${NORMALIZED_SERVICES[@]}"
         ;;
 
     clean)
