@@ -22,12 +22,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -354,7 +356,26 @@ public class VariantHBaseQueryParser {
                 annotationColumn = VariantColumn.SO.bytes();
             }
             if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
-                filters.addFilter(missingColumnFilter(annotationColumn));
+                // ANNOTATION_EXISTS=false in the discovery loop must also catch variants that ARE
+                // annotated but whose annotation.id lags the project current (post-bump staleness,
+                // see Mongo parser for rationale). On the native scan path, a custom-snapshot column
+                // is opaque (no id to compare), so we keep the legacy missing-column predicate;
+                // otherwise we OR (column missing) with (ANNOTATION_ID < currentId).
+                int currentAnnotationSetId = currentAnnotationSetIdOrFallback();
+                if (currentAnnotationSetId > 1 && !isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
+                    FilterList missingOrStale = new FilterList(FilterList.Operator.MUST_PASS_ONE);
+                    missingOrStale.addFilter(missingColumnFilter(annotationColumn));
+                    SingleColumnValueFilter staleFilter = new SingleColumnValueFilter(
+                            family, ANNOTATION_ID.bytes(),
+                            CompareFilter.CompareOp.LESS,
+                            PInteger.INSTANCE.toBytes(currentAnnotationSetId));
+                    staleFilter.setFilterIfMissing(true); // already covered by the missing branch
+                    missingOrStale.addFilter(staleFilter);
+                    filters.addFilter(missingOrStale);
+                    scan.addColumn(family, ANNOTATION_ID.bytes());
+                } else {
+                    filters.addFilter(missingColumnFilter(annotationColumn));
+                }
                 if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
                     scan.addColumn(family, annotationColumn);
                 }
@@ -781,6 +802,19 @@ public class VariantHBaseQueryParser {
             }
             scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end));
         }
+    }
+
+    /**
+     * Read the project's current annotationSetId. Returns {@code 0} when the project has no
+     * annotation metadata yet — callers fall back to the legacy missing-column predicate.
+     */
+    private int currentAnnotationSetIdOrFallback() {
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        if (projectMetadata == null || projectMetadata.getAnnotation() == null
+                || projectMetadata.getAnnotation().getCurrent() == null) {
+            return 0;
+        }
+        return projectMetadata.getAnnotation().getCurrent().getId();
     }
 
 }

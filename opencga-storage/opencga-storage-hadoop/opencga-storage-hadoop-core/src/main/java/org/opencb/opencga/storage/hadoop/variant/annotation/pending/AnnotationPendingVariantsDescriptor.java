@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -62,13 +63,14 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsTable
     public Function<Result, Mutation> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
         // Resolve the project-wide annotationSetId once. A value of 0 means "no project metadata available
         // / first annotation never ran" — in that case fall back to the legacy "missing SO cell" check.
-        int currentAnnotationSetId;
-        try {
-            currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
-        } catch (NullPointerException e) {
-            currentAnnotationSetId = 0;
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        final int projectAnnotationSetId;
+        if (projectMetadata == null || projectMetadata.getAnnotation() == null
+                || projectMetadata.getAnnotation().getCurrent() == null) {
+            projectAnnotationSetId = 0;
+        } else {
+            projectAnnotationSetId = projectMetadata.getAnnotation().getCurrent().getId();
         }
-        final int projectAnnotationSetId = currentAnnotationSetId;
         return value -> {
             byte[] alleles = null;
             if (overwrite || isPending(value, projectAnnotationSetId)) {

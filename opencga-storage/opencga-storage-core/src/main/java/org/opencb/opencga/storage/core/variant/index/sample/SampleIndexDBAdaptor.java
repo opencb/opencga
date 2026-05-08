@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -112,13 +113,13 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
             // Query does not read annotation bits from the SSI — drift can not affect this result.
             return;
         }
-        int projectAnnotationSetId;
-        try {
-            projectAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
-        } catch (NullPointerException e) {
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        if (projectMetadata == null || projectMetadata.getAnnotation() == null
+                || projectMetadata.getAnnotation().getCurrent() == null) {
             // No annotation metadata yet — nothing to compare against.
             return;
         }
+        int projectAnnotationSetId = projectMetadata.getAnnotation().getCurrent().getId();
         if (projectAnnotationSetId <= 1) {
             // Project never had an annotation overwrite — drift impossible.
             return;

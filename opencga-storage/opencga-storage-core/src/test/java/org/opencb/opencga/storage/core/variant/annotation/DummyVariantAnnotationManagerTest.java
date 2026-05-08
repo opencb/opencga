@@ -26,4 +26,18 @@ public class DummyVariantAnnotationManagerTest extends VariantAnnotationManagerT
         Assume.assumeTrue("Can not check actual results", false);
         super.testCosmicAnnotatorExtensionWithCosmicAnnotation();
     }
+
+    @Override
+    public void testAnnotationExistsRespectsAnnotationSetIdStaleness() throws Exception {
+        Assume.assumeTrue("DummyVariantDBAdaptor.iterator() does not honor ANNOTATION_EXISTS — "
+                + "the staleness predicate is exercised by the Mongo/Hadoop suites", false);
+        super.testAnnotationExistsRespectsAnnotationSetIdStaleness();
+    }
+
+    @Override
+    public void testForceNewAnnotationSetReannotatesExistingVariants() throws Exception {
+        Assume.assumeTrue("DummyVariantDBAdaptor.iterator() does not honor ANNOTATION_EXISTS — "
+                + "the staleness predicate is exercised by the Mongo/Hadoop suites", false);
+        super.testForceNewAnnotationSetReannotatesExistingVariants();
+    }
 }

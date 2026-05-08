@@ -185,6 +185,106 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         assertThat(snapshot.getDescription(), containsString("forceNewAnnotationSet"));
     }
 
+    /**
+     * Parser-level guard for the staleness-aware {@code ANNOTATION_EXISTS} predicate.
+     *
+     * <p>After a project annotationSetId bump that is NOT followed by a re-annotation pass, every
+     * already-annotated variant is structurally stale: its stored {@code annotation.id} is older
+     * than the project's current id. The query parser must report:
+     * <ul>
+     *   <li>{@code ANNOTATION_EXISTS=true} → variants whose annotation is *fresh* (id == current). </li>
+     *   <li>{@code ANNOTATION_EXISTS=false} → variants that are *missing OR stale*. </li>
+     * </ul>
+     *
+     * <p>Pre-fix (TASK-8120 first cut) the predicate only checked existence of the {@code annotation.id}
+     * field, ignoring its value, so a bumped-but-not-re-annotated project would report ALL variants
+     * as fresh — masking the staleness and skipping re-derivation. This test catches that regression
+     * by simulating a bump and asserting the partition flips.
+     */
+    @Test
+    public void testAnnotationExistsRespectsAnnotationSetIdStaleness() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        long total = variantStorageEngine.count(new Query()).first();
+        assertTrue("Fixture should produce at least one variant", total > 0);
+
+        // Sanity: post-load all variants are stamped with the project's current id (== 1).
+        long annotated = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true)).first();
+        long pending = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
+        assertEquals("Right after first annotation every variant must be fresh", total, annotated);
+        assertEquals("Right after first annotation no variant should be missing/stale", 0L, pending);
+
+        // Bump the project annotationSetId WITHOUT triggering a re-annotation pass. Every existing
+        // variant now has stored annotation.id=1 < project current=2, i.e. structurally stale.
+        variantStorageEngine.getMetadataManager().updateProjectMetadata(pm -> {
+            pm.getAnnotation().getCurrent().setId(2);
+            return pm;
+        });
+
+        annotated = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true)).first();
+        pending = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
+        assertEquals("After bump, no variant has annotation.id == project current — all are stale",
+                0L, annotated);
+        assertEquals("After bump, every variant must show up as missing-or-stale",
+                total, pending);
+    }
+
+    /**
+     * End-to-end coverage of the {@code --force-new-annotation-set} loop. Reproduces the gap that
+     * slipped past the original TASK-8120 suite: the bump propagated through project/file/sample
+     * stamps, but the discovery query did not flag already-annotated variants as needing re-derivation,
+     * so every variant kept its old {@code annotation.id} silently. This asserts the full cycle —
+     * project bumps, every variant gets re-annotated, partition is fully fresh again.
+     */
+    @Test
+    public void testForceNewAnnotationSetReannotatesExistingVariants() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        long total = variantStorageEngine.count(new Query()).first();
+        assertEquals(1, variantStorageEngine.getMetadataManager().getProjectMetadata()
+                .getAnnotation().getCurrent().getId());
+        long annotatedAfterFirst = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true)).first();
+        assertEquals("Pre-condition: every variant fresh against id=1", total, annotatedAfterFirst);
+
+        // Same annotator + overwrite + forceNewAnnotationSet — the discovery loop must pick up every
+        // already-annotated variant as stale (annotation.id=1 < new project current=2) and re-derive.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)
+                .append(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(), true));
+
+        assertEquals("forceNewAnnotationSet must bump project id",
+                2, variantStorageEngine.getMetadataManager().getProjectMetadata()
+                        .getAnnotation().getCurrent().getId());
+        long annotatedAfterBump = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true)).first();
+        long pendingAfterBump = variantStorageEngine.count(
+                new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
+        assertEquals("After force-new-annotation-set + overwrite, every variant must be re-annotated "
+                        + "to the new id (i.e. fresh under the staleness-aware predicate)",
+                total, annotatedAfterBump);
+        assertEquals("After force-new-annotation-set + overwrite, no variant should remain stale or missing",
+                0L, pendingAfterBump);
+    }
+
     @Test
     public void testChangeAnnotatorFail() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
