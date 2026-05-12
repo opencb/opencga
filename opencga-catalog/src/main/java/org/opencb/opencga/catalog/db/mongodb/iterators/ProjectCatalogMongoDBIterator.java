@@ -166,23 +166,28 @@ public class ProjectCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> 
     }
 
     private void addFederationRef() {
-        projectListBuffer.forEach(project -> {
+        projectListBuffer.removeIf(project -> {
             Document federation = project.get(ProjectDBAdaptor.QueryParams.FEDERATION.key(), Document.class);
             if (federation == null) {
-                return;
+                return false;
             }
             String federationId = federation.getString("id");
             if (StringUtils.isEmpty(federationId)) {
-                return;
+                return false;
             }
-            List<Document> federationClients = getFederationClients();
-            for (Document client : federationClients) {
+            List<Document> clients = getFederationClients();
+            for (Document client : clients) {
                 String clientId = client.getString("id");
                 if (federationId.equals(clientId)) {
+                    if (!client.getBoolean("active")) {
+                        // Federation client is disabled — remove this project
+                        return true;
+                    }
                     project.put(ProjectDBAdaptor.QueryParams.FEDERATION.key(), client);
-                    return;
+                    return false;
                 }
             }
+            return false;
         });
     }
 

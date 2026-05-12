@@ -31,11 +31,14 @@ public class FederationClientUpdateParams {
     @DataField(id = "securityKey", description = FieldConstants.FEDERATION_CLIENT_SECURITY_KEY_DESCRIPTION)
     private String securityKey;
 
+    @DataField(id = "active", description = FieldConstants.FEDERATION_CLIENT_ACTIVE_DESCRIPTION)
+    private Boolean active;
+
     public FederationClientUpdateParams() {
     }
 
     public FederationClientUpdateParams(String description, String version, String email, String url, String password, String token,
-                                        String securityKey) {
+                                        String securityKey, Boolean active) {
         this.description = description;
         this.version = version;
         this.email = email;
@@ -43,6 +46,7 @@ public class FederationClientUpdateParams {
         this.password = password;
         this.token = token;
         this.securityKey = securityKey;
+        this.active = active;
     }
 
     @JsonIgnore
@@ -60,6 +64,7 @@ public class FederationClientUpdateParams {
         sb.append(", password='").append(password).append('\'');
         sb.append(", token='").append(token).append('\'');
         sb.append(", securityKey='").append(securityKey).append('\'');
+        sb.append(", active=").append(active);
         sb.append('}');
         return sb.toString();
     }
@@ -124,6 +129,15 @@ public class FederationClientUpdateParams {
 
     public FederationClientUpdateParams setSecurityKey(String securityKey) {
         this.securityKey = securityKey;
+        return this;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public FederationClientUpdateParams setActive(Boolean active) {
+        this.active = active;
         return this;
     }
 }

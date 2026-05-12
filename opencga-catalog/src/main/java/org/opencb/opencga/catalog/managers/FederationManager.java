@@ -141,7 +141,8 @@ public class FederationManager extends AbstractManager {
                     .setOrganizationId(organizationId)
                     .setUserId(federationServer.getUserId())
                     .setPassword(password)
-                    .setSecurityKey(federationServer.getSecurityKey());
+                    .setSecurityKey(federationServer.getSecurityKey())
+                    .setActive(true);
 
             List<Event> eventList = new ArrayList<>();
             try {
@@ -187,7 +188,8 @@ public class FederationManager extends AbstractManager {
                     .setOrganizationId(organizationId)
                     .setUserId(serverParams.getUserId())
                     .setPassword(PasswordUtils.getStrongRandomPassword(PASSWORD_LENGTH))
-                    .setSecurityKey(SecureKeyUtils.generateNewSecurityKey());
+                    .setSecurityKey(SecureKeyUtils.generateNewSecurityKey())
+                    .setActive(true);
 
             // Update security key
             FederationServerUpdateParams updateParams = new FederationServerUpdateParams()
@@ -475,6 +477,7 @@ public class FederationManager extends AbstractManager {
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             validateFederationClientParams(federationClient);
+            federationClient.setActive(true);
 
             // Validate duplicated federation client id
             Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId)

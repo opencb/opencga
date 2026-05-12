@@ -74,27 +74,22 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
     }
 
     private void getNextStudy() {
-        if (this.mongoCursor.hasNext()) {
+        while (this.mongoCursor.hasNext()) {
             this.previousDocument = this.mongoCursor.next();
 
-            if (this.studyFilter != null) {
-                while (this.previousDocument != null && !this.studyFilter.apply(this.previousDocument)) {
-                       if (this.mongoCursor.hasNext()) {
-                           this.previousDocument = this.mongoCursor.next();
-                       } else {
-                           this.previousDocument = null;
-                       }
-                }
+            if (this.studyFilter != null && !this.studyFilter.apply(this.previousDocument)) {
+                continue;
             }
 
+            addStudyNotes();
+            addFederationRef();
+
             if (previousDocument != null) {
-                addStudyNotes();
-                addFederationRef();
                 addAclInformation(previousDocument, options);
+                return;
             }
-        } else {
-            this.previousDocument = null;
         }
+        this.previousDocument = null;
     }
 
     private void addStudyNotes() {
@@ -148,6 +143,11 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
             for (Document client : clients) {
                 String clientId = client.getString("id");
                 if (federationId.equals(clientId)) {
+                    if (!client.getBoolean("active")) {
+                        // Federation client is disabled — skip this study
+                        previousDocument = null;
+                        return;
+                    }
                     previousDocument.put(StudyDBAdaptor.QueryParams.FEDERATION.key(), client);
                     return;
                 }

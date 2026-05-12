@@ -139,6 +139,9 @@ public final class AuthenticationFactory {
         if (CollectionUtils.isNotEmpty(organization.getFederation().getServers())) {
             for (FederationServerParams server : organization.getFederation().getServers()) {
                 if (server.getUserId().equals(userId)) {
+                    if (!server.isActive()) {
+                        throw new CatalogException("Federation '" + server.getId() + "' is currently disabled");
+                    }
                     return server.getSecurityKey();
                 }
             }
