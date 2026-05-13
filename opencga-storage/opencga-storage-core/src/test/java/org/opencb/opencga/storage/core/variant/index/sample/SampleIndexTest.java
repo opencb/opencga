@@ -1346,4 +1346,74 @@ public abstract class SampleIndexTest extends VariantStorageBaseTest {
                     s -> s.setSampleIndexAnnotationSetId(originalFreshStamp, freshSsiVersion));
         }
     }
+
+    /**
+     * Closes the file-route SSI sync loop in {@code DefaultVariantAnnotationManager
+     * #updateSampleIndexAnnotation}. Scenario: an earlier annotate pass bumped the project's
+     * {@code annotationSetId} and advanced file/sample metadata stamps, but the SSI re-derivation
+     * was no-op'd because the indexer skipped already-READY samples (overwrite=false). The next
+     * full annotation pass must detect those lagging SSI stamps and refresh them.
+     *
+     * <p>Setup mimics the "Day-2" state: project / file / sample annotationSetIds all advanced to
+     * 2, SSI stamp left at 1. The variants in storage stay at {@code annotation.id=1} — the
+     * staleness-aware discovery query (TASK-8120 parser fix) will pick them up and re-derive
+     * them as part of the same pass. After {@code engine.annotate()}, the sample's SSI stamp must
+     * be at the project current.
+     */
+    @Test
+    public void testFullAnnotationPassRefreshesLaggingSsiStamps() throws Exception {
+        VariantStorageEngine engine = getVariantStorageEngine();
+        org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager mm = engine.getMetadataManager();
+
+        int studyId = mm.getStudyId(STUDY_NAME);
+        Integer sampleId = mm.getSampleId(studyId, "NA19600", true);
+        assertNotNull(sampleId);
+        SampleMetadata sm = mm.getSampleMetadata(studyId, sampleId);
+        Integer ssiVersion = sm.getSampleIndexAnnotationVersion();
+        assertNotNull(ssiVersion);
+
+        int originalProjectId = mm.getProjectMetadata().getAnnotation().getCurrent().getId();
+        int originalSsiStamp = sm.getSampleIndexAnnotationSetId(ssiVersion);
+        int originalSampleAnnotationSetId = sm.getAnnotationSetId();
+        Collection<Integer> fileIds = new ArrayList<>(sm.getFiles());
+        Map<Integer, Integer> originalFileStamps = new HashMap<>();
+        for (Integer fid : fileIds) {
+            originalFileStamps.put(fid, mm.getFileMetadata(studyId, fid).getAnnotationSetId());
+        }
+        assertEquals("Fixture invariant: project current must be 1 after load", 1, originalProjectId);
+        assertEquals("Fixture invariant: sample SSI stamp must be 1 after load", 1, originalSsiStamp);
+
+        try {
+            // Day-2 broken state: project bumped, file/sample metadata caught up, SSI lagged.
+            mm.updateProjectMetadata(pm -> {
+                pm.getAnnotation().getCurrent().setId(2);
+                return pm;
+            });
+            mm.updateSampleMetadata(studyId, sampleId, s -> s.setAnnotationSetId(2));
+            for (Integer fid : fileIds) {
+                mm.updateFileMetadata(studyId, fid, f -> f.setAnnotationSetId(2));
+            }
+
+            engine.annotate(outputUri, new ObjectMap());
+
+            SampleMetadata after = mm.getSampleMetadata(studyId, sampleId);
+            Integer rebuiltVersion = after.getSampleIndexAnnotationVersion();
+            assertNotNull("Sample must have an SSI annotation version after refresh", rebuiltVersion);
+            assertEquals("Lagging SSI stamp must be refreshed to project current by a full annotate pass",
+                    2, after.getSampleIndexAnnotationSetId(rebuiltVersion));
+        } finally {
+            mm.updateProjectMetadata(pm -> {
+                pm.getAnnotation().getCurrent().setId(originalProjectId);
+                return pm;
+            });
+            mm.updateSampleMetadata(studyId, sampleId, s -> {
+                s.setAnnotationSetId(originalSampleAnnotationSetId);
+                s.setSampleIndexAnnotationSetId(originalSsiStamp, ssiVersion);
+            });
+            for (Integer fid : fileIds) {
+                int orig = originalFileStamps.get(fid);
+                mm.updateFileMetadata(studyId, fid, f -> f.setAnnotationSetId(orig));
+            }
+        }
+    }
 }

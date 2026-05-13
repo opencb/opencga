@@ -101,11 +101,26 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
     protected Map<Integer, Collection<Integer>> samplesToBeAnnotated = new HashMap<>();
     protected Map<Integer, Collection<Integer>> alreadyAnnotatedSamples = new HashMap<>();
+    /**
+     * Subset of {@link #alreadyAnnotatedSamples} whose SSI annotationSetId stamp lags the project
+     * current — populated during preAnnotate using the same SampleMetadata reads as the file/sample
+     * partition, so updateSampleIndexAnnotation doesn't need a second round-trip per sample.
+     */
+    protected Map<Integer, Collection<Integer>> samplesWithLaggingSsiStamp = new HashMap<>();
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
     private boolean annotateAll;
     private long annotationStartTimestamp;
+    /**
+     * Project's annotationSetId snapshot taken once at the top of {@link #preAnnotate}, right
+     * after {@code checkCurrentAnnotation} (called from {@code annotate()} before us) may have
+     * bumped it. preAnnotate's partition, the annotation loop, postAnnotate, and
+     * {@link #updateSampleIndexAnnotation} all consume this value rather than re-reading from
+     * the metadata manager — guarantees the whole pipeline sees a consistent id even if another
+     * process bumps the project mid-run.
+     */
+    private int currentAnnotationSetId;
     protected Query query;
     private final SampleAnnotationIndexer sampleIndexAnnotation;
 
@@ -446,6 +461,12 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        // Snapshot the project's current annotationSetId once for the whole pass. checkCurrentAnnotation
+        // (called from annotate() before us) may have just bumped it; everything downstream — the
+        // partition below, postAnnotate, updateSampleIndexAnnotation — must read this field rather
+        // than re-fetching from the metadata manager, so the pipeline is internally consistent
+        // even if another process bumps the project mid-run.
+        currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
         Set<String> filesFilter = Collections.emptySet();
         queryParams.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
@@ -476,23 +497,23 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             // matches the project's current id. annotationSetId == 0 means "unstamped" and is
             // treated as fresh for backwards compatibility (existing projects pre-dating this field
             // would otherwise trigger a mass re-annotation on the first run).
-            int currentAnnotationSetId = metadataManager.getProjectMetadata()
-                    .getAnnotation().getCurrent().getId();
+            // The currentAnnotationSetId snapshot is taken once at the top of preAnnotate — see field doc.
             List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
                 Collection<Integer> samples;
                 List<Integer> annotatedFiles = new LinkedList<>();
                 Collection<Integer> annotatedSamples = new LinkedList<>();
+                Collection<Integer> laggingSsiSamples = new LinkedList<>();
                 if (!filesFilter.isEmpty()) {
                     samples = new HashSet<>();
                     annotatedSamples = new HashSet<>();
+                    laggingSsiSamples = new HashSet<>();
                     for (String file : filesFilter) {
                         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
                         if (fileMetadata != null) {
                             if (fileMetadata.isIndexed()) {
-                                if (isFreshAnnotation(fileMetadata.isAnnotated(), fileMetadata.getAnnotationSetId(),
-                                        currentAnnotationSetId)) {
+                                if (isVariantAnnotationFresh(fileMetadata, currentAnnotationSetId)) {
                                     annotatedFiles.add(fileMetadata.getId());
                                 } else {
                                     files.add(fileMetadata.getId());
@@ -501,9 +522,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                             for (Integer sample : fileMetadata.getSamples()) {
                                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sample);
                                 if (sampleMetadata.isIndexed()) {
-                                    if (isFreshAnnotation(sampleMetadata.isAnnotated(), sampleMetadata.getAnnotationSetId(),
-                                            currentAnnotationSetId)) {
+                                    if (isVariantAnnotationFresh(sampleMetadata, currentAnnotationSetId)) {
                                         annotatedSamples.add(sample);
+                                        if (!isSampleIndexAnnotationFresh(sampleMetadata, currentAnnotationSetId)) {
+                                            laggingSsiSamples.add(sample);
+                                        }
                                     } else {
                                         samples.add(sample);
                                     }
@@ -514,10 +537,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 } else {
                     samples = new LinkedList<>();
                     Collection<Integer> annotatedSamplesRef = annotatedSamples;
+                    Collection<Integer> laggingSsiSamplesRef = laggingSsiSamples;
                     metadataManager.fileMetadataIterator(studyId).forEachRemaining(fileMetadata -> {
                         if (fileMetadata.isIndexed()) {
-                            if (isFreshAnnotation(fileMetadata.isAnnotated(), fileMetadata.getAnnotationSetId(),
-                                    currentAnnotationSetId)) {
+                            if (isVariantAnnotationFresh(fileMetadata, currentAnnotationSetId)) {
                                 annotatedFiles.add(fileMetadata.getId());
                             } else {
                                 files.add(fileMetadata.getId());
@@ -527,9 +550,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     Collection<Integer> samplesRef = samples;
                     metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                         if (sampleMetadata.isIndexed()) {
-                            if (isFreshAnnotation(sampleMetadata.isAnnotated(), sampleMetadata.getAnnotationSetId(),
-                                    currentAnnotationSetId)) {
+                            if (isVariantAnnotationFresh(sampleMetadata, currentAnnotationSetId)) {
                                 annotatedSamplesRef.add(sampleMetadata.getId());
+                                if (!isSampleIndexAnnotationFresh(sampleMetadata, currentAnnotationSetId)) {
+                                    laggingSsiSamplesRef.add(sampleMetadata.getId());
+                                }
                             } else {
                                 samplesRef.add(sampleMetadata.getId());
                             }
@@ -540,6 +565,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 samplesToBeAnnotated.put(studyId, samples);
                 alreadyAnnotatedFiles.put(studyId, annotatedFiles);
                 alreadyAnnotatedSamples.put(studyId, annotatedSamples);
+                samplesWithLaggingSsiStamp.put(studyId, laggingSsiSamples);
             }
             logger.info("Annotating {} files and {} samples (annotationSetId target = {})",
                     filesToBeAnnotated.values().stream().mapToInt(Collection::size).sum(),
@@ -550,15 +576,39 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     }
 
     /**
-     * @param isAnnotated         Whether the file/sample's annotationStatus is READY.
-     * @param storedSetId         The file/sample's stored annotationSetId (0 = unstamped).
-     * @param currentSetId        The project's current annotationSetId.
-     * @return {@code true} iff the file/sample is at the current annotation generation. Backwards
-     *         compatibility: a stored value of {@code 0} is treated as fresh so existing projects
-     *         do not trigger a mass re-annotation on the first run after this field is introduced.
+     * Returns {@code true} iff the file/sample's variant-level annotation is at the project's
+     * current generation. Backcompat: a stored value of {@code 0} is treated as fresh so projects
+     * pre-dating this field do not trigger a mass re-annotation on first run.
      */
-    private static boolean isFreshAnnotation(boolean isAnnotated, int storedSetId, int currentSetId) {
+    private static boolean isVariantAnnotationFresh(SampleMetadata sampleMetadata, int currentSetId) {
+        return isVariantAnnotationFresh(sampleMetadata.isAnnotated(), sampleMetadata.getAnnotationSetId(), currentSetId);
+    }
+
+    private static boolean isVariantAnnotationFresh(FileMetadata fileMetadata, int currentSetId) {
+        return isVariantAnnotationFresh(fileMetadata.isAnnotated(), fileMetadata.getAnnotationSetId(), currentSetId);
+    }
+
+    private static boolean isVariantAnnotationFresh(boolean isAnnotated, int storedSetId, int currentSetId) {
         return isAnnotated && (storedSetId == 0 || storedSetId == currentSetId);
+    }
+
+    /**
+     * Returns {@code true} iff the sample's Sample Index annotation stamp is at the project's
+     * current generation (or the sample has no SSI version, in which case there is no SSI work
+     * to consider). Backcompat: stored {@code 0} means "unknown / not stamped yet" and is treated
+     * as fresh so projects pre-dating this field do not trigger a mass SSI rebuild on first run.
+     *
+     * <p>Polarity mirrors {@link #isVariantAnnotationFresh}: both report whether the corresponding
+     * annotation layer is up to date. Call sites that want to detect lagging samples negate the
+     * result.
+     */
+    private static boolean isSampleIndexAnnotationFresh(SampleMetadata sampleMetadata, int currentSetId) {
+        Integer ssiVersion = sampleMetadata.getSampleIndexAnnotationVersion();
+        if (ssiVersion == null) {
+            return true;
+        }
+        int stored = sampleMetadata.getSampleIndexAnnotationSetId(ssiVersion);
+        return stored == 0 || stored == currentSetId;
     }
 
     /**
@@ -595,8 +645,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         if (doLoad && filesToBeAnnotated != null) {
-            int currentAnnotationSetId = metadataManager.getProjectMetadata()
-                    .getAnnotation().getCurrent().getId();
+            // currentAnnotationSetId snapshot taken once at the top of preAnnotate — see field doc.
 
             for (Map.Entry<Integer, Collection<Integer>> entry : samplesToBeAnnotated.entrySet()) {
                 Integer studyId = entry.getKey();
@@ -628,59 +677,36 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     }
 
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
-        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-
-        List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
-
         boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
-
         if (!sampleIndex) {
             logger.info("Skip Sample Index Annotation");
-            // Nothing to do!
             return;
-        } else {
-            int currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
-            // Run on all pending samples
-            for (Integer studyId : studies) {
-                Set<Integer> samplesToUpdate = new HashSet<>();
-                for (Integer file : filesToBeAnnotated.getOrDefault(studyId, Collections.emptyList())) {
-                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
-                }
-                for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
-                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
-                }
-                // Also include samples whose SSI annotation was stamped against an older annotationSetId
-                // (e.g. an annotation overwrite bumped the project-wide id but their files were already
-                // annotated). Gate on the sample's general annotationSetId: a sample whose underlying
-                // variants are still stale (e.g. mid-catch-up after a partial annotation pass) is NOT
-                // a candidate — rebuilding its SSI from a mixed-version variants table would produce
-                // mixed SSI bits stamped as fresh. Wait until the next full annotation pass advances
-                // the sample.annotationSetId, then rebuild.
-                // Backcompat: a stored SSI value of 0 means "unknown" — treat as current and skip.
-                Set<Integer> staleSamples = new HashSet<>();
-                for (Integer sampleId : metadataManager.getIndexedSamples(studyId)) {
-                    SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
-                    if (sm.getAnnotationSetId() != currentAnnotationSetId) {
-                        // Sample's variants are still stale; defer SSI rebuild to the next full pass.
-                        continue;
-                    }
-                    Integer ssiVersion = sm.getSampleIndexAnnotationVersion();
-                    if (ssiVersion == null) {
-                        continue;
-                    }
-                    int stored = sm.getSampleIndexAnnotationSetId(ssiVersion);
-                    if (stored != 0 && stored != currentAnnotationSetId && samplesToUpdate.add(sampleId)) {
-                        staleSamples.add(sampleId);
-                    }
-                }
-                if (!staleSamples.isEmpty()) {
-                    logger.info("Auto-triggering SSI annotation rebuild for {} sample(s) in study {} "
-                                    + "with stale annotationSetId (project current = {})",
-                            staleSamples.size(), studyId, currentAnnotationSetId);
-                }
-                if (!samplesToUpdate.isEmpty()) {
-                    sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
-                }
+        }
+        if (!annotateAll) {
+            // Partial annotation pass (region/sample/etc. filter): SSI work is per-sample-whole
+            // and would rebuild from a mix of fresh-and-stale variants — the work scope doesn't
+            // match the variant-filter scope. Defer SSI sync to a full annotation pass or to an
+            // explicit variant-secondary-sample-index --annotate run.
+            logger.info("Skip Sample Index Annotation: partial annotation pass");
+            return;
+        }
+
+        // Both inputs were populated during preAnnotate with the same SampleMetadata reads used
+        // for the file/sample partition — no extra metadata round-trips needed here.
+        List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null,
+                dbAdaptor.getMetadataManager());
+        for (Integer studyId : studies) {
+            Set<Integer> samplesToUpdate = new HashSet<>();
+            // Variants were re-annotated → SSI must follow.
+            samplesToUpdate.addAll(samplesToBeAnnotated.getOrDefault(studyId, Collections.emptyList()));
+            // Variants were already fresh but the SSI stamp lags the project current.
+            samplesToUpdate.addAll(samplesWithLaggingSsiStamp.getOrDefault(studyId, Collections.emptyList()));
+
+            if (!samplesToUpdate.isEmpty()) {
+                // Every sample in this set was deliberately chosen because its SSI is known to
+                // need rebuild. Force overwrite=true so the indexer's "skip if READY" safety net —
+                // intended for direct CLI re-runs — doesn't no-op this orchestrated rebuild.
+                sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params, true);
             }
         }
     }
