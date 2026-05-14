@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -14,9 +15,10 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Filters.exists;
+import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Projections.include;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
@@ -42,16 +44,24 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
 
     @Override
     public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
-
+        // registerNewAnnotationSnapshot captures the state of current BEFORE bumping (the snapshot's
+        // id == current.id pre-bump), then bumps current.id. The just-snapshotted id is what we
+        // filter the data copy by, so only variants stamped under THIS generation get into the
+        // saved collection — phantom intermediate ids (where no variant was ever stamped) produce
+        // an empty saved collection, which is the correct outcome.
+        AtomicInteger snapshotIdRef = new AtomicInteger();
         dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-            registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            ProjectMetadata.VariantAnnotationMetadata snap =
+                    registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            snapshotIdRef.set(snap.getId());
             return project;
         });
+        int snapshotId = snapshotIdRef.get();
 
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
         mongoDbAdaptor.getVariantsCollection()
                 .aggregate(Arrays.asList(
-                        match(exists(ANNOT_ID)),
+                        match(eq(ANNOT_ID, snapshotId)),
                         project(include(
                                 CHROMOSOME_FIELD,
                                 START_FIELD,

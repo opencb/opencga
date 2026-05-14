@@ -55,7 +55,13 @@ public abstract class VariantAnnotationManager {
      * {@link #bumpAnnotationSetId}. Used as an idempotency marker to detect whether a transition
      * has already been bumped within the current annotate() call.
      */
-    private static final String AUTO_SNAPSHOT_PREFIX = "snapshot_";
+    /**
+     * Name prefix for entries recorded in {@link ProjectMetadata.VariantAnnotationSets#getTransitions()}.
+     * Used by {@link #bumpAnnotationSetId} to tag implicit bump records (annotator change, overwrite,
+     * forceNewAnnotationSet) and to recognise them for the in-call idempotency check. NOT a snapshot —
+     * a snapshot implies preserved variant data, which transitions do not have.
+     */
+    private static final String AUTO_TRANSITION_PREFIX = "transition_";
 
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
@@ -243,7 +249,7 @@ public abstract class VariantAnnotationManager {
         }
 
         if (!bumpReasons.isEmpty()) {
-            // Bump BEFORE the annotation MR so freshly written rows are stamped with the new id.
+            // Bump BEFORE the annotation pass so freshly written rows are stamped with the new id.
             // Idempotent within a single annotate() call (preflight + post-load both call here).
             bumpAnnotationSetId(projectMetadata, current, String.join("; ", bumpReasons));
         }
@@ -315,21 +321,26 @@ public abstract class VariantAnnotationManager {
     }
 
     /**
-     * Snapshot the outgoing {@link VariantAnnotationMetadata} into {@code saved} and bump
+     * Record the outgoing {@link VariantAnnotationMetadata} into {@code transitions} and bump
      * {@code current.id}. The caller is responsible for verifying that something has actually
      * changed; the {@code reason} argument records why for human auditing.
      *
      * <p>The bumped id (the project-wide annotationSetId) lets per-sample SSI metadata, the
-     * pending-annotation discovery MR and query-time SSI reads detect annotation drift after a
+     * pending-annotation discovery and query-time SSI reads detect annotation drift after a
      * {@code variant-annotation-index --overwrite} run.
      *
-     * <p>This must run BEFORE the annotation MR so newly written variant rows are stamped with the
-     * bumped id. {@link #checkCurrentAnnotation} can be called multiple times in a single annotate()
-     * (preflight + post-load); idempotency is preserved by detecting an already-recorded auto-snapshot
-     * whose id is exactly {@code current.id - 1} and whose annotator matches the outgoing one.
+     * <p>Entries land in {@code transitions} — audit-only records that no variant data was
+     * preserved for. An explicit {@code saveAnnotation(snapshotId)} later promotes the entry to
+     * {@code saved} and copies matching variants into the per-id snapshot collection.
      *
-     * @param projectMetadata Mutable project metadata. The {@code saved} list and {@code current.id}
-     *                        are modified in place.
+     * <p>This must run BEFORE the annotation pass so newly written variant rows are stamped with
+     * the bumped id. {@link #checkCurrentAnnotation} can be called multiple times in a single
+     * annotate() call (preflight + post-load); idempotency is preserved by detecting an
+     * already-recorded auto-snapshot at the tail of {@code transitions} whose id is exactly
+     * {@code current.id - 1} and whose annotator matches the outgoing one.
+     *
+     * @param projectMetadata Mutable project metadata. The {@code transitions} list and
+     *                        {@code current.id} are modified in place.
      * @param current         The current annotation metadata (the snapshot of state before the bump).
      * @param reason          Human-readable description of why the bump happened. Stored on the
      *                        snapshot's {@link VariantAnnotationMetadata#getDescription()} for
@@ -337,25 +348,28 @@ public abstract class VariantAnnotationManager {
      */
     private void bumpAnnotationSetId(ProjectMetadata projectMetadata, VariantAnnotationMetadata current, String reason) {
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
-        List<VariantAnnotationMetadata> saved = projectMetadata.getAnnotation().getSaved();
-        if (!saved.isEmpty()) {
-            VariantAnnotationMetadata last = saved.get(saved.size() - 1);
+        // Transition entries are audit-only — they record that the project bumped past this id.
+        // Variant data preservation is opt-in via saveAnnotation, which moves the matching variants
+        // into a per-id snapshot collection on demand.
+        List<VariantAnnotationMetadata> transitions = projectMetadata.getAnnotation().getTransitions();
+        if (!transitions.isEmpty()) {
+            VariantAnnotationMetadata last = transitions.get(transitions.size() - 1);
             if (last.getId() == current.getId() - 1
                     && last.getName() != null
-                    && last.getName().startsWith(AUTO_SNAPSHOT_PREFIX)
+                    && last.getName().startsWith(AUTO_TRANSITION_PREFIX)
                     && Objects.equals(currentAnnotator, last.getAnnotator())) {
-                // This transition has already been bumped (e.g. by an earlier preflight call within
-                // the same annotate() run). Don't snapshot again.
+                // This transition has already been recorded (e.g. by an earlier preflight call within
+                // the same annotate() run). Don't record it again.
                 return;
             }
         }
-        VariantAnnotationMetadata snapshot = new VariantAnnotationMetadata(current);
-        snapshot.setName(AUTO_SNAPSHOT_PREFIX + snapshot.getId() + "_" + System.currentTimeMillis());
-        snapshot.setDescription(reason);
-        saved.add(snapshot);
+        VariantAnnotationMetadata transition = new VariantAnnotationMetadata(current);
+        transition.setName(AUTO_TRANSITION_PREFIX + transition.getId() + "_" + System.currentTimeMillis());
+        transition.setDescription(reason);
+        transitions.add(transition);
         current.setId(current.getId() + 1);
-        logger.info("Bumped annotationSetId to {} (previous {} archived as '{}'): {}",
-                current.getId(), snapshot.getId(), snapshot.getName(), reason);
+        logger.info("Bumped annotationSetId to {} (previous {} recorded as transition '{}'): {}",
+                current.getId(), transition.getId(), transition.getName(), reason);
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,

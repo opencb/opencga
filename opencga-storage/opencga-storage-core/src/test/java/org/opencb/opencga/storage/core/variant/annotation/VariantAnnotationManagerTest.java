@@ -103,6 +103,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
         assertEquals(1, sets.getCurrent().getId());
         int savedBefore = sets.getSaved().size();
+        int transitionsBefore = sets.getTransitions().size();
 
         // After the first annotation pass, every indexed sample/file must be stamped with id=1.
         int studyIdAfterFirst = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
@@ -118,19 +119,22 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             }
         });
 
-        // Different annotator with overwrite. annotationSetId must bump, previous metadata moves to saved
-        // and the auto-snapshot's description records why.
+        // Different annotator with overwrite. annotationSetId must bump, previous metadata is recorded
+        // as an audit-only transition (no data preserved unless saveAnnotation is later invoked).
         variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2")
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
         assertEquals(2, sets.getCurrent().getId());
         assertEquals("v2", sets.getCurrent().getAnnotator().getVersion());
-        assertEquals(savedBefore + 1, sets.getSaved().size());
-        ProjectMetadata.VariantAnnotationMetadata snapshot = sets.getSaved().get(sets.getSaved().size() - 1);
-        assertEquals(1, snapshot.getId());
-        assertEquals("v1", snapshot.getAnnotator().getVersion());
-        assertNotNull("Auto-snapshot must record a bump reason in description", snapshot.getDescription());
-        assertThat(snapshot.getDescription(), containsString("annotator changed"));
+        assertEquals("Implicit bump must not promote anything into saved",
+                savedBefore, sets.getSaved().size());
+        assertEquals("Implicit bump must record an audit-only transition",
+                transitionsBefore + 1, sets.getTransitions().size());
+        ProjectMetadata.VariantAnnotationMetadata transition = sets.getTransitions().get(sets.getTransitions().size() - 1);
+        assertEquals(1, transition.getId());
+        assertEquals("v1", transition.getAnnotator().getVersion());
+        assertNotNull("Auto-snapshot must record a bump reason in description", transition.getDescription());
+        assertThat(transition.getDescription(), containsString("annotator changed"));
 
         // After the second pass under overwrite, every indexed sample/file (newly-annotated AND
         // already-annotated re-stamped via alreadyAnnotatedFiles/alreadyAnnotatedSamples) must be at id=2.
@@ -153,7 +157,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
         assertEquals("Same annotator must not bump annotationSetId",
                 2, sets.getCurrent().getId());
-        assertEquals(savedBefore + 1, sets.getSaved().size());
+        assertEquals(savedBefore, sets.getSaved().size());
+        assertEquals(transitionsBefore + 1, sets.getTransitions().size());
     }
 
     @Test
@@ -172,6 +177,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
         assertEquals(1, sets.getCurrent().getId());
         int savedBefore = sets.getSaved().size();
+        int transitionsBefore = sets.getTransitions().size();
 
         // Same annotator + overwrite + forceNewAnnotationSet -> bumps even though nothing else changed
         variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1")
@@ -179,10 +185,13 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(), true));
         sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
         assertEquals(2, sets.getCurrent().getId());
-        assertEquals(savedBefore + 1, sets.getSaved().size());
-        ProjectMetadata.VariantAnnotationMetadata snapshot = sets.getSaved().get(sets.getSaved().size() - 1);
-        assertNotNull(snapshot.getDescription());
-        assertThat(snapshot.getDescription(), containsString("forceNewAnnotationSet"));
+        assertEquals("Implicit bump must not promote anything into saved",
+                savedBefore, sets.getSaved().size());
+        assertEquals("Implicit bump must record an audit-only transition",
+                transitionsBefore + 1, sets.getTransitions().size());
+        ProjectMetadata.VariantAnnotationMetadata transition = sets.getTransitions().get(sets.getTransitions().size() - 1);
+        assertNotNull(transition.getDescription());
+        assertThat(transition.getDescription(), containsString("forceNewAnnotationSet"));
     }
 
     /**

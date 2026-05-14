@@ -47,16 +47,44 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     private Map<String, Integer> counters;
 
     public static class VariantAnnotationSets {
+        /**
+         * The active annotation generation — variants are currently being stamped with
+         * {@code current.id}.
+         */
         private VariantAnnotationMetadata current;
+
+        /**
+         * Past generations whose variant data was preserved by an explicit
+         * {@code saveAnnotation(snapshotId)} call (the per-id snapshot collection / column was
+         * populated, possibly empty if no variants were stamped against this id at copy time).
+         * Entries here are durable references that downstream queries can target.
+         */
         private List<VariantAnnotationMetadata> saved;
+
+        /**
+         * Past generations recorded as audit-only — the project bumped past these ids (via an
+         * annotator/config change or {@code --force-new-annotation-set}) but no
+         * {@code saveAnnotation} call was made to preserve variant data under that id.
+         * Entries here describe a transition that happened (annotator before/after, reason)
+         * but cannot be queried back against — running {@code saveAnnotation(transitionId)}
+         * promotes an entry from this list to {@link #saved}.
+         */
+        private List<VariantAnnotationMetadata> transitions;
 
         public VariantAnnotationSets() {
             saved = new ArrayList<>();
+            transitions = new ArrayList<>();
         }
 
         public VariantAnnotationSets(VariantAnnotationMetadata current, List<VariantAnnotationMetadata> saved) {
+            this(current, saved, new ArrayList<>());
+        }
+
+        public VariantAnnotationSets(VariantAnnotationMetadata current, List<VariantAnnotationMetadata> saved,
+                                     List<VariantAnnotationMetadata> transitions) {
             this.current = current;
             this.saved = saved;
+            this.transitions = transitions;
         }
 
         public VariantAnnotationSets(VariantAnnotationSets other) {
@@ -64,6 +92,14 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             this.saved = new ArrayList<>(other.saved.size());
             for (VariantAnnotationMetadata saved : other.saved) {
                 this.saved.add(new VariantAnnotationMetadata(saved));
+            }
+            // Defensive: pre-existing projects deserialized with no transitions field land with null
+            // until Jackson catches up. Normalize to an empty list so callers can always iterate.
+            List<VariantAnnotationMetadata> otherTransitions = other.transitions == null
+                    ? Collections.emptyList() : other.transitions;
+            this.transitions = new ArrayList<>(otherTransitions.size());
+            for (VariantAnnotationMetadata t : otherTransitions) {
+                this.transitions.add(new VariantAnnotationMetadata(t));
             }
         }
 
@@ -98,6 +134,19 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return this;
         }
 
+        public List<VariantAnnotationMetadata> getTransitions() {
+            // Defensive against pre-migration deserialized instances.
+            if (transitions == null) {
+                transitions = new ArrayList<>();
+            }
+            return transitions;
+        }
+
+        public VariantAnnotationSets setTransitions(List<VariantAnnotationMetadata> transitions) {
+            this.transitions = transitions;
+            return this;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -108,12 +157,13 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             }
             VariantAnnotationSets that = (VariantAnnotationSets) o;
             return Objects.equals(current, that.current)
-                    && Objects.equals(saved, that.saved);
+                    && Objects.equals(saved, that.saved)
+                    && Objects.equals(getTransitions(), that.getTransitions());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(current, saved);
+            return Objects.hash(current, saved, getTransitions());
         }
     }
 
