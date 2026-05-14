@@ -512,11 +512,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         ProjectMetadata.VariantAnnotationSets annotation = projectMetadata.getAnnotation();
         List<ProjectMetadata.VariantAnnotationMetadata> list;
         if (StringUtils.isEmpty(name) || ALL.equals(name)) {
-            list = new ArrayList<>(annotation.getSaved().size() + 1);
+            // Surface every recorded annotationSetId: current + preserved snapshots + audit-only
+            // transitions. Callers asking for "all" want the full history of generations, not just
+            // those with data behind them.
+            list = new ArrayList<>(annotation.getSaved().size() + annotation.getTransitions().size() + 1);
             if (annotation.getCurrent() != null) {
                 list.add(annotation.getCurrent());
             }
             list.addAll(annotation.getSaved());
+            list.addAll(annotation.getTransitions());
         } else {
             list = new ArrayList<>();
             for (String annotationName : name.split(",")) {
@@ -525,7 +529,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         list.add(annotation.getCurrent());
                     }
                 } else {
-                    list.add(annotation.getSaved(annotationName));
+                    list.add(annotation.findRecord(annotationName));
                 }
             }
         }

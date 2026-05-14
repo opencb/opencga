@@ -129,6 +129,30 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return saved;
         }
 
+        /**
+         * Find a recorded annotation generation by name across {@link #saved} and
+         * {@link #transitions}. Callers that don't care whether the entry has preserved variant
+         * data behind it (e.g. {@code getAnnotationMetadata} when the user asks for an arbitrary
+         * generation by name) should use this rather than {@link #getSaved(String)} — the latter
+         * is restricted to entries with preserved data and will throw on transition-only names.
+         *
+         * @param name annotation generation name (snapshot name from saved, or auto-transition name)
+         * @return the matching annotation metadata
+         */
+        public VariantAnnotationMetadata findRecord(String name) {
+            for (VariantAnnotationMetadata annotation : getSaved()) {
+                if (annotation.getName().equals(name)) {
+                    return annotation;
+                }
+            }
+            for (VariantAnnotationMetadata annotation : getTransitions()) {
+                if (annotation.getName().equals(name)) {
+                    return annotation;
+                }
+            }
+            throw new VariantQueryException("Variant Annotation \"" + name + "\" not found!");
+        }
+
         public VariantAnnotationSets setSaved(List<VariantAnnotationMetadata> saved) {
             this.saved = saved;
             return this;
