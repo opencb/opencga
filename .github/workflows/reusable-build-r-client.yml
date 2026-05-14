@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+          with:
+            persist-credentials: false
         with:
           fetch-depth: '10'
           ref: ${{ inputs.branch }}

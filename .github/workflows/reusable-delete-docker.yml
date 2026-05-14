@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: '10'
           token: ${{ secrets.ZETTA_GH_TOKEN }}
       - name: Validate task name
@@ -40,6 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: '10'
           token: ${{ secrets.ZETTA_GH_TOKEN }}
       - name: Validate task name

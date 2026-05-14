@@ -19,6 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
           with:
+            persist-credentials: false
           token: ${{ secrets.ZETTA_GH_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
