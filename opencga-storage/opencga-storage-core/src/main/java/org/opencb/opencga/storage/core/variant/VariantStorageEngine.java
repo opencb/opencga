@@ -498,20 +498,23 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Single facade for an in-place CellBase configuration swap. Performs three steps atomically
-     * from the caller's perspective:
+     * Single facade for an in-place CellBase configuration swap. Performs three steps and rolls the
+     * engine's in-memory cellbase config back on any failure so the caller sees either full success
+     * or a no-op (no partial commit reaches subsequent operations in this JVM):
      *
      * <ol>
      *   <li>Update the engine configuration ({@code getConfiguration().setCellbase}) and reload it
      *       so that subsequent annotator constructions see the new values.</li>
-     *   <li>If project metadata exists for this engine: invalidate the annotation index timestamps
-     *       so the next pending-discovery pass cannot short-circuit on stale "already up to date".</li>
      *   <li>If project metadata exists for this engine: synchronise the recorded annotator metadata
      *       with what the new annotator would produce — when the server-derived fingerprint
      *       semantically differs from the recorded {@code current.annotator}, record an audit-only
      *       transition for the OLD state and swap {@code current} to the new values. Subsequent
      *       {@code variant-annotation-index} calls then see {@code current.annotator == new} and
      *       don't need {@code --overwrite-annotations} to get past the annotator-change safety net.</li>
+     *   <li>If step 2 actually bumped current (semantic change): invalidate the annotation index
+     *       timestamps so the next pending-discovery pass cannot short-circuit on stale "already up
+     *       to date". A no-op step 2 (cosmetic edit) leaves timestamps alone to avoid spurious
+     *       downstream re-discovery / Solr reindexing.</li>
      * </ol>
      *
      * <p>Cosmetic config edits that don't change server-derived provenance (e.g. CNAME repointing

@@ -63,6 +63,25 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         annotatorExtensionInputUri = getResourceUri(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME);
     }
 
+    /**
+     * The saved and transitions buckets must hold disjoint sets of names AND ids — a saved entry
+     * carries preserved variant data, a transition is audit-only; the same generation cannot
+     * legitimately appear in both at once. promoteTransitionToSaved moves entries between them
+     * and must remove from the source bucket.
+     */
+    private static void assertSavedAndTransitionsDisjoint(ProjectMetadata.VariantAnnotationSets sets) {
+        Set<String> savedNames = sets.getSaved().stream()
+                .map(ProjectMetadata.VariantAnnotationMetadata::getName).collect(java.util.stream.Collectors.toSet());
+        Set<Integer> savedIds = sets.getSaved().stream()
+                .map(ProjectMetadata.VariantAnnotationMetadata::getId).collect(java.util.stream.Collectors.toSet());
+        for (ProjectMetadata.VariantAnnotationMetadata t : sets.getTransitions()) {
+            assertFalse("Transition name '" + t.getName() + "' must not also exist in saved",
+                    savedNames.contains(t.getName()));
+            assertFalse("Transition id " + t.getId() + " must not also exist in saved",
+                    savedIds.contains(t.getId()));
+        }
+    }
+
     @Test
     public void testChangeAnnotator() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
@@ -159,6 +178,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 2, sets.getCurrent().getId());
         assertEquals(savedBefore, sets.getSaved().size());
         assertEquals(transitionsBefore + 1, sets.getTransitions().size());
+        assertSavedAndTransitionsDisjoint(sets);
     }
 
     @Test
@@ -192,6 +212,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         ProjectMetadata.VariantAnnotationMetadata transition = sets.getTransitions().get(sets.getTransitions().size() - 1);
         assertNotNull(transition.getDescription());
         assertThat(transition.getDescription(), containsString("forceNewAnnotationSet"));
+        assertSavedAndTransitionsDisjoint(sets);
     }
 
     @Test
@@ -368,6 +389,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 transitionId, promoted.getId());
         assertNull("The original transition name must no longer be in transitions",
                 setsAfter.getTransitionOrNull(transitionName));
+        assertSavedAndTransitionsDisjoint(setsAfter);
     }
 
     /**

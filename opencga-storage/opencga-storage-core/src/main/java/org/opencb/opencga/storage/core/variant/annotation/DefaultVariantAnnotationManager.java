@@ -499,7 +499,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             // matches the project's current id. annotationSetId == 0 means "unstamped" and is
             // treated as fresh for backwards compatibility (existing projects pre-dating this field
             // would otherwise trigger a mass re-annotation on the first run).
-            // The currentAnnotationSetId snapshot is taken once at the top of preAnnotate - see field doc.
             List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();

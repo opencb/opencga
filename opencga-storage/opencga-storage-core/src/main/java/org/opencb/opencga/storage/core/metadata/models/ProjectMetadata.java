@@ -132,7 +132,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the matching saved entry, or {@code null} if not present
          */
         public VariantAnnotationMetadata getSavedOrNull(String name) {
-            for (VariantAnnotationMetadata annotation : getSaved()) {
+            if (saved == null) {
+                return null;
+            }
+            for (VariantAnnotationMetadata annotation : saved) {
                 if (annotation.getName().equals(name)) {
                     return annotation;
                 }
@@ -148,7 +151,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the matching transition entry, or {@code null} if not present
          */
         public VariantAnnotationMetadata getTransitionOrNull(String name) {
-            for (VariantAnnotationMetadata annotation : getTransitions()) {
+            if (transitions == null) {
+                return null;
+            }
+            for (VariantAnnotationMetadata annotation : transitions) {
                 if (annotation.getName().equals(name)) {
                     return annotation;
                 }
@@ -164,7 +170,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the removed transition, or {@code null} if not present
          */
         public VariantAnnotationMetadata removeTransition(String name) {
-            Iterator<VariantAnnotationMetadata> it = getTransitions().iterator();
+            if (transitions == null) {
+                return null;
+            }
+            Iterator<VariantAnnotationMetadata> it = transitions.iterator();
             while (it.hasNext()) {
                 VariantAnnotationMetadata t = it.next();
                 if (t.getName().equals(name)) {
@@ -183,7 +192,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the removed saved entry, or {@code null} if not present
          */
         public VariantAnnotationMetadata removeSaved(String name) {
-            Iterator<VariantAnnotationMetadata> it = getSaved().iterator();
+            if (saved == null) {
+                return null;
+            }
+            Iterator<VariantAnnotationMetadata> it = saved.iterator();
             while (it.hasNext()) {
                 VariantAnnotationMetadata s = it.next();
                 if (s.getName().equals(name)) {
@@ -203,7 +215,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the matching transition entry, or {@code null} if not present
          */
         public VariantAnnotationMetadata getTransitionByIdOrNull(int id) {
-            for (VariantAnnotationMetadata t : getTransitions()) {
+            if (transitions == null) {
+                return null;
+            }
+            for (VariantAnnotationMetadata t : transitions) {
                 if (t.getId() == id) {
                     return t;
                 }
@@ -218,8 +233,10 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
          * @return the last transition entry or {@code null}
          */
         public VariantAnnotationMetadata getLastTransitionOrNull() {
-            List<VariantAnnotationMetadata> list = getTransitions();
-            return list.isEmpty() ? null : list.get(list.size() - 1);
+            if (transitions == null || transitions.isEmpty()) {
+                return null;
+            }
+            return transitions.get(transitions.size() - 1);
         }
 
         /**

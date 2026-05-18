@@ -49,11 +49,6 @@ public abstract class VariantAnnotationManager {
     public static final String CURRENT = "CURRENT";
 
     /**
-     * Marker prefix used in {@link VariantAnnotationMetadata#getName()} for snapshots created by
-     * {@link #bumpAnnotationSetId}. Used as an idempotency marker to detect whether a transition
-     * has already been bumped within the current annotate() call.
-     */
-    /**
      * Name prefix for entries recorded in {@link ProjectMetadata.VariantAnnotationSets#getTransitions()}.
      * Used by {@link #bumpAnnotationSetId} to tag implicit bump records (annotator change, overwrite,
      * forceNewAnnotationSet) and to recognise them for the in-call idempotency check. NOT a snapshot —
@@ -104,20 +99,7 @@ public abstract class VariantAnnotationManager {
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
             throws VariantAnnotatorException {
-        return checkCurrentAnnotation(annotator, projectMetadata, overwrite, false);
-    }
-
-    protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
-                                                                     boolean overwrite, boolean forceNewAnnotationSet)
-            throws VariantAnnotatorException {
-        ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = annotator.getVariantAnnotationMetadata();
-        return checkCurrentAnnotation(projectMetadata, overwrite, forceNewAnnotationSet, newVariantAnnotationMetadata);
-    }
-
-    protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,
-                                                                     VariantAnnotationMetadata newVariantAnnotationMetadata)
-            throws VariantAnnotatorException {
-        return checkCurrentAnnotation(projectMetadata, overwrite, false, newVariantAnnotationMetadata);
+        return checkCurrentAnnotation(projectMetadata, overwrite, false, annotator.getVariantAnnotationMetadata());
     }
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(ProjectMetadata projectMetadata, boolean overwrite,

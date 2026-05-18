@@ -24,7 +24,6 @@ import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
@@ -99,9 +98,7 @@ public class CopyVariantAnnotationSnapshotDriver extends CopyHBaseColumnDriver {
         return CopyHBaseColumnDriver.buildArgs(table, columnsToCopyMap, columnsToInclude, opts);
     }
 
-    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
-        main(args, (Class<? extends org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver>)
-                MethodHandles.lookup().lookupClass());
+        main(args, CopyVariantAnnotationSnapshotDriver.class);
     }
 }
