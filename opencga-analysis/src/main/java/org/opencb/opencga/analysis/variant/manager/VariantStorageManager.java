@@ -682,25 +682,33 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         + "configuration. Project metadata has not been mutated.", e);
             }
 
+            if (engine.getMetadataManager().exists()
+                    && StringUtils.isNotEmpty(annotationSaveId) && newTransitionName == null) {
+                // The operator asked to save the OLD annotation generation before changing
+                // CellBase, but the change was a no-op (server-derived annotator metadata is
+                // unchanged — typical for a CNAME swap pointing at the same physical server).
+                // There is no "old" generation to preserve, so refuse instead of bumping
+                // current.id spuriously (which would pollute the audit trail and trigger
+                // project-wide staleness for byte-identical annotations).
+                // Roll back the engine's in-memory cellbase config so this JVM's state stays
+                // consistent with what the catalog still holds (the catalog setCellbase call
+                // below won't run because we throw).
+                engine.getConfiguration().setCellbase(previousCellbase);
+                engine.reloadCellbaseConfiguration();
+                throw new StorageEngineException("CellBase configuration change is a no-op"
+                        + " (server-derived annotator metadata unchanged). Cannot save the"
+                        + " current annotation as '" + annotationSaveId + "' before a change"
+                        + " that did not happen. Either omit annotationSaveId, or call the"
+                        + " standalone saveAnnotation endpoint to take an explicit snapshot.");
+            }
+
+            // Persist the new configuration to the catalog NOW, before submitting any jobs. If
+            // the catalog write fails (e.g. token expired), no jobs are queued and the operator
+            // can retry; engine in-memory state + project metadata are already consistent with
+            // the requested swap, so a retry reaches the catalog write again.
+            catalogManager.getProjectManager().setCellbaseConfiguration(project, validatedCellbaseConfiguration, false, token);
+
             if (engine.getMetadataManager().exists()) {
-                if (StringUtils.isNotEmpty(annotationSaveId) && newTransitionName == null) {
-                    // The operator asked to save the OLD annotation generation before changing
-                    // CellBase, but the change was a no-op (server-derived annotator metadata is
-                    // unchanged — typical for a CNAME swap pointing at the same physical server).
-                    // There is no "old" generation to preserve, so refuse instead of bumping
-                    // current.id spuriously (which would pollute the audit trail and trigger
-                    // project-wide staleness for byte-identical annotations).
-                    // Roll back the engine's in-memory cellbase config so this JVM's state stays
-                    // consistent with what the catalog still holds (the catalog setCellbase call
-                    // below won't run because we throw).
-                    engine.getConfiguration().setCellbase(previousCellbase);
-                    engine.reloadCellbaseConfiguration();
-                    throw new StorageEngineException("CellBase configuration change is a no-op"
-                            + " (server-derived annotator metadata unchanged). Cannot save the"
-                            + " current annotation as '" + annotationSaveId + "' before a change"
-                            + " that did not happen. Either omit annotationSaveId, or call the"
-                            + " standalone saveAnnotation endpoint to take an explicit snapshot.");
-                }
                 getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
@@ -733,7 +741,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
-            catalogManager.getProjectManager().setCellbaseConfiguration(project, validatedCellbaseConfiguration, false, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });

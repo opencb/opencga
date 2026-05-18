@@ -565,10 +565,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         // Probe succeeded — commit the engine-side switch (drop the cached CellBaseUtils built
-        // from the old config) and run the metadata sync.
+        // from the old config) and run the metadata sync. If the sync throws, restore the
+        // engine's cellbase config so the engine doesn't drift past the persisted catalog state
+        // (which the caller won't update either, because the throw propagates out).
         reloadCellbaseConfiguration();
-        String transitionName = newVariantAnnotationManager(new ObjectMap())
-                .synchroniseWithCurrentAnnotator(probedMetadata, expectedCurrentAnnotator);
+        String transitionName;
+        try {
+            transitionName = newVariantAnnotationManager(new ObjectMap())
+                    .synchroniseWithCurrentAnnotator(probedMetadata, expectedCurrentAnnotator);
+        } catch (StorageEngineException | VariantAnnotatorException | RuntimeException e) {
+            getConfiguration().setCellbase(previous);
+            reloadCellbaseConfiguration();
+            throw e;
+        }
 
         // Invalidate annotation index timestamps ONLY when sync actually bumped current. A
         // cosmetic-only change (CNAME repointing at the same physical CellBase) leaves the
