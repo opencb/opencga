@@ -1401,6 +1401,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         StopWatch watch = StopWatch.createStarted();
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), queryOptions);
+        int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
+        DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id;
             if (variantAnnotation.getAdditionalAttributes() != null
@@ -1415,8 +1417,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantAnnotation.getReference(), variantAnnotation.getAlternate());
             }
             Document find = new Document("_id", id);
-            int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
-            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
                     set(DocumentToVariantConverter.ANNOTATION_FIELD, convertedVariantAnnotation),
