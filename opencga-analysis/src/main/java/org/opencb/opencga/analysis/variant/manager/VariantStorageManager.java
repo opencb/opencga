@@ -673,6 +673,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             // no-op for cosmetic edits like DNS CNAME repointing). Returns the new transition's
             // auto-name (or null for no-op / no project metadata) so the save job below can target
             // it explicitly.
+            CellBaseConfiguration previousCellbase = engine.getConfiguration().getCellbase();
             String newTransitionName;
             try {
                 newTransitionName = engine.updateCellbaseConfiguration(validatedCellbaseConfiguration);
@@ -682,13 +683,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             }
 
             if (engine.getMetadataManager().exists()) {
+                if (StringUtils.isNotEmpty(annotationSaveId) && newTransitionName == null) {
+                    // The operator asked to save the OLD annotation generation before changing
+                    // CellBase, but the change was a no-op (server-derived annotator metadata is
+                    // unchanged — typical for a CNAME swap pointing at the same physical server).
+                    // There is no "old" generation to preserve, so refuse instead of bumping
+                    // current.id spuriously (which would pollute the audit trail and trigger
+                    // project-wide staleness for byte-identical annotations).
+                    // Roll back the engine's in-memory cellbase config so this JVM's state stays
+                    // consistent with what the catalog still holds (the catalog setCellbase call
+                    // below won't run because we throw).
+                    engine.getConfiguration().setCellbase(previousCellbase);
+                    engine.reloadCellbaseConfiguration();
+                    throw new StorageEngineException("CellBase configuration change is a no-op"
+                            + " (server-derived annotator metadata unchanged). Cannot save the"
+                            + " current annotation as '" + annotationSaveId + "' before a change"
+                            + " that did not happen. Either omit annotationSaveId, or call the"
+                            + " standalone saveAnnotation endpoint to take an explicit snapshot.");
+                }
                 getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
                     // Source the save from the just-recorded transition (the OLD annotator state).
-                    // If the autobump was a no-op (no semantic change), newTransitionName is null
-                    // and saveAnnotation falls back to its default "capture current" semantic —
-                    // which under the unified model means autobump-then-promote current state.
+                    // Reached only when newTransitionName is non-null (the no-op case throws above).
                     VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId, newTransitionName);
                     OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
                             .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationSaveOperationTool.ID, null,
