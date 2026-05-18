@@ -105,7 +105,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected Map<Integer, Collection<Integer>> alreadyAnnotatedSamples = new HashMap<>();
     /**
      * Subset of {@link #alreadyAnnotatedSamples} whose SSI annotationSetId stamp lags the project
-     * current — populated during preAnnotate using the same SampleMetadata reads as the file/sample
+     * current - populated during preAnnotate using the same SampleMetadata reads as the file/sample
      * partition, so updateSampleIndexAnnotation doesn't need a second round-trip per sample.
      */
     protected Map<Integer, Collection<Integer>> samplesWithLaggingSsiStamp = new HashMap<>();
@@ -119,7 +119,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * after {@code checkCurrentAnnotation} (called from {@code annotate()} before us) may have
      * bumped it. preAnnotate's partition, the annotation loop, postAnnotate, and
      * {@link #updateSampleIndexAnnotation} all consume this value rather than re-reading from
-     * the metadata manager — guarantees the whole pipeline sees a consistent id even if another
+     * the metadata manager - guarantees the whole pipeline sees a consistent id even if another
      * process bumps the project mid-run.
      */
     private int currentAnnotationSetId;
@@ -169,7 +169,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         // dataRelease, extensions, etc. have changed under overwrite=true, or when
         // forceNewAnnotationSet=true). This must run BEFORE preAnnotate, because preAnnotate's
         // discovery loop partitions indexed files/samples by whether their stored annotationSetId
-        // matches the project's *current* one — if we ran preAnnotate first it would see the
+        // matches the project's *current* one - if we ran preAnnotate first it would see the
         // pre-bump value and treat about-to-become-stale rows as fresh.
         if (doCreate && doLoad) {
             ProjectMetadata.VariantAnnotationMetadata newVariantAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
@@ -464,8 +464,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         // Snapshot the project's current annotationSetId once for the whole pass. checkCurrentAnnotation
-        // (called from annotate() before us) may have just bumped it; everything downstream — the
-        // partition below, postAnnotate, updateSampleIndexAnnotation — must read this field rather
+        // (called from annotate() before us) may have just bumped it; everything downstream - the
+        // partition below, postAnnotate, updateSampleIndexAnnotation - must read this field rather
         // than re-fetching from the metadata manager, so the pipeline is internally consistent
         // even if another process bumps the project mid-run.
         currentAnnotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
@@ -499,7 +499,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             // matches the project's current id. annotationSetId == 0 means "unstamped" and is
             // treated as fresh for backwards compatibility (existing projects pre-dating this field
             // would otherwise trigger a mass re-annotation on the first run).
-            // The currentAnnotationSetId snapshot is taken once at the top of preAnnotate — see field doc.
+            // The currentAnnotationSetId snapshot is taken once at the top of preAnnotate - see field doc.
             List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
@@ -647,7 +647,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         if (doLoad && filesToBeAnnotated != null) {
-            // currentAnnotationSetId snapshot taken once at the top of preAnnotate — see field doc.
+            // currentAnnotationSetId snapshot taken once at the top of preAnnotate - see field doc.
 
             for (Map.Entry<Integer, Collection<Integer>> entry : samplesToBeAnnotated.entrySet()) {
                 Integer studyId = entry.getKey();
@@ -686,7 +686,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
         if (!annotateAll) {
             // Partial annotation pass (region/sample/etc. filter): SSI work is per-sample-whole
-            // and would rebuild from a mix of fresh-and-stale variants — the work scope doesn't
+            // and would rebuild from a mix of fresh-and-stale variants - the work scope doesn't
             // match the variant-filter scope. Defer SSI sync to a full annotation pass or to an
             // explicit variant-secondary-sample-index --annotate run.
             logger.info("Skip Sample Index Annotation: partial annotation pass");
@@ -694,7 +694,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         // Both inputs were populated during preAnnotate with the same SampleMetadata reads used
-        // for the file/sample partition — no extra metadata round-trips needed here.
+        // for the file/sample partition - no extra metadata round-trips needed here.
         List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null,
                 dbAdaptor.getMetadataManager());
         for (Integer studyId : studies) {
@@ -706,8 +706,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
             if (!samplesToUpdate.isEmpty()) {
                 // Every sample in this set was deliberately chosen because its SSI is known to
-                // need rebuild. Force overwrite=true so the indexer's "skip if READY" safety net —
-                // intended for direct CLI re-runs — doesn't no-op this orchestrated rebuild.
+                // need rebuild. Force overwrite=true so the indexer's "skip if READY" safety net -
+                // intended for direct CLI re-runs - doesn't no-op this orchestrated rebuild.
                 sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params, true);
             }
         }
@@ -835,27 +835,65 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      *       to {@code saved} under {@code name}; preserves the transition's original id).</li>
      * </ul>
      *
+     * <p>Idempotent on partial-failure retry: if {@code name} is already present in {@code saved}
+     * (e.g. a previous attempt's metadata step landed but the data copy crashed), the metadata is
+     * left untouched and the existing entry's id is returned. The caller then re-runs the
+     * backend-specific data copy, which is naturally idempotent on both backends (Mongo
+     * {@code $out} replaces the target collection, Hadoop overwrites the snapshot column). When
+     * an explicit {@code fromAnnotationSet} is given, the existing saved entry's id must match
+     * that transition's id; a mismatch is treated as a real name collision and rejected.
+     *
      * @param name    operator-given snapshot name to land in {@code saved}
      * @param options job options; reads {@link VariantAnnotationSaveParams#FROM_ANNOTATION_SET}
-     * @return the saved entry's annotationSetId — backends use this to drive their per-id variant
+     * @return the saved entry's annotationSetId - backends use this to drive their per-id variant
      *         data copy (Mongo {@code $match} aggregation, Hadoop scan filter on {@code A_ID}).
      * @throws StorageEngineException     if the metadata mutation fails
-     * @throws VariantAnnotatorException  if the snapshot name collides or the named transition is
-     *                                    not found
+     * @throws VariantAnnotatorException  if the snapshot name collides with a different generation
+     *                                    or the named transition is not found
      */
     protected final int updateProjectMetadataForSaveAnnotation(String name, ObjectMap options)
             throws StorageEngineException, VariantAnnotatorException {
         String fromAnnotationSet = options.getString(VariantAnnotationSaveParams.FROM_ANNOTATION_SET);
         AtomicInteger snapshotIdRef = new AtomicInteger();
         dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-            ProjectMetadata.VariantAnnotationMetadata snap;
-            if (StringUtils.isEmpty(fromAnnotationSet)
-                    || VariantAnnotationManager.CURRENT.equalsIgnoreCase(fromAnnotationSet)) {
-                snap = registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            // Idempotent retry path. If `name` already exists in saved, a previous saveAnnotation
+            // call already promoted the entry - but the data copy may have failed (MR crash, JVM
+            // death, network blip during Mongo aggregation). Skip the metadata mutation and return
+            // the existing id so the backend re-runs the data copy.
+            ProjectMetadata.VariantAnnotationMetadata existing = project.getAnnotation().getSavedOrNull(name);
+            if (existing != null) {
+                // Defence against accidental name reuse for a semantically different generation:
+                // when the caller explicitly named a source transition, the existing saved entry
+                // must come from that same transition (matching id). Otherwise the operator is
+                // trying to overload the name for a different generation - refuse. If the
+                // transition is missing, it likely IS the one we already promoted on the prior
+                // attempt (promoteTransitionToSaved removes it from transitions), so absence is
+                // consistent with a retry - do not reject.
+                if (StringUtils.isNotEmpty(fromAnnotationSet)
+                        && !VariantAnnotationManager.CURRENT.equalsIgnoreCase(fromAnnotationSet)) {
+                    ProjectMetadata.VariantAnnotationMetadata source = project.getAnnotation()
+                            .getTransitionOrNull(fromAnnotationSet);
+                    if (source != null && source.getId() != existing.getId()) {
+                        throw new VariantAnnotatorException("Annotation snapshot name '" + name
+                                + "' already exists with id=" + existing.getId()
+                                + " but the requested source transition '" + fromAnnotationSet
+                                + "' has id=" + source.getId()
+                                + " - reusing the snapshot name for a different generation is not allowed.");
+                    }
+                }
+                logger.info("saveAnnotation '{}' already exists in saved (id={}); skipping metadata mutation, "
+                        + "re-running data copy only.", name, existing.getId());
+                snapshotIdRef.set(existing.getId());
             } else {
-                snap = promoteTransitionToSaved(fromAnnotationSet, name, project);
+                ProjectMetadata.VariantAnnotationMetadata snap;
+                if (StringUtils.isEmpty(fromAnnotationSet)
+                        || VariantAnnotationManager.CURRENT.equalsIgnoreCase(fromAnnotationSet)) {
+                    snap = registerNewAnnotationSnapshot(name, variantAnnotator, project);
+                } else {
+                    snap = promoteTransitionToSaved(fromAnnotationSet, name, project);
+                }
+                snapshotIdRef.set(snap.getId());
             }
-            snapshotIdRef.set(snap.getId());
             return project;
         });
         return snapshotIdRef.get();
@@ -874,7 +912,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         // Track the current.id BEFORE entering the lock. If updateCurrentAnnotation triggers a
         // bump, current.id increments by 1; the OLD id ends up as the id of the freshly recorded
         // transition. Using an id delta (rather than a list-size delta) correctly handles the
-        // idempotent dedup branch inside bumpAnnotationSetId — that path returns an existing
+        // idempotent dedup branch inside bumpAnnotationSetId - that path returns an existing
         // entry without appending, but also without incrementing current.id, so an id-delta of 0
         // accurately means "no bump made by THIS call".
         int[] preBumpId = {0};
@@ -912,13 +950,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
         // The bump pushed the pre-bump state into transitions tagged with the OLD id. Look it up
         // by id so we return the right entry even if other transitions are interleaved.
-        for (ProjectMetadata.VariantAnnotationMetadata t : updatedPm.getAnnotation().getTransitions()) {
-            if (t.getId() == preBumpId[0]) {
-                return t.getName();
-            }
+        ProjectMetadata.VariantAnnotationMetadata bumped =
+                updatedPm.getAnnotation().getTransitionByIdOrNull(preBumpId[0]);
+        if (bumped != null) {
+            return bumped.getName();
         }
         // Defensive: a bump happened but we couldn't find the matching transition. Should not
-        // occur under normal operation — bumpAnnotationSetId always appends the prior state.
+        // occur under normal operation - bumpAnnotationSetId always appends the prior state.
         logger.warn("Annotation set id bumped from {} to {} but no transition entry was found for id {}",
                 preBumpId[0], postBumpId, preBumpId[0]);
         return null;

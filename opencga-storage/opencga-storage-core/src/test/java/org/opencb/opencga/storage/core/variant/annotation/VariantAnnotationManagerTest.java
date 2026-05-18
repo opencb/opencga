@@ -194,6 +194,49 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         assertThat(transition.getDescription(), containsString("forceNewAnnotationSet"));
     }
 
+    @Test
+    public void testSaveAnnotationIsIdempotentOnNameReuse() throws Exception {
+        // Recovery scenario: a previous saveAnnotation call landed the metadata mutation (the
+        // entry is in saved) but the data copy failed (MR crash, JVM death, network blip during
+        // the Mongo aggregation). Re-running with the same name must NOT throw and must NOT
+        // re-bump current.id — it should be a no-op on the metadata side, so the backend can just
+        // re-run the data copy.
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+
+        // First save under name "snap1". bumps current.id (1 -> 2) and lands the OLD state as
+        // saved["snap1"].
+        variantStorageEngine.saveAnnotation("snap1", new ObjectMap());
+        ProjectMetadata.VariantAnnotationSets sets =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        int currentIdAfterFirstSave = sets.getCurrent().getId();
+        int savedCountAfterFirstSave = sets.getSaved().size();
+        int transitionsCountAfterFirstSave = sets.getTransitions().size();
+        ProjectMetadata.VariantAnnotationMetadata snap1 = sets.getSaved().stream()
+                .filter(s -> s.getName().equals("snap1")).findFirst().orElseThrow(AssertionError::new);
+
+        // Retry: same name, same options. Must succeed (no throw) and must not mutate metadata.
+        variantStorageEngine.saveAnnotation("snap1", new ObjectMap());
+        sets = variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals("Retry must not bump current.id",
+                currentIdAfterFirstSave, sets.getCurrent().getId());
+        assertEquals("Retry must not add a second saved entry",
+                savedCountAfterFirstSave, sets.getSaved().size());
+        assertEquals("Retry must not append another transition",
+                transitionsCountAfterFirstSave, sets.getTransitions().size());
+        ProjectMetadata.VariantAnnotationMetadata snap1Retry = sets.getSaved().stream()
+                .filter(s -> s.getName().equals("snap1")).findFirst().orElseThrow(AssertionError::new);
+        assertEquals("Retry must preserve the original saved id",
+                snap1.getId(), snap1Retry.getId());
+    }
+
     /**
      * Parser-level guard for the staleness-aware {@code ANNOTATION_EXISTS} predicate.
      *

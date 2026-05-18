@@ -382,23 +382,21 @@ public abstract class VariantAnnotationManager {
         // Transition entries are audit-only — they record that the project bumped past this id.
         // Variant data preservation is opt-in via saveAnnotation, which moves the matching variants
         // into a per-id snapshot collection on demand.
-        List<VariantAnnotationMetadata> transitions = projectMetadata.getAnnotation().getTransitions();
-        if (!transitions.isEmpty()) {
-            VariantAnnotationMetadata last = transitions.get(transitions.size() - 1);
-            if (last.getId() == current.getId() - 1
-                    && last.getName() != null
-                    && last.getName().startsWith(AUTO_TRANSITION_PREFIX)
-                    && Objects.equals(currentAnnotator, last.getAnnotator())) {
-                // This transition has already been recorded (e.g. by an earlier preflight call within
-                // the same annotate() run). Return the existing entry so callers that chain a
-                // promote step (saveAnnotation) can still find it.
-                return last;
-            }
+        VariantAnnotationMetadata last = projectMetadata.getAnnotation().getLastTransitionOrNull();
+        if (last != null
+                && last.getId() == current.getId() - 1
+                && last.getName() != null
+                && last.getName().startsWith(AUTO_TRANSITION_PREFIX)
+                && Objects.equals(currentAnnotator, last.getAnnotator())) {
+            // This transition has already been recorded (e.g. by an earlier preflight call within
+            // the same annotate() run). Return the existing entry so callers that chain a
+            // promote step (saveAnnotation) can still find it.
+            return last;
         }
         VariantAnnotationMetadata transition = new VariantAnnotationMetadata(current);
         transition.setName(AUTO_TRANSITION_PREFIX + transition.getId() + "_" + System.currentTimeMillis());
         transition.setDescription(reason);
-        transitions.add(transition);
+        projectMetadata.getAnnotation().getTransitions().add(transition);
         current.setId(current.getId() + 1);
         logger.info("Bumped annotationSetId to {} (previous {} recorded as transition '{}'): {}",
                 current.getId(), transition.getId(), transition.getName(), reason);
@@ -422,27 +420,22 @@ public abstract class VariantAnnotationManager {
                                                                        ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
         rejectIfSavedNameTaken(targetName, projectMetadata);
-        Iterator<VariantAnnotationMetadata> it = projectMetadata.getAnnotation().getTransitions().iterator();
-        while (it.hasNext()) {
-            VariantAnnotationMetadata t = it.next();
-            if (t.getName().equals(sourceTransitionName)) {
-                it.remove();
-                t.setName(targetName);
-                projectMetadata.getAnnotation().getSaved().add(t);
-                return t;
-            }
+        VariantAnnotationMetadata t = projectMetadata.getAnnotation().removeTransition(sourceTransitionName);
+        if (t == null) {
+            throw new VariantAnnotatorException("Transition '" + sourceTransitionName
+                    + "' not found in project annotation transitions");
         }
-        throw new VariantAnnotatorException("Transition '" + sourceTransitionName
-                + "' not found in project annotation transitions");
+        t.setName(targetName);
+        projectMetadata.getAnnotation().getSaved().add(t);
+        return t;
     }
 
     private void rejectIfSavedNameTaken(String name, ProjectMetadata projectMetadata) throws VariantAnnotatorException {
-        boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
-                .stream()
-                .map(VariantAnnotationMetadata::getName)
-                .anyMatch(s -> s.equalsIgnoreCase(name))
-                || VariantAnnotationManager.CURRENT.equalsIgnoreCase(name);
-        if (nameDuplicated) {
+        // CURRENT is a reserved magic value (the active generation, not a stored name) — compared
+        // case-insensitively because user-facing CLI/REST may normalise casing. Saved-name
+        // uniqueness, by contrast, is case-sensitive to stay consistent with getSaved(String).
+        if (VariantAnnotationManager.CURRENT.equalsIgnoreCase(name)
+                || projectMetadata.getAnnotation().getSavedOrNull(name) != null) {
             throw new VariantAnnotatorException("Annotation snapshot name '" + name + "' already exists!");
         }
     }
@@ -474,18 +467,8 @@ public abstract class VariantAnnotationManager {
             throw new VariantAnnotatorException("Can not delete " + VariantAnnotationManager.CURRENT + " annotation");
         }
 
-        Iterator<VariantAnnotationMetadata> iterator = projectMetadata.getAnnotation().getSaved().iterator();
-        VariantAnnotationMetadata annotation = null;
-        boolean found = false;
-        while (iterator.hasNext()) {
-            annotation = iterator.next();
-            if (annotation.getName().equals(name)) {
-                found = true;
-                iterator.remove();
-                break;
-            }
-        }
-        if (found) {
+        VariantAnnotationMetadata annotation = projectMetadata.getAnnotation().removeSaved(name);
+        if (annotation != null) {
             return annotation;
         } else {
             throw new VariantAnnotatorException("Variant Annotation snapshot \"" + name + "\" not found!");

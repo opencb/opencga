@@ -117,16 +117,109 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         }
 
         public VariantAnnotationMetadata getSaved(String name) {
-            ProjectMetadata.VariantAnnotationMetadata saved = null;
-            for (ProjectMetadata.VariantAnnotationMetadata annotation : getSaved()) {
-                if (annotation.getName().equals(name)) {
-                    saved = annotation;
-                }
-            }
+            VariantAnnotationMetadata saved = getSavedOrNull(name);
             if (saved == null) {
                 throw new VariantQueryException("Variant Annotation snapshot \"" + name + "\" not found!");
             }
             return saved;
+        }
+
+        /**
+         * Non-throwing case-sensitive lookup of a {@code saved} entry by name. Returns {@code null}
+         * if the name is not present.
+         *
+         * @param name snapshot name to find
+         * @return the matching saved entry, or {@code null} if not present
+         */
+        public VariantAnnotationMetadata getSavedOrNull(String name) {
+            for (VariantAnnotationMetadata annotation : getSaved()) {
+                if (annotation.getName().equals(name)) {
+                    return annotation;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Non-throwing case-sensitive lookup of a {@code transitions} entry by name. Returns
+         * {@code null} if the name is not present.
+         *
+         * @param name transition auto-name to find
+         * @return the matching transition entry, or {@code null} if not present
+         */
+        public VariantAnnotationMetadata getTransitionOrNull(String name) {
+            for (VariantAnnotationMetadata annotation : getTransitions()) {
+                if (annotation.getName().equals(name)) {
+                    return annotation;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Remove a transition entry by case-sensitive name match. Returns the removed entry or
+         * {@code null} if no entry matched.
+         *
+         * @param name transition auto-name to remove
+         * @return the removed transition, or {@code null} if not present
+         */
+        public VariantAnnotationMetadata removeTransition(String name) {
+            Iterator<VariantAnnotationMetadata> it = getTransitions().iterator();
+            while (it.hasNext()) {
+                VariantAnnotationMetadata t = it.next();
+                if (t.getName().equals(name)) {
+                    it.remove();
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Remove a {@code saved} entry by case-sensitive name match. Returns the removed entry or
+         * {@code null} if no entry matched.
+         *
+         * @param name snapshot name to remove
+         * @return the removed saved entry, or {@code null} if not present
+         */
+        public VariantAnnotationMetadata removeSaved(String name) {
+            Iterator<VariantAnnotationMetadata> it = getSaved().iterator();
+            while (it.hasNext()) {
+                VariantAnnotationMetadata s = it.next();
+                if (s.getName().equals(name)) {
+                    it.remove();
+                    return s;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Look up a {@code transitions} entry by annotationSetId. Returns {@code null} if no entry
+         * matches.
+         *
+         * @param id annotationSetId of the transition (the OLD generation's id, recorded at bump
+         *           time)
+         * @return the matching transition entry, or {@code null} if not present
+         */
+        public VariantAnnotationMetadata getTransitionByIdOrNull(int id) {
+            for (VariantAnnotationMetadata t : getTransitions()) {
+                if (t.getId() == id) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * The most recently appended transition entry, or {@code null} if {@link #transitions} is
+         * empty. Used by bump-idempotency checks that need to peek at the tail of the list.
+         *
+         * @return the last transition entry or {@code null}
+         */
+        public VariantAnnotationMetadata getLastTransitionOrNull() {
+            List<VariantAnnotationMetadata> list = getTransitions();
+            return list.isEmpty() ? null : list.get(list.size() - 1);
         }
 
         /**
