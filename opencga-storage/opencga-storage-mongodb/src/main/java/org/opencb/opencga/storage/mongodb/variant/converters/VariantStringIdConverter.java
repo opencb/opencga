@@ -61,7 +61,35 @@ public class VariantStringIdConverter {
     // For positions < 10 digits, splitVariantId uses the leading space to find the CHR:POS boundary.
     private static final int POS_PAD_SIZE = 10;
 
-    public Variant buildVariant(String variantId, int end, String reference, String alternate) {
+    /**
+     * Render a mongo _id back into a human-readable variant ID. Returns {@code CHR:POS:REF:ALT}
+     * when REF and ALT are recoverable from the _id; otherwise returns the locus {@code CHR:POS}.
+     * Locus form is used when the variant is structural (length == {@link #SV_SPLIT_LENGTH}, where
+     * the REF/ALT slots hold encoded SV fields) or when REF/ALT were reduced to a SHA1 of the
+     * original allele (raw bytes that may contain non-printable characters — see
+     * {@link #reduce(StringBuilder, String, StructuralVariation)}).
+     *
+     * @param variantId the mongo _id string produced by {@link #buildId(Variant)}
+     * @return human-readable variant ID ({@code CHR:POS:REF:ALT} or {@code CHR:POS})
+     */
+    public static String buildVariantOrLocus(String variantId) {
+        String[] split = splitVariantId(variantId);
+        String chr = split[CHR].trim();
+        int start = Integer.parseInt(split[POS].trim());
+        if (split.length == SV_SPLIT_LENGTH) {
+            // Structural variant: REF/ALT slots hold encoded SV fields, not the original alleles.
+            return chr + SEPARATOR_CHAR + start;
+        }
+        String ref = split[REF];
+        String alt = split[ALT];
+        if (!StringUtils.isAsciiPrintable(ref) || !StringUtils.isAsciiPrintable(alt)) {
+            // Long-allele SHA1 case: REF or ALT was replaced with raw SHA1 bytes.
+            return chr + SEPARATOR_CHAR + start;
+        }
+        return chr + SEPARATOR_CHAR + start + SEPARATOR_CHAR + ref + SEPARATOR_CHAR + alt;
+    }
+
+    public static Variant buildVariant(String variantId, int end, String reference, String alternate) {
         String[] split = splitVariantId(variantId);
         String chr = split[CHR].trim();
         int start = Integer.parseInt(split[POS].trim());
@@ -116,7 +144,7 @@ public class VariantStringIdConverter {
         return split;
     }
 
-    private StructuralVariation buildSv(String[] split, String reference, String alternate) {
+    private static StructuralVariation buildSv(String[] split, String reference, String alternate) {
         if (split.length == SV_SPLIT_LENGTH) {
             try {
                 Breakend breakend = VariantBuilder.parseBreakend(reference, alternate);
@@ -141,7 +169,7 @@ public class VariantStringIdConverter {
         }
     }
 
-    private Integer getInt(String[] split, int idx) {
+    private static Integer getInt(String[] split, int idx) {
         if (split.length > idx && StringUtils.isNotEmpty(split[idx])) {
             return Integer.valueOf(split[idx]);
         } else {

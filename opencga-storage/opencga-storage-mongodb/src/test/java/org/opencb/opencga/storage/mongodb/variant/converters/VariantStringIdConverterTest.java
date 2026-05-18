@@ -25,6 +25,7 @@ public class VariantStringIdConverterTest {
         // SNV
         Variant v = new Variant("1", 1000, 1000, "A", "C");
         assertEquals(" 1:      1000:A:C", converter.buildId(v));
+        assertEquals("1:1000:A:C", VariantStringIdConverter.buildVariantOrLocus(converter.buildId(v)));
     }
 
     @Test
@@ -32,16 +33,19 @@ public class VariantStringIdConverterTest {
         // Indel
         Variant v = new Variant("1", 1000, 1002, "", "CA");
         assertEquals(" 1:      1000::CA", converter.buildId(v));
-
+        assertEquals("1:1000::CA", VariantStringIdConverter.buildVariantOrLocus(converter.buildId(v)));
     }
 
     @Test
     public void sv() {
-        // Structural
+        // Long allele reduced to SHA1 (no structural-variant fields). The SHA1 bytes are stored
+        // raw in the alt slot and may contain non-printable characters — buildVariantOrLocus must
+        // detect this and fall back to the locus form.
         String alt = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         Variant v = new Variant("1", 1000, 1002, "TAG", alt);
-        assertEquals(" 1:      1000:TAG:" + new String(CryptoUtils.encryptSha1(alt)), converter.buildId(v));
-
+        String id = converter.buildId(v);
+        assertEquals(" 1:      1000:TAG:" + new String(CryptoUtils.encryptSha1(alt)), id);
+        assertEquals("1:1000", VariantStringIdConverter.buildVariantOrLocus(id));
     }
 
     @Test
@@ -50,16 +54,21 @@ public class VariantStringIdConverterTest {
         Variant v = new Variant("1", 1000, 2000, "A", "<CN5>");
         assertEquals(" 1:      1000:A:<CN5>", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 2000, "A", "<CN5>"));
+        // CNV without CI fields → split length 4, full form recoverable.
+        assertEquals("1:1000:A:<CN5>", VariantStringIdConverter.buildVariantOrLocus(converter.buildId(v)));
 
         v.getSv().setCiStartLeft(999);
         v.getSv().setCiStartRight(1010);
         assertEquals(" 1:      1000:A:<CN5>:999:1010::", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 2000, "A", "<CN5>"));
+        // CNV with CI fields → split length 8, locus form.
+        assertEquals("1:1000", VariantStringIdConverter.buildVariantOrLocus(converter.buildId(v)));
 
         v.getSv().setCiEndLeft(1999);
         v.getSv().setCiEndRight(2010);
         assertEquals(" 1:      1000:A:<CN5>:999:1010:1999:2010", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 2000, "A", "<CN5>"));
+        assertEquals("1:1000", VariantStringIdConverter.buildVariantOrLocus(converter.buildId(v)));
     }
 
     @Test
@@ -68,11 +77,13 @@ public class VariantStringIdConverterTest {
         Variant v = new Variant("1:1000:-:AAAAA...TTTT");
         assertEquals(" 1:      1000::<INS>_AAAAA_TTTT::::", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", "<INS>_AAAAA_TTTT"));
+        assertEquals("1:1000", converter.buildVariantOrLocus(converter.buildId(v)));
 
         v.getSv().setCiStartLeft(999);
         v.getSv().setCiStartRight(1010);
         assertEquals(" 1:      1000::<INS>_AAAAA_TTTT:999:1010::", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", "<INS>_AAAAA_TTTT"));
+        assertEquals("1:1000", converter.buildVariantOrLocus(converter.buildId(v)));
     }
 
     @Test
@@ -82,6 +93,7 @@ public class VariantStringIdConverterTest {
         Variant v = new Variant("1:1000:-:" + alt);
         assertEquals(SV_SPLIT_LENGTH - 1, StringUtils.countMatches(converter.buildId(v), ':'));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "", alt));
+        assertEquals("1:1000", converter.buildVariantOrLocus(converter.buildId(v)));
     }
 
     @Test
@@ -91,6 +103,7 @@ public class VariantStringIdConverterTest {
         String id = converter.buildId(v);
         assertEquals("5C:COLON:     10000:A:G", id);
         assertEquals(v, converter.buildVariant(id, 10000, "A", "G"));
+        assertEquals(v.toString(), converter.buildVariantOrLocus(id));
     }
 
     @Test
@@ -99,6 +112,7 @@ public class VariantStringIdConverterTest {
         Variant v = new Variant("1C_!#$%&*+./:;=?@^_|~-!#$%&*+./:;=?@^_|~-ALL", 10000, 10000, "C", "G");
         String id = converter.buildId(v);
         assertEquals(v, converter.buildVariant(id, 10000, "C", "G"));
+        assertEquals(v.toString(), converter.buildVariantOrLocus(id));
     }
 
     @Test
@@ -116,5 +130,6 @@ public class VariantStringIdConverterTest {
         v.getSv().setCiStartRight(1010);
         assertEquals(" 1:      1000:A:A[3_123[:999:1010::", converter.buildId(v));
         assertEquals(v, converter.buildVariant(converter.buildId(v), 999, "A", "A[3:123["));
+        assertEquals("1:1000", converter.buildVariantOrLocus(id));
     }
 }

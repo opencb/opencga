@@ -300,7 +300,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             if (batch.isEmpty()) {
                 logger.error("Fail loading empty batch");
             } else {
-                logger.error("Fail loading batch from " + batch.get(0).get("_id") + " to " + batch.get(batch.size() - 1).get("_id"));
+                logger.error("Fail loading batch from "
+                        + VariantStringIdConverter.buildVariantOrLocus(batch.get(0).getString("_id"))
+                        + " to "
+                        + VariantStringIdConverter.buildVariantOrLocus(batch.get(batch.size() - 1).getString("_id")));
             }
             throw e;
         }

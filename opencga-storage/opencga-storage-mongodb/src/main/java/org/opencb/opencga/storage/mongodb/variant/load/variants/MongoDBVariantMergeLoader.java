@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
@@ -309,12 +310,12 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             if (!r.getResults().isEmpty()) {
                 String id = r.first().get("_id", String.class);
                 boolean remove = queryIds.remove(id);
-                logger.info("remove({}): {}", id, remove);
+                logger.info("remove({}): {}", VariantStringIdConverter.buildVariantOrLocus(id), remove);
             }
         }
         StringBuilder sb = new StringBuilder("Missing Variant for update : ");
         for (String id : queryIds) {
-            logger.error("Missing Variant '" + id + '\'');
+            logger.error("Missing Variant '" + VariantStringIdConverter.buildVariantOrLocus(id) + '\'');
             sb.append('\'').append(id).append("', ");
         }
         throw new RuntimeException(sb.toString());
@@ -325,11 +326,15 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             long processedVariants = mongoDBOps.getNewStudy().getQueries().size()
                     + mongoDBOps.getExistingStudy().getQueries().size()
                     + mongoDBOps.getMissingVariantsNoFillGaps();
-            progressLogger.increment(processedVariants, () -> "up to variant " + (
-                    mongoDBOps.getNewStudy().getIds().isEmpty()
-                            ? mongoDBOps.getExistingStudy().getIds().get(0)
-                            : mongoDBOps.getNewStudy().getIds().get(0)
-                    ));
+            progressLogger.increment(processedVariants, () -> {
+                String id = mongoDBOps.getNewStudy().getIds().isEmpty()
+                        ? mongoDBOps.getExistingStudy().getIds().get(0)
+                        : mongoDBOps.getNewStudy().getIds().get(0);
+                // ids are mongo _id strings (space-padded position, colon-encoded SV fields).
+                // Render the human form: "CHR:POS:REF:ALT", or "CHR:POS" for SVs where REF/ALT
+                // aren't recoverable from the _id.
+                return "up to variant " + VariantStringIdConverter.buildVariantOrLocus(id);
+            });
         }
     }
 

@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +110,7 @@ public class VariantMongoDBIterator extends VariantDBIterator {
             count++;
             return convert(() -> documentToVariantConverter.convertToDataModelType(document));
         } catch (RuntimeException e) {
-            logger.error("Error converting variant " + document.getString("_id"));
+            logger.error("Error converting variant " + VariantStringIdConverter.buildVariantOrLocus(document.getString("_id")));
             throw e;
         }
     }
