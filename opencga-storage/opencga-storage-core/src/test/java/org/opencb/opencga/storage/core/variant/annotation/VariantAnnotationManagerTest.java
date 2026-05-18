@@ -237,6 +237,139 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 snap1.getId(), snap1Retry.getId());
     }
 
+    @Test
+    public void testUpdateCellbaseConfigurationRollsBackOnProbeFailure() throws Exception {
+        // Probe-before-commit invariant: if the candidate CellBase server is unreachable (probe
+        // throws), the engine's cellbase config must remain on the OLD value and project
+        // metadata must not be mutated. Without this guarantee the engine could end up pointing
+        // at a server it can't reach, with current.annotator still reflecting the old server.
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        // First annotation bootstraps current.annotator.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        ProjectMetadata.VariantAnnotationSets setsBefore =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        int currentIdBefore = setsBefore.getCurrent().getId();
+        int savedBefore = setsBefore.getSaved().size();
+        int transitionsBefore = setsBefore.getTransitions().size();
+        org.opencb.opencga.core.config.storage.CellBaseConfiguration cellbaseBefore =
+                variantStorageEngine.getConfiguration().getCellbase();
+
+        // Arm the probe to throw: the dummy annotator now fails inside getVariantAnnotationMetadata.
+        variantStorageEngine.getOptions().append(DummyVariantAnnotator.FAIL_METADATA, true);
+
+        org.opencb.opencga.core.config.storage.CellBaseConfiguration newConfig =
+                new org.opencb.opencga.core.config.storage.CellBaseConfiguration(
+                        "http://updated.example.test/cellbase",
+                        cellbaseBefore.getVersion(),
+                        cellbaseBefore.getDataRelease(),
+                        cellbaseBefore.getApiKey());
+
+        try {
+            variantStorageEngine.updateCellbaseConfiguration(newConfig);
+            fail("Expected probe failure to throw VariantAnnotatorException");
+        } catch (VariantAnnotatorException expected) {
+            // expected
+        } finally {
+            variantStorageEngine.getOptions().remove(DummyVariantAnnotator.FAIL_METADATA);
+        }
+
+        // The engine's cellbase config must be restored to the previous value.
+        assertSame("Probe failure must restore the engine cellbase config reference",
+                cellbaseBefore, variantStorageEngine.getConfiguration().getCellbase());
+        // Project metadata must not have been mutated.
+        ProjectMetadata.VariantAnnotationSets setsAfter =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals("current.id must not change on probe failure",
+                currentIdBefore, setsAfter.getCurrent().getId());
+        assertEquals("saved bucket must not change on probe failure",
+                savedBefore, setsAfter.getSaved().size());
+        assertEquals("transitions bucket must not change on probe failure",
+                transitionsBefore, setsAfter.getTransitions().size());
+    }
+
+    @Test
+    public void testSaveAnnotationFromMissingTransitionThrows() throws Exception {
+        // Explicit fromAnnotationSet path: if the named transition doesn't exist AND no entry
+        // with the target name exists in saved, saveAnnotation must fail loudly rather than
+        // silently falling back to bump-current.
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+
+        ObjectMap saveOptions = new ObjectMap(
+                org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams.FROM_ANNOTATION_SET,
+                "transition_does_not_exist_999");
+        try {
+            variantStorageEngine.saveAnnotation("snapX", saveOptions);
+            fail("Expected VariantAnnotatorException for missing transition");
+        } catch (VariantAnnotatorException expected) {
+            assertThat(expected.getMessage(), containsString("transition_does_not_exist_999"));
+            assertThat(expected.getMessage(), containsString("not found"));
+        }
+    }
+
+    @Test
+    public void testSaveAnnotationFromExistingTransitionPromotesWithoutBump() throws Exception {
+        // The fromAnnotationSet path on a real transition must MOVE the transition into saved
+        // under the requested name WITHOUT bumping current.id again. Verifies the explicit
+        // promote-from-transition flow used by setCellbaseConfiguration with annotationSaveId.
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
+
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
+        // Force a bump so a transition exists.
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2")
+                .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+
+        ProjectMetadata.VariantAnnotationSets setsBefore =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertFalse("Pre-condition: a transition must exist", setsBefore.getTransitions().isEmpty());
+        ProjectMetadata.VariantAnnotationMetadata transition = setsBefore.getTransitions().get(setsBefore.getTransitions().size() - 1);
+        int transitionId = transition.getId();
+        String transitionName = transition.getName();
+        int savedBefore = setsBefore.getSaved().size();
+        int transitionsBefore = setsBefore.getTransitions().size();
+        int currentIdBefore = setsBefore.getCurrent().getId();
+
+        ObjectMap saveOptions = new ObjectMap(
+                org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams.FROM_ANNOTATION_SET,
+                transitionName);
+        variantStorageEngine.saveAnnotation("preserved_v1", saveOptions);
+
+        ProjectMetadata.VariantAnnotationSets setsAfter =
+                variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation();
+        assertEquals("Promote from existing transition must NOT bump current.id",
+                currentIdBefore, setsAfter.getCurrent().getId());
+        assertEquals("Transition count must drop by one (moved into saved)",
+                transitionsBefore - 1, setsAfter.getTransitions().size());
+        assertEquals("Saved count must grow by one",
+                savedBefore + 1, setsAfter.getSaved().size());
+        ProjectMetadata.VariantAnnotationMetadata promoted = setsAfter.getSaved().stream()
+                .filter(s -> s.getName().equals("preserved_v1")).findFirst().orElseThrow(AssertionError::new);
+        assertEquals("Promoted entry must preserve the original transition id",
+                transitionId, promoted.getId());
+        assertNull("The original transition name must no longer be in transitions",
+                setsAfter.getTransitionOrNull(transitionName));
+    }
+
     /**
      * Parser-level guard for the staleness-aware {@code ANNOTATION_EXISTS} predicate.
      *
