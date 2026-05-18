@@ -30,8 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Date;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,6 +68,38 @@ public abstract class VariantAnnotationManager {
     public abstract void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
     public abstract void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
+
+    /**
+     * Apply the caller's pre-resolved annotator metadata to {@code current}, recording the OLD
+     * state as a transition if anything actually changed. Cosmetic config changes that don't
+     * affect annotation provenance (e.g. DNS CNAME repointing at the same physical CellBase
+     * server) produce no transition because the metadata comparison comes out equal.
+     *
+     * <p>The caller (typically {@link VariantStorageEngine#updateCellbaseConfiguration}) resolves
+     * the server-derived metadata BEFORE acquiring the project lock so that network failures
+     * surface as {@link VariantAnnotatorException} without mutating engine state.
+     *
+     * <p>To defend against concurrent {@code updateCellbaseConfiguration} calls overwriting each
+     * other's metadata (the classic TOCTOU on probe → lock-acquire), the caller also passes the
+     * {@code current.annotator} value it observed at probe time; if {@code current.annotator} has
+     * moved on by the time the lock is acquired the call aborts without mutating metadata (the
+     * other writer's transition is the authoritative one for that window).
+     *
+     * @param preResolvedMetadata the server-derived annotator metadata captured by the caller
+     *                            BEFORE acquiring the project lock — used as the new
+     *                            {@code current.annotator} state when a bump is required.
+     * @param expectedCurrentAnnotator the {@code current.annotator} value the caller observed at
+     *                                 probe time. If {@code null}, no CAS guard is enforced.
+     * @return the auto-name of the transition that was just recorded, or {@code null} if the
+     *         comparison came out equal (no-op) or the CAS guard aborted. Callers that want to
+     *         preserve the OLD state downstream (e.g. by submitting a saveAnnotation job with
+     *         {@code fromAnnotationSet}) should pass this value through.
+     * @throws StorageEngineException if the metadata mutation fails
+     * @throws VariantAnnotatorException if the metadata cannot be applied
+     */
+    public abstract String synchroniseWithCurrentAnnotator(VariantAnnotationMetadata preResolvedMetadata,
+                                                           VariantAnnotatorProgram expectedCurrentAnnotator)
+            throws StorageEngineException, VariantAnnotatorException;
 
     protected final VariantAnnotationMetadata checkCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
                                                                      boolean overwrite)
@@ -346,7 +376,8 @@ public abstract class VariantAnnotationManager {
      *                        snapshot's {@link VariantAnnotationMetadata#getDescription()} for
      *                        auditability.
      */
-    private void bumpAnnotationSetId(ProjectMetadata projectMetadata, VariantAnnotationMetadata current, String reason) {
+    private VariantAnnotationMetadata bumpAnnotationSetId(ProjectMetadata projectMetadata, VariantAnnotationMetadata current,
+                                                           String reason) {
         VariantAnnotatorProgram currentAnnotator = current.getAnnotator();
         // Transition entries are audit-only — they record that the project bumped past this id.
         // Variant data preservation is opt-in via saveAnnotation, which moves the matching variants
@@ -359,8 +390,9 @@ public abstract class VariantAnnotationManager {
                     && last.getName().startsWith(AUTO_TRANSITION_PREFIX)
                     && Objects.equals(currentAnnotator, last.getAnnotator())) {
                 // This transition has already been recorded (e.g. by an earlier preflight call within
-                // the same annotate() run). Don't record it again.
-                return;
+                // the same annotate() run). Return the existing entry so callers that chain a
+                // promote step (saveAnnotation) can still find it.
+                return last;
             }
         }
         VariantAnnotationMetadata transition = new VariantAnnotationMetadata(current);
@@ -370,6 +402,49 @@ public abstract class VariantAnnotationManager {
         current.setId(current.getId() + 1);
         logger.info("Bumped annotationSetId to {} (previous {} recorded as transition '{}'): {}",
                 current.getId(), transition.getId(), transition.getName(), reason);
+        return transition;
+    }
+
+    /**
+     * Move a transition entry from {@link ProjectMetadata.VariantAnnotationSets#getTransitions()}
+     * into {@link ProjectMetadata.VariantAnnotationSets#getSaved()}, renaming it from its auto
+     * name to {@code targetName}. The matching variant data is NOT copied here — the backend
+     * saveAnnotation flow is responsible for that, using the returned entry's id to filter the copy.
+     *
+     * @param sourceTransitionName the auto-name of the transition to promote
+     * @param targetName           the operator-given name to record in {@code saved}
+     * @param projectMetadata      mutable project metadata
+     * @return the promoted entry (now in {@code saved}, with the new name and original id)
+     * @throws VariantAnnotatorException if no transition matches {@code sourceTransitionName} or
+     *                                   if {@code targetName} collides with an existing saved entry
+     */
+    protected final VariantAnnotationMetadata promoteTransitionToSaved(String sourceTransitionName, String targetName,
+                                                                       ProjectMetadata projectMetadata)
+            throws VariantAnnotatorException {
+        rejectIfSavedNameTaken(targetName, projectMetadata);
+        Iterator<VariantAnnotationMetadata> it = projectMetadata.getAnnotation().getTransitions().iterator();
+        while (it.hasNext()) {
+            VariantAnnotationMetadata t = it.next();
+            if (t.getName().equals(sourceTransitionName)) {
+                it.remove();
+                t.setName(targetName);
+                projectMetadata.getAnnotation().getSaved().add(t);
+                return t;
+            }
+        }
+        throw new VariantAnnotatorException("Transition '" + sourceTransitionName
+                + "' not found in project annotation transitions");
+    }
+
+    private void rejectIfSavedNameTaken(String name, ProjectMetadata projectMetadata) throws VariantAnnotatorException {
+        boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
+                .stream()
+                .map(VariantAnnotationMetadata::getName)
+                .anyMatch(s -> s.equalsIgnoreCase(name))
+                || VariantAnnotationManager.CURRENT.equalsIgnoreCase(name);
+        if (nameDuplicated) {
+            throw new VariantAnnotatorException("Annotation snapshot name '" + name + "' already exists!");
+        }
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
@@ -380,32 +455,16 @@ public abstract class VariantAnnotationManager {
             // Should never enter here
             current = checkCurrentAnnotation(annotator, projectMetadata, true);
         }
+        rejectIfSavedNameTaken(name, projectMetadata);
 
-        boolean nameDuplicated = projectMetadata.getAnnotation().getSaved()
-                .stream()
-                .map(VariantAnnotationMetadata::getName)
-                .anyMatch(s -> s.equalsIgnoreCase(name))
-                || VariantAnnotationManager.CURRENT.equalsIgnoreCase(name);
-
-        if (nameDuplicated) {
-            throw new VariantAnnotatorException("Annotation snapshot name already exists!");
-        }
-
-        VariantAnnotationMetadata newSnapshot = new VariantAnnotationMetadata(
-                current.getId(),
-                name,
-                Date.from(Instant.now()),
-                current.getAnnotator(),
-                current.getExtensions(),
-                current.getSourceVersion(),
-                current.getDataRelease(),
-                current.getPrivateSources());
-        projectMetadata.getAnnotation().getSaved().add(newSnapshot);
-
-        // Increment ID of the current annotation
-        current.setId(current.getId() + 1);
-
-        return newSnapshot;
+        // Routed through the transition mechanism: record current state as an auto-named transition
+        // (this also bumps current.id), then immediately promote that transition to saved with the
+        // operator-given name. External behavior unchanged from earlier — the entry lands in saved
+        // and current.id is incremented by one — but the bump+promote primitives are now the single
+        // shared path used by autobump-on-config-change and explicit save-from-transition as well.
+        VariantAnnotationMetadata transition = bumpAnnotationSetId(projectMetadata, current,
+                "explicit saveAnnotation requested ('" + name + "')");
+        return promoteTransitionToSaved(transition.getName(), name, projectMetadata);
     }
 
     protected final VariantAnnotationMetadata removeAnnotationSnapshot(String name, ProjectMetadata projectMetadata)

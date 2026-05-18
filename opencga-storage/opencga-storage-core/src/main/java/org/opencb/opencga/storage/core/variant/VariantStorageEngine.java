@@ -30,6 +30,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
@@ -494,6 +495,89 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public void deleteAnnotation(String name, ObjectMap params) throws StorageEngineException, VariantAnnotatorException {
         newVariantAnnotationManager(params).deleteAnnotation(name, params);
+    }
+
+    /**
+     * Single facade for an in-place CellBase configuration swap. Performs three steps atomically
+     * from the caller's perspective:
+     *
+     * <ol>
+     *   <li>Update the engine configuration ({@code getConfiguration().setCellbase}) and reload it
+     *       so that subsequent annotator constructions see the new values.</li>
+     *   <li>If project metadata exists for this engine: invalidate the annotation index timestamps
+     *       so the next pending-discovery pass cannot short-circuit on stale "already up to date".</li>
+     *   <li>If project metadata exists for this engine: synchronise the recorded annotator metadata
+     *       with what the new annotator would produce — when the server-derived fingerprint
+     *       semantically differs from the recorded {@code current.annotator}, record an audit-only
+     *       transition for the OLD state and swap {@code current} to the new values. Subsequent
+     *       {@code variant-annotation-index} calls then see {@code current.annotator == new} and
+     *       don't need {@code --overwrite-annotations} to get past the annotator-change safety net.</li>
+     * </ol>
+     *
+     * <p>Cosmetic config edits that don't change server-derived provenance (e.g. CNAME repointing
+     * at the same physical CellBase deployment) reach step 3 as a no-op because the metadata
+     * comparison comes out equal — no transition is recorded.
+     *
+     * <p>Network errors reaching the new CellBase server surface as
+     * {@link VariantAnnotatorException} BEFORE any engine state or project metadata is mutated:
+     * a one-shot probe annotator is constructed against the candidate config and asked for its
+     * server-derived metadata; only if that round-trip succeeds does the engine swap its
+     * configuration and reload. If the probe fails the engine remains pointed at the OLD CellBase.
+     *
+     * @param cellbaseConfiguration the validated new configuration
+     * @return the auto-name of the transition recorded by the metadata sync, or {@code null} if
+     *         the sync was a no-op or if there is no project metadata to mutate. Callers can pass
+     *         this through to a downstream {@code saveAnnotation} job as the
+     *         {@code fromAnnotationSet} source.
+     * @throws StorageEngineException if the metadata mutation fails
+     * @throws VariantAnnotatorException if the annotator cannot resolve its server-derived metadata
+     */
+    public String updateCellbaseConfiguration(CellBaseConfiguration cellbaseConfiguration)
+            throws StorageEngineException, VariantAnnotatorException {
+        if (!getMetadataManager().exists()) {
+            // No project metadata to sync against. Just commit the engine-side switch; the next
+            // annotate() call will build a fresh annotator from the new config and bootstrap
+            // current.annotator at first use.
+            getConfiguration().setCellbase(cellbaseConfiguration);
+            reloadCellbaseConfiguration();
+            return null;
+        }
+
+        // Probe-before-commit (B3): build a one-shot annotator against the candidate config and
+        // resolve its server-derived metadata. If CellBase is unreachable, throw with the engine
+        // still pointing at the OLD config. The probe annotator captures cellbase values in its
+        // constructor, so we can restore the engine's config immediately after capturing the
+        // metadata regardless of what subsequent steps do.
+        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+        ProjectMetadata.VariantAnnotatorProgram expectedCurrentAnnotator =
+                projectMetadata.getAnnotation().getCurrent().getAnnotator();
+        CellBaseConfiguration previous = getConfiguration().getCellbase();
+        ProjectMetadata.VariantAnnotationMetadata probedMetadata;
+        getConfiguration().setCellbase(cellbaseConfiguration);
+        try {
+            VariantAnnotator probe = VariantAnnotatorFactory.buildVariantAnnotator(
+                    getConfiguration(), projectMetadata, getMergedOptions(new ObjectMap()));
+            probedMetadata = probe.getVariantAnnotationMetadata();
+        } catch (VariantAnnotatorException | RuntimeException e) {
+            // Probe failed — restore the engine's config so the caller sees a fully no-op failure.
+            getConfiguration().setCellbase(previous);
+            throw e;
+        }
+
+        // Probe succeeded — commit the engine-side switch (drop the cached CellBaseUtils built
+        // from the old config) and run the metadata sync.
+        reloadCellbaseConfiguration();
+        String transitionName = newVariantAnnotationManager(new ObjectMap())
+                .synchroniseWithCurrentAnnotator(probedMetadata, expectedCurrentAnnotator);
+
+        // Invalidate annotation index timestamps ONLY when sync actually bumped current. A
+        // cosmetic-only change (CNAME repointing at the same physical CellBase) leaves the
+        // recorded annotator metadata equal and produces no transition; we must not trigger
+        // spurious downstream re-discovery / Solr reindexing in that case.
+        if (transitionName != null) {
+            getMetadataManager().invalidateCurrentVariantAnnotationIndex();
+        }
+        return transitionName;
     }
 
     public DataResult<VariantAnnotation> getAnnotation(Query query, QueryOptions options) throws StorageEngineException {

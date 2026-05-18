@@ -41,6 +41,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -74,6 +75,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.opencb.biodata.models.core.Region.normalizeChromosome;
@@ -820,9 +822,105 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Shared metadata side of {@code saveAnnotation} for both Mongo and Hadoop backends. Atomically
+     * routes through the right primitive based on the {@code fromAnnotationSet} option:
+     *
+     * <ul>
+     *   <li>{@code fromAnnotationSet} is empty / {@code null} / {@code "current"} →
+     *       {@link #registerNewAnnotationSnapshot} (autobump current state, immediately promote to
+     *       saved under {@code name}).</li>
+     *   <li>{@code fromAnnotationSet} is a transition's auto-name →
+     *       {@link #promoteTransitionToSaved} (move the named transition from {@code transitions}
+     *       to {@code saved} under {@code name}; preserves the transition's original id).</li>
+     * </ul>
+     *
+     * @param name    operator-given snapshot name to land in {@code saved}
+     * @param options job options; reads {@link VariantAnnotationSaveParams#FROM_ANNOTATION_SET}
+     * @return the saved entry's annotationSetId — backends use this to drive their per-id variant
+     *         data copy (Mongo {@code $match} aggregation, Hadoop scan filter on {@code A_ID}).
+     * @throws StorageEngineException     if the metadata mutation fails
+     * @throws VariantAnnotatorException  if the snapshot name collides or the named transition is
+     *                                    not found
+     */
+    protected final int updateProjectMetadataForSaveAnnotation(String name, ObjectMap options)
+            throws StorageEngineException, VariantAnnotatorException {
+        String fromAnnotationSet = options.getString(VariantAnnotationSaveParams.FROM_ANNOTATION_SET);
+        AtomicInteger snapshotIdRef = new AtomicInteger();
+        dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
+            ProjectMetadata.VariantAnnotationMetadata snap;
+            if (StringUtils.isEmpty(fromAnnotationSet)
+                    || VariantAnnotationManager.CURRENT.equalsIgnoreCase(fromAnnotationSet)) {
+                snap = registerNewAnnotationSnapshot(name, variantAnnotator, project);
+            } else {
+                snap = promoteTransitionToSaved(fromAnnotationSet, name, project);
+            }
+            snapshotIdRef.set(snap.getId());
+            return project;
+        });
+        return snapshotIdRef.get();
+    }
+
     //TODO: Make this method abstract
     @Override
     public void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String synchroniseWithCurrentAnnotator(ProjectMetadata.VariantAnnotationMetadata preResolvedMetadata,
+                                                  ProjectMetadata.VariantAnnotatorProgram expectedCurrentAnnotator)
+            throws StorageEngineException, VariantAnnotatorException {
+        // Track the current.id BEFORE entering the lock. If updateCurrentAnnotation triggers a
+        // bump, current.id increments by 1; the OLD id ends up as the id of the freshly recorded
+        // transition. Using an id delta (rather than a list-size delta) correctly handles the
+        // idempotent dedup branch inside bumpAnnotationSetId — that path returns an existing
+        // entry without appending, but also without incrementing current.id, so an id-delta of 0
+        // accurately means "no bump made by THIS call".
+        int[] preBumpId = {0};
+        boolean[] casAborted = {false};
+        ProjectMetadata updatedPm = dbAdaptor.getMetadataManager().updateProjectMetadata((ProjectMetadata pm) -> {
+            ProjectMetadata.VariantAnnotatorProgram observedCurrentAnnotator =
+                    pm.getAnnotation().getCurrent().getAnnotator();
+            if (expectedCurrentAnnotator != null && !Objects.equals(expectedCurrentAnnotator, observedCurrentAnnotator)) {
+                // CAS guard: a concurrent updateCellbaseConfiguration already moved current past
+                // the value we observed at probe time. Aborting here keeps us from racing in a
+                // stale transition that would corrupt the audit trail (e.g. downgrading current
+                // back to an older state). The other writer's transition is the authoritative
+                // record for this window.
+                casAborted[0] = true;
+                logger.warn("Aborting synchroniseWithCurrentAnnotator: current.annotator changed between probe and lock acquisition. "
+                        + "Expected={}, observed={}.", expectedCurrentAnnotator, observedCurrentAnnotator);
+                return pm;
+            }
+            preBumpId[0] = pm.getAnnotation().getCurrent().getId();
+            // updateCurrentAnnotation routes through checkCurrentAnnotation, which compares the
+            // new metadata against current field-by-field on annotation-relevant fields and only
+            // bumps when a real semantic difference exists. overwrite=true silences the safety
+            // throws so a cosmetic-but-real change (e.g. CellBase patch bump) becomes a silent
+            // bump rather than an error. forceNewAnnotationSet=false so unchanged configs stay
+            // no-op.
+            updateCurrentAnnotation(variantAnnotator, pm, true, false, preResolvedMetadata);
+            return pm;
+        });
+        if (casAborted[0]) {
+            return null;
+        }
+        int postBumpId = updatedPm.getAnnotation().getCurrent().getId();
+        if (postBumpId == preBumpId[0]) {
+            return null;
+        }
+        // The bump pushed the pre-bump state into transitions tagged with the OLD id. Look it up
+        // by id so we return the right entry even if other transitions are interleaved.
+        for (ProjectMetadata.VariantAnnotationMetadata t : updatedPm.getAnnotation().getTransitions()) {
+            if (t.getId() == preBumpId[0]) {
+                return t.getName();
+            }
+        }
+        // Defensive: a bump happened but we couldn't find the matching transition. Should not
+        // occur under normal operation — bumpAnnotationSetId always appends the prior state.
+        logger.warn("Annotation set id bumped from {} to {} but no transition entry was found for id {}",
+                preBumpId[0], postBumpId, preBumpId[0]);
+        return null;
     }
 }

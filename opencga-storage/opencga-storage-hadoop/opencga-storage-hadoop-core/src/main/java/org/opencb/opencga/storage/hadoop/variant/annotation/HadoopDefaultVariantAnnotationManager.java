@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -227,23 +226,23 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-            registerNewAnnotationSnapshot(name, variantAnnotator, project);
-            return project;
-        });
-
-        ProjectMetadata.VariantAnnotationMetadata annotationMetadata = projectMetadata.getAnnotation().getSaved(name);
+        // Shared metadata side (autobump-then-promote vs promote-existing-transition) lives in
+        // the base class. The returned snapshotId drives the native HBase scan filter on A_ID
+        // that the driver applies — only rows stamped under THIS generation get copied into the
+        // per-id annotation snapshot column.
+        int snapshotId = updateProjectMetadataForSaveAnnotation(name, inputOptions);
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(annotationMetadata.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(snapshotId);
         Map<String, String> columnsToCopyMap = Collections.singletonMap(
                 columnFamily + ':' + VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.column(),
                 columnFamily + ':' + targetColumn);
-        String[] args = CopyHBaseColumnDriver.buildArgs(
+        String[] args = CopyVariantAnnotationSnapshotDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
-                columnsToCopyMap, null, options);
+                columnsToCopyMap, null, snapshotId, options);
 
-        mrExecutor.run(CopyHBaseColumnDriver.class, args, "Create new annotation snapshot with name '" + name + '\'');
+        mrExecutor.run(CopyVariantAnnotationSnapshotDriver.class, args,
+                "Create new annotation snapshot with name '" + name + '\'');
     }
 
     @Override

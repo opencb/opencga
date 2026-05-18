@@ -82,6 +82,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -666,17 +667,32 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             } catch (IOException e) {
                 throw new CatalogParameterException(e);
             }
-            engine.getConfiguration().setCellbase(validatedCellbaseConfiguration);
-            engine.reloadCellbaseConfiguration();
+            // Single facade for the config swap: updates engine.config + reloads, and if project
+            // metadata exists, invalidates index timestamps + autobumps the annotator metadata
+            // (records an OLD-state transition and swaps current.annotator on a semantic change;
+            // no-op for cosmetic edits like DNS CNAME repointing). Returns the new transition's
+            // auto-name (or null for no-op / no project metadata) so the save job below can target
+            // it explicitly.
+            String newTransitionName;
+            try {
+                newTransitionName = engine.updateCellbaseConfiguration(validatedCellbaseConfiguration);
+            } catch (VariantAnnotatorException e) {
+                throw new StorageEngineException("Failed to synchronise annotator metadata with the new CellBase "
+                        + "configuration. Project metadata has not been mutated.", e);
+            }
 
             if (engine.getMetadataManager().exists()) {
-                engine.getMetadataManager().invalidateCurrentVariantAnnotationIndex();
                 getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
-                    VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
+                    // Source the save from the just-recorded transition (the OLD annotator state).
+                    // If the autobump was a no-op (no semantic change), newTransitionName is null
+                    // and saveAnnotation falls back to its default "capture current" semantic —
+                    // which under the unified model means autobump-then-promote current state.
+                    VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId, newTransitionName);
                     OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
-                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationSaveOperationTool.ID, null,
+                                    params.toParams(PROJECT_PARAM, project),
                                     null, "Save variant annotation before changing cellbase configuration", null, null, token);
                     result.getResults().add(saveResult.first());
                     if (saveResult.getEvents() != null) {
@@ -685,10 +701,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     jobDependsOn.add(saveResult.first().getUuid());
                 }
                 if (annotate) {
-                    VariantAnnotationIndexParams params = new VariantAnnotationIndexParams().setOverwriteAnnotations(true);
+                    // No longer setOverwriteAnnotations(true): the autobump above already swapped
+                    // current.annotator to match the new config, so checkCurrentAnnotation will not
+                    // throw. The discovery query's staleness-aware predicate (TASK-8120 parser fix)
+                    // picks up the variants that need re-derivation.
+                    VariantAnnotationIndexParams params = new VariantAnnotationIndexParams();
                     OpenCGAResult<Job> annotResult = catalogManager.getJobManager()
-                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
-                                    null, "Forced re-annotation after changing cellbase configuration", jobDependsOn, null, token);
+                            .submitProject(project, JobType.NATIVE_TOOL, VariantAnnotationIndexOperationTool.ID, null,
+                                    params.toParams(PROJECT_PARAM, project),
+                                    null, "Re-annotation after changing cellbase configuration", jobDependsOn, null, token);
                     result.getResults().add(annotResult.first());
                     if (annotResult.getEvents() != null) {
                         result.getEvents().addAll(annotResult.getEvents());
