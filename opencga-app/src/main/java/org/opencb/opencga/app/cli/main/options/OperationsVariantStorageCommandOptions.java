@@ -374,6 +374,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--annotation-id"}, description = "New Variant Annotation identifier", required = false, arity = 1)
         public String annotationId;
     
+        @Parameter(names = {"--from-annotation-set"}, description = "Source annotation set to save. When set to a transition's auto-name (e.g. recorded by an earlier autobump on setCellbaseConfiguration), the matching variants are copied and the transition entry is promoted to saved under 'annotationId'. When unset (or 'current'), the current annotation state is captured: autobump current into a new transition, then immediately promote it. This is the field exposed via the --from-annotation-set CLI flag.", required = false, arity = 1)
+        public String fromAnnotationSet;
+    
     }
 
     @Parameters(commandNames = {"variant-configure"}, commandDescription ="Update Variant Storage Engine configuration. Can be updated at Project or Study level")

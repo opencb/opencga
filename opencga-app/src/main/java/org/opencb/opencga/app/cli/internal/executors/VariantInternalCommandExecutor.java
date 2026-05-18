@@ -540,7 +540,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void annotationSave() throws ToolException {
         VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
 
-        ObjectMap params = new VariantAnnotationSaveParams(cliOptions.annotationId)
+        ObjectMap params = new VariantAnnotationSaveParams(cliOptions.annotationId, cliOptions.fromAnnotationSet)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 

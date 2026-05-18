@@ -382,6 +382,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "annotationId", commandOptions.annotationId, true);
+            putNestedIfNotEmpty(beanParams, "fromAnnotationSet", commandOptions.fromAnnotationSet, true);
 
             variantAnnotationSaveParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
