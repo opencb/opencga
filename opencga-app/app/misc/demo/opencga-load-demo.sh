@@ -123,10 +123,14 @@ run_idempotent "Configuring variant storage for ${STUDY_FQN}" \
 run_idempotent "Creating directory 'data'" \
     "${OPENCGA_HOME}/bin/opencga.sh" files create --study "${STUDY_FQN}" --path 'data' --type 'DIRECTORY'
 
+CORPASOME_URL='https://s3-eu-west-1.amazonaws.com/pfigshare-u-files/3103316/quartet.variants.annotated.vcf'
+#CORPASOME_URL='http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz'
+CORPASOME_FILE_NAME=$(basename "$CORPASOME_URL")
+
 # Fetch VCF
 run_idempotent "Fetching demo VCF file" \
     "${OPENCGA_HOME}/bin/opencga.sh" files fetch --study "${STUDY_FQN}" --path 'data' \
-    --url 'http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz' \
+    --url "$CORPASOME_URL" \
     --job-id "${PROJECT}_download_vcf"
 
 # Upload and run template (if provided)
@@ -141,7 +145,7 @@ fi
 # Index variants
 run_idempotent "Submitting variant index job" \
     "${OPENCGA_HOME}/bin/opencga.sh" operations variant-index --study "${STUDY_FQN}" \
-    --file 'quartet.variants.annotated.vcf.gz' \
+    --file "${CORPASOME_FILE_NAME}" \
     --job-id "${PROJECT}_variant_index" \
     --job-depends-on "${PROJECT}_download_vcf"
 

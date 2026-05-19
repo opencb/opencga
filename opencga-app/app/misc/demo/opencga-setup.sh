@@ -99,9 +99,18 @@ run_idempotent "Creating user '${OWNER_ID}' in organization '${ORG_ID}'" \
     --password "$OWNER_PASSWORD" \
     --organization "$ORG_ID"
 
-# Make user owner of the organization (idempotent)
+# Make user owner of the organization. Server returns a generic "Update could not be performed"
+# error if the owner is already set, so we check the current owner first and skip the update if
+# it already matches.
 echo "Making '${OWNER_ID}' owner of '${ORG_ID}'..."
-"${OPENCGA_HOME}/bin/opencga.sh" organizations update --organization "$ORG_ID" --owner "$OWNER_ID"
+current_owner=$("${OPENCGA_HOME}/bin/opencga.sh" organizations info --organization "$ORG_ID" \
+    --output-format JSON 2>/dev/null | jq -r '.responses[0].results[0].owner // empty')
+if [ "$current_owner" = "$OWNER_ID" ]; then
+    echo "Making '${OWNER_ID}' owner of '${ORG_ID}'... already done, skipping."
+else
+    "${OPENCGA_HOME}/bin/opencga.sh" organizations update --organization "$ORG_ID" --owner "$OWNER_ID"
+    echo "Making '${OWNER_ID}' owner of '${ORG_ID}'... done."
+fi
 
 # Verify: login as owner
 echo "Verifying owner login..."
