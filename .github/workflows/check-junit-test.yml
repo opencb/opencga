@@ -67,8 +67,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: '10'
-          token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          token: ${{ secrets.ZETTA_GH_TOKEN }}
       - name: Building string profiles to run
         id: validate
         run: |

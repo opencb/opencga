@@ -19,8 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: '10'
-          token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          token: ${{ secrets.ZETTA_GH_TOKEN }}
       - name: Validate task name
         if: ${{ !startsWith(inputs.task, 'TASK') }}
         run: |
@@ -40,8 +41,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: '10'
-          token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          token: ${{ secrets.ZETTA_GH_TOKEN }}
       - name: Validate task name
         if: ${{ !startsWith(inputs.task, 'TASK') }}
         run: |

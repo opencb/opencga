@@ -120,7 +120,12 @@ function manage_dependency() {
     log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ]; then
-      mvn_step "${REPO}-${COMMAND}" clean install -B -T 2 -DskipTests $MVN_OPTS
+      if [ "$CLEAN" == "true" ]; then
+        mvn_step "${REPO}-clean" clean $MVN_OPTS
+        mvn_step "${REPO}-${COMMAND}" install -B -T 2 -DskipTests $MVN_OPTS
+      else
+        mvn_step "${REPO}-${COMMAND}" clean install -B -T 2 -DskipTests $MVN_OPTS
+      fi
 
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
@@ -145,12 +150,27 @@ function manage_dependency() {
   cd "$OPENCGA_HOME_DIR" || exit 2
 }
 
+# Normalize short/medium/long aliases to Maven profile names
+function normalize_test_level() {
+  local result=""
+  IFS=',' read -ra levels <<< "$1"
+  for level in "${levels[@]}"; do
+    case "$level" in
+      short)  level="runShortTests" ;;
+      medium) level="runMediumTests" ;;
+      long)   level="runLongTests" ;;
+    esac
+    result="${result:+$result,}$level"
+  done
+  echo "$result"
+}
+
 # Function to validate test tags
 function validate_tags() {
   IFS=',' read -ra my_array <<< "$1"
   for i in "${my_array[@]}"; do
     if [ "$i" != "runShortTests" ] && [ "$i" != "runMediumTests" ] && [ "$i" != "runLongTests" ]; then
-      echo "The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
+      echo "The test level must be any combination of these values short|medium|long (or runShortTests|runMediumTests|runLongTests) separated by commas without spaces"
       exit 1
     fi
   done
@@ -166,13 +186,14 @@ function print_usage() {
   echo "  Options:"
   echo "     -H     --storage-hadoop      STRING         Hadoop flavour hbase2.0, hdp3.1, hdi5.1, emr6.1, emr6.13, emr7.5 [hdi5.1]"
   echo "     -T     --task                STRING         Task ID used for building and testing dependencies, serves as checkout reference"
-  echo "     -l     --test-level          STRING         Level of tests to execute (runShortTests,runMediumTests,runLongTests)"
-  echo "     -t     --test                FLAG           Execute the OpenCGA tests (by default only build)"
+  echo "     -t     --test-level          STRING         Run tests at the given level: short, medium, long (comma-separated for multiple). Omit to skip tests."
   echo "     -f     --test-fail-never     FLAG           Execute all tests even if some fail"
   echo "     -b     --prepare-branches    FLAG           Download and compile dependency branches before build"
-  echo "            --prepare-hadoop      FLAG           Download and compile opencga-hadoop-thirdparty dependency (use with --prepare-branches)"
+  echo "     -S     --prepare-hadoop      FLAG           Download and compile opencga-hadoop-thirdparty dependency (use with --prepare-branches)"
+  echo "     -c     --clean               FLAG           Run mvn clean as a separate step before mvn install (default: mvn clean install in one step)"
   echo "     -d     --docker              FLAG           Publish OpenCGA docker images to DockerHub"
   echo "     -p     --docker-tag          STRING         Tag for OpenCGA docker images"
+  echo "     -i     --docker-images       STRING         Additional docker images to publish alongside base: workflow, python-notebook, ext-tools, r-builder"
   echo "     -A     --activate-profiles   STRING         Comma-delimited list of additional Maven profiles to activate"
   echo "     -P     --python-client       FLAG           Also build the OpenCGA Python client"
   echo "     -W     --javascript-client   FLAG           Also build the OpenCGA JavaScript client"
@@ -289,7 +310,12 @@ function build_opencga() {
 
   if [ "$COMMAND" == "build" ] ; then
       log "Compiling opencga... $(pwd)"
-      mvn_step "opencga-build" clean install -DskipTests $HADOOP_PROFILE -T 2 $MVN_OPTS
+      if [ "$CLEAN" == "true" ]; then
+        mvn_step "opencga-clean" clean $HADOOP_PROFILE $MVN_OPTS
+        mvn_step "opencga-build" install -DskipTests $HADOOP_PROFILE -T 2 $MVN_OPTS
+      else
+        mvn_step "opencga-build" clean install -DskipTests $HADOOP_PROFILE -T 2 $MVN_OPTS
+      fi
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
@@ -307,7 +333,12 @@ function build_opencga() {
       if [[ -n "$STORAGE_HADOOP_DEPS" ]]; then
         TEST_PROFILES="$STORAGE_HADOOP_DEPS,$TEST_TAG"
       fi
-      mvn_step "opencga-test" clean install -B surefire-report:report ${FAIL_NEVER} -P "${TEST_PROFILES}" -Dcheckstyle.skip $MVN_OPTS
+      if [ "$CLEAN" == "true" ]; then
+        mvn_step "opencga-clean" clean -P "${TEST_PROFILES}" $MVN_OPTS
+        mvn_step "opencga-test" install -B surefire-report:report ${FAIL_NEVER} -P "${TEST_PROFILES}" -Dcheckstyle.skip $MVN_OPTS
+      else
+        mvn_step "opencga-test" clean install -B surefire-report:report ${FAIL_NEVER} -P "${TEST_PROFILES}" -Dcheckstyle.skip $MVN_OPTS
+      fi
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -357,11 +388,19 @@ function publish_dockers() {
     else
       TAG="$(mvn help:evaluate --file "${OPENCGA_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout $MVN_OPTS)"
     fi
-    python3 ./opencga-app/app/cloud/docker/docker-build.py push --org opencb --images base,init --tag "$TAG"
+    python3 ./opencga-app/app/cloud/docker/docker-build.py push --org zettagenomics --images base --tag "$TAG"
     if [[ "$?" -ne 0 ]] ; then
-      log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED!!!!!"
+      log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED (base image)!!!!!"
     else
-      log_summary "OpenCGA docker images uploaded correctly with tag $TAG"
+      log_summary "OpenCGA base docker image uploaded correctly with tag $TAG"
+    fi
+    if [[ -n "$DOCKER_IMAGES" ]]; then
+      python3 ./opencga-app/app/cloud/docker/docker-build.py push --org opencb --images "$DOCKER_IMAGES" --tag "$TAG"
+      if [[ "$?" -ne 0 ]] ; then
+        log_summary "[ERROR] OPENCGA DOCKER UPLOAD FAILED (extra images: $DOCKER_IMAGES)!!!!!"
+      else
+        log_summary "OpenCGA extra docker images ($DOCKER_IMAGES) uploaded correctly with tag $TAG"
+      fi
     fi
   fi
 }
@@ -455,7 +494,9 @@ function log_initial_state() {
     log_param_summary "PREPARE_BRANCHES,$(yes_no "$PREPARE_BRANCHES")"
     log_param_summary "PREPARE_BRANCHES_HADOOP,$(yes_no "${PREPARE_BRANCHES_HADOOP}")"
     log_param_summary "DEBUG,$(yes_no "$DEBUG")"
+    log_param_summary "CLEAN,$(yes_no "$CLEAN")"
     log_param_summary "DOCKER,$(yes_no "$DOCKER")"
+    log_param_summary "DOCKER_IMAGES,base${DOCKER_IMAGES:+,$DOCKER_IMAGES}"
 }
 
 function print_version_summary() {
@@ -557,6 +598,8 @@ STORAGE_HADOOP_DEPS="hdi5.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 DOCKER_TAG=""
+DOCKER_IMAGES=""
+CLEAN=""
 PREPARE_BRANCHES=""
 PREPARE_BRANCHES_HADOOP=""
 DEBUG=""
@@ -613,12 +656,21 @@ while [[ $# -gt 0 ]]; do
     shift
     shift
     ;;
-  -l | --test-level)
+  -i | --docker-images)
+    DOCKER_IMAGES="$value"
+    shift
+    shift
+    ;;
+  -c | --clean)
+    CLEAN="true"
+    shift
+    ;;
+  -t | --test-level)
     if [ -z "$value" ]; then
-      echo "Test level is empty. The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
+      echo "Test level is empty. The test level must be any combination of short|medium|long separated by commas without spaces"
       exit 1
     fi
-    TEST_TAG="$value"
+    TEST_TAG="$(normalize_test_level "$value")"
     COMMAND="test"
     shift
     shift
@@ -637,17 +689,13 @@ while [[ $# -gt 0 ]]; do
     PREPARE_BRANCHES="true"
     shift
     ;;
-  --prepare-hadoop)
+  -S | --prepare-hadoop)
     PREPARE_BRANCHES="true"
     PREPARE_BRANCHES_HADOOP="true"
     shift
     ;;
   -f | --test-fail-never)
     FAIL_NEVER="--fail-never -Dmaven.test.failure.ignore=true -Dsurefire.testFailureIgnore=true"
-    COMMAND="test"
-    shift
-    ;;
-  -t | --test)
     COMMAND="test"
     shift
     ;;
