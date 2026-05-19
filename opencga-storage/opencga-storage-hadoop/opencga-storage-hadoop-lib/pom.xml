@@ -31,6 +31,10 @@
     <packaging>pom</packaging>
     <name>OpenCGA Storage Hadoop Lib</name>
 
+    <modules>
+        <module>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</module>
+    </modules>
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -110,47 +114,11 @@
 
     <profiles>
         <!--
-          Hadoop flavour profiles. Activate by id, e.g. -Phbase2.0, -Phdi5.1, -Pemr7.5.
-          Each profile pulls in only the matching lib sub-module.
-          Without any flavour profile (default mongo build) no lib sub-module is built.
-          Pass -DallHadoopLibs to build all six in one invocation.
+          Default single-flavor selection is driven by the property
+          opencga-hadoop-shaded.id (set in the root pom, overridden by the
+          hbase2.0/hdp3.1/hdi5.1/emr* profiles there). The -DallHadoopLibs
+          flag below builds all flavors in one invocation.
         -->
-        <profile>
-            <id>hbase2.0</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-hbase2.0</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>hdp3.1</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-hdp3.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>hdi5.1</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-hdi5.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>emr6.1</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-emr6.1</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>emr6.13</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-emr6.13</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>emr7.5</id>
-            <modules>
-                <module>opencga-storage-hadoop-lib-emr7.5</module>
-            </modules>
-        </profile>
         <profile>
             <id>allHadoopLibs</id>
             <activation>
