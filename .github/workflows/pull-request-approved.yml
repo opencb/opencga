@@ -19,7 +19,7 @@ jobs:
           fetch-depth: '10'
           ## This is important to avoid the error in the next step: "fatal: repository 'https://github.com/zetta-genomics/opencga-enterprise.git/' not found"
           persist-credentials: false
-          token: ${{ secrets.GH_PRIVATE_TOKEN }}
+          token: ${{ secrets.ZETTA_GH_TOKEN }}
       - id: get_xetabase_branch
         name: "Get current branch for Xetabase from target branch"
         run: |
@@ -31,7 +31,7 @@ jobs:
           echo "xetabase_branch: ${xetabase_branch}"
           echo "xetabase_branch=${xetabase_branch}" >> $GITHUB_OUTPUT
         env:
-          ZETTA_REPO_ACCESS_TOKEN: ${{ secrets.ZETTA_REPO_ACCESS_TOKEN }}
+          ZETTA_GH_TOKEN: ${{ secrets.ZETTA_GH_TOKEN }}
 
   test:
     if: github.event.review.state == 'approved'
