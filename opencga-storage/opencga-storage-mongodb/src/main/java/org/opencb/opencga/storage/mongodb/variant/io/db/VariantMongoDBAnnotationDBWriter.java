@@ -16,12 +16,22 @@
 
 package org.opencb.opencga.storage.mongodb.variant.io.db;
 
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Basic functionality of VariantAnnotationDBWriter. Creates MongoDB indexes at the post step (if needed).
+ * Owns a single {@link DocumentToVariantAnnotationConverter} for the lifetime of this writer instance —
+ * the converter triggers Jackson type introspection on construction, so reusing one across batches avoids
+ * the cache-thrash that would otherwise dominate the load phase.
  * Created on 05/01/17.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -29,6 +39,7 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 public class VariantMongoDBAnnotationDBWriter extends VariantAnnotationDBWriter {
     private static final String INDEXES_CREATED = "indexes.created";
     private final VariantMongoDBAdaptor dbAdaptor;
+    private DocumentToVariantAnnotationConverter converter;
 
     public VariantMongoDBAnnotationDBWriter(QueryOptions options, VariantMongoDBAdaptor dbAdaptor) {
         super(dbAdaptor, options, null);
@@ -38,7 +49,16 @@ public class VariantMongoDBAnnotationDBWriter extends VariantAnnotationDBWriter 
     @Override
     public void pre() throws Exception {
         super.pre();
+        int annotationId = dbAdaptor.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
+        converter = new DocumentToVariantAnnotationConverter(annotationId);
         options.put(INDEXES_CREATED, false);
+    }
+
+    @Override
+    public List<Object> apply(List<VariantAnnotation> list) throws IOException {
+        DataResult writeResult = dbAdaptor.updateAnnotations(list, converter, getTimestamp(), options);
+        logUpdate(list);
+        return Collections.singletonList(writeResult);
     }
 
     @Override
