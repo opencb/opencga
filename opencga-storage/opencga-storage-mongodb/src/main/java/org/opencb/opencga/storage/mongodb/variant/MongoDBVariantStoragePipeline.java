@@ -103,9 +103,18 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 //            VariantType.BREAKEND
     ));
 
+    private static long countVariantsToLoad(VariantFileMetadata fileMetadata) {
+        long total = 0;
+        for (Map.Entry<String, Long> entry : fileMetadata.getStats().getTypeCount().entrySet()) {
+            if (!SKIPPED_VARIANTS.contains(VariantType.valueOf(entry.getKey()))) {
+                total += entry.getValue();
+            }
+        }
+        return total;
+    }
+
     private final VariantMongoDBAdaptor dbAdaptor;
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final ObjectMap loadStats = new ObjectMap();
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStoragePipeline.class);
     private MongoDBVariantWriteResult writeResult;
     private List<Integer> fileIds;
@@ -303,7 +312,6 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(studyId));
-        long numRecords = fileMetadata.getStats().getVariantCount();
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
@@ -350,7 +358,10 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             boolean skipStage = mergeMode.equals(MergeMode.BASIC);
 
             //TaskMetadata -- MongoDBVariantMerger
-            ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
+            // Denominator excludes NO_VARIATION/SYMBOLIC: the writer only increments the
+            // ProgressLogger for real-variant inserts, otherwise progress caps at ~7% on gVCFs.
+            ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:",
+                    countVariantsToLoad(fileMetadata), 200);
 
             int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
             boolean ignoreOverlapping = studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
@@ -431,12 +442,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             writeResult = directLoader.getResult();
             this.loadedGenotypes = writeResult.getGenotypes();
-            if (documentReader instanceof MongoDBVariantStageAndFileReader) {
-                writeResult.setSkippedVariants(((MongoDBVariantStageAndFileReader) documentReader).getSkippedVariants());
-            } else if (documentReader instanceof MongoDBVariantDirectFileReader) {
-                writeResult.setSkippedVariants(((MongoDBVariantDirectFileReader) documentReader).getSkippedVariants());
-            }
-            writeResult.setNonInsertedVariants(duplicatedVariantsDetector.getDiscardedVariants());
+            // Skipped NO_VARIATION/SYMBOLIC reported by the documentReader does not include ref
+            // blocks that filterNewRefBlocks silently drops upstream — add them back so the count
+            // matches the file metadata.
+            long readerSkipped = documentReader instanceof MongoDBVariantStageAndFileReader
+                    ? ((MongoDBVariantStageAndFileReader) documentReader).getSkippedVariants()
+                    : ((MongoDBVariantDirectFileReader) documentReader).getSkippedVariants();
+            writeResult.setSkippedVariants(readerSkipped + resolver.getExtraRefBlockDiscardedVariants());
+            // nonInsertedVariants must reflect only real duplicate discards. The wrapping
+            // VariantDeduplicationTask conflates real discards with silent ref-block drops;
+            // the resolver tracks the real-duplicate count separately.
+            writeResult.setNonInsertedVariants(resolver.getDiscardedVariants());
             loadStats.put("duplicatedVariants", resolver.getDuplicatedVariants());
             loadStats.put("duplicatedLocus", resolver.getDuplicatedLocus());
             loadStats.put("discardedVariants", resolver.getDiscardedVariants());
@@ -539,7 +555,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
-            long skippedVariants = converterTask.getSkippedVariants();
+            // converterTask only sees variants that survived dedup; add ref blocks that
+            // filterNewRefBlocks silently dropped so the skipped count matches file metadata.
+            long skippedVariants = converterTask.getSkippedVariants() + resolver.getExtraRefBlockDiscardedVariants();
             stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
 
             this.largestVariantLength = largestVariantTask.getMaxLength();
