@@ -70,4 +70,8 @@ public class VariantAnnotationDBWriter implements Task<VariantAnnotation, Object
         this.progressLogger = progressLogger;
         return this;
     }
+
+    protected long getTimestamp() {
+        return timestamp;
+    }
 }

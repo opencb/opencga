@@ -1396,6 +1396,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
+        int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
+        return updateAnnotations(variantAnnotations, new DocumentToVariantAnnotationConverter(currentAnnotationId),
+                timestamp, queryOptions);
+    }
+
+    /**
+     * Bulk-update annotations using a caller-supplied converter. Constructing a
+     * {@link DocumentToVariantAnnotationConverter} triggers Jackson type introspection on
+     * {@link VariantAnnotation}, so high-throughput callers (e.g. the annotation writer in the
+     * load phase) should build one per worker and reuse it across batches.
+     */
+    public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
+                                        DocumentToVariantAnnotationConverter converter,
+                                        long timestamp, QueryOptions queryOptions) {
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
 
@@ -1415,8 +1429,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantAnnotation.getReference(), variantAnnotation.getAlternate());
             }
             Document find = new Document("_id", id);
-            int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
-            DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
                     set(DocumentToVariantConverter.ANNOTATION_FIELD, convertedVariantAnnotation),
