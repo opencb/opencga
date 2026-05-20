@@ -36,7 +36,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleAnnotationIndexer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -115,6 +114,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
             boolean annotateAll = queryParams.isEmpty();
             boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+            boolean forceNewAnnotationSet = params.getBoolean(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(),
+                    VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.defaultValue());
 
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip MapReduce to discover variants to annotate.");
@@ -152,7 +153,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                             pm.getAttributes().put(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
-                        updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                        updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, forceNewAnnotationSet,
+                                variantAnnotator.getVariantAnnotationMetadata());
                     }
                 }
             }
@@ -224,23 +226,23 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-            registerNewAnnotationSnapshot(name, variantAnnotator, project);
-            return project;
-        });
-
-        ProjectMetadata.VariantAnnotationMetadata annotationMetadata = projectMetadata.getAnnotation().getSaved(name);
+        // Shared metadata side (autobump-then-promote vs promote-existing-transition) lives in
+        // the base class. The returned snapshotId drives the native HBase scan filter on A_ID
+        // that the driver applies — only rows stamped under THIS generation get copied into the
+        // per-id annotation snapshot column.
+        int snapshotId = updateProjectMetadataForSaveAnnotation(name, inputOptions);
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(annotationMetadata.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(snapshotId);
         Map<String, String> columnsToCopyMap = Collections.singletonMap(
                 columnFamily + ':' + VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.column(),
                 columnFamily + ':' + targetColumn);
-        String[] args = CopyHBaseColumnDriver.buildArgs(
+        String[] args = CopyVariantAnnotationSnapshotDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
-                columnsToCopyMap, null, options);
+                columnsToCopyMap, null, snapshotId, options);
 
-        mrExecutor.run(CopyHBaseColumnDriver.class, args, "Create new annotation snapshot with name '" + name + '\'');
+        mrExecutor.run(CopyVariantAnnotationSnapshotDriver.class, args,
+                "Create new annotation snapshot with name '" + name + '\'');
     }
 
     @Override

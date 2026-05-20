@@ -66,6 +66,10 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
             String[] split = column.split(":");
             scan.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
         }
+        // Subclasses can attach scan-level filters or additional included columns here without
+        // duplicating the scan setup. Default impl is a no-op — the base driver remains a pure
+        // column-copy utility with no domain-specific scan-shape knowledge.
+        customiseScan(scan);
         LOGGER.info("Scan " + scan.toString(50));
 
         // There is a maximum number of counters
@@ -87,6 +91,17 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
         } else {
             columnsToInclude = Arrays.asList(param.split(","));
         }
+    }
+
+    /**
+     * Hook for subclasses to attach scan-level filters or include additional columns. Called from
+     * {@link #setupJob} after the base column set is configured. Default impl is a no-op — the base
+     * driver remains a pure generic column-copy utility with no domain-specific knowledge.
+     *
+     * @param scan the scan being prepared for the MR job
+     */
+    protected void customiseScan(Scan scan) {
+        // no-op
     }
 
     public static String[] buildArgs(String table, Map<String, String> columnsToCopyMap, List<String> columnsToInclude, ObjectMap options) {

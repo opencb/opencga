@@ -16,7 +16,7 @@ import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotation
 import java.util.Arrays;
 
 import static com.mongodb.client.model.Aggregates.*;
-import static com.mongodb.client.model.Filters.exists;
+import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Projections.include;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
@@ -42,16 +42,15 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
 
     @Override
     public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
-
-        dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-            registerNewAnnotationSnapshot(name, variantAnnotator, project);
-            return project;
-        });
+        // Shared metadata side (autobump-then-promote vs promote-existing-transition) lives in the
+        // base class. The returned snapshotId is what we filter the data copy by — only variants
+        // stamped under THIS generation land in the per-name annot collection.
+        int snapshotId = updateProjectMetadataForSaveAnnotation(name, options);
 
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
         mongoDbAdaptor.getVariantsCollection()
                 .aggregate(Arrays.asList(
-                        match(exists(ANNOT_ID)),
+                        match(eq(ANNOT_ID, snapshotId)),
                         project(include(
                                 CHROMOSOME_FIELD,
                                 START_FIELD,

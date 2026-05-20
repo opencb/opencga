@@ -115,6 +115,7 @@ public class SampleIndexOnlyVariantQueryExecutor extends VariantQueryExecutor {
         Query query = new Query(variantQuery.getQuery());
         query.put(SampleIndexQueryParser.INCLUDE_PARENTS_COLUMN, true);
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
+        sampleIndexDBAdaptor.emitStaleAnnotationSetIdEvents(sampleIndexQuery, variantQuery.getEvents());
 
         logger.info("HBase SampleIndex, skip variants table");
         if (variantQuery.getSource() == VariantQuerySource.SECONDARY_SAMPLE_INDEX) {

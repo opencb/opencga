@@ -1396,10 +1396,21 @@ public class VariantSqlQueryParser {
     protected void addAnnotFilters(ParsedVariantQuery variantQuery, Set<Column> dynamicColumns, List<String> filters) {
         Query query = variantQuery.getQuery();
         if (isValidParam(query, ANNOTATION_EXISTS)) {
-            if (query.getBoolean(ANNOTATION_EXISTS.key())) {
-                filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
+            // ANNOTATION_EXISTS is annotationSetId-aware: a variant whose stamp lags the project's
+            // current annotation set is treated as "missing" by the discovery loop, even though its
+            // FULL_ANNOTATION column is non-null. See the Mongo parser for the long-form rationale.
+            int currentAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
+            if (currentAnnotationSetId <= 1) {
+                if (query.getBoolean(ANNOTATION_EXISTS.key())) {
+                    filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
+                } else {
+                    filters.add(VariantColumn.FULL_ANNOTATION + " IS NULL");
+                }
+            } else if (query.getBoolean(ANNOTATION_EXISTS.key())) {
+                filters.add(VariantColumn.ANNOTATION_ID + " = " + currentAnnotationSetId);
             } else {
-                filters.add(VariantColumn.FULL_ANNOTATION + " IS NULL");
+                filters.add("(" + VariantColumn.ANNOTATION_ID + " IS NULL OR "
+                        + VariantColumn.ANNOTATION_ID + " < " + currentAnnotationSetId + ")");
             }
         }
 
@@ -2129,6 +2140,5 @@ public class VariantSqlQueryParser {
         }
         return parsedOp;
     }
-
 
 }

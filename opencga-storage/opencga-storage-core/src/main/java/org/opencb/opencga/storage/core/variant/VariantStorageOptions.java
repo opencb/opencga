@@ -70,6 +70,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATION_LOAD_BATCH_SIZE("annotation.load.batchSize", 100),
     ANNOTATION_LOAD_THREADS("annotation.load.numThreads", 4),
     ANNOTATION_OVERWEITE("annotation.overwrite"),
+    ANNOTATION_FORCE_NEW_ANNOTATION_SET("annotation.forceNewAnnotationSet", false),
     ANNOTATION_SAMPLE_INDEX("annotation.sampleIndex", YesNoAuto.YES),
 
     ANNOTATOR("annotator"),

@@ -52,6 +52,7 @@ public class VariantAnnotationIndexOperationTool extends OperationTool {
         params.putIfNotEmpty(VariantStorageOptions.ANNOTATOR.key(), annotationParams.getAnnotator());
         params.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotationParams.getCustomName());
         params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), annotationParams.isOverwriteAnnotations());
+        params.put(VariantStorageOptions.ANNOTATION_FORCE_NEW_ANNOTATION_SET.key(), annotationParams.isForceNewAnnotationSet());
         params.put(DefaultVariantAnnotationManager.FILE_NAME, annotationParams.getOutputFileName());
         params.put(VariantQueryParam.REGION.key(), annotationParams.getRegion());
         params.put(VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key(), annotationParams.getSampleIndexAnnotation());

@@ -589,6 +589,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
+        @Parameter(names = {"--force-new-annotation-set"}, description = "Force a new annotation set even if no relevant inputs changed")
+        public boolean forceNewAnnotationSet;
+
         @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: dbName", arity = 1)
         public String outputFileName;
 
@@ -632,6 +635,13 @@ public class StorageVariantCommandOptions {
     public static class GenericAnnotationSaveCommandOptions extends GenericAnnotationCommandOptions {
         public static final String ANNOTATION_SAVE_COMMAND = "annotation-save";
         public static final String ANNOTATION_SAVE_COMMAND_DESCRIPTION = "Save a copy of the current variant annotation at the database";
+
+        @Parameter(names = {"--from-annotation-set"}, description = "Source annotation set to save. When set to a "
+                + "transition's auto-name (recorded by an autobump on setCellbaseConfiguration), promote the transition "
+                + "into 'saved' under 'annotationId' and copy the matching per-id variant data. When unset (or 'current'), "
+                + "capture the current annotation state by autobumping current into a new transition and immediately "
+                + "promoting it.", required = false, arity = 1)
+        public String fromAnnotationSet;
     }
 
     @Parameters(commandNames = {GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND}, commandDescription = GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION)

@@ -315,6 +315,9 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "The body web service overwriteAnnotations parameter", required = false, help = true, arity = 0)
         public boolean overwriteAnnotations = false;
     
+        @Parameter(names = {"--force-new-annotation-set"}, description = "The body web service forceNewAnnotationSet parameter", required = false, help = true, arity = 0)
+        public boolean forceNewAnnotationSet = false;
+    
         @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
         public String region;
     
@@ -370,6 +373,9 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--annotation-id"}, description = "New Variant Annotation identifier", required = false, arity = 1)
         public String annotationId;
+    
+        @Parameter(names = {"--from-annotation-set"}, description = "Source annotation set to save. When set to a transition's auto-name (e.g. recorded by an earlier autobump on setCellbaseConfiguration), the matching variants are copied and the transition entry is promoted to saved under 'annotationId'. When unset (or 'current'), the current annotation state is captured: autobump current into a new transition, then immediately promote it. This is the field exposed via the --from-annotation-set CLI flag.", required = false, arity = 1)
+        public String fromAnnotationSet;
     
     }
 

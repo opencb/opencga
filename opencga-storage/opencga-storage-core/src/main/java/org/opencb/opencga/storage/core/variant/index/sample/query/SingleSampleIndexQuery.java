@@ -36,6 +36,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getMendelianErrorSet(),
                 query.getMendelianErrorType(),
                 query.isIncludeParentColumns(),
+                query.getSampleAnnotationSetIds(),
                 query.getQueryOperation(), query.getUncoveredQuery()
         );
         this.sample = sample;

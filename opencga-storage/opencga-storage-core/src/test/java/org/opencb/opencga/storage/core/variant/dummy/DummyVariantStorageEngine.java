@@ -220,10 +220,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
             @Override
             public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
-                dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
-                    registerNewAnnotationSnapshot(name, variantAnnotator, project);
-                    return project;
-                });
+                // Dummy backend has no per-snapshot variant data to copy. Routing through the
+                // shared helper exercises the same metadata path (and idempotent-retry logic) used
+                // by the Mongo and Hadoop backends.
+                updateProjectMetadataForSaveAnnotation(name, options);
             }
 
             @Override

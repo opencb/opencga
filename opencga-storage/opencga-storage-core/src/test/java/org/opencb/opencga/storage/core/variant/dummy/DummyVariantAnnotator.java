@@ -26,8 +26,10 @@ public class DummyVariantAnnotator extends VariantAnnotator {
     public static final String ANNOT_METADATA = "ANNOT_METADATA";
     public static final String FAIL = "ANNOT_FAIL";
     public static final String FAIL_AT = "ANNOT_FAIL_AT";
+    public static final String FAIL_METADATA = "ANNOT_FAIL_METADATA";
     public static final String SKIP = "ANNOT_SKIP";
     private final boolean fail;
+    private final boolean failMetadata;
     private final Set<String> failAt;
     private final Set<String> skip;
     private String key;
@@ -39,6 +41,7 @@ public class DummyVariantAnnotator extends VariantAnnotator {
         String version = options.getString(ANNOT_VERSION, "v1");
         int dataReleaseId = options.getInt(ANNOT_DATARELEASE, 1);
         fail = options.getBoolean(FAIL, false);
+        failMetadata = options.getBoolean(FAIL_METADATA, false);
         failAt = new HashSet<>(options.getAsStringList(FAIL_AT));
         skip = new HashSet<>(options.getAsStringList(SKIP));
         if (options.containsKey(ANNOT_METADATA)) {
@@ -102,7 +105,10 @@ public class DummyVariantAnnotator extends VariantAnnotator {
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() {
+    public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
+        if (failMetadata) {
+            throw new VariantAnnotatorException("Simulated metadata-resolution failure");
+        }
         return new ProjectMetadata.VariantAnnotationMetadata(metadata);
     }
 

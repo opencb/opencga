@@ -130,9 +130,11 @@ public abstract class SampleAnnotationIndexer {
 
     public void postIndexBatch(int studyId, List<Integer> samples, int version)
             throws StorageEngineException {
+        int annotationSetId = metadataManager.getProjectMetadata().getAnnotation().getCurrent().getId();
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                 sampleMetadata.setSampleIndexAnnotationStatus(Status.READY, version);
+                sampleMetadata.setSampleIndexAnnotationSetId(annotationSetId, version);
             });
         }
     }

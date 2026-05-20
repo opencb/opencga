@@ -22,8 +22,18 @@ import org.opencb.opencga.core.tools.ToolParams;
 public class VariantAnnotationSaveParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant annotation save params";
+    /** ObjectMap key for the {@link #fromAnnotationSet} field. */
+    public static final String FROM_ANNOTATION_SET = "fromAnnotationSet";
+
     @DataField(description = "New Variant Annotation identifier")
     private String annotationId;
+    @DataField(description = "Source annotation set to save. When set to a transition's auto-name "
+            + "(e.g. recorded by an earlier autobump on setCellbaseConfiguration), the matching "
+            + "variants are copied and the transition entry is promoted to saved under "
+            + "'annotationId'. When unset (or 'current'), the current annotation state is "
+            + "captured: autobump current into a new transition, then immediately promote it. "
+            + "This is the field exposed via the --from-annotation-set CLI flag.")
+    private String fromAnnotationSet;
 
     public VariantAnnotationSaveParams() {
     }
@@ -32,12 +42,26 @@ public class VariantAnnotationSaveParams extends ToolParams {
         this.annotationId = annotationId;
     }
 
+    public VariantAnnotationSaveParams(String annotationId, String fromAnnotationSet) {
+        this.annotationId = annotationId;
+        this.fromAnnotationSet = fromAnnotationSet;
+    }
+
     public String getAnnotationId() {
         return annotationId;
     }
 
     public VariantAnnotationSaveParams setAnnotationId(String annotationId) {
         this.annotationId = annotationId;
+        return this;
+    }
+
+    public String getFromAnnotationSet() {
+        return fromAnnotationSet;
+    }
+
+    public VariantAnnotationSaveParams setFromAnnotationSet(String fromAnnotationSet) {
+        this.fromAnnotationSet = fromAnnotationSet;
         return this;
     }
 }

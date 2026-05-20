@@ -437,12 +437,31 @@ public class VariantMongoDBQueryParser {
         if (query != null) {
             if (isValidParam(query, ANNOTATION_EXISTS)) {
                 boolean exists = query.getBoolean(ANNOTATION_EXISTS.key());
-                filters.add(exists(DocumentToVariantAnnotationConverter.ANNOT_ID,
-                        exists));
-                if (!exists) {
-                    filters.add(exists(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, false));
+                // The annotation pass uses ANNOTATION_EXISTS=false as its discovery predicate. On a project
+                // that has been overwritten (annotationSetId > 1), variants annotated against an older id
+                // are stale and must be re-annotated even though their `annotation.id` document exists.
+                // Anchor the predicate on the project's current annotationSetId so a single param expresses
+                // "missing OR stale" (=false) and "annotated AND current" (=true). When current <= 1 (no
+                // overwrite has ever happened) the staleness term is a no-op and behavior matches pre-8120.
+                int currentAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
+                if (currentAnnotationSetId <= 1) {
+                    filters.add(Filters.exists(DocumentToVariantAnnotationConverter.ANNOT_ID, exists));
+                    if (!exists) {
+                        filters.add(Filters.exists(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, false));
+                    }
+                } else if (exists) {
+                    // Fresh annotation: id document exists AND equals current.
+                    filters.add(eq(DocumentToVariantAnnotationConverter.ANNOT_ID, currentAnnotationSetId));
+                } else {
+                    // Missing OR stale: id document absent, or stamped against an older annotation set.
+                    // Use $lt rather than $ne so a future revert of the project id doesn't quietly mark
+                    // genuinely-fresh variants as stale.
+                    filters.add(or(
+                            Filters.exists(DocumentToVariantAnnotationConverter.ANNOT_ID, false),
+                            lt(DocumentToVariantAnnotationConverter.ANNOT_ID, currentAnnotationSetId)));
+                    // CT_SO_ACCESSION existence is not safe to assert here: stale variants have CT data,
+                    // only the truly-missing ones don't.
                 }
-                // else , should be combined with an or, and it would not speed up the filtering. This scenario is not so common
             }
 
             if (!ctBtFlagApplied) {
