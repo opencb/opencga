@@ -36,11 +36,14 @@ public class FederationClientParams {
     @DataField(id = "securityKey", description = FieldConstants.FEDERATION_CLIENT_SECURITY_KEY_DESCRIPTION)
     private String securityKey;
 
+    @DataField(id = "active", description = FieldConstants.FEDERATION_CLIENT_ACTIVE_DESCRIPTION)
+    private boolean active;
+
     public FederationClientParams() {
     }
 
     public FederationClientParams(String id, String description, String version, String email, String url, String organizationId,
-                                  String userId, String password, String token, String securityKey) {
+                                  String userId, String password, String token, String securityKey, boolean active) {
         this.id = id;
         this.description = description;
         this.version = version;
@@ -51,6 +54,7 @@ public class FederationClientParams {
         this.password = password;
         this.token = token;
         this.securityKey = securityKey;
+        this.active = active;
     }
 
     @Override
@@ -65,6 +69,7 @@ public class FederationClientParams {
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", password='").append("xxxxxxxx").append('\'');
         sb.append(", securityKey='").append("xxxxxxxx").append('\'');
+        sb.append(", active=").append(active);
         sb.append('}');
         return sb.toString();
     }
@@ -156,6 +161,15 @@ public class FederationClientParams {
 
     public FederationClientParams setToken(String token) {
         this.token = token;
+        return this;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public FederationClientParams setActive(boolean active) {
+        this.active = active;
         return this;
     }
 }

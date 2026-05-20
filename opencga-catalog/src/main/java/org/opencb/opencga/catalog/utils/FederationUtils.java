@@ -26,7 +26,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import javax.crypto.SecretKey;
@@ -95,34 +94,6 @@ public class FederationUtils {
             }
         }
         throw new CatalogException("User does not belong to any federation that contains the project or study provided.");
-    }
-
-    /**
-     * Given an organization and a user, it will return the FederationServerParams object that contains the user.
-     * @param organizationId Organization id
-     * @param userId User id
-     * @param dbAdaptorFactory DBAdaptorFactory
-     * @return FederationServerParams object
-     * @throws CatalogException If the organization is not federated, the user is not federated in the organization or the organization
-     * does not exist.
-     */
-    public static FederationServerParams findFederationServerForUser(String organizationId, String userId,
-                                                                     DBAdaptorFactory dbAdaptorFactory) throws CatalogException {
-        QueryOptions orgOptions = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
-        OpenCGAResult<Organization> result = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(orgOptions);
-        if (result.getNumResults() == 0) {
-            throw new CatalogException("Could not find Organization '" + organizationId + "'");
-        }
-        Organization organization = result.first();
-        if (organization.getFederation() == null || CollectionUtils.isEmpty(organization.getFederation().getServers())) {
-            throw new CatalogException("Organization '" + organizationId + "' is not federated.");
-        }
-        for (FederationServerParams server : organization.getFederation().getServers()) {
-            if (server.getUserId().equals(userId)) {
-                return server;
-            }
-        }
-        throw new CatalogException("User '" + userId + "' is not federated in organization '" + organizationId + "'");
     }
 
     /**
@@ -210,6 +181,9 @@ public class FederationUtils {
 
         for (FederationClientParams client : organization.getFederation().getClients()) {
             if (client.getId().equals(federationId)) {
+                if (!client.isActive()) {
+                    throw new CatalogException("Federation '" + federationId + "' is currently disabled");
+                }
                 // Decode security key and user password
                 client.setSecurityKey(SecureKeyUtils.decodeSecureString(client.getSecurityKey()));
                 client.setPassword(SecureKeyUtils.decodeSecureString(client.getPassword()));
