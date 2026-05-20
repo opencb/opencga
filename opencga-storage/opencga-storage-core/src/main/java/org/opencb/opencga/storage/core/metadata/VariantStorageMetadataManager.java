@@ -746,6 +746,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectDBAdaptor.getProjectMetadata().first();
     }
 
+    /**
+     * Read the project's current annotationSetId, returning {@code 0} when the project has no
+     * annotation metadata yet. {@code 0} signals "no overwrite ever happened" — callers fall back
+     * to the legacy existence-only predicate, which is equivalent under the never-bumped invariant.
+     * Shared helper used by the Mongo / HBase / Phoenix variant query parsers so the fallback
+     * semantic stays consistent across backends.
+     *
+     * @return the current annotationSetId or {@code 0} if project metadata / annotation / current
+     *         is not yet populated.
+     */
+    public int getCurrentAnnotationSetIdOrZero() {
+        ProjectMetadata projectMetadata = getProjectMetadata();
+        if (projectMetadata == null || projectMetadata.getAnnotation() == null
+                || projectMetadata.getAnnotation().getCurrent() == null) {
+            return 0;
+        }
+        return projectMetadata.getAnnotation().getCurrent().getId();
+    }
+
     public ProjectMetadata getAndUpdateProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
 

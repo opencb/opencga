@@ -55,6 +55,15 @@ public class SampleIndexQuery {
     private final MendelianErrorType mendelianErrorType;
     private final boolean includeParentColumns;
 
+    /**
+     * For each sample in this query, the Sample Index annotationSetId stored on its
+     * {@link SampleMetadata#getSampleIndexAnnotationSetId(int)} at parse time. Captured here so
+     * downstream staleness-check helpers (e.g. {@code SampleIndexDBAdaptor.emitStaleAnnotationSetIdEvents})
+     * don't need to re-read SampleMetadata on the query hot path. May be empty for callers that
+     * don't supply it (e.g. unit tests using the legacy constructor).
+     */
+    private final Map<String, Integer> sampleAnnotationSetIds;
+
     private final Query uncoveredQuery;
     private final QueryOperation queryOperation;
 
@@ -80,6 +89,7 @@ public class SampleIndexQuery {
         this.mendelianErrorSet = query.mendelianErrorSet;
         this.mendelianErrorType = query.mendelianErrorType;
         this.includeParentColumns = query.includeParentColumns;
+        this.sampleAnnotationSetIds = query.sampleAnnotationSetIds;
         this.uncoveredQuery = query.uncoveredQuery;
         this.queryOperation = query.queryOperation;
     }
@@ -91,6 +101,7 @@ public class SampleIndexQuery {
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, MendelianErrorType mendelianErrorType, boolean includeParentColumns,
+                            Map<String, Integer> sampleAnnotationSetIds,
                             QueryOperation queryOperation, Query uncoveredQuery) {
         this.schema = schema;
         this.locusQueries = locusQueries;
@@ -107,6 +118,7 @@ public class SampleIndexQuery {
         this.mendelianErrorSet = mendelianErrorSet;
         this.mendelianErrorType = mendelianErrorType;
         this.includeParentColumns = includeParentColumns;
+        this.sampleAnnotationSetIds = sampleAnnotationSetIds == null ? Collections.emptyMap() : sampleAnnotationSetIds;
         this.queryOperation = queryOperation;
         this.uncoveredQuery = uncoveredQuery;
     }
@@ -147,6 +159,17 @@ public class SampleIndexQuery {
 
     public Map<String, List<String>> getSamplesMap() {
         return samplesMap;
+    }
+
+    /**
+     * Sample Index annotationSetId stamped on each sample's SampleMetadata at parse time. Used by
+     * downstream staleness-check helpers to avoid re-reading SampleMetadata on the query hot path.
+     * Returns an empty map for callers that didn't supply the data (legacy constructor or unit tests).
+     *
+     * @return sample name → stored sampleIndex annotationSetId (may be empty, never null)
+     */
+    public Map<String, Integer> getSampleAnnotationSetIds() {
+        return sampleAnnotationSetIds;
     }
 
     public boolean emptyOrRegionFilter() {

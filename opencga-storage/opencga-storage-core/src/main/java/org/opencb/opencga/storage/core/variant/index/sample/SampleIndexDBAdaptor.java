@@ -10,7 +10,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -113,35 +112,20 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
             // Query does not read annotation bits from the SSI — drift can not affect this result.
             return;
         }
-        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
-        if (projectMetadata == null || projectMetadata.getAnnotation() == null
-                || projectMetadata.getAnnotation().getCurrent() == null) {
-            // No annotation metadata yet — nothing to compare against.
-            return;
-        }
-        int projectAnnotationSetId = projectMetadata.getAnnotation().getCurrent().getId();
+        int projectAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
         if (projectAnnotationSetId <= 1) {
             // Project never had an annotation overwrite — drift impossible.
             return;
         }
-        Integer studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
-        if (studyId == null) {
-            return;
-        }
-        int ssiVersion = sampleIndexQuery.getSchema().getVersion();
-        for (String sampleName : sampleIndexQuery.getSamplesMap().keySet()) {
-            Integer sampleId = metadataManager.getSampleId(studyId, sampleName, true);
-            if (sampleId == null) {
-                continue;
-            }
-            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (sm == null) {
-                continue;
-            }
-            int stored = sm.getSampleIndexAnnotationSetId(ssiVersion);
+        // The per-sample sampleIndex annotationSetId was captured by SampleIndexQueryParser at
+        // parse time (it already reads each sample's SampleMetadata for the
+        // extendedFilteringRegion calculation), so this loop is in-memory only — no per-sample
+        // metadata round-trip on the query hot path.
+        for (Map.Entry<String, Integer> e : sampleIndexQuery.getSampleAnnotationSetIds().entrySet()) {
+            int stored = e.getValue();
             if (stored != 0 && stored != projectAnnotationSetId) {
                 events.add(new Event(Event.Type.WARNING,
-                        "Sample '" + sampleName + "' Sample Index annotation is stale "
+                        "Sample '" + e.getKey() + "' Sample Index annotation is stale "
                                 + "(stored annotationSetId=" + stored
                                 + ", project current=" + projectAnnotationSetId + "). "
                                 + "Filtering by annotation-derived bits (clinical-significance, biotype, "

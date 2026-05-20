@@ -37,7 +37,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -444,7 +443,7 @@ public class VariantMongoDBQueryParser {
                 // Anchor the predicate on the project's current annotationSetId so a single param expresses
                 // "missing OR stale" (=false) and "annotated AND current" (=true). When current <= 1 (no
                 // overwrite has ever happened) the staleness term is a no-op and behavior matches pre-8120.
-                int currentAnnotationSetId = currentAnnotationSetIdOrFallback();
+                int currentAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
                 if (currentAnnotationSetId <= 1) {
                     filters.add(Filters.exists(DocumentToVariantAnnotationConverter.ANNOT_ID, exists));
                     if (!exists) {
@@ -2447,20 +2446,6 @@ public class VariantMongoDBQueryParser {
             values.add(prefix + flagCode);
         }
         return values;
-    }
-
-    /**
-     * Read the project's current annotationSetId, returning {@code 0} when the project has no
-     * annotation metadata yet. {@code 0} signals "no overwrite ever happened" — callers fall back
-     * to the legacy existence-only predicate, which is equivalent under the never-bumped invariant.
-     */
-    private int currentAnnotationSetIdOrFallback() {
-        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
-        if (projectMetadata == null || projectMetadata.getAnnotation() == null
-                || projectMetadata.getAnnotation().getCurrent() == null) {
-            return 0;
-        }
-        return projectMetadata.getAnnotation().getCurrent().getId();
     }
 
 }

@@ -33,7 +33,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
@@ -1400,7 +1399,7 @@ public class VariantSqlQueryParser {
             // ANNOTATION_EXISTS is annotationSetId-aware: a variant whose stamp lags the project's
             // current annotation set is treated as "missing" by the discovery loop, even though its
             // FULL_ANNOTATION column is non-null. See the Mongo parser for the long-form rationale.
-            int currentAnnotationSetId = currentAnnotationSetIdOrFallback();
+            int currentAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
             if (currentAnnotationSetId <= 1) {
                 if (query.getBoolean(ANNOTATION_EXISTS.key())) {
                     filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
@@ -2140,19 +2139,6 @@ public class VariantSqlQueryParser {
             throw new VariantQueryException("Unable to use operator (" + op + ") with boolean fields");
         }
         return parsedOp;
-    }
-
-    /**
-     * Read the project's current annotationSetId. Returns {@code 0} when the project has no
-     * annotation metadata yet — callers fall back to the legacy null-check predicate.
-     */
-    private int currentAnnotationSetIdOrFallback() {
-        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
-        if (projectMetadata == null || projectMetadata.getAnnotation() == null
-                || projectMetadata.getAnnotation().getCurrent() == null) {
-            return 0;
-        }
-        return projectMetadata.getAnnotation().getCurrent().getId();
     }
 
 }

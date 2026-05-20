@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -361,7 +360,7 @@ public class VariantHBaseQueryParser {
                 // see Mongo parser for rationale). On the native scan path, a custom-snapshot column
                 // is opaque (no id to compare), so we keep the legacy missing-column predicate;
                 // otherwise we OR (column missing) with (ANNOTATION_ID < currentId).
-                int currentAnnotationSetId = currentAnnotationSetIdOrFallback();
+                int currentAnnotationSetId = metadataManager.getCurrentAnnotationSetIdOrZero();
                 if (currentAnnotationSetId > 1 && !isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
                     FilterList missingOrStale = new FilterList(FilterList.Operator.MUST_PASS_ONE);
                     missingOrStale.addFilter(missingColumnFilter(annotationColumn));
@@ -802,19 +801,6 @@ public class VariantHBaseQueryParser {
             }
             scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), end));
         }
-    }
-
-    /**
-     * Read the project's current annotationSetId. Returns {@code 0} when the project has no
-     * annotation metadata yet — callers fall back to the legacy missing-column predicate.
-     */
-    private int currentAnnotationSetIdOrFallback() {
-        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
-        if (projectMetadata == null || projectMetadata.getAnnotation() == null
-                || projectMetadata.getAnnotation().getCurrent() == null) {
-            return 0;
-        }
-        return projectMetadata.getAnnotation().getCurrent().getId();
     }
 
 }

@@ -552,10 +552,23 @@ public class SampleIndexQueryParser {
 
         Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants, extendedFilteringRegion);
 
+        // Capture each sample's stored sampleIndex annotationSetId so the downstream staleness
+        // check (SampleIndexDBAdaptor.emitStaleAnnotationSetIdEvents) can read it from the query
+        // object instead of hitting the SampleMetadata adaptor again on the query hot path. The
+        // extendedFilteringRegion loop above already populated `sampleMetadatas` for every entry
+        // in `sampleGenotypeQuery.keySet()`; this is just an in-memory lookup.
+        int schemaVersion = schema.getVersion();
+        Map<String, Integer> sampleAnnotationSetIds = new HashMap<>();
+        for (String sample : sampleGenotypeQuery.keySet()) {
+            SampleMetadata sm = getSampleMetadata(sampleMetadatas, sample, studyId);
+            sampleAnnotationSetIds.put(sample, sm.getSampleIndexAnnotationSetId(schemaVersion));
+        }
+
         return new SampleIndexQuery(schema, regionGroups, extendedFilteringRegion, variantTypes, study,
                 sampleGenotypeQuery, multiFileSamples, samplesWithNonStoredGts,
                 fatherFilterMap, motherFilterMap,
-                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField, queryOperation, query);
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, mendelianErrorType, includeParentsField,
+                sampleAnnotationSetIds, queryOperation, query);
     }
 
     private Set<String> findParents(Set<String> childrenSet, Map<String, List<String>> parentsMap) {
