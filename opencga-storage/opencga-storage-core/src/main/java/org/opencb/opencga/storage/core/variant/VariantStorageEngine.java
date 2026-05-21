@@ -1502,14 +1502,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         executors.add(new BreakendVariantQueryExecutor(
                 getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
-        executors.add(new SearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
+        // Register the SampleIndex executors before the SearchIndex executor. Sample-centric
+        // queries (e.g. sample=X with count=true) are exactly what the Secondary Sample Index
+        // is optimized for, so it must win the first-match-wins selection over the Search Index
+        // (Solr).
         executors.add(new SampleIndexMendelianErrorQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexOnlyVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
+        executors.add(new SearchIndexVariantQueryExecutor(
+                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
         executors.add(new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
         return executors;

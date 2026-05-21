@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -54,7 +55,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
 
 
     public void initSolr() throws Exception {
-        if (solr != null) {
+        if (solr == null) {
             solr = new VariantSolrExternalResource();
             solr.before();
         }
@@ -230,6 +231,20 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 new QueryOptions(),
                 matcher,
                 false);
+    }
+
+    @Test
+    public void testSampleCountQueryUsesSampleIndexExecutor() throws StorageEngineException {
+        // A sample-centric query (sample=X) with count=true is exactly what the Secondary
+        // Sample Index (SSI) is optimized for. Even with the Search Index (Solr) active, the
+        // SampleIndex executor must be selected over the Search Index, on every engine.
+        VariantQueryExecutor executor = variantStorageEngine.getVariantQueryExecutor(
+                new VariantQuery().sample("NA19660").study(studyMetadata.getName()),
+                new QueryOptions(QueryOptions.COUNT, true));
+
+        Assert.assertTrue("Expected SampleIndexVariantQueryExecutor for a sample+count query, but got "
+                        + executor.getClass().getSimpleName(),
+                executor instanceof SampleIndexVariantQueryExecutor);
     }
 
     public VariantQueryResult<Variant> testQuery(Query query, QueryOptions options, Matcher<Variant> matcher) throws StorageEngineException {
