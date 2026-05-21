@@ -1406,6 +1406,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * {@link DocumentToVariantAnnotationConverter} triggers Jackson type introspection on
      * {@link VariantAnnotation}, so high-throughput callers (e.g. the annotation writer in the
      * load phase) should build one per worker and reuse it across batches.
+     *
+     * @param variantAnnotations Annotations to update.
+     * @param converter          Converter to serialize the annotations, reused across batches.
+     * @param timestamp          Timestamp to set on the updated annotations.
+     * @param queryOptions       Query options.
+     * @return DataResult with the update operation summary.
      */
     public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
                                         DocumentToVariantAnnotationConverter converter,
