@@ -125,6 +125,12 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 Assert.assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
             }
 
+            // The early solr.configure() at the top of setUp() (run before the study was loaded)
+            // builds and caches a CellBaseUtils with the server-default assembly. Now that the
+            // study assembly (GRCH38) is loaded, discard it so query-time gene->region resolution
+            // uses the correct assembly instead of the default.
+            variantStorageEngine.reloadCellbaseConfiguration();
+
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
             for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
