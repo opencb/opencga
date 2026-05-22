@@ -119,6 +119,7 @@ public class FederationsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "token", commandOptions.token, true);
             putNestedIfNotEmpty(beanParams, "securityKey", commandOptions.securityKey, true);
+            putNestedIfNotNull(beanParams, "active", commandOptions.active, true);
 
             federationClientParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -211,6 +212,7 @@ public class FederationsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
             putNestedIfNotEmpty(beanParams, "token", commandOptions.token, true);
             putNestedIfNotEmpty(beanParams, "securityKey", commandOptions.securityKey, true);
+            putNestedIfNotNull(beanParams, "active", commandOptions.active, true);
 
             federationClientUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
