@@ -73,7 +73,11 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         initSolr();
         VariantDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        if (solr != null) {
+        // Configure Solr here only when the study is already loaded. On the first (loading) run,
+        // Solr is configured after the load (below) instead — otherwise getVariantSearchManager()
+        // would build (and cache) a CellBaseUtils against the server-default assembly before the
+        // study assembly is set, making query-time gene->region resolution use the wrong assembly.
+        if (solr != null && fileIndexed) {
             solr.configure(variantStorageEngine);
         }
         if (!fileIndexed) {
@@ -124,12 +128,6 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
                 variantStorageEngine.secondaryIndex();
                 Assert.assertTrue(variantStorageEngine.secondaryAnnotationIndexActiveAndAlive());
             }
-
-            // The early solr.configure() at the top of setUp() (run before the study was loaded)
-            // builds and caches a CellBaseUtils with the server-default assembly. Now that the
-            // study assembly (GRCH38) is loaded, discard it so query-time gene->region resolution
-            // uses the correct assembly instead of the default.
-            variantStorageEngine.reloadCellbaseConfiguration();
 
             variantQueryExecutors = variantStorageEngine.getVariantQueryExecutors();
             dbQueryExecutor = null;
